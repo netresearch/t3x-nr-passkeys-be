@@ -97,7 +97,7 @@ $prUrl = $githubUrl && $prNumber ? $githubUrl . '/pull/' . $prNumber : null;
             <h3>Backend Credentials</h3>
             <ul>
                 <li><strong>Username:</strong> <code>admin</code></li>
-                <li><strong>Password:</strong> <code>Joh316!</code></li>
+                <li><strong>Password:</strong> <code>Joh316!!</code></li>
                 <li><em>(also works for Install Tool)</em></li>
             </ul>
         </div>

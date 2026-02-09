@@ -13,8 +13,10 @@ composer config extra.typo3/cms.web-dir public -d /var/www/html/$VERSION
 composer config repositories.$EXTENSION_KEY path ../../$EXTENSION_KEY -d /var/www/html/$VERSION
 composer config --no-plugins allow-plugins.typo3/cms-composer-installers true -d /var/www/html/$VERSION
 composer config --no-plugins allow-plugins.typo3/class-alias-loader true -d /var/www/html/$VERSION
-# t3/cms has no v14 release - use typo3/minimal which includes typo3/cms-backend
-composer req typo3/minimal:'^14' typo3/cms-fluid-styled-content:'^14' typo3/cms-rte-ckeditor:'^14' $PACKAGE_NAME:'*@dev' --no-progress -n -d /var/www/html/$VERSION
+# t3/cms has no v14 release - use typo3/minimal + additional packages
+# typo3/minimal provides: cms-core, cms-backend, cms-extbase, cms-filelist, cms-fluid, cms-frontend
+# typo3/cms-install provides: setup command, configuration:set
+composer req typo3/minimal:'^14' typo3/cms-install:'^14' typo3/cms-fluid-styled-content:'^14' typo3/cms-rte-ckeditor:'^14' $PACKAGE_NAME:'*@dev' --no-progress -n -d /var/www/html/$VERSION
 composer req typo3/cms-extensionmanager --no-progress -n -d /var/www/html/$VERSION
 composer req --dev typo3/cms-styleguide --no-progress -n -d /var/www/html/$VERSION
 
@@ -33,22 +35,27 @@ mysql -h db -u root -p"root" -e "CREATE DATABASE ${VERSION};"
 
 vendor/bin/typo3 setup -n --dbname=$VERSION --password=$TYPO3_DB_PASSWORD --create-site="https://${VERSION}.nr-passkeys-be.ddev.site" --admin-user-password=$TYPO3_SETUP_ADMIN_PASSWORD
 
-vendor/bin/typo3 configuration:set 'BE/debug' 1
-vendor/bin/typo3 configuration:set 'FE/debug' 1
-vendor/bin/typo3 configuration:set 'SYS/devIPmask' '*'
-vendor/bin/typo3 configuration:set 'SYS/displayErrors' 1
-# Create additional.php for trustedHostsPattern (configuration:set doesn't work reliably for this)
+# Write all configuration directly to additional.php (configuration:set may not exist in v14)
 mkdir -p /var/www/html/$VERSION/config/system
-echo '<?php' > /var/www/html/$VERSION/config/system/additional.php
-echo '$GLOBALS["TYPO3_CONF_VARS"]["SYS"]["trustedHostsPattern"] = ".*";' >> /var/www/html/$VERSION/config/system/additional.php
-echo '$GLOBALS["TYPO3_CONF_VARS"]["SYS"]["features"]["security.backend.enforceReferrer"] = false;' >> /var/www/html/$VERSION/config/system/additional.php
-vendor/bin/typo3 configuration:set 'MAIL/transport' 'smtp'
-vendor/bin/typo3 configuration:set 'MAIL/transport_smtp_server' 'localhost:1025'
-vendor/bin/typo3 configuration:set 'MAIL/defaultMailFromAddress' 'admin@example.com'
-vendor/bin/typo3 configuration:set 'GFX/processor' 'ImageMagick'
-vendor/bin/typo3 configuration:set 'GFX/processor_path' '/usr/bin/'
+cat > /var/www/html/$VERSION/config/system/additional.php << 'ADDITIONALPHP'
+<?php
+$GLOBALS['TYPO3_CONF_VARS']['BE']['debug'] = true;
+$GLOBALS['TYPO3_CONF_VARS']['FE']['debug'] = true;
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['devIPmask'] = '*';
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['displayErrors'] = 1;
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['features']['security.backend.enforceReferrer'] = false;
+$GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport'] = 'smtp';
+$GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_smtp_server'] = 'localhost:1025';
+$GLOBALS['TYPO3_CONF_VARS']['MAIL']['defaultMailFromAddress'] = 'admin@example.com';
+$GLOBALS['TYPO3_CONF_VARS']['GFX']['processor'] = 'ImageMagick';
+$GLOBALS['TYPO3_CONF_VARS']['GFX']['processor_path'] = '/usr/bin/';
+ADDITIONALPHP
 
-sed -i "/'deprecations'/,/^[[:space:]]*'disabled' => true,/s/'disabled' => true,/'disabled' => false,/" /var/www/html/$VERSION/config/system/settings.php
+# Enable deprecation log if settings.php exists
+if [ -f /var/www/html/$VERSION/config/system/settings.php ]; then
+    sed -i "/'deprecations'/,/^[[:space:]]*'disabled' => true,/s/'disabled' => true,/'disabled' => false,/" /var/www/html/$VERSION/config/system/settings.php
+fi
 
 vendor/bin/typo3 extension:setup
 

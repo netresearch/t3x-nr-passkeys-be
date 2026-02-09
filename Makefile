@@ -67,7 +67,7 @@ urls: ## Show all access URLs
 	@echo ""
 	@echo "Backend Credentials:"
 	@echo "  Username: admin"
-	@echo "  Password: Joh316!"
+	@echo "  Password: Joh316!!"
 	@echo ""
 
 # ===================================
