@@ -16,7 +16,14 @@ composer config --no-plugins allow-plugins.typo3/class-alias-loader true -d /var
 composer req t3/cms:'^14' $PACKAGE_NAME:'*@dev' --no-progress -n -d /var/www/html/$VERSION
 composer req typo3/cms-extensionmanager --no-progress -n -d /var/www/html/$VERSION
 composer req --dev typo3/cms-styleguide --no-progress -n -d /var/www/html/$VERSION
-composer req typo3/cms-introduction --no-progress -n -d /var/www/html/$VERSION
+
+# Introduction Package may not support latest TYPO3 v14 - install if available
+if composer req typo3/cms-introduction --no-progress -n -d /var/www/html/$VERSION 2>/dev/null; then
+    INTRO_INSTALLED=true
+else
+    echo "Note: typo3/cms-introduction not available for TYPO3 v14 - skipping demo content"
+    INTRO_INSTALLED=false
+fi
 
 cd /var/www/html/$VERSION
 
@@ -44,8 +51,8 @@ sed -i "/'deprecations'/,/^[[:space:]]*'disabled' => true,/s/'disabled' => true,
 
 vendor/bin/typo3 extension:setup
 
-# Configure site sets for v14
-if [ -f config/sites/main/config.yaml ]; then
+# Configure site sets for v14 (only if Bootstrap Package is available via introduction)
+if [ "$INTRO_INSTALLED" = "true" ] && [ -f config/sites/main/config.yaml ]; then
     if ! grep -q "^dependencies:" config/sites/main/config.yaml; then
         echo "" >> config/sites/main/config.yaml
         echo "dependencies:" >> config/sites/main/config.yaml
@@ -64,7 +71,11 @@ echo ""
 echo "TYPO3 $VERSION installation complete!"
 echo "Your extension is activated and ready to use"
 echo "TYPO3 Styleguide is available for UI pattern reference"
-echo "Introduction Package installed with demo content (86+ pages, 226+ content elements)"
+if [ "$INTRO_INSTALLED" = "true" ]; then
+    echo "Introduction Package installed with demo content"
+else
+    echo "Introduction Package skipped (not yet available for TYPO3 v14)"
+fi
 
 # Auto-configure extension if configure script exists
 if [ -f "/mnt/ddev_config/commands/web/configure-nr_passkeys_be" ]; then

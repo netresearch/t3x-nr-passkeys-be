@@ -12,7 +12,7 @@ echo ""
 
 # Step 1: Render documentation
 echo "Step 1/2: Rendering documentation..."
-if [ -d "/var/www/${EXTENSION_KEY}/Documentation" ]; then
+if [ -d "Documentation" ]; then
     ddev docs
 else
     echo "No Documentation/ directory found, skipping docs rendering"

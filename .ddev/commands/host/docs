@@ -4,8 +4,6 @@
 ## Usage: docs
 ## Example: "ddev docs"
 
-set -e
-
 PROJECT_DIR="$(pwd)"
 DOC_SOURCE="${PROJECT_DIR}/Documentation"
 DOC_OUTPUT="${PROJECT_DIR}/Documentation-GENERATED-temp"
@@ -20,10 +18,10 @@ if [ ! -d "$DOC_SOURCE" ]; then
     exit 1
 fi
 
-# Check if Index.rst exists
-if [ ! -f "$DOC_SOURCE/Index.rst" ]; then
-    echo "Error: Index.rst not found in Documentation/"
-    echo "Tip: Create Documentation/Index.rst as the main entry point"
+# Check if guides.xml exists
+if [ ! -f "$DOC_SOURCE/guides.xml" ]; then
+    echo "Error: guides.xml not found in Documentation/"
+    echo "Tip: Create Documentation/guides.xml as the build configuration"
     exit 1
 fi
 
@@ -41,34 +39,24 @@ fi
 echo "Rendering documentation with TYPO3 render-guides..."
 echo ""
 
-docker run --rm \
+docker run --rm --pull always \
     -v "${PROJECT_DIR}:/project" \
-    --user "$(id -u):$(id -g)" \
     ghcr.io/typo3-documentation/render-guides:latest \
-    --no-progress \
-    --output=/project/Documentation-GENERATED-temp \
-    /project/Documentation 2>&1
+    --config=Documentation 2>&1
 
-if [ $? -eq 0 ]; then
-    # Check for output files (structure may vary)
-    if [ -f "$DOC_OUTPUT/Result/project/0.0.0/Index.html" ] || \
-       [ -f "$DOC_OUTPUT/Index.html" ] || \
-       [ -d "$DOC_OUTPUT" ]; then
-        echo ""
-        echo "========================================="
-        echo "Documentation rendered successfully!"
-        echo ""
-        echo "View at: https://docs.$(ddev describe -j | jq -r .raw.name).ddev.site/"
-        echo "Output:  Documentation-GENERATED-temp/"
-        echo ""
-    else
-        echo ""
-        echo "Build completed but output structure unclear"
-        echo "Check: Documentation-GENERATED-temp/"
-    fi
+RENDER_EXIT=$?
+
+if [ $RENDER_EXIT -eq 0 ] && [ -d "$DOC_OUTPUT" ]; then
+    echo ""
+    echo "========================================="
+    echo "Documentation rendered successfully!"
+    echo ""
+    echo "View at: https://docs.$(ddev describe -j | jq -r .raw.name).ddev.site/"
+    echo "Output:  Documentation-GENERATED-temp/"
+    echo ""
 else
     echo ""
-    echo "Documentation rendering failed"
+    echo "Documentation rendering failed (exit code: $RENDER_EXIT)"
     echo "Check your .rst files for syntax errors"
     exit 1
 fi

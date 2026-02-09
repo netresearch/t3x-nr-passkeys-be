@@ -10,14 +10,14 @@ set -e
 # VARIABLE EXTRACTION
 # =============================================================================
 
-# Get DDEV project name
-DDEV_PROJECT=$(ddev describe -j 2>/dev/null | jq -r '.name' || basename "$(pwd)")
+# Get DDEV project name from environment or fallback
+DDEV_PROJECT="${DDEV_SITENAME:-$(basename "$(pwd)")}"
 
-# Get extension key from directory name
-EXTENSION_KEY=$(basename "$(pwd)")
+# Use EXTENSION_KEY from environment (set in docker-compose.web.yaml)
+EXTENSION_KEY="${EXTENSION_KEY:-$(basename "$(pwd)")}"
 
-# Extract data from composer.json if available
-COMPOSER_FILE="/var/www/html/composer.json"
+# Extract data from composer.json (extension is mounted at /var/www/$EXTENSION_KEY)
+COMPOSER_FILE="/var/www/${EXTENSION_KEY}/composer.json"
 if [[ -f "$COMPOSER_FILE" ]]; then
     COMPOSER_PACKAGE=$(jq -r '.name // empty' "$COMPOSER_FILE")
     EXTENSION_NAME=$(jq -r '.extra.typo3.extension-key // .extra["extension-key"] // empty' "$COMPOSER_FILE")
@@ -82,7 +82,7 @@ fi
 # TEMPLATE SELECTION
 # =============================================================================
 
-TEMPLATE_DIR="/var/www/html/.ddev"
+TEMPLATE_DIR="/mnt/ddev_config"
 IS_NETRESEARCH=false
 
 # Detect Netresearch project by checking composer.json vendor
