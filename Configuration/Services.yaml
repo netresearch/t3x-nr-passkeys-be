@@ -1,0 +1,41 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Netresearch\NrPasskeysBe\:
+    resource: '../Classes/*'
+    exclude:
+      - '../Classes/Domain/Model/*'
+
+  Netresearch\NrPasskeysBe\Service\ChallengeService:
+    public: true
+    arguments:
+      $nonceCache: '@cache.nr_passkeys_be_nonce'
+
+  Netresearch\NrPasskeysBe\Service\RateLimiterService:
+    public: true
+    arguments:
+      $rateLimitCache: '@cache.nr_passkeys_be_ratelimit'
+
+  Netresearch\NrPasskeysBe\Service\WebAuthnService:
+    public: true
+
+  Netresearch\NrPasskeysBe\Service\CredentialRepository:
+    public: true
+
+  Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService:
+    public: true
+
+  Netresearch\NrPasskeysBe\Controller\LoginController:
+    public: true
+
+  Netresearch\NrPasskeysBe\Controller\ManagementController:
+    public: true
+
+  Netresearch\NrPasskeysBe\Controller\AdminController:
+    public: true
+
+  Netresearch\NrPasskeysBe\LoginProvider\PasskeyLoginProvider:
+    public: true

@@ -1,0 +1,7 @@
+be_users
+,uid,pid,username,password,admin,disable,deleted
+,1,0,testuser1,password1,0,0,0
+,2,0,testuser2,password2,0,0,0
+,5,0,adminuser,password5,1,0,0
+,42,0,revokeadmin,password42,1,0,0
+,99,0,testuser99,password99,0,0,0

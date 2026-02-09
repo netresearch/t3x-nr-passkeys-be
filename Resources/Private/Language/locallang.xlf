@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf">
+        <body>
+            <trans-unit id="login.provider.label" resname="login.provider.label">
+                <source>Sign in with Passkey</source>
+            </trans-unit>
+            <trans-unit id="login.button.passkey" resname="login.button.passkey">
+                <source>Continue with Passkey</source>
+            </trans-unit>
+            <trans-unit id="login.button.passkey.loading" resname="login.button.passkey.loading">
+                <source>Authenticating...</source>
+            </trans-unit>
+            <trans-unit id="login.info.passkeyOnly" resname="login.info.passkeyOnly">
+                <source>Password login is disabled. Please use your passkey to sign in.</source>
+            </trans-unit>
+            <trans-unit id="login.error.unsupported" resname="login.error.unsupported">
+                <source>Your browser does not support Passkeys (WebAuthn).</source>
+            </trans-unit>
+            <trans-unit id="login.error.insecure" resname="login.error.insecure">
+                <source>Passkeys require a secure connection (HTTPS).</source>
+            </trans-unit>
+            <trans-unit id="login.error.cancelled" resname="login.error.cancelled">
+                <source>Authentication was cancelled.</source>
+            </trans-unit>
+            <trans-unit id="login.error.generic" resname="login.error.generic">
+                <source>Authentication failed. Please try again.</source>
+            </trans-unit>
+            <trans-unit id="login.error.noPasskeys" resname="login.error.noPasskeys">
+                <source>No passkeys registered. Please log in with your password first.</source>
+            </trans-unit>
+            <trans-unit id="login.error.rateLimit" resname="login.error.rateLimit">
+                <source>Too many attempts. Please try again later.</source>
+            </trans-unit>
+            <trans-unit id="login.error.locked" resname="login.error.locked">
+                <source>Account temporarily locked. Please contact your administrator.</source>
+            </trans-unit>
+            <trans-unit id="manage.title" resname="manage.title">
+                <source>Passkeys</source>
+            </trans-unit>
+            <trans-unit id="manage.description" resname="manage.description">
+                <source>Manage your registered passkeys for passwordless login.</source>
+            </trans-unit>
+            <trans-unit id="manage.add" resname="manage.add">
+                <source>Add Passkey</source>
+            </trans-unit>
+            <trans-unit id="manage.label.name" resname="manage.label.name">
+                <source>Name</source>
+            </trans-unit>
+            <trans-unit id="manage.label.created" resname="manage.label.created">
+                <source>Created</source>
+            </trans-unit>
+            <trans-unit id="manage.label.lastUsed" resname="manage.label.lastUsed">
+                <source>Last Used</source>
+            </trans-unit>
+            <trans-unit id="manage.label.actions" resname="manage.label.actions">
+                <source>Actions</source>
+            </trans-unit>
+            <trans-unit id="manage.rename" resname="manage.rename">
+                <source>Rename</source>
+            </trans-unit>
+            <trans-unit id="manage.remove" resname="manage.remove">
+                <source>Remove</source>
+            </trans-unit>
+            <trans-unit id="manage.remove.confirm" resname="manage.remove.confirm">
+                <source>Are you sure you want to remove this passkey?</source>
+            </trans-unit>
+            <trans-unit id="manage.remove.lastKey" resname="manage.remove.lastKey">
+                <source>Cannot remove your last passkey. Register another passkey first.</source>
+            </trans-unit>
+            <trans-unit id="manage.warning.singleKey" resname="manage.warning.singleKey">
+                <source>You only have one passkey registered. Consider adding a backup passkey.</source>
+            </trans-unit>
+            <trans-unit id="manage.noPasskeys" resname="manage.noPasskeys">
+                <source>No passkeys registered yet.</source>
+            </trans-unit>
+            <trans-unit id="manage.register.prompt" resname="manage.register.prompt">
+                <source>Enter a name for this passkey (e.g., "MacBook", "Office iPad"):</source>
+            </trans-unit>
+            <trans-unit id="manage.register.success" resname="manage.register.success">
+                <source>Passkey registered successfully.</source>
+            </trans-unit>
+            <trans-unit id="manage.register.error" resname="manage.register.error">
+                <source>Failed to register passkey. Please try again.</source>
+            </trans-unit>
+            <trans-unit id="manage.rename.success" resname="manage.rename.success">
+                <source>Passkey renamed successfully.</source>
+            </trans-unit>
+            <trans-unit id="manage.remove.success" resname="manage.remove.success">
+                <source>Passkey removed successfully.</source>
+            </trans-unit>
+            <trans-unit id="login.link.usePassword" resname="login.link.usePassword">
+                <source>Use password instead</source>
+            </trans-unit>
+            <trans-unit id="never" resname="never">
+                <source>Never</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

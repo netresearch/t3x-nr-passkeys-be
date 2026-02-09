@@ -1,0 +1,258 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # 2.36.0
+        with:
+          php-version: ${{ matrix.php }}
+          tools: php-cs-fixer
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Run php-cs-fixer
+        run: composer ci:lint:php
+
+  stan:
+    name: PHPStan (PHP ${{ matrix.php }}, TYPO3 ${{ matrix.typo3 }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            typo3: '^13.4'
+          - php: '8.3'
+            typo3: '^13.4'
+          - php: '8.4'
+            typo3: '^13.4'
+          - php: '8.2'
+            typo3: '^14.1'
+          - php: '8.3'
+            typo3: '^14.1'
+          - php: '8.4'
+            typo3: '^14.1'
+          - php: '8.5'
+            typo3: '^14.1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # 2.36.0
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install TYPO3
+        env:
+          TYPO3_VERSION: ${{ matrix.typo3 }}
+        run: |
+          composer require --no-update \
+            "typo3/cms-core:${TYPO3_VERSION}" \
+            "typo3/cms-backend:${TYPO3_VERSION}" \
+            "typo3/cms-setup:${TYPO3_VERSION}"
+          composer install --prefer-dist --no-progress
+
+      - name: Run PHPStan
+        run: composer ci:stan
+
+  unit:
+    name: Unit Tests (PHP ${{ matrix.php }}, TYPO3 ${{ matrix.typo3 }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            typo3: '^13.4'
+          - php: '8.3'
+            typo3: '^13.4'
+          - php: '8.4'
+            typo3: '^13.4'
+          - php: '8.5'
+            typo3: '^13.4'
+          - php: '8.2'
+            typo3: '^14.1'
+          - php: '8.3'
+            typo3: '^14.1'
+          - php: '8.4'
+            typo3: '^14.1'
+          - php: '8.5'
+            typo3: '^14.1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # 2.36.0
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, json, openssl
+          coverage: pcov
+
+      - name: Install TYPO3
+        env:
+          TYPO3_VERSION: ${{ matrix.typo3 }}
+        run: |
+          composer require --no-update \
+            "typo3/cms-core:${TYPO3_VERSION}" \
+            "typo3/cms-backend:${TYPO3_VERSION}" \
+            "typo3/cms-setup:${TYPO3_VERSION}"
+          composer install --prefer-dist --no-progress
+
+      - name: Run unit tests
+        run: composer ci:test:php:unit -- --coverage-clover=coverage-unit.xml
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: coverage-unit-php${{ matrix.php }}-typo3${{ matrix.typo3 }}
+          path: coverage-unit.xml
+          retention-days: 7
+
+  functional:
+    name: Functional Tests (PHP ${{ matrix.php }}, TYPO3 ${{ matrix.typo3 }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            typo3: '^13.4'
+          - php: '8.3'
+            typo3: '^13.4'
+          - php: '8.4'
+            typo3: '^13.4'
+          - php: '8.5'
+            typo3: '^13.4'
+          - php: '8.2'
+            typo3: '^14.1'
+          - php: '8.3'
+            typo3: '^14.1'
+          - php: '8.4'
+            typo3: '^14.1'
+          - php: '8.5'
+            typo3: '^14.1'
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: typo3_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # 2.36.0
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, json, openssl, pdo_mysql
+          coverage: pcov
+
+      - name: Install TYPO3
+        env:
+          TYPO3_VERSION: ${{ matrix.typo3 }}
+        run: |
+          composer require --no-update \
+            "typo3/cms-core:${TYPO3_VERSION}" \
+            "typo3/cms-backend:${TYPO3_VERSION}" \
+            "typo3/cms-setup:${TYPO3_VERSION}"
+          composer install --prefer-dist --no-progress
+
+      - name: Run functional tests
+        env:
+          typo3DatabaseDriver: mysqli
+          typo3DatabaseHost: 127.0.0.1
+          typo3DatabasePort: 3306
+          typo3DatabaseName: typo3_test
+          typo3DatabaseUsername: root
+          typo3DatabasePassword: root
+        run: composer ci:test:php:functional -- --coverage-clover=coverage-functional.xml
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: coverage-functional-php${{ matrix.php }}-typo3${{ matrix.typo3 }}
+          path: coverage-functional.xml
+          retention-days: 7
+
+  fuzz:
+    name: Fuzz Tests
+    runs-on: ubuntu-latest
+    needs: [unit]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # 2.36.0
+        with:
+          php-version: '8.4'
+          extensions: mbstring, json, openssl
+          coverage: none
+
+      - name: Install TYPO3
+        run: |
+          composer require --no-update \
+            "typo3/cms-core:^14.1" \
+            "typo3/cms-backend:^14.1" \
+            "typo3/cms-setup:^14.1"
+          composer install --prefer-dist --no-progress
+
+      - name: Run fuzz tests
+        run: .Build/bin/phpunit -c phpunit.xml --testsuite fuzz --no-coverage
+
+  mutation:
+    name: Mutation Tests
+    runs-on: ubuntu-latest
+    needs: [unit]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # 2.36.0
+        with:
+          php-version: '8.4'
+          extensions: mbstring, json, openssl
+          coverage: pcov
+
+      - name: Install TYPO3
+        run: |
+          composer require --no-update \
+            "typo3/cms-core:^14.1" \
+            "typo3/cms-backend:^14.1" \
+            "typo3/cms-setup:^14.1"
+          composer install --prefer-dist --no-progress
+
+      - name: Run mutation tests
+        run: composer ci:mutation

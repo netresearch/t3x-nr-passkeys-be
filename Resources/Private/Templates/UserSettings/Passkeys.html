@@ -1,0 +1,78 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<div class="passkey-management" id="passkey-management-container"
+     data-list-url="/typo3/passkeys/manage/list"
+     data-register-options-url="/typo3/passkeys/manage/registration/options"
+     data-register-verify-url="/typo3/passkeys/manage/registration/verify"
+     data-rename-url="/typo3/passkeys/manage/rename"
+     data-remove-url="/typo3/passkeys/manage/remove">
+
+    <h3>
+        <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.title">
+            Passkeys
+        </f:translate>
+    </h3>
+
+    <p class="text-muted">
+        <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.description">
+            Manage your registered passkeys for passwordless login.
+        </f:translate>
+    </p>
+
+    <div id="passkey-message" class="alert d-none" role="alert"></div>
+
+    <div id="passkey-single-warning" class="alert alert-warning d-none">
+        <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.warning.singleKey">
+            You only have one passkey registered. Consider adding a backup passkey.
+        </f:translate>
+    </div>
+
+    <div class="mb-3">
+        <button type="button" id="passkey-add-btn" class="btn btn-primary">
+            <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.add">
+                Add Passkey
+            </f:translate>
+        </button>
+        <span class="ms-2 text-muted">
+            Registered: <span id="passkey-count">0</span>
+        </span>
+    </div>
+
+    <div id="passkey-empty" class="alert alert-info d-none">
+        <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.noPasskeys">
+            No passkeys registered yet.
+        </f:translate>
+    </div>
+
+    <table class="table table-hover" id="passkey-list-table">
+        <thead>
+            <tr>
+                <th>
+                    <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.name">
+                        Name
+                    </f:translate>
+                </th>
+                <th>
+                    <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.created">
+                        Created
+                    </f:translate>
+                </th>
+                <th>
+                    <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.lastUsed">
+                        Last Used
+                    </f:translate>
+                </th>
+                <th>
+                    <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.actions">
+                        Actions
+                    </f:translate>
+                </th>
+            </tr>
+        </thead>
+        <tbody id="passkey-list-body">
+        </tbody>
+    </table>
+</div>
+
+</html>

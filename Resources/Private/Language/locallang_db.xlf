@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="EXT:nr_passkeys_be/Resources/Private/Language/locallang_db.xlf">
+        <body>
+            <trans-unit id="tx_nrpasskeysbe_credential" resname="tx_nrpasskeysbe_credential">
+                <source>Passkey Credential</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysbe_credential.be_user" resname="tx_nrpasskeysbe_credential.be_user">
+                <source>Backend User</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysbe_credential.credential_id" resname="tx_nrpasskeysbe_credential.credential_id">
+                <source>Credential ID</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysbe_credential.label" resname="tx_nrpasskeysbe_credential.label">
+                <source>Label</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysbe_credential.sign_count" resname="tx_nrpasskeysbe_credential.sign_count">
+                <source>Sign Count</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysbe_credential.created_at" resname="tx_nrpasskeysbe_credential.created_at">
+                <source>Created</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysbe_credential.last_used_at" resname="tx_nrpasskeysbe_credential.last_used_at">
+                <source>Last Used</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysbe_credential.revoked_at" resname="tx_nrpasskeysbe_credential.revoked_at">
+                <source>Revoked At</source>
+            </trans-unit>
+            <trans-unit id="tx_nrpasskeysbe_credential.revoked_by" resname="tx_nrpasskeysbe_credential.revoked_by">
+                <source>Revoked By</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

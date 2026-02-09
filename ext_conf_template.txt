@@ -1,0 +1,35 @@
+# cat=basic/100/100; type=string; label=Relying Party ID (rpId):The domain name of your TYPO3 backend (e.g., "example.com"). Leave empty to auto-detect from HTTP_HOST.
+rpId =
+
+# cat=basic/100/110; type=string; label=Relying Party Name:Display name shown during passkey registration.
+rpName = TYPO3 Backend
+
+# cat=basic/100/120; type=string; label=Origin:The full origin URL (e.g., "https://example.com"). Leave empty to auto-detect.
+origin =
+
+# cat=security/200/100; type=int+; label=Challenge TTL (seconds):How long a challenge token is valid.
+challengeTtlSeconds = 120
+
+# cat=security/200/110; type=options[required,preferred,discouraged]; label=User Verification:WebAuthn user verification requirement.
+userVerification = required
+
+# cat=security/200/120; type=boolean; label=Enable Discoverable Login:Allow identifierless login (Variant B). Experimental.
+discoverableLoginEnabled = 0
+
+# cat=security/200/130; type=boolean; label=Disable Password Login:When enabled, password-only login is blocked for all users.
+disablePasswordLogin = 0
+
+# cat=ratelimit/300/100; type=int+; label=Rate Limit Max Attempts:Maximum requests per window per IP+user.
+rateLimitMaxAttempts = 10
+
+# cat=ratelimit/300/110; type=int+; label=Rate Limit Window (seconds):Time window for rate limiting.
+rateLimitWindowSeconds = 300
+
+# cat=ratelimit/300/120; type=int+; label=Lockout Threshold:Failed attempts before account lockout.
+lockoutThreshold = 5
+
+# cat=ratelimit/300/130; type=int+; label=Lockout Duration (seconds):How long a locked account stays locked.
+lockoutDurationSeconds = 900
+
+# cat=advanced/400/100; type=string; label=Allowed Algorithms:Comma-separated list of allowed COSE algorithms (e.g., "ES256,RS256").
+allowedAlgorithms = ES256

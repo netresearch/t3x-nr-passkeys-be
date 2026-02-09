@@ -1,0 +1,78 @@
+{
+    "name": "netresearch/nr-passkeys-be",
+    "description": "Passwordless TYPO3 backend authentication via Passkeys (WebAuthn/FIDO2)",
+    "license": "GPL-2.0-or-later",
+    "type": "typo3-cms-extension",
+    "keywords": [
+        "TYPO3",
+        "passkeys",
+        "webauthn",
+        "fido2",
+        "passwordless",
+        "authentication",
+        "backend"
+    ],
+    "authors": [
+        {
+            "name": "Netresearch DTT GmbH",
+            "email": "info@netresearch.de",
+            "homepage": "https://www.netresearch.de",
+            "role": "Developer"
+        }
+    ],
+    "homepage": "https://github.com/netresearch/t3x-nr-passkeys-be",
+    "support": {
+        "issues": "https://github.com/netresearch/t3x-nr-passkeys-be/issues",
+        "source": "https://github.com/netresearch/t3x-nr-passkeys-be"
+    },
+    "require": {
+        "php": "^8.2",
+        "typo3/cms-core": "^13.4 || ^14.1",
+        "typo3/cms-backend": "^13.4 || ^14.1",
+        "typo3/cms-setup": "^13.4 || ^14.1",
+        "web-auth/webauthn-lib": "^5.2"
+    },
+    "require-dev": {
+        "ergebnis/phpstan-rules": "^2.6",
+        "friendsofphp/php-cs-fixer": "^3.68",
+        "infection/infection": "^0.29",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5",
+        "saschaegerer/phpstan-typo3": "^2.0",
+        "typo3/testing-framework": "^9.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Netresearch\\NrPasskeysBe\\": "Classes/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Netresearch\\NrPasskeysBe\\Tests\\": "Tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "typo3/class-alias-loader": true,
+            "typo3/cms-composer-installers": true,
+            "infection/extension-installer": true
+        },
+        "bin-dir": ".Build/bin",
+        "vendor-dir": ".Build/vendor"
+    },
+    "extra": {
+        "typo3/cms": {
+            "extension-key": "nr_passkeys_be",
+            "web-dir": ".Build/Web"
+        }
+    },
+    "scripts": {
+        "ci:lint:php": "php-cs-fixer fix --dry-run --diff",
+        "ci:lint:php:fix": "php-cs-fixer fix",
+        "ci:test:php:unit": "phpunit -c phpunit.xml --testsuite unit",
+        "ci:test:php:functional": "phpunit -c phpunit.xml --testsuite functional",
+        "ci:test:php:all": "phpunit -c phpunit.xml",
+        "ci:stan": "phpstan analyse",
+        "ci:mutation": "infection --min-msi=80 --min-covered-msi=80"
+    }
+}

@@ -1,0 +1,29 @@
+includes:
+    - .Build/vendor/saschaegerer/phpstan-typo3/extension.neon
+    - .Build/vendor/ergebnis/phpstan-rules/rules.neon
+
+parameters:
+    level: 8
+    paths:
+        - Classes
+    tmpDir: .Build/var/phpstan
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: true
+    ignoreErrors:
+        # ergebnis rules that are too strict for TYPO3 extensions
+        - identifier: ergebnis.noNamedArgument
+        - identifier: ergebnis.noConstructorParameterWithDefaultValue
+        - identifier: ergebnis.noNullableReturnTypeDeclaration
+        - identifier: ergebnis.noIsset
+        - identifier: ergebnis.noExtends
+        - identifier: ergebnis.final
+        # Write-only properties used for lazy DI pattern
+        - identifier: property.onlyWritten
+        # TYPO3 LoginProviderInterface has untyped parameter
+        -
+            message: '#has parameter \$loginType with no type specified#'
+            path: Classes/LoginProvider/PasskeyLoginProvider.php
+        # TYPO3 AbstractAuthenticationService uses untyped arrays
+        -
+            message: '#no value type specified in iterable type array#'
+            path: Classes/Authentication/PasskeyAuthenticationService.php
