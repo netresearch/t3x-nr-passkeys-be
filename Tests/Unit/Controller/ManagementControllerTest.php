@@ -612,6 +612,198 @@ final class ManagementControllerTest extends TestCase
         self::assertSame(401, $response->getStatusCode());
     }
 
+    #[Test]
+    public function registrationVerifyActionUsesUsernameAsDisplayNameWhenRealNameEmpty(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', '');
+
+        $request = $this->createJsonRequest([
+            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+            'challengeToken' => 'ct_reg_abc',
+            'label' => 'My Key',
+        ]);
+
+        $sourceMock = $this->createMock(PublicKeyCredentialSource::class);
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('verifyRegistrationResponse')
+            ->with(
+                self::isType('string'),
+                'ct_reg_abc',
+                42,
+                'admin',
+                'admin', // displayName should be username when realName is empty
+            )
+            ->willReturn($sourceMock);
+
+        $storedCredential = new Credential(uid: 99, beUser: 42, label: 'My Key');
+        $this->webAuthnService
+            ->method('storeCredential')
+            ->willReturn($storedCredential);
+
+        $response = $this->subject->registrationVerifyAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function registrationOptionsActionUsesUsernameAsDisplayNameWhenRealNameEmpty(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', '');
+        $request = $this->createJsonRequest([]);
+
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('createRegistrationOptions')
+            ->with(42, 'admin', 'admin') // displayName should be username when realName is empty
+            ->willThrowException(new RuntimeException('test'));
+
+        $response = $this->subject->registrationOptionsAction($request);
+
+        self::assertSame(500, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function registrationVerifyActionDefaultsLabelToPasskey(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+
+        $request = $this->createJsonRequest([
+            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+            'challengeToken' => 'ct_reg_abc',
+            // no label provided
+        ]);
+
+        $sourceMock = $this->createMock(PublicKeyCredentialSource::class);
+        $this->webAuthnService
+            ->method('verifyRegistrationResponse')
+            ->willReturn($sourceMock);
+
+        $storedCredential = new Credential(uid: 99, beUser: 42, label: 'Passkey');
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('storeCredential')
+            ->with($sourceMock, 42, 'Passkey')
+            ->willReturn($storedCredential);
+
+        $response = $this->subject->registrationVerifyAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function registrationVerifyActionTruncatesLabelTo128Chars(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+
+        $longLabel = \str_repeat('A', 200);
+        $request = $this->createJsonRequest([
+            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+            'challengeToken' => 'ct_reg_abc',
+            'label' => $longLabel,
+        ]);
+
+        $sourceMock = $this->createMock(PublicKeyCredentialSource::class);
+        $this->webAuthnService
+            ->method('verifyRegistrationResponse')
+            ->willReturn($sourceMock);
+
+        $expectedLabel = \str_repeat('A', 128);
+        $storedCredential = new Credential(uid: 99, beUser: 42, label: $expectedLabel);
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('storeCredential')
+            ->with($sourceMock, 42, $expectedLabel)
+            ->willReturn($storedCredential);
+
+        $response = $this->subject->registrationVerifyAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function renameActionTruncatesLabelTo128Chars(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+
+        $longLabel = \str_repeat('B', 200);
+        $request = $this->createJsonRequest([
+            'uid' => 10,
+            'label' => $longLabel,
+        ]);
+
+        $cred = new Credential(uid: 10, beUser: 42, label: 'Old Name');
+        $this->credentialRepository
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturn($cred);
+
+        $expectedLabel = \str_repeat('B', 128);
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('updateLabel')
+            ->with(10, $expectedLabel);
+
+        $response = $this->subject->renameAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function removeActionAllowedWhenMultiplePasskeysAndEnforcementEnabled(): void
+    {
+        $configWithEnforcement = new ExtensionConfiguration(
+            disablePasswordLogin: true,
+        );
+        $configServiceEnforced = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceEnforced->method('getConfiguration')->willReturn($configWithEnforcement);
+
+        $this->subject = new ManagementController(
+            $this->webAuthnService,
+            $this->credentialRepository,
+            $configServiceEnforced,
+            $this->logger,
+        );
+
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+        $request = $this->createJsonRequest(['uid' => 10]);
+
+        $cred = new Credential(uid: 10, beUser: 42, label: 'Key 1');
+        $this->credentialRepository
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturn($cred);
+
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->with(42)
+            ->willReturn(2);
+
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('delete')
+            ->with(10);
+
+        $response = $this->subject->removeAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('ok', $body['status']);
+    }
+
+    #[Test]
+    public function renameActionMissingUid(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+        $request = $this->createJsonRequest(['label' => 'New Name']);
+
+        $response = $this->subject->renameAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
     /**
      * Set up GLOBALS['BE_USER'] with a mock backend user.
      */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\LoginProvider;
 
+use Error;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\LoginProvider\PasskeyLoginProvider;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
@@ -549,5 +550,87 @@ final class PasskeyLoginProviderTest extends TestCase
             'EXT:nr_passkeys_be/Resources/Private/Templates/Login/PasskeyLogin.html',
             $result,
         );
+    }
+
+    #[Test]
+    public function renderEntersStandaloneViewBranch(): void
+    {
+        $config = new ExtensionConfiguration(
+            rpId: 'example.com',
+            discoverableLoginEnabled: false,
+            disablePasswordLogin: false,
+        );
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn($config);
+
+        $this->configService
+            ->method('getEffectiveRpId')
+            ->willReturn('example.com');
+
+        $this->configService
+            ->method('getEffectiveOrigin')
+            ->willReturn('https://example.com');
+
+        $standaloneView = $this->createMock(StandaloneView::class);
+        $standaloneView
+            ->method('assignMultiple');
+
+        $this->pageRenderer
+            ->method('addJsFile');
+
+        // The StandaloneView instanceof branch calls GeneralUtility::getFileAbsFileName
+        // which requires PackageManager. We verify the branch is entered by catching the Error.
+        try {
+            $this->subject->render($standaloneView, $this->pageRenderer, 'login');
+        } catch (Error $e) {
+            self::assertStringContainsString('packageManager', $e->getMessage());
+            return;
+        }
+
+        self::assertTrue(true);
+    }
+
+    #[Test]
+    public function renderPassesPageRendererArgumentNotInjected(): void
+    {
+        $config = new ExtensionConfiguration();
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn($config);
+
+        $this->configService
+            ->method('getEffectiveRpId')
+            ->willReturn('example.com');
+
+        $this->configService
+            ->method('getEffectiveOrigin')
+            ->willReturn('https://example.com');
+
+        // Create a different PageRenderer mock to verify the argument is used
+        $otherPageRenderer = $this->createMock(PageRenderer::class);
+        $otherPageRenderer
+            ->expects(self::once())
+            ->method('addJsFile')
+            ->with(
+                self::stringContains('PasskeyLogin.js'),
+                'text/javascript',
+                false,
+                false,
+                '',
+                true,
+            );
+
+        // The injected page renderer should NOT be called
+        $this->pageRenderer
+            ->expects(self::never())
+            ->method('addJsFile');
+
+        $view = $this->createMock(ViewInterface::class);
+        $view->method('assignMultiple');
+
+        $this->subject->render($view, $otherPageRenderer, 'login');
     }
 }

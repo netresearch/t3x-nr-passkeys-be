@@ -302,6 +302,188 @@ final class LoginControllerTest extends TestCase
         self::assertSame('Too many requests', $body['error']);
     }
 
+    #[Test]
+    public function optionsActionWithNonScalarUsername(): void
+    {
+        $request = $this->createJsonRequest(['username' => ['array', 'value']]);
+
+        $response = $this->subject->optionsAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Username is required', $body['error']);
+    }
+
+    #[Test]
+    public function verifyActionWithLockout(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => 'lockeduser',
+            'assertion' => '{"id":"cred123"}',
+            'challengeToken' => 'ct_abc123',
+        ]);
+
+        $this->rateLimiterService
+            ->method('checkLockout')
+            ->willThrowException(new RuntimeException('Account locked', 1700000011));
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(429, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Too many requests', $body['error']);
+    }
+
+    #[Test]
+    public function verifyActionWithNonScalarAssertion(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => 'admin',
+            'assertion' => ['not' => 'scalar'],
+            'challengeToken' => 'ct_abc123',
+        ]);
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function verifyActionWithNonScalarChallengeToken(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => 'admin',
+            'assertion' => '{"id":"cred123"}',
+            'challengeToken' => ['not' => 'scalar'],
+        ]);
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function verifyActionWithEmptyUsername(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => '',
+            'assertion' => '{"id":"cred123"}',
+            'challengeToken' => 'ct_abc123',
+        ]);
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function verifyActionWithEmptyAssertion(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => 'admin',
+            'assertion' => '',
+            'challengeToken' => 'ct_abc123',
+        ]);
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function verifyActionWithEmptyChallengeToken(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => 'admin',
+            'assertion' => '{"id":"cred123"}',
+            'challengeToken' => '',
+        ]);
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function verifyActionLogsWarningOnFailure(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => 'admin',
+            'assertion' => '{"bad":"data"}',
+            'challengeToken' => 'ct_abc123',
+        ]);
+        $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
+
+        $this->webAuthnService
+            ->method('verifyAssertionResponse')
+            ->willThrowException(new RuntimeException('Verification failed', 1700000035));
+
+        $this->logger
+            ->expects(self::once())
+            ->method('warning')
+            ->with('Passkey assertion verification failed', self::anything());
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function optionsActionRecordsAttempt(): void
+    {
+        $request = $this->createJsonRequest(['username' => 'admin']);
+        $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
+
+        $options = PublicKeyCredentialRequestOptions::create(
+            challenge: \random_bytes(32),
+            rpId: 'example.com',
+        );
+        $this->webAuthnService
+            ->method('createAssertionOptions')
+            ->willReturn(['options' => $options, 'challengeToken' => 'ct']);
+        $this->webAuthnService
+            ->method('serializeRequestOptions')
+            ->willReturn('{"challenge":"abc"}');
+
+        $this->rateLimiterService
+            ->expects(self::once())
+            ->method('recordAttempt')
+            ->with('login_options', self::anything());
+
+        $this->subject->optionsAction($request);
+    }
+
+    #[Test]
+    public function verifyActionRecordsAttempt(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => 'admin',
+            'assertion' => '{"id":"cred123","response":{}}',
+            'challengeToken' => 'ct_abc123',
+        ]);
+        $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
+
+        $this->webAuthnService
+            ->method('verifyAssertionResponse');
+
+        $this->rateLimiterService
+            ->expects(self::once())
+            ->method('recordAttempt')
+            ->with('login_verify', self::anything());
+
+        $this->subject->verifyAction($request);
+    }
+
     /**
      * Create a mock ServerRequestInterface with a JSON body parsed into getParsedBody().
      *

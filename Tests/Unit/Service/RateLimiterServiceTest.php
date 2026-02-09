@@ -365,4 +365,100 @@ final class RateLimiterServiceTest extends TestCase
 
         $this->subject->recordFailure('user@example.com', '2001:db8::1');
     }
+
+    #[Test]
+    public function resetLockoutWithEmptyStringIp(): void
+    {
+        // When IP is empty string, it should use flushByTag path
+        $this->rateLimitCacheMock
+            ->expects(self::once())
+            ->method('flushByTag')
+            ->with('lockout_testuser');
+
+        $this->rateLimitCacheMock
+            ->expects(self::never())
+            ->method('remove');
+
+        $this->subject->resetLockout('testuser', '');
+    }
+
+    #[Test]
+    public function recordSuccessClearsCorrectKey(): void
+    {
+        $this->rateLimitCacheMock
+            ->expects(self::once())
+            ->method('remove')
+            ->with(self::matchesRegularExpression('/^lo_admin_192_168_1_1$/'));
+
+        $this->subject->recordSuccess('admin', '192.168.1.1');
+    }
+
+    #[Test]
+    public function sanitizeHandlesSpecialCharacters(): void
+    {
+        // Test with special characters in both endpoint and identifier
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturn(false);
+
+        $this->rateLimitCacheMock
+            ->expects(self::once())
+            ->method('set')
+            ->with(
+                // Dots, colons, dashes should be converted to underscores
+                // Then non-alnum/underscore removed
+                self::matchesRegularExpression('/^rl_[a-zA-Z0-9_]+_[a-zA-Z0-9_]+$/'),
+                '1',
+                [],
+                300,
+            );
+
+        $this->subject->recordAttempt('login:options/v2', '::1');
+    }
+
+    #[Test]
+    public function recordFailureUsesCacheTagsForLockout(): void
+    {
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturn('1');
+
+        $this->rateLimitCacheMock
+            ->expects(self::once())
+            ->method('set')
+            ->with(
+                self::isType('string'),
+                '2',
+                self::callback(static function (array $tags): bool {
+                    return \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_');
+                }),
+                900,
+            );
+
+        $this->subject->recordFailure('testuser', '10.0.0.1');
+    }
+
+    #[Test]
+    public function checkRateLimitCountsFromZeroWhenNoPreviousData(): void
+    {
+        // No cache data - get returns false - count should be 0, which is < 5
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturn(false);
+
+        // Should pass without exception
+        $this->subject->checkRateLimit('test_endpoint', '127.0.0.1');
+        self::assertTrue(true);
+    }
+
+    #[Test]
+    public function checkLockoutCountsFromZeroWhenNoPreviousData(): void
+    {
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturn(false);
+
+        $this->subject->checkLockout('newuser', '127.0.0.1');
+        self::assertTrue(true);
+    }
 }

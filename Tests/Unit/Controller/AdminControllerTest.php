@@ -366,6 +366,127 @@ final class AdminControllerTest extends TestCase
     }
 
     #[Test]
+    public function unlockActionWithMissingUsername(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $this->rateLimiterService
+            ->expects(self::never())
+            ->method('resetLockout');
+
+        $response = $this->subject->unlockAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function unlockActionWithMissingBeUserUid(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([
+            'username' => 'lockeduser',
+        ]);
+
+        $this->rateLimiterService
+            ->expects(self::never())
+            ->method('resetLockout');
+
+        $response = $this->subject->unlockAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function removeActionWithMissingBeUserUid(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([
+            'credentialUid' => 10,
+        ]);
+
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('findByUidAndBeUser');
+
+        $response = $this->subject->removeAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function removeActionWithMissingCredentialUid(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('findByUidAndBeUser');
+
+        $response = $this->subject->removeAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function requireAdminReturnsNullWhenUserHasNoUid(): void
+    {
+        $backendUser = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $backendUser->user = ['username' => 'admin']; // no uid
+        $backendUser->method('isAdmin')->willReturn(true);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+            'credentialUid' => 10,
+        ]);
+
+        $response = $this->subject->removeAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function listActionReturnEmptyListForUserWithNoCredentials(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->method('getQueryParams')->willReturn(['beUserUid' => '99']);
+
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('findAllByBeUser')
+            ->with(99)
+            ->willReturn([]);
+
+        $response = $this->subject->listAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame(99, $body['beUserUid']);
+        self::assertSame(0, $body['count']);
+        self::assertSame([], $body['credentials']);
+    }
+
+    #[Test]
     public function listActionWithoutBeUser(): void
     {
         // Do NOT set $GLOBALS['BE_USER']

@@ -289,4 +289,91 @@ final class ChallengeServiceTest extends TestCase
 
         $this->subject->verifyChallengeToken($token);
     }
+
+    #[Test]
+    public function verifyChallengeTokenThrowsWhenChallengeDataIsNotValidBase64(): void
+    {
+        // Craft a token with invalid base64 in the challenge portion
+        $expiresAt = \time() + 120;
+        $nonce = \bin2hex(\random_bytes(16));
+
+        // Use a string that looks like base64 but decodes to something that makes
+        // the inner base64_decode fail (not valid base64 in strict mode).
+        // The challenge portion needs to not be valid strict base64.
+        $invalidChallengeB64 = '!!!invalid-base64!!!';
+        $payload = $invalidChallengeB64 . '|' . $expiresAt . '|' . $nonce;
+        $key = $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
+        $hmac = \hash_hmac('sha256', $payload, $key);
+
+        // Store a valid nonce
+        $this->nonceCacheMock
+            ->method('get')
+            ->willReturn('valid');
+
+        $token = \base64_encode($payload . '|' . $hmac);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000006);
+        $this->expectExceptionMessage('Invalid challenge data in token');
+
+        $this->subject->verifyChallengeToken($token);
+    }
+
+    #[Test]
+    public function createChallengeTokenStoredNonceWithCorrectTtlBuffer(): void
+    {
+        $this->nonceCacheMock
+            ->expects(self::once())
+            ->method('set')
+            ->with(
+                self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'),
+                'valid',
+                [],
+                180, // 120 TTL + 60 buffer
+            );
+
+        $this->subject->createChallengeToken(\random_bytes(32));
+    }
+
+    #[Test]
+    public function generateChallengeReturnsRawBytes(): void
+    {
+        $challenge = $this->subject->generateChallenge();
+
+        // Should be raw bytes, not hex or base64
+        self::assertSame(32, \strlen($challenge));
+        // Raw bytes may contain non-printable characters
+        self::assertIsString($challenge);
+    }
+
+    #[Test]
+    public function verifyChallengeTokenRemovesNonceAfterVerification(): void
+    {
+        $challenge = \random_bytes(32);
+        $this->nonceCacheMock->method('set');
+        $token = $this->subject->createChallengeToken($challenge);
+
+        $this->nonceCacheMock
+            ->method('get')
+            ->willReturn('valid');
+
+        $this->nonceCacheMock
+            ->expects(self::once())
+            ->method('remove')
+            ->with(self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'));
+
+        $this->subject->verifyChallengeToken($token);
+    }
+
+    #[Test]
+    public function createChallengeTokenProducesDifferentTokensForSameChallenge(): void
+    {
+        $challenge = \random_bytes(32);
+
+        $token1 = $this->subject->createChallengeToken($challenge);
+        $token2 = $this->subject->createChallengeToken($challenge);
+
+        // Tokens should differ because nonces are random
+        self::assertNotSame($token1, $token2);
+    }
 }
