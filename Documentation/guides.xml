@@ -6,6 +6,7 @@
         default-code-language="php">
 
     <extension class="\T3Docs\Typo3DocsTheme\DependencyInjection\Typo3DocsThemeExtension"
+               interlink-shortcode="netresearch/nr-passkeys-be"
                project-home="https://github.com/netresearch/t3x-nr-passkeys-be"
                project-contact="https://github.com/netresearch/t3x-nr-passkeys-be/issues"
                project-repository="https://github.com/netresearch/t3x-nr-passkeys-be"
