@@ -555,7 +555,7 @@ final class PasskeyLoginProviderTest extends TestCase
     #[Test]
     public function renderEntersStandaloneViewBranch(): void
     {
-        if (!class_exists(StandaloneView::class)) {
+        if (!\class_exists(StandaloneView::class)) {
             self::markTestSkipped('StandaloneView does not exist in TYPO3 v14');
         }
 
