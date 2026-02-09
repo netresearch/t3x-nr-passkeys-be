@@ -1,0 +1,44 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Documentation/**'
+      - '.github/workflows/documentation.yml'
+  pull_request:
+    paths:
+      - 'Documentation/**'
+      - '.github/workflows/documentation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    name: Render Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Render documentation
+        run: |
+          mkdir -p Documentation-GENERATED-temp
+          docker run --rm --pull always \
+            -v $(pwd):/project \
+            ghcr.io/typo3-documentation/render-guides:latest \
+            --config=Documentation
+
+      - name: Upload rendered documentation
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: documentation
+          path: Documentation-GENERATED-temp/
+          retention-days: 14
