@@ -29,7 +29,7 @@ Supports TouchID, FaceID, YubiKey, Windows Hello for one-click TYPO3 backend log
 - Do NOT commit `composer.lock` (in `.gitignore`)
 
 ## Commands (verified)
-> Source: `composer.json` scripts
+> Source: `composer.json` scripts, `Makefile`
 
 | Task | Command | ~Time |
 |------|---------|-------|
@@ -41,6 +41,8 @@ Supports TouchID, FaceID, YubiKey, Windows Hello for one-click TYPO3 backend log
 | Functional tests | `composer ci:test:php:functional` | 30s |
 | All tests | `composer ci:test:php:all` | 35s |
 | Mutation testing | `composer ci:mutation` | 60s |
+| Local CI (no DB) | `make ci` | 25s |
+| DDEV full setup | `make up` | 5m |
 
 ## File Map
 ```
@@ -52,14 +54,20 @@ Classes/                  -> PHP source (PSR-4: Netresearch\NrPasskeysBe\)
   LoginProvider/          -> PasskeyLoginProvider (TYPO3 login form integration)
   Service/                -> WebAuthn, Challenge, Credential, RateLimiter, Config services
   UserSettings/           -> User settings module integration
+Build/                    -> Tooling configuration (NOT .Build/ which is composer output)
+  .php-cs-fixer.php       -> Code style rules (PER-CS2.0)
+  phpstan.neon            -> Static analysis config (level 8)
+  infection.json5         -> Mutation testing config
+  phpunit.xml             -> PHPUnit config for unit + fuzz tests
+  phpunit.functional.xml  -> PHPUnit config for functional tests
 Configuration/            -> TYPO3 config (TCA, Backend Routes, Services.yaml)
+Documentation/            -> TYPO3 RST documentation (docs.typo3.org format)
 Resources/Private/        -> Fluid templates, XLIFF translations
 Resources/Public/         -> JavaScript, Icons
-Tests/Unit/               -> Unit tests (PHPUnit)
+Tests/Unit/               -> Unit tests (PHPUnit, 250 tests)
 Tests/Functional/         -> Functional tests (require MySQL, CI only)
 Tests/Fuzz/               -> Fuzz tests (ChallengeToken, CredentialId, RequestPayload)
-Tests/E2E/                -> End-to-end tests
-Tests/Fixtures/           -> Shared test fixtures
+Makefile                  -> make up, make ci, make help (wraps composer + ddev)
 .github/workflows/ci.yml  -> CI pipeline (lint, stan, unit, fuzz, functional, mutation)
 ```
 
@@ -128,6 +136,7 @@ Tests/Fixtures/           -> Shared test fixtures
 - `./Classes/AGENTS.md` -- PHP source code patterns and TYPO3 conventions
 - `./Tests/AGENTS.md` -- Test structure, commands, and patterns
 - `./Resources/AGENTS.md` -- Templates, translations, and static assets
+- `./Documentation/AGENTS.md` -- TYPO3 RST documentation standards
 - `./.github/workflows/AGENTS.md` -- CI/CD pipeline configuration
 
 ## When Instructions Conflict

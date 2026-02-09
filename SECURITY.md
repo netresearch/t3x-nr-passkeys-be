@@ -12,8 +12,7 @@
 
 ### How to Report
 
-1. **GitHub Private Advisory** (preferred): Use [GitHub Security Advisories](https://github.com/netresearch/t3x-nr-passkeys-be/security/advisories/new)
-2. **Email**: Send details to [security@netresearch.de](mailto:security@netresearch.de)
+Use [GitHub Security Advisories](https://github.com/netresearch/t3x-nr-passkeys-be/security/advisories/new) to report vulnerabilities privately.
 
 ### What to Include
 

@@ -2,30 +2,27 @@
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
          backupGlobals="true"
-         bootstrap=".Build/vendor/autoload.php"
+         bootstrap="../Tests/Build/FunctionalTestsBootstrap.php"
          cacheResult="false"
          colors="true"
          executionOrder="depends,defects"
          failOnRisky="true"
          failOnWarning="true">
     <testsuites>
-        <testsuite name="unit">
-            <directory>Tests/Unit</directory>
-        </testsuite>
-        <testsuite name="fuzz">
-            <directory>Tests/Fuzz</directory>
+        <testsuite name="functional">
+            <directory>../Tests/Functional</directory>
         </testsuite>
     </testsuites>
     <source>
         <include>
-            <directory suffix=".php">Classes</directory>
+            <directory suffix=".php">../Classes</directory>
         </include>
         <exclude>
-            <directory>Classes/Domain/Model</directory>
+            <directory>../Classes/Domain/Model</directory>
         </exclude>
     </source>
     <php>
         <ini name="display_errors" value="1"/>
-        <env name="TYPO3_PATH_ROOT" value=".Build/Web"/>
+        <env name="TYPO3_CONTEXT" value="Testing"/>
     </php>
 </phpunit>

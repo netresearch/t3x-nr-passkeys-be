@@ -2,9 +2,9 @@
     "$schema": "https://raw.githubusercontent.com/infection/infection/0.29.0/resources/schema.json",
     "source": {
         "directories": [
-            "Classes/Service",
-            "Classes/Authentication",
-            "Classes/Controller"
+            "../Classes/Service",
+            "../Classes/Authentication",
+            "../Classes/Controller"
         ],
         "excludes": [
             "Domain/Model"
@@ -13,13 +13,13 @@
     "timeout": 30,
     "testFramework": "phpunit",
     "logs": {
-        "text": "infection.log",
-        "summary": "infection-summary.log"
+        "text": "../infection.log",
+        "summary": "../infection-summary.log"
     },
-    "tmpDir": ".Build/var/infection",
+    "tmpDir": "../.Build/var/infection",
     "phpUnit": {
         "configDir": ".",
-        "customPath": ".Build/bin/phpunit"
+        "customPath": "../.Build/bin/phpunit"
     },
     "mutators": {
         "@default": true,

@@ -25,7 +25,7 @@
 <!-- Row 3: Standards badges -->
 <p align="center">
   <a href="https://phpstan.org/"><img src="https://img.shields.io/badge/PHPStan-Level%208-brightgreen.svg" alt="PHPStan"></a>
-  <a href="https://infection.github.io/"><img src="https://img.shields.io/badge/Infection%20MSI-%E2%89%A580%25-yellowgreen" alt="Mutation"></a>
+  <a href="https://infection.github.io/"><img src="https://img.shields.io/badge/Infection%20MSI-%E2%89%A560%25-yellowgreen" alt="Mutation"></a>
   <a href="https://www.php.net/"><img src="https://img.shields.io/badge/PHP-8.2--8.5-blue.svg?logo=php" alt="PHP"></a>
   <a href="https://typo3.org/"><img src="https://img.shields.io/badge/TYPO3-13%20LTS%20%7C%2014-orange.svg?logo=typo3" alt="TYPO3"></a>
   <a href="https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/LICENSE"><img src="https://img.shields.io/github/license/netresearch/t3x-nr-passkeys-be" alt="License"></a>
@@ -127,7 +127,12 @@ composer ci:stan              # PHPStan level 8
 composer ci:test:php:unit         # Unit tests
 composer ci:test:php:functional   # Functional tests (requires MySQL)
 composer ci:test:php:all          # All test suites
-composer ci:mutation              # Mutation testing (MSI >= 80%)
+composer ci:mutation              # Mutation testing (MSI >= 60%)
+
+# Or use make
+make ci                           # Run lint + stan + unit + fuzz locally
+make up                           # Start DDEV with all TYPO3 versions
+make help                         # Show all available targets
 ```
 
 ## Security

@@ -274,7 +274,7 @@ jobs:
           composer install --prefer-dist --no-progress
 
       - name: Run fuzz tests
-        run: .Build/bin/phpunit -c phpunit.xml --testsuite fuzz --no-coverage
+        run: .Build/bin/phpunit -c Build/phpunit.xml --testsuite fuzz --no-coverage
 
   mutation:
     name: Mutation Tests

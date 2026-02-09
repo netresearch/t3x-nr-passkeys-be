@@ -33,6 +33,8 @@
         "web-auth/webauthn-lib": "^5.2"
     },
     "require-dev": {
+        "captainhook/captainhook": "^5.28",
+        "captainhook/hook-installer": "^1.0",
         "ergebnis/phpstan-rules": "^2.6",
         "friendsofphp/php-cs-fixer": "^3.68",
         "infection/infection": "^0.32",
@@ -57,7 +59,8 @@
             "typo3/class-alias-loader": true,
             "typo3/cms-composer-installers": true,
             "infection/extension-installer": true,
-            "phpstan/extension-installer": true
+            "phpstan/extension-installer": true,
+            "captainhook/hook-installer": true
         },
         "bin-dir": ".Build/bin",
         "vendor-dir": ".Build/vendor"
@@ -66,18 +69,21 @@
         "typo3/cms": {
             "extension-key": "nr_passkeys_be",
             "web-dir": ".Build/Web"
+        },
+        "captainhook": {
+            "config": "Build/captainhook.json"
         }
     },
     "scripts": {
-        "ci:lint:php": "php-cs-fixer fix --dry-run --diff",
-        "ci:lint:php:fix": "php-cs-fixer fix",
-        "ci:test:php:unit": "phpunit -c phpunit.xml --testsuite unit",
-        "ci:test:php:functional": "phpunit -c phpunit.functional.xml",
+        "ci:lint:php": "php-cs-fixer fix --dry-run --diff --config Build/.php-cs-fixer.php",
+        "ci:lint:php:fix": "php-cs-fixer fix --config Build/.php-cs-fixer.php",
+        "ci:test:php:unit": "phpunit -c Build/phpunit.xml --testsuite unit",
+        "ci:test:php:functional": "phpunit -c Build/phpunit.functional.xml",
         "ci:test:php:all": [
             "@ci:test:php:unit",
             "@ci:test:php:functional"
         ],
-        "ci:stan": "phpstan analyse",
-        "ci:mutation": "infection --min-msi=60 --min-covered-msi=75"
+        "ci:stan": "phpstan analyse -c Build/phpstan.neon",
+        "ci:mutation": "infection --configuration=Build/infection.json5 --min-msi=60 --min-covered-msi=75"
     }
 }

@@ -1,8 +1,8 @@
 parameters:
     level: 8
     paths:
-        - Classes
-    tmpDir: .Build/var/phpstan
+        - ../Classes
+    tmpDir: ../.Build/var/phpstan
     treatPhpDocTypesAsCertain: false
     reportUnmatchedIgnoredErrors: true
     ignoreErrors:
@@ -18,11 +18,11 @@ parameters:
         # TYPO3 LoginProviderInterface has untyped parameter
         -
             message: '#has parameter \$loginType with no type specified#'
-            path: Classes/LoginProvider/PasskeyLoginProvider.php
+            path: ../Classes/LoginProvider/PasskeyLoginProvider.php
         # TYPO3 AbstractAuthenticationService uses untyped arrays
         -
             message: '#no value type specified in iterable type array#'
-            path: Classes/Authentication/PasskeyAuthenticationService.php
+            path: ../Classes/Authentication/PasskeyAuthenticationService.php
         # TYPO3 v14 without phpstan-typo3: GeneralUtility::getIndpEnv() returns union type
         -
             identifier: cast.string
@@ -33,5 +33,5 @@ parameters:
         # TYPO3 v14 removed StandaloneView (render() is v13 backward compat)
         -
             identifier: class.notFound
-            path: Classes/LoginProvider/PasskeyLoginProvider.php
+            path: ../Classes/LoginProvider/PasskeyLoginProvider.php
             reportUnmatched: false
