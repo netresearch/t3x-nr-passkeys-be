@@ -195,6 +195,33 @@ class CredentialRepository
         );
     }
 
+    public function findByUidAndBeUser(int $uid, int $beUserUid): ?Credential
+    {
+        $queryBuilder = $this->getQueryBuilder();
+        $row = $queryBuilder
+            ->select('*')
+            ->from(self::TABLE)
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'uid',
+                    $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER),
+                ),
+                $queryBuilder->expr()->eq(
+                    'be_user',
+                    $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER),
+                ),
+                $queryBuilder->expr()->eq('deleted', 0),
+            )
+            ->executeQuery()
+            ->fetchAssociative();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return Credential::fromArray($row);
+    }
+
     private function getQueryBuilder(): \TYPO3\CMS\Core\Database\Query\QueryBuilder
     {
         return $this->connectionPool->getQueryBuilderForTable(self::TABLE);

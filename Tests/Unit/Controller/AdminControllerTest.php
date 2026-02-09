@@ -133,9 +133,9 @@ final class AdminControllerTest extends TestCase
         $cred = new Credential(uid: 10, beUser: 42, label: 'Key 1');
         $this->credentialRepository
             ->expects(self::once())
-            ->method('findAllByBeUser')
-            ->with(42)
-            ->willReturn([$cred]);
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturn($cred);
 
         $this->credentialRepository
             ->expects(self::once())
@@ -169,12 +169,11 @@ final class AdminControllerTest extends TestCase
         ]);
 
         // User 42 has credential 10, but not 999
-        $cred = new Credential(uid: 10, beUser: 42, label: 'Key 1');
         $this->credentialRepository
             ->expects(self::once())
-            ->method('findAllByBeUser')
-            ->with(42)
-            ->willReturn([$cred]);
+            ->method('findByUidAndBeUser')
+            ->with(999, 42)
+            ->willReturn(null);
 
         $this->credentialRepository
             ->expects(self::never())
@@ -277,7 +276,7 @@ final class AdminControllerTest extends TestCase
 
         $this->credentialRepository
             ->expects(self::never())
-            ->method('findAllByBeUser');
+            ->method('findByUidAndBeUser');
 
         $this->credentialRepository
             ->expects(self::never())
@@ -339,7 +338,7 @@ final class AdminControllerTest extends TestCase
 
         $this->credentialRepository
             ->expects(self::never())
-            ->method('findAllByBeUser');
+            ->method('findByUidAndBeUser');
 
         $response = $this->subject->removeAction($request);
 

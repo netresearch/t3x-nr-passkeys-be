@@ -4,7 +4,7 @@ This file documents the AI coding agents that can work on this project and their
 
 ## Project Context
 
-**passkeys_be** is a TYPO3 extension providing passwordless backend authentication via
+**nr_passkeys_be** is a TYPO3 extension providing passwordless backend authentication via
 WebAuthn/FIDO2 Passkeys. See `CLAUDE.md` for full architecture and conventions.
 
 ## Available Agents
@@ -24,6 +24,8 @@ General-purpose coding agent for all tasks on this project.
 - `Classes/Service/WebAuthnService.php` - Core WebAuthn logic
 - `Classes/Authentication/PasskeyAuthenticationService.php` - TYPO3 auth chain integration
 - `Classes/Service/ChallengeService.php` - Challenge token security
+- `Classes/Service/RateLimiterService.php` - Rate limiting and account lockout
+- `Classes/Service/CredentialRepository.php` - Database operations
 - `Configuration/Services.yaml` - Dependency injection
 - `ext_localconf.php` - Service registration and cache configuration
 
@@ -37,8 +39,10 @@ General-purpose coding agent for all tasks on this project.
 **Commands:**
 ```bash
 composer ci:lint:php          # Code style check
+composer ci:lint:php:fix      # Fix code style
 composer ci:stan              # Static analysis
 composer ci:test:php:unit     # Unit tests
-composer ci:test:php:functional  # Functional tests
+composer ci:test:php:functional  # Functional tests (requires MySQL)
+composer ci:test:php:all      # All test suites
 composer ci:mutation          # Mutation testing
 ```

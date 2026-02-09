@@ -200,9 +200,9 @@ final class ManagementControllerTest extends TestCase
         $cred = new Credential(uid: 10, beUser: 42, label: 'Old Name');
         $this->credentialRepository
             ->expects(self::once())
-            ->method('findByBeUser')
-            ->with(42)
-            ->willReturn([$cred]);
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturn($cred);
 
         $this->credentialRepository
             ->expects(self::once())
@@ -226,12 +226,11 @@ final class ManagementControllerTest extends TestCase
         ]);
 
         // User owns credential 10, not 999
-        $cred = new Credential(uid: 10, beUser: 42, label: 'My Key');
         $this->credentialRepository
             ->expects(self::once())
-            ->method('findByBeUser')
-            ->with(42)
-            ->willReturn([$cred]);
+            ->method('findByUidAndBeUser')
+            ->with(999, 42)
+            ->willReturn(null);
 
         $this->credentialRepository
             ->expects(self::never())
@@ -251,13 +250,12 @@ final class ManagementControllerTest extends TestCase
         $request = $this->createJsonRequest(['uid' => 10]);
 
         $cred1 = new Credential(uid: 10, beUser: 42, label: 'Key 1');
-        $cred2 = new Credential(uid: 11, beUser: 42, label: 'Key 2');
 
         $this->credentialRepository
             ->expects(self::once())
-            ->method('findByBeUser')
-            ->with(42)
-            ->willReturn([$cred1, $cred2]);
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturn($cred1);
 
         $this->credentialRepository
             ->expects(self::once())
@@ -299,9 +297,9 @@ final class ManagementControllerTest extends TestCase
 
         $cred = new Credential(uid: 10, beUser: 42, label: 'Only Key');
         $this->credentialRepository
-            ->method('findByBeUser')
-            ->with(42)
-            ->willReturn([$cred]);
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturn($cred);
 
         $this->credentialRepository
             ->method('countByBeUser')
@@ -325,12 +323,11 @@ final class ManagementControllerTest extends TestCase
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest(['uid' => 999]);
 
-        $cred = new Credential(uid: 10, beUser: 42, label: 'My Key');
         $this->credentialRepository
             ->expects(self::once())
-            ->method('findByBeUser')
-            ->with(42)
-            ->willReturn([$cred]);
+            ->method('findByUidAndBeUser')
+            ->with(999, 42)
+            ->willReturn(null);
 
         $this->credentialRepository
             ->expects(self::never())
@@ -523,9 +520,9 @@ final class ManagementControllerTest extends TestCase
 
         $cred = new Credential(uid: 10, beUser: 42, label: 'Only Key');
         $this->credentialRepository
-            ->method('findByBeUser')
-            ->with(42)
-            ->willReturn([$cred]);
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturn($cred);
 
         $this->credentialRepository
             ->method('countByBeUser')

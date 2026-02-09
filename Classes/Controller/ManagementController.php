@@ -173,16 +173,8 @@ class ManagementController
         $label = \mb_substr(\trim($label), 0, 128);
 
         // Verify ownership
-        $credentials = $this->credentialRepository->findByBeUser((int) $user['uid']);
-        $owned = false;
-        foreach ($credentials as $cred) {
-            if ($cred->getUid() === $credentialUid) {
-                $owned = true;
-                break;
-            }
-        }
-
-        if (!$owned) {
+        $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, (int) $user['uid']);
+        if ($credential === null) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
@@ -220,16 +212,8 @@ class ManagementController
         $beUserUid = (int) $user['uid'];
 
         // Verify ownership
-        $credentials = $this->credentialRepository->findByBeUser($beUserUid);
-        $owned = false;
-        foreach ($credentials as $cred) {
-            if ($cred->getUid() === $credentialUid) {
-                $owned = true;
-                break;
-            }
-        }
-
-        if (!$owned) {
+        $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $beUserUid);
+        if ($credential === null) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 

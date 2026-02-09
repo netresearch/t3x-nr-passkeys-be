@@ -84,16 +84,8 @@ class AdminController
         }
 
         // Verify the credential belongs to the specified user
-        $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
-        $found = false;
-        foreach ($credentials as $cred) {
-            if ($cred->getUid() === $credentialUid) {
-                $found = true;
-                break;
-            }
-        }
-
-        if (!$found) {
+        $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $beUserUid);
+        if ($credential === null) {
             return new JsonResponse(['error' => 'Credential not found for this user'], 404);
         }
 
