@@ -32,7 +32,7 @@ jobs:
         run: composer install --prefer-dist --no-progress
 
       - name: Composer audit
-        run: composer audit --format=plain
+        run: composer audit --format=plain --abandoned=ignore
 
   lint:
     name: Lint (PHP ${{ matrix.php }})

@@ -4,9 +4,17 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**.js'
+      - '**.ts'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main
+    paths:
+      - '**.js'
+      - '**.ts'
+      - '.github/workflows/**'
   schedule:
     - cron: '0 6 * * 1'
 
@@ -15,11 +23,19 @@ permissions:
 
 jobs:
   analyze:
-    name: Analyze
+    name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
     permissions:
       actions: read
       security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: actions
+            build-mode: none
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
@@ -32,9 +48,10 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2 # v4.32.2
         with:
-          languages: php
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@45cbd0c69e560cd9e7cd7f8c32362050c9b7ded2 # v4.32.2
         with:
-          category: "/language:php"
+          category: "/language:${{ matrix.language }}"
