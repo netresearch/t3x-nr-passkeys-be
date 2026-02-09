@@ -35,7 +35,7 @@
     "require-dev": {
         "ergebnis/phpstan-rules": "^2.6",
         "friendsofphp/php-cs-fixer": "^3.68",
-        "infection/infection": "^0.29",
+        "infection/infection": "^0.32",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5",
