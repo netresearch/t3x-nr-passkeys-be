@@ -1,0 +1,19 @@
+# .github/CODEOWNERS
+# Code ownership for automatic review assignment
+# Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @netresearch/typo3-team
+
+# Core source code requires team review
+/Classes/ @netresearch/typo3-team
+
+# CI/CD and security-sensitive files require maintainer approval
+/.github/ @netresearch/typo3-team
+/.github/workflows/ @netresearch/typo3-team
+
+# Security policy
+/SECURITY.md @netresearch/typo3-team
+
+# Tests
+/Tests/ @netresearch/typo3-team
