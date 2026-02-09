@@ -130,13 +130,13 @@ jobs:
       - name: Run unit tests
         run: composer ci:test:php:unit -- --coverage-clover=coverage-unit.xml
 
-      - name: Upload coverage
+      - name: Upload coverage to Codecov
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
-          name: coverage-unit-php${{ matrix.php }}-typo3${{ matrix.typo3 }}
-          path: coverage-unit.xml
-          retention-days: 7
+          files: coverage-unit.xml
+          flags: unit
+          fail_ci_if_error: false
 
   functional:
     name: Functional Tests (PHP ${{ matrix.php }}, TYPO3 ${{ matrix.typo3 }})
@@ -209,13 +209,13 @@ jobs:
           typo3DatabasePassword: root
         run: composer ci:test:php:functional -- --coverage-clover=coverage-functional.xml
 
-      - name: Upload coverage
+      - name: Upload coverage to Codecov
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
-          name: coverage-functional-php${{ matrix.php }}-typo3${{ matrix.typo3 }}
-          path: coverage-functional.xml
-          retention-days: 7
+          files: coverage-functional.xml
+          flags: functional
+          fail_ci_if_error: false
 
   fuzz:
     name: Fuzz Tests

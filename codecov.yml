@@ -1,0 +1,30 @@
+codecov:
+  require_ci_to_pass: false
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 2%
+    patch:
+      default:
+        target: auto
+
+flags:
+  unit:
+    paths:
+      - Classes/
+    carryforward: true
+  functional:
+    paths:
+      - Classes/
+    carryforward: true
+
+ignore:
+  - .Build/
+  - Tests/
+  - Configuration/
+  - ext_emconf.php
+  - ext_localconf.php
+  - ext_tables.sql
