@@ -17,6 +17,10 @@ final class CredentialRepositoryTest extends FunctionalTestCase
         'setup',
     ];
 
+    protected array $testExtensionsToLoad = [
+        'netresearch/nr-passkeys-be',
+    ];
+
     private CredentialRepository $repository;
 
     protected function setUp(): void
