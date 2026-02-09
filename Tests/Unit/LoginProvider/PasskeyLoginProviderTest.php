@@ -10,6 +10,7 @@ use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\View\ViewInterface;
 use TYPO3\CMS\Fluid\View\StandaloneView;
@@ -440,5 +441,113 @@ final class PasskeyLoginProviderTest extends TestCase
 
         // Act
         $this->subject->render($view, $this->pageRenderer, 'login');
+    }
+
+    #[Test]
+    public function modifyViewAssignsVariablesToView(): void
+    {
+        $config = new ExtensionConfiguration(
+            rpId: 'v14.example.com',
+            discoverableLoginEnabled: true,
+            disablePasswordLogin: true,
+        );
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn($config);
+
+        $this->configService
+            ->method('getEffectiveRpId')
+            ->willReturn('v14.example.com');
+
+        $this->configService
+            ->method('getEffectiveOrigin')
+            ->willReturn('https://v14.example.com');
+
+        $expectedVariables = [
+            'passkeysEnabled' => true,
+            'rpId' => 'v14.example.com',
+            'origin' => 'https://v14.example.com',
+            'loginOptionsUrl' => '/typo3/passkeys/login/options',
+            'discoverableEnabled' => true,
+            'passwordLoginDisabled' => true,
+        ];
+
+        $view = $this->createMock(ViewInterface::class);
+        $view
+            ->expects(self::once())
+            ->method('assignMultiple')
+            ->with($expectedVariables);
+
+        $request = $this->createMock(ServerRequestInterface::class);
+
+        $this->subject->modifyView($request, $view);
+    }
+
+    #[Test]
+    public function modifyViewLoadsJavaScriptViaInjectedPageRenderer(): void
+    {
+        $config = new ExtensionConfiguration();
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn($config);
+
+        $this->configService
+            ->method('getEffectiveRpId')
+            ->willReturn('example.com');
+
+        $this->configService
+            ->method('getEffectiveOrigin')
+            ->willReturn('https://example.com');
+
+        $this->pageRenderer
+            ->expects(self::once())
+            ->method('addJsFile')
+            ->with(
+                'EXT:nr_passkeys_be/Resources/Public/JavaScript/PasskeyLogin.js',
+                'text/javascript',
+                false,
+                false,
+                '',
+                true,
+            );
+
+        $view = $this->createMock(ViewInterface::class);
+        $view->method('assignMultiple');
+
+        $request = $this->createMock(ServerRequestInterface::class);
+
+        $this->subject->modifyView($request, $view);
+    }
+
+    #[Test]
+    public function modifyViewReturnsTemplatePath(): void
+    {
+        $config = new ExtensionConfiguration();
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn($config);
+
+        $this->configService
+            ->method('getEffectiveRpId')
+            ->willReturn('example.com');
+
+        $this->configService
+            ->method('getEffectiveOrigin')
+            ->willReturn('https://example.com');
+
+        $view = $this->createMock(ViewInterface::class);
+        $view->method('assignMultiple');
+
+        $request = $this->createMock(ServerRequestInterface::class);
+
+        $result = $this->subject->modifyView($request, $view);
+
+        self::assertSame(
+            'EXT:nr_passkeys_be/Resources/Private/Templates/Login/PasskeyLogin.html',
+            $result,
+        );
     }
 }

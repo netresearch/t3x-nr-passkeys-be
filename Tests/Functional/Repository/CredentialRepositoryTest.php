@@ -21,6 +21,21 @@ final class CredentialRepositoryTest extends FunctionalTestCase
         'netresearch/nr-passkeys-be',
     ];
 
+    protected array $configurationToUseInTestInstance = [
+        'SYS' => [
+            'caching' => [
+                'cacheConfigurations' => [
+                    'nr_passkeys_be_nonce' => [
+                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                    ],
+                    'nr_passkeys_be_ratelimit' => [
+                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                    ],
+                ],
+            ],
+        ],
+    ];
+
     private CredentialRepository $repository;
 
     protected function setUp(): void
