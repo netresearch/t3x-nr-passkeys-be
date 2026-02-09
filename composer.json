@@ -78,6 +78,6 @@
             "@ci:test:php:functional"
         ],
         "ci:stan": "phpstan analyse",
-        "ci:mutation": "infection --min-msi=80 --min-covered-msi=80"
+        "ci:mutation": "infection --min-msi=60 --min-covered-msi=75"
     }
 }

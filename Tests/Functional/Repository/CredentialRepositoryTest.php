@@ -41,7 +41,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->importDataSet(__DIR__ . '/../../Fixtures/be_users.xml');
+        $this->importCSVDataSet(__DIR__ . '/../../Fixtures/be_users.csv');
         $this->repository = $this->get(CredentialRepository::class);
     }
 
@@ -99,7 +99,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findByCredentialIdReturnsCredentialWhenFound(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $credential = $this->repository->findByCredentialId('credential-id-active-1');
 
@@ -112,7 +112,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findByCredentialIdReturnsNullWhenNotFound(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $credential = $this->repository->findByCredentialId('non-existent-credential');
 
@@ -122,7 +122,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findByCredentialIdReturnsNullForDeletedCredential(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $credential = $this->repository->findByCredentialId('credential-id-deleted');
 
@@ -132,7 +132,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findByBeUserReturnsOnlyActiveCredentials(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $credentials = $this->repository->findByBeUser(1);
 
@@ -144,7 +144,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findByBeUserExcludesDeletedCredentials(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $credentials = $this->repository->findByBeUser(1);
 
@@ -156,7 +156,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findByBeUserExcludesRevokedCredentials(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $credentials = $this->repository->findByBeUser(1);
 
@@ -168,7 +168,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findByBeUserReturnsEmptyArrayWhenNoCredentials(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $credentials = $this->repository->findByBeUser(999);
 
@@ -178,7 +178,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findByBeUserOrdersByCreatedAtDescending(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $credentials = $this->repository->findByBeUser(1);
 
@@ -192,7 +192,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function countByBeUserReturnsCorrectCount(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $count = $this->repository->countByBeUser(1);
 
@@ -202,7 +202,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function countByBeUserExcludesDeletedAndRevokedCredentials(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $count = $this->repository->countByBeUser(1);
 
@@ -212,7 +212,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function countByBeUserReturnsZeroWhenNoActiveCredentials(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $count = $this->repository->countByBeUser(999);
 
@@ -385,7 +385,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findAllByBeUserReturnsAllIncludingRevoked(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $all = $this->repository->findAllByBeUser(1);
 
@@ -405,7 +405,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findAllByBeUserExcludesDeletedCredentials(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $all = $this->repository->findAllByBeUser(1);
 
@@ -417,7 +417,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function findAllByBeUserOrdersByCreatedAtDescending(): void
     {
-        $this->importDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.xml');
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
 
         $all = $this->repository->findAllByBeUser(1);
 
