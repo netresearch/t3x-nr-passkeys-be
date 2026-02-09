@@ -39,7 +39,7 @@ COMPOSER_PACKAGE=${COMPOSER_PACKAGE:-"vendor/$EXTENSION_KEY"}
 GITHUB_REPO=${GITHUB_REPO:-"https://github.com/example/$EXTENSION_KEY"}
 
 # Derive TER extension key from composer package or extension key
-TER_EXTENSION_KEY=$(echo "$COMPOSER_PACKAGE" | sed 's/.*\///' | sed 's/^t3x-//' | sed 's/^nr-//' | sed 's/-/_/g')
+TER_EXTENSION_KEY=$(echo "$COMPOSER_PACKAGE" | sed 's/.*\///' | sed 's/^t3x-//' | sed 's/-/_/g')
 
 # Make extension name human-readable for display
 EXTENSION_DISPLAY_NAME=$(echo "$EXTENSION_NAME" | sed 's/_/ /g' | sed 's/-/ /g' | sed 's/\b\(.\)/\u\1/g')
