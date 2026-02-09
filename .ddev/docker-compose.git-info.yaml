@@ -1,0 +1,7 @@
+services:
+  web:
+    build:
+      args:
+        GIT_BRANCH: "unknown"
+        GIT_COMMIT: "unknown"
+        GIT_PR: "unknown"
