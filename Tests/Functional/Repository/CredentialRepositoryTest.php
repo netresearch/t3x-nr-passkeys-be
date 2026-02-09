@@ -251,10 +251,15 @@ final class CredentialRepositoryTest extends FunctionalTestCase
         $uid = $this->repository->save($credential);
         $this->repository->delete($uid);
 
-        // Query directly to verify record still exists with deleted=1
-        $connection = $this->getConnectionPool()->getConnectionForTable('tx_nrpasskeysbe_credential');
-        $result = $connection->select(['*'], 'tx_nrpasskeysbe_credential', ['uid' => $uid]);
-        $row = $result->fetchAssociative();
+        // Query with restrictions removed to see deleted records
+        $queryBuilder = $this->getConnectionPool()->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
+        $queryBuilder->getRestrictions()->removeAll();
+        $row = $queryBuilder
+            ->select('*')
+            ->from('tx_nrpasskeysbe_credential')
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, \TYPO3\CMS\Core\Database\Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchAssociative();
 
         self::assertNotFalse($row);
         self::assertSame(1, (int) $row['deleted']);

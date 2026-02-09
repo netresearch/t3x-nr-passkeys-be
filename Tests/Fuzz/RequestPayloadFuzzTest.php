@@ -98,7 +98,7 @@ final class RequestPayloadFuzzTest extends TestCase
     public function optionsActionHandlesRandomBytes(): void
     {
         for ($i = 0; $i < 50; $i++) {
-            $randomBody = \random_bytes(\random_int(0, 1024));
+            $randomBody = \random_bytes(\random_int(1, 1024));
             $request = $this->createRequestWithBody($randomBody);
 
             try {
