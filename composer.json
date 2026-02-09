@@ -1,6 +1,6 @@
 {
     "name": "netresearch/nr-passkeys-be",
-    "description": "Passwordless TYPO3 backend authentication via Passkeys (WebAuthn/FIDO2)",
+    "description": "Passwordless TYPO3 backend authentication via Passkeys (WebAuthn/FIDO2) - by Netresearch",
     "license": "GPL-2.0-or-later",
     "type": "typo3-cms-extension",
     "keywords": [
@@ -15,8 +15,8 @@
     "authors": [
         {
             "name": "Netresearch DTT GmbH",
-            "email": "info@netresearch.de",
-            "homepage": "https://www.netresearch.de",
+            "email": "typo3@netresearch.de",
+            "homepage": "https://www.netresearch.de/",
             "role": "Developer"
         }
     ],

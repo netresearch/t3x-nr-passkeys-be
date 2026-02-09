@@ -1,13 +1,16 @@
 # nr_passkeys_be - TYPO3 Passkeys Backend Authentication
 
 [![CI](https://github.com/netresearch/t3x-nr-passkeys-be/actions/workflows/ci.yml/badge.svg)](https://github.com/netresearch/t3x-nr-passkeys-be/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/netresearch/t3x-nr-passkeys-be/graph/badge.svg)](https://codecov.io/gh/netresearch/t3x-nr-passkeys-be)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/netresearch/t3x-nr-passkeys-be/badge)](https://scorecard.dev/viewer/?uri=github.com/netresearch/t3x-nr-passkeys-be)
-[![TYPO3](https://img.shields.io/badge/TYPO3-13%20LTS%20%7C%2014-orange?logo=typo3)](https://get.typo3.org/)
-[![PHP](https://img.shields.io/badge/PHP-8.2--8.5-blue?logo=php)](https://www.php.net/)
-[![License](https://img.shields.io/badge/License-GPL--2.0--or--later-blue)](LICENSE)
-[![PHPStan](https://img.shields.io/badge/PHPStan-Level%208-brightgreen)](https://phpstan.org/)
+[![codecov](https://codecov.io/gh/netresearch/t3x-nr-passkeys-be/graph/badge.svg)](https://codecov.io/gh/netresearch/t3x-nr-passkeys-be)
+
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/netresearch/t3x-nr-passkeys-be/badge)](https://securityscorecards.dev/viewer/?uri=github.com/netresearch/t3x-nr-passkeys-be)
+
+[![PHPStan](https://img.shields.io/badge/PHPStan-Level%208-brightgreen.svg)](https://phpstan.org/)
 [![Mutation](https://img.shields.io/badge/Infection%20MSI-%E2%89%A580%25-yellowgreen)](https://infection.github.io/)
+[![PHP](https://img.shields.io/badge/PHP-8.2--8.5-blue.svg?logo=php)](https://www.php.net/)
+[![TYPO3](https://img.shields.io/badge/TYPO3-13%20LTS%20%7C%2014-orange.svg?logo=typo3)](https://typo3.org/)
+[![License](https://img.shields.io/github/license/netresearch/t3x-nr-passkeys-be)](https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/netresearch/t3x-nr-passkeys-be)](https://github.com/netresearch/t3x-nr-passkeys-be/releases)
 
 Passwordless TYPO3 backend authentication via WebAuthn/FIDO2 Passkeys.
 Enables one-click login with TouchID, FaceID, YubiKey, Windows Hello.
@@ -95,3 +98,7 @@ composer ci:mutation              # Mutation testing (MSI >= 80%)
 ## License
 
 GPL-2.0-or-later. See [LICENSE](LICENSE).
+
+---
+
+Developed and maintained by [Netresearch DTT GmbH](https://www.netresearch.de/).
