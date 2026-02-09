@@ -7,7 +7,7 @@ Introduction
 What does it do?
 ================
 
-|extension_name| provides passwordless authentication for the TYPO3 backend
+Passkeys Backend Authentication provides passwordless authentication for the TYPO3 backend
 using the WebAuthn/FIDO2 standard (Passkeys). Backend users can log in with a
 single touch or glance using biometric authenticators such as TouchID, FaceID,
 Windows Hello, or hardware security keys like YubiKey.

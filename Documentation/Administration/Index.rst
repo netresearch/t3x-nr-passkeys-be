@@ -83,24 +83,24 @@ Database table
 The extension uses a single table ``tx_nrpasskeysbe_credential`` with the
 following schema:
 
-=============================  ===========  ========================================
-Column                         Type         Description
-=============================  ===========  ========================================
-``uid``                        int          Primary key (auto-increment)
-``be_user``                    int          FK to ``be_users.uid``
-``credential_id``              varbinary    WebAuthn credential ID (unique)
-``public_key_cose``            blob         COSE-encoded public key
-``sign_count``                 int          Signature counter (replay detection)
-``user_handle``                varbinary    WebAuthn user handle (SHA-256 hash)
-``aaguid``                     char(36)     Authenticator attestation GUID
-``transports``                 text         JSON array of transport hints
-``label``                      varchar(128) User-assigned label
-``created_at``                 int          Unix timestamp of creation
-``last_used_at``               int          Unix timestamp of last use
-``revoked_at``                 int          Unix timestamp of revocation (0 = active)
-``revoked_by``                 int          UID of revoking admin (0 = not revoked)
-``deleted``                    tinyint      Soft delete flag
-=============================  ===========  ========================================
+=============================  =============  ======================================
+Column                         Type           Description
+=============================  =============  ======================================
+``uid``                        int            Primary key (auto-increment)
+``be_user``                    int            FK to ``be_users.uid``
+``credential_id``              varbinary      WebAuthn credential ID (unique)
+``public_key_cose``            blob           COSE-encoded public key
+``sign_count``                 int            Signature counter (replay detection)
+``user_handle``                varbinary      WebAuthn user handle (SHA-256 hash)
+``aaguid``                     char(36)       Authenticator attestation GUID
+``transports``                 text           JSON array of transport hints
+``label``                      varchar(128)   User-assigned label
+``created_at``                 int            Unix timestamp of creation
+``last_used_at``               int            Unix timestamp of last use
+``revoked_at``                 int            Unix timestamp of revocation (0=active)
+``revoked_by``                 int            UID of revoking admin (0=not revoked)
+``deleted``                    tinyint        Soft delete flag
+=============================  =============  ======================================
 
 Monitoring
 ==========

@@ -5,10 +5,10 @@ Passkeys Backend Authentication
 ==================================
 
 :Extension key:
-   |extension_key|
+   nr_passkeys_be
 
 :Package name:
-   |composer_name|
+   netresearch/nr-passkeys-be
 
 :Version:
    |release|
