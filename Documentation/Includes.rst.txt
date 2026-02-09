@@ -1,0 +1,5 @@
+.. This file is included by all other reST files in this extension documentation.
+
+.. |extension_key| replace:: nr_passkeys_be
+.. |composer_name| replace:: netresearch/nr-passkeys-be
+.. |extension_name| replace:: Passkeys Backend Authentication
