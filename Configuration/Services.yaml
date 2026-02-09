@@ -9,6 +9,16 @@ services:
     exclude:
       - '../Classes/Domain/Model/*'
 
+  cache.nr_passkeys_be_nonce:
+    class: TYPO3\CMS\Core\Cache\Frontend\FrontendInterface
+    factory: ['@TYPO3\CMS\Core\Cache\CacheManager', 'getCache']
+    arguments: ['nr_passkeys_be_nonce']
+
+  cache.nr_passkeys_be_ratelimit:
+    class: TYPO3\CMS\Core\Cache\Frontend\FrontendInterface
+    factory: ['@TYPO3\CMS\Core\Cache\CacheManager', 'getCache']
+    arguments: ['nr_passkeys_be_ratelimit']
+
   Netresearch\NrPasskeysBe\Service\ChallengeService:
     public: true
     arguments:

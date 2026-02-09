@@ -23,3 +23,15 @@ parameters:
         -
             message: '#no value type specified in iterable type array#'
             path: Classes/Authentication/PasskeyAuthenticationService.php
+        # TYPO3 v14 without phpstan-typo3: GeneralUtility::getIndpEnv() returns union type
+        -
+            identifier: cast.string
+            reportUnmatched: false
+        -
+            identifier: cast.bool
+            reportUnmatched: false
+        # TYPO3 v14 removed StandaloneView (render() is v13 backward compat)
+        -
+            identifier: class.notFound
+            path: Classes/LoginProvider/PasskeyLoginProvider.php
+            reportUnmatched: false
