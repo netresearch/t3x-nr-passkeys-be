@@ -36,6 +36,7 @@
         "ergebnis/phpstan-rules": "^2.6",
         "friendsofphp/php-cs-fixer": "^3.68",
         "infection/infection": "^0.29",
+        "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5",
         "saschaegerer/phpstan-typo3": "^2.0",
@@ -55,7 +56,8 @@
         "allow-plugins": {
             "typo3/class-alias-loader": true,
             "typo3/cms-composer-installers": true,
-            "infection/extension-installer": true
+            "infection/extension-installer": true,
+            "phpstan/extension-installer": true
         },
         "bin-dir": ".Build/bin",
         "vendor-dir": ".Build/vendor"
@@ -70,8 +72,11 @@
         "ci:lint:php": "php-cs-fixer fix --dry-run --diff",
         "ci:lint:php:fix": "php-cs-fixer fix",
         "ci:test:php:unit": "phpunit -c phpunit.xml --testsuite unit",
-        "ci:test:php:functional": "phpunit -c phpunit.xml --testsuite functional",
-        "ci:test:php:all": "phpunit -c phpunit.xml",
+        "ci:test:php:functional": "phpunit -c phpunit.functional.xml",
+        "ci:test:php:all": [
+            "@ci:test:php:unit",
+            "@ci:test:php:functional"
+        ],
         "ci:stan": "phpstan analyse",
         "ci:mutation": "infection --min-msi=80 --min-covered-msi=80"
     }
