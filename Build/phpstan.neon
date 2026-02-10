@@ -29,6 +29,10 @@ parameters:
         -
             identifier: property.onlyWritten
             reportUnmatched: false
+        # phpstan-typo3 requestAttributeValidation (v13 only; v14 removes phpstan-typo3)
+        -
+            identifier: phpstanTypo3.requestAttributeValidation
+            reportUnmatched: false
         # TYPO3 AbstractAuthenticationService uses untyped arrays
         -
             message: '#no value type specified in iterable type array#'
