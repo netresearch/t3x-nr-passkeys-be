@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Authentication;
 
 use Doctrine\DBAL\ParameterType;
+use JsonException;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use Throwable;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Log\LogManager;
@@ -169,7 +171,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         try {
             $data = \json_decode($uident, true, 16, JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
+        } catch (JsonException) {
             return null;
         }
 
@@ -252,7 +254,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         if ($this->logger === null) {
             try {
                 $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(static::class));
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 $this->setLogger(new NullLogger());
             }
         }

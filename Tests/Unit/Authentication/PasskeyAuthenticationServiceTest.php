@@ -79,7 +79,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      */
     private static function buildPasskeyUident(array $assertion, string $challengeToken = 'challenge-token-123'): string
     {
-        return json_encode([
+        return \json_encode([
             '_type' => 'passkey',
             'assertion' => $assertion,
             'challengeToken' => $challengeToken,
