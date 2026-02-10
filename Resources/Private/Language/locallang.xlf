@@ -95,6 +95,9 @@
             <trans-unit id="never" resname="never">
                 <source>Never</source>
             </trans-unit>
+            <trans-unit id="userSettings.passkeys.label" resname="userSettings.passkeys.label">
+                <source>Passkeys</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>
