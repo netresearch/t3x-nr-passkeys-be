@@ -105,13 +105,29 @@ test-functional: ## Run functional tests (requires MySQL)
 test-fuzz: ## Run fuzz tests
 	.Build/bin/phpunit -c Build/phpunit.xml --testsuite fuzz --no-coverage
 
+.PHONY: test-js
+test-js: ## Run JavaScript unit tests (vitest)
+	npm run test:js
+
+.PHONY: test-js-coverage
+test-js-coverage: ## Run JavaScript unit tests with coverage
+	npm run test:js:coverage
+
+.PHONY: test-e2e
+test-e2e: ## Run E2E tests (requires DDEV running)
+	npm run test:e2e
+
+.PHONY: test-e2e-headed
+test-e2e-headed: ## Run E2E tests in headed browser
+	npm run test:e2e:headed
+
 .PHONY: mutation
 mutation: ## Run mutation tests (Infection)
 	composer ci:mutation
 
 .PHONY: ci
-ci: lint stan test-unit test-fuzz ## Run all local CI checks (no DB required)
+ci: lint stan test-unit test-fuzz test-js ## Run all local CI checks (no DB required)
 
 .PHONY: clean
 clean: ## Clean temporary files and caches
-	rm -rf .php-cs-fixer.cache var/ infection.log infection-summary.log .phpunit.result.cache
+	rm -rf .php-cs-fixer.cache var/ infection.log infection-summary.log .phpunit.result.cache coverage/ test-results/ playwright-report/

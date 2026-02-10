@@ -4,10 +4,11 @@
         "directories": [
             "../Classes/Service",
             "../Classes/Authentication",
-            "../Classes/Controller"
-        ],
-        "excludes": [
-            "Domain/Model"
+            "../Classes/Controller",
+            "../Classes/Domain/Model",
+            "../Classes/Configuration",
+            "../Classes/LoginProvider",
+            "../Classes/UserSettings"
         ]
     },
     "timeout": 30,

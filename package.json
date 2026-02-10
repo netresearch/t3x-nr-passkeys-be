@@ -1,0 +1,20 @@
+{
+    "name": "@netresearch/nr-passkeys-be",
+    "private": true,
+    "description": "E2E and JavaScript tests for nr_passkeys_be TYPO3 extension",
+    "scripts": {
+        "test:e2e": "playwright test",
+        "test:e2e:headed": "playwright test --headed",
+        "test:e2e:ui": "playwright test --ui",
+        "test:js": "vitest run",
+        "test:js:watch": "vitest",
+        "test:js:coverage": "vitest run --coverage",
+        "test:all": "npm run test:js && npm run test:e2e"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.50",
+        "@vitest/coverage-v8": "^3.0",
+        "jsdom": "^26.0",
+        "vitest": "^3.0"
+    }
+}

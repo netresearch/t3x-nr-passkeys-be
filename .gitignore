@@ -11,3 +11,8 @@
 /.beads/
 /Documentation-GENERATED-temp/
 /index.html
+/coverage/
+/test-results/
+/playwright-report/
+/package-lock.json
+/.playwright-mcp/
