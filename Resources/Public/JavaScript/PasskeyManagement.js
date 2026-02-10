@@ -230,6 +230,13 @@
     } catch (err) {
       if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
         showMessage('Registration was cancelled.', 'info');
+      } else if (err.message && err.message.indexOf('sameOriginWithAncestors') !== -1) {
+        showMessage(
+          'A browser extension (e.g. Bitwarden) is interfering with passkey registration. '
+          + 'Please disable your password manager\'s passkey/FIDO2 feature and try again.',
+          'warning'
+        );
+        console.warn('Passkey registration blocked by browser extension:', err);
       } else {
         showMessage('Failed to register passkey. ' + err.message, 'danger');
         console.error('Register passkey error:', err);
