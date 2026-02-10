@@ -10,7 +10,7 @@ Fluid templates, XLIFF translations, JavaScript, and icons for the passkeys back
 |------|---------|
 | `Private/Language/locallang.xlf` | Frontend labels (login form, management UI) |
 | `Private/Language/locallang_db.xlf` | TCA/database field labels |
-| `Private/Templates/Login/PasskeyLogin.html` | Passkey login form (Fluid template) |
+| (none) | Passkey login UI is injected via JS into standard TYPO3 login form |
 | `Private/Templates/UserSettings/Passkeys.html` | User settings passkey management panel |
 | `Public/JavaScript/PasskeyLogin.js` | WebAuthn login ceremony (browser API calls) |
 | `Public/JavaScript/PasskeyManagement.js` | Passkey registration/management UI logic |
@@ -25,7 +25,6 @@ Resources/
     Layouts/           # Fluid layouts (currently empty)
     Partials/          # Fluid partials (currently empty)
     Templates/
-      Login/           # Login provider Fluid templates
       UserSettings/    # User settings module templates
   Public/
     Icons/             # SVG icons
@@ -34,7 +33,7 @@ Resources/
 
 ## Conventions
 - XLIFF files use `locallang*.xlf` naming
-- Template variables come from `PasskeyLoginProvider` or controller `assign()`
+- Passkey login config comes from `InjectPasskeyLoginFields` event listener via inline JS
 - JavaScript uses browser WebAuthn API (`navigator.credentials.create/get`)
 - Icons are SVG format
 - No CSS files -- uses TYPO3 backend default styling

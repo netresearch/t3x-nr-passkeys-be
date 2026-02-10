@@ -13,8 +13,8 @@ challengeTtlSeconds = 120
 # cat=security/200/110; type=options[required,preferred,discouraged]; label=User Verification:WebAuthn user verification requirement.
 userVerification = required
 
-# cat=security/200/120; type=boolean; label=Enable Discoverable Login:Allow identifierless login (Variant B). Experimental.
-discoverableLoginEnabled = 0
+# cat=security/200/120; type=boolean; label=Enable Discoverable Login:Allow login without entering a username (passkey identifies the user).
+discoverableLoginEnabled = 1
 
 # cat=security/200/130; type=boolean; label=Disable Password Login:When enabled, password-only login is blocked for all users.
 disablePasswordLogin = 0

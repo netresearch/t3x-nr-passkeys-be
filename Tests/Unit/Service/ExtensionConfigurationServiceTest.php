@@ -56,7 +56,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
         self::assertSame('', $config->getOrigin());
         self::assertSame(120, $config->getChallengeTtlSeconds());
         self::assertSame('required', $config->getUserVerification());
-        self::assertFalse($config->isDiscoverableLoginEnabled());
+        self::assertTrue($config->isDiscoverableLoginEnabled());
         self::assertFalse($config->isDisablePasswordLogin());
         self::assertSame(10, $config->getRateLimitMaxAttempts());
         self::assertSame(300, $config->getRateLimitWindowSeconds());

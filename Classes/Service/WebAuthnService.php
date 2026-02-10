@@ -251,6 +251,36 @@ class WebAuthnService
     }
 
     /**
+     * Resolve the backend user UID from a passkey assertion response.
+     *
+     * Used for discoverable (usernameless) login where the credential ID
+     * in the assertion identifies the user without requiring a username.
+     */
+    public function findBeUserUidFromAssertion(string $responseJson): ?int
+    {
+        try {
+            $publicKeyCredential = $this->getSerializer()->deserialize(
+                $responseJson,
+                PublicKeyCredential::class,
+                'json',
+            );
+
+            if (!$publicKeyCredential instanceof PublicKeyCredential) {
+                return null;
+            }
+
+            $credential = $this->credentialRepository->findByCredentialId($publicKeyCredential->rawId);
+            if ($credential === null || $credential->isRevoked()) {
+                return null;
+            }
+
+            return $credential->getBeUser();
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * Verify an assertion response for login.
      *
      * @return array{credential: Credential, source: PublicKeyCredentialSource}

@@ -47,5 +47,3 @@ services:
   Netresearch\NrPasskeysBe\Controller\AdminController:
     public: true
 
-  Netresearch\NrPasskeysBe\LoginProvider\PasskeyLoginProvider:
-    public: true

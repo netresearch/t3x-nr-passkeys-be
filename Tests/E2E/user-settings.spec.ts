@@ -21,13 +21,6 @@ async function loginAsAdmin(page: Page): Promise<boolean> {
     await page.goto('/typo3/login');
     await page.waitForLoadState('networkidle');
 
-    // Switch to password login if passkey login is shown (default provider is password)
-    // If we're on the passkey login page, navigate to password login explicitly
-    if (page.url().includes('loginProvider=1700000000')) {
-        await page.goto('/typo3/login?loginProvider=1433416747');
-        await page.waitForLoadState('networkidle');
-    }
-
     // Fill login form
     const usernameInput = page.locator('input[name="username"]');
     const passwordInput = page.locator('input[name="p_field"]');

@@ -15,7 +15,7 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 | `Controller/AdminController.php` | Admin-only: list/revoke any user's passkeys, unlock accounts |
 | `Controller/JsonBodyTrait.php` | Shared JSON request body parsing for all controllers |
 | `Domain/Model/Credential.php` | Plain PHP entity with `fromArray()`/`toArray()`, soft delete + revocation |
-| `LoginProvider/PasskeyLoginProvider.php` | TYPO3 backend login form integration |
+| `EventListener/InjectPasskeyLoginFields.php` | PSR-14 event listener injecting passkey into standard login form |
 | `Service/WebAuthnService.php` | Core WebAuthn ceremony logic (attestation + assertion) |
 | `Service/ChallengeService.php` | HMAC-signed challenge tokens with nonce replay protection |
 | `Service/CredentialRepository.php` | Database CRUD via TYPO3 QueryBuilder |

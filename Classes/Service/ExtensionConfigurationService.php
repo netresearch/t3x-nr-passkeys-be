@@ -24,7 +24,7 @@ class ExtensionConfigurationService
             origin: (string) ($settings['origin'] ?? ''),
             challengeTtlSeconds: (int) ($settings['challengeTtlSeconds'] ?? 120),
             userVerification: (string) ($settings['userVerification'] ?? 'required'),
-            discoverableLoginEnabled: (bool) ($settings['discoverableLoginEnabled'] ?? false),
+            discoverableLoginEnabled: (bool) ($settings['discoverableLoginEnabled'] ?? true),
             disablePasswordLogin: (bool) ($settings['disablePasswordLogin'] ?? false),
             rateLimitMaxAttempts: (int) ($settings['rateLimitMaxAttempts'] ?? 10),
             rateLimitWindowSeconds: (int) ($settings['rateLimitWindowSeconds'] ?? 300),

@@ -14,10 +14,12 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webauthn\PublicKeyCredentialSource;
 
@@ -68,13 +70,31 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         parent::tearDown();
     }
 
+    // --- Passkey payload encoding helper ---
+
+    /**
+     * Build a passkey payload JSON string as the JS would put into userident.
+     *
+     * @param array<string, mixed> $assertion
+     */
+    private static function buildPasskeyUident(array $assertion, string $challengeToken = 'challenge-token-123'): string
+    {
+        return json_encode([
+            '_type' => 'passkey',
+            'assertion' => $assertion,
+            'challengeToken' => $challengeToken,
+        ], JSON_THROW_ON_ERROR);
+    }
+
+    // --- authUser tests ---
+
     #[Test]
     public function authUserWithValidPasskeyDataReturns200(): void
     {
         $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
-        $this->setUpPasskeyRequest('{"valid":"assertion"}', 'challenge-token-123');
         $this->subject->login = [
             'uname' => 'admin',
+            'uident' => self::buildPasskeyUident(['valid' => 'assertion']),
         ];
 
         $this->rateLimiterService
@@ -109,9 +129,9 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserWithInvalidPasskeyDataReturns0(): void
     {
-        $this->setUpPasskeyRequest('{"bad":"data"}', 'challenge-token-123');
         $this->subject->login = [
             'uname' => 'admin',
+            'uident' => self::buildPasskeyUident(['bad' => 'data']),
         ];
 
         $this->rateLimiterService
@@ -138,9 +158,9 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserWithoutPasskeyDataReturns100(): void
     {
-        $this->setUpRequestWithoutPasskey();
         $this->subject->login = [
             'uname' => 'admin',
+            'uident' => 'regularPassword123',
         ];
 
         $user = ['uid' => 42, 'username' => 'admin'];
@@ -153,9 +173,9 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserRecordsFailureOnError(): void
     {
-        $this->setUpPasskeyRequest('{"bad":"data"}', 'challenge-token-123');
         $this->subject->login = [
             'uname' => 'testuser',
+            'uident' => self::buildPasskeyUident(['bad' => 'data']),
         ];
 
         $this->webAuthnService
@@ -183,9 +203,9 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     public function authUserClearsLockoutOnSuccess(): void
     {
         $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
-        $this->setUpPasskeyRequest('{"ok":"assertion"}', 'token-abc');
         $this->subject->login = [
             'uname' => 'admin',
+            'uident' => self::buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
         ];
 
         $this->webAuthnService
@@ -210,9 +230,9 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserRespectsLockout(): void
     {
-        $this->setUpPasskeyRequest('{"ok":"assertion"}', 'token-abc');
         $this->subject->login = [
             'uname' => 'locked_user',
+            'uident' => self::buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
         ];
 
         $this->rateLimiterService
@@ -236,17 +256,18 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         self::assertSame(0, $result);
     }
 
+    // --- getUser tests ---
+
     #[Test]
     public function getUserWithExistingUser(): void
     {
-        $this->setUpPasskeyRequest('{"assertion":"data"}', 'token-123');
-
         $service = $this->getMockBuilder(PasskeyAuthenticationService::class)
             ->onlyMethods(['fetchUserRecord'])
             ->getMock();
 
         $service->login = [
             'uname' => 'admin',
+            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
         $this->injectLogger($service, $this->logger);
 
@@ -278,9 +299,9 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->willReturn($configWithPasswordDisabled);
         GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
 
-        $this->setUpRequestWithoutPasskey();
         $this->subject->login = [
             'uname' => 'admin',
+            'uident' => 'regularPassword123',
         ];
 
         $result = $this->subject->getUser();
@@ -289,32 +310,62 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
-    public function authUserWithoutChallengeTokenReturns0(): void
+    public function getUserWithEmptyUsernameAndNoCredentialResolutionReturnsFalse(): void
     {
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn([
-            'passkey_assertion' => '{"some":"assertion"}',
-        ]);
-        $GLOBALS['TYPO3_REQUEST'] = $request;
-
         $this->subject->login = [
-            'uname' => 'admin',
+            'uname' => '',
+            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
-        $user = ['uid' => 42, 'username' => 'admin'];
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('findBeUserUidFromAssertion')
+            ->with('{"assertion":"data"}')
+            ->willReturn(null);
 
-        $result = $this->subject->authUser($user);
+        $result = $this->subject->getUser();
 
-        self::assertSame(0, $result);
+        self::assertFalse($result);
     }
 
     #[Test]
-    public function getUserWithEmptyUsernameReturnsFalse(): void
+    public function getUserWithEmptyUsernameResolvesUserFromCredential(): void
     {
-        $this->setUpPasskeyRequest('{"assertion":"data"}', 'token-123');
         $this->subject->login = [
             'uname' => '',
+            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
+
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('findBeUserUidFromAssertion')
+            ->with('{"assertion":"data"}')
+            ->willReturn(42);
+
+        $this->setUpFetchUserByUid(42, ['uid' => 42, 'username' => 'admin', 'disable' => 0, 'deleted' => 0]);
+
+        $result = $this->subject->getUser();
+
+        self::assertIsArray($result);
+        self::assertSame(42, $result['uid']);
+        self::assertSame('admin', $result['username']);
+    }
+
+    #[Test]
+    public function getUserWithEmptyUsernameReturnsFalseWhenUserNotFoundByUid(): void
+    {
+        $this->subject->login = [
+            'uname' => '',
+            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+        ];
+
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('findBeUserUidFromAssertion')
+            ->with('{"assertion":"data"}')
+            ->willReturn(999);
+
+        $this->setUpFetchUserByUid(999, null);
 
         $result = $this->subject->getUser();
 
@@ -324,14 +375,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function getUserWithUnknownUserReturnsFalse(): void
     {
-        $this->setUpPasskeyRequest('{"assertion":"data"}', 'token-123');
-
         $service = $this->getMockBuilder(PasskeyAuthenticationService::class)
             ->onlyMethods(['fetchUserRecord'])
             ->getMock();
 
         $service->login = [
             'uname' => 'nonexistent',
+            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
         $this->injectLogger($service, $this->logger);
 
@@ -343,22 +393,26 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->with('nonexistent')
             ->willReturn(false);
 
+        // info() is called twice: "Passkey login attempt" and "Passkey login attempt for unknown user"
+        $infoMessages = [];
         $this->logger
-            ->expects(self::once())
             ->method('info')
-            ->with('Passkey login attempt for unknown user', self::anything());
+            ->willReturnCallback(function (string $message) use (&$infoMessages): void {
+                $infoMessages[] = $message;
+            });
 
         $result = $service->getUser();
 
         self::assertFalse($result);
+        self::assertContains('Passkey login attempt for unknown user', $infoMessages);
     }
 
     #[Test]
     public function getUserWithoutPasskeyAndPasswordEnabledReturnsFalse(): void
     {
-        $this->setUpRequestWithoutPasskey();
         $this->subject->login = [
             'uname' => 'admin',
+            'uident' => 'regularPassword123',
         ];
 
         // Default config has disablePasswordLogin=false
@@ -368,196 +422,203 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
-    public function getPasskeyAssertionFromLoginArrayWhenNoRequest(): void
+    public function getUserWithMissingUnameKeyAttemptsDiscoverableLogin(): void
     {
-        unset($GLOBALS['TYPO3_REQUEST']);
         $this->subject->login = [
-            'uname' => 'admin',
-            'passkey_assertion' => '{"from":"login_array"}',
-            'passkey_challenge_token' => 'token-from-login',
+            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
-        // Need to provide instances for getUser dependencies
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $this->configService);
-
-        $service = $this->getMockBuilder(PasskeyAuthenticationService::class)
-            ->onlyMethods(['fetchUserRecord'])
-            ->getMock();
-
-        $service->login = [
-            'uname' => 'admin',
-            'passkey_assertion' => '{"from":"login_array"}',
-            'passkey_challenge_token' => 'token-from-login',
-        ];
-        $this->injectLogger($service, $this->logger);
-
-        $expectedUser = ['uid' => 42, 'username' => 'admin'];
-
-        $service
-            ->expects(self::once())
-            ->method('fetchUserRecord')
-            ->with('admin')
-            ->willReturn($expectedUser);
-
-        $result = $service->getUser();
-
-        self::assertSame($expectedUser, $result);
-    }
-
-    #[Test]
-    public function getPasskeyAssertionFallsBackToLoginArrayWhenNotInParsedBody(): void
-    {
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn([
-            'username' => 'admin',
-        ]);
-        $GLOBALS['TYPO3_REQUEST'] = $request;
-
-        $this->subject->login = [
-            'uname' => 'admin',
-            'passkey_assertion' => '{"from":"fallback"}',
-            'passkey_challenge_token' => 'token-fallback',
-        ];
-
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $this->configService);
-
-        $service = $this->getMockBuilder(PasskeyAuthenticationService::class)
-            ->onlyMethods(['fetchUserRecord'])
-            ->getMock();
-
-        $service->login = [
-            'uname' => 'admin',
-            'passkey_assertion' => '{"from":"fallback"}',
-            'passkey_challenge_token' => 'token-fallback',
-        ];
-        $this->injectLogger($service, $this->logger);
-
-        $expectedUser = ['uid' => 42, 'username' => 'admin'];
-
-        $service
-            ->expects(self::once())
-            ->method('fetchUserRecord')
-            ->with('admin')
-            ->willReturn($expectedUser);
-
-        $result = $service->getUser();
-
-        self::assertSame($expectedUser, $result);
-    }
-
-    #[Test]
-    public function getPasskeyAssertionReturnsNullWhenNotInLoginArray(): void
-    {
-        unset($GLOBALS['TYPO3_REQUEST']);
-        $this->subject->login = [
-            'uname' => 'admin',
-        ];
-
-        $user = ['uid' => 42, 'username' => 'admin'];
-
-        $result = $this->subject->authUser($user);
-
-        self::assertSame(100, $result);
-    }
-
-    #[Test]
-    public function getChallengeTokenFallsBackToLoginArrayWhenNotInParsedBody(): void
-    {
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn([
-            'passkey_assertion' => '{"data":"test"}',
-        ]);
-        $GLOBALS['TYPO3_REQUEST'] = $request;
-
-        $this->subject->login = [
-            'uname' => 'admin',
-            'passkey_challenge_token' => 'token-from-login',
-        ];
-
-        $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
+        // Empty uname key defaults to '' which triggers discoverable flow
         $this->webAuthnService
-            ->method('verifyAssertionResponse')
-            ->willReturn([
-                'credential' => $credential,
-                'source' => $this->createMock(PublicKeyCredentialSource::class),
-            ]);
-
-        $user = ['uid' => 42, 'username' => 'admin'];
-
-        $result = $this->subject->authUser($user);
-
-        self::assertSame(200, $result);
-    }
-
-    #[Test]
-    public function getChallengeTokenReturnsNullWhenNoRequestAndNotInLogin(): void
-    {
-        unset($GLOBALS['TYPO3_REQUEST']);
-        $this->subject->login = [
-            'uname' => 'admin',
-            'passkey_assertion' => '{"data":"test"}',
-        ];
-
-        $this->logger
             ->expects(self::once())
-            ->method('warning')
-            ->with('Passkey assertion without challenge token');
-
-        $user = ['uid' => 42, 'username' => 'admin'];
-
-        $result = $this->subject->authUser($user);
-
-        self::assertSame(0, $result);
-    }
-
-    #[Test]
-    public function getPasskeyAssertionFromParsedBodyWithNonArrayBody(): void
-    {
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn('not-an-array');
-        $GLOBALS['TYPO3_REQUEST'] = $request;
-
-        $this->subject->login = [
-            'uname' => 'admin',
-        ];
-
-        $user = ['uid' => 42, 'username' => 'admin'];
-
-        // No passkey_assertion in login array, non-array parsed body -> returns null -> 100
-        $result = $this->subject->authUser($user);
-
-        self::assertSame(100, $result);
-    }
-
-    #[Test]
-    public function getUserWithMissingUnameKeyReturnsFalse(): void
-    {
-        $this->setUpPasskeyRequest('{"assertion":"data"}', 'token-123');
-        $this->subject->login = [];
+            ->method('findBeUserUidFromAssertion')
+            ->with('{"assertion":"data"}')
+            ->willReturn(null);
 
         $result = $this->subject->getUser();
 
         self::assertFalse($result);
     }
 
-    private function setUpPasskeyRequest(string $assertion, string $challengeToken): void
+    // --- Passkey payload parsing edge cases ---
+
+    #[Test]
+    public function authUserWithEmptyUidentReturns100(): void
     {
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn([
-            'passkey_assertion' => $assertion,
-            'passkey_challenge_token' => $challengeToken,
-        ]);
-        $GLOBALS['TYPO3_REQUEST'] = $request;
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => '',
+        ];
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $this->subject->authUser($user);
+
+        self::assertSame(100, $result);
     }
 
-    private function setUpRequestWithoutPasskey(): void
+    #[Test]
+    public function authUserWithInvalidJsonUidentReturns100(): void
     {
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn([
-            'username' => 'admin',
-            'userident' => 'password123',
-        ]);
-        $GLOBALS['TYPO3_REQUEST'] = $request;
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => '{not valid json',
+        ];
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $this->subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function authUserWithJsonMissingTypeReturns100(): void
+    {
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => '{"assertion":{"test":true},"challengeToken":"token"}',
+        ];
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $this->subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function authUserWithJsonWrongTypeReturns100(): void
+    {
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => '{"_type":"password","assertion":{"test":true},"challengeToken":"token"}',
+        ];
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $this->subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function authUserWithMissingAssertionInPayloadReturns100(): void
+    {
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => '{"_type":"passkey","challengeToken":"token"}',
+        ];
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $this->subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function authUserWithEmptyChallengeTokenInPayloadReturns100(): void
+    {
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => '{"_type":"passkey","assertion":{"test":true},"challengeToken":""}',
+        ];
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $this->subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function authUserWithNonObjectAssertionInPayloadReturns100(): void
+    {
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => '{"_type":"passkey","assertion":"not-an-object","challengeToken":"token"}',
+        ];
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $this->subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function payloadIsCachedAcrossGetUserAndAuthUser(): void
+    {
+        $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
+        $service = $this->getMockBuilder(PasskeyAuthenticationService::class)
+            ->onlyMethods(['fetchUserRecord'])
+            ->getMock();
+
+        $service->login = [
+            'uname' => 'admin',
+            'uident' => self::buildPasskeyUident(['cached' => 'test'], 'cached-token'),
+        ];
+        $this->injectLogger($service, $this->logger);
+
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $this->configService);
+        GeneralUtility::addInstance(WebAuthnService::class, $this->webAuthnService);
+        GeneralUtility::addInstance(RateLimiterService::class, $this->rateLimiterService);
+
+        $expectedUser = ['uid' => 42, 'username' => 'admin'];
+        $service->expects(self::once())->method('fetchUserRecord')->willReturn($expectedUser);
+
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('verifyAssertionResponse')
+            ->with(
+                responseJson: '{"cached":"test"}',
+                challengeToken: 'cached-token',
+                beUserUid: 42,
+            )
+            ->willReturn([
+                'credential' => $credential,
+                'source' => $this->createMock(PublicKeyCredentialSource::class),
+            ]);
+
+        // Both getUser and authUser should use the same decoded payload
+        $user = $service->getUser();
+        self::assertIsArray($user);
+
+        $result = $service->authUser($user);
+        self::assertSame(200, $result);
+    }
+
+    // --- Helper methods ---
+
+    /**
+     * Set up ConnectionPool mock for fetchUserByUid.
+     *
+     * @param array<string, mixed>|null $userRow
+     */
+    private function setUpFetchUserByUid(int $uid, ?array $userRow): void
+    {
+        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder->method('eq')->willReturn('1=1');
+
+        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result->method('fetchAssociative')->willReturn($userRow ?? false);
+
+        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder->method('select')->willReturnSelf();
+        $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('expr')->willReturn($expressionBuilder);
+        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
+        $queryBuilder->method('executeQuery')->willReturn($result);
+
+        $connectionPool = $this->createMock(ConnectionPool::class);
+        $connectionPool
+            ->method('getQueryBuilderForTable')
+            ->with('be_users')
+            ->willReturn($queryBuilder);
+
+        GeneralUtility::addInstance(ConnectionPool::class, $connectionPool);
     }
 
     private function injectLogger(object $service, LoggerInterface $logger): void

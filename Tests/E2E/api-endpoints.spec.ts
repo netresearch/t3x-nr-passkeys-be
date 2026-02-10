@@ -22,12 +22,6 @@ async function loginAsAdmin(page: Page): Promise<boolean> {
     await page.goto('/typo3/login');
     await page.waitForLoadState('networkidle');
 
-    // Switch to password login if passkey login is shown
-    if (page.url().includes('loginProvider=1700000000')) {
-        await page.goto('/typo3/login?loginProvider=1433416747');
-        await page.waitForLoadState('networkidle');
-    }
-
     // Fill login form
     const usernameInput = page.locator('input[name="username"]');
     const passwordInput = page.locator('input[name="p_field"]');
@@ -95,7 +89,7 @@ test.describe('Login API - Validated with Session', () => {
         expect(body.challengeToken).toBeDefined();
     });
 
-    test('login options rejects empty username with 400', async ({ page }) => {
+    test('login options returns discoverable options for empty username', async ({ page }) => {
         test.skip(!isLoggedIn, 'Login failed - skipping authenticated test');
 
         const result = await page.evaluate(async () => {
@@ -111,17 +105,24 @@ test.describe('Login API - Validated with Session', () => {
                 status: res.status,
                 redirected: res.redirected,
                 contentType: res.headers.get('content-type'),
-                error: data?.error,
+                isJson: res.headers.get('content-type')?.includes('application/json') ?? false,
+                options: data?.options,
+                challengeToken: data?.challengeToken,
             };
         });
 
-        test.skip(isRedirectedOrHtml(result) && !result.error, 'Request redirected to login page');
+        test.skip(isRedirectedOrHtml(result) && !result.isJson, 'Request redirected to login page');
+        test.skip(result.status === 429, 'Rate limited');
 
-        expect(result.status).toBe(400);
-        expect(result.error).toContain('required');
+        expect(result.status).toBe(200);
+        expect(result.isJson).toBe(true);
+        expect(result.options).toBeDefined();
+        expect(result.challengeToken).toBeDefined();
+        // Discoverable flow: allowCredentials should be empty
+        expect(result.options.allowCredentials).toEqual([]);
     });
 
-    test('login options rejects missing username with 400', async ({ page }) => {
+    test('login options treats missing username key as discoverable flow', async ({ page }) => {
         test.skip(!isLoggedIn, 'Login failed - skipping authenticated test');
 
         const result = await page.evaluate(async () => {
@@ -130,16 +131,25 @@ test.describe('Login API - Validated with Session', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ foo: 'bar' }),
             });
+            const text = await res.text();
+            let data = null;
+            try { data = JSON.parse(text); } catch { /* not JSON */ }
             return {
                 status: res.status,
                 redirected: res.redirected,
                 contentType: res.headers.get('content-type'),
+                isJson: res.headers.get('content-type')?.includes('application/json') ?? false,
+                options: data?.options,
             };
         });
 
-        test.skip(isRedirectedOrHtml(result), 'Request redirected to login page');
+        test.skip(isRedirectedOrHtml(result) && !result.isJson, 'Request redirected to login page');
+        test.skip(result.status === 429, 'Rate limited');
 
-        expect(result.status).toBe(400);
+        // With discoverable enabled, missing username is treated as empty -> discoverable flow
+        expect(result.status).toBe(200);
+        expect(result.options).toBeDefined();
+        expect(result.options.allowCredentials).toEqual([]);
     });
 
     test('login options returns 401 for non-existent user', async ({ page }) => {

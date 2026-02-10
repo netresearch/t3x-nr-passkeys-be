@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
 use Error;
+use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Controller\LoginController;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
@@ -98,15 +99,57 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
-    public function optionsActionWithEmptyUsername(): void
+    public function optionsActionWithEmptyUsernameWhenDiscoverableDisabled(): void
     {
         $request = $this->createJsonRequest(['username' => '']);
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
 
         $response = $this->subject->optionsAction($request);
 
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Username is required', $body['error']);
+    }
+
+    #[Test]
+    public function optionsActionWithEmptyUsernameWhenDiscoverableEnabled(): void
+    {
+        $request = $this->createJsonRequest(['username' => '']);
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+
+        $options = PublicKeyCredentialRequestOptions::create(
+            challenge: \random_bytes(32),
+            rpId: 'example.com',
+            allowCredentials: [],
+        );
+
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('createDiscoverableAssertionOptions')
+            ->willReturn([
+                'options' => $options,
+                'challengeToken' => 'ct_discoverable',
+            ]);
+
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('serializeRequestOptions')
+            ->with($options)
+            ->willReturn('{"challenge":"abc","rpId":"example.com","allowCredentials":[]}');
+
+        $response = $this->subject->optionsAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertArrayHasKey('options', $body);
+        self::assertSame('ct_discoverable', $body['challengeToken']);
+        self::assertSame([], $body['options']['allowCredentials']);
     }
 
     #[Test]
@@ -275,9 +318,13 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
-    public function optionsActionWithoutUsernameKey(): void
+    public function optionsActionWithoutUsernameKeyWhenDiscoverableDisabled(): void
     {
         $request = $this->createJsonRequest([]);
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
 
         $response = $this->subject->optionsAction($request);
 
@@ -306,6 +353,10 @@ final class LoginControllerTest extends TestCase
     public function optionsActionWithNonScalarUsername(): void
     {
         $request = $this->createJsonRequest(['username' => ['array', 'value']]);
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
 
         $response = $this->subject->optionsAction($request);
 

@@ -154,6 +154,75 @@ describe('bufferToBase64 (standard base64)', () => {
     });
 });
 
+describe('checkForFailedPasskeyLogin logic', () => {
+    /**
+     * These tests verify the sessionStorage-based failed passkey login detection.
+     * The actual function lives inside PasskeyLogin.js IIFE, so we test the
+     * extracted logic independently.
+     */
+
+    function checkForFailedPasskeyLogin(sessionStorage, showErrorFn) {
+        try {
+            if (sessionStorage.getItem('nr_passkey_attempt')) {
+                sessionStorage.removeItem('nr_passkey_attempt');
+                showErrorFn(
+                    'Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.',
+                );
+                return true;
+            }
+        } catch {
+            // sessionStorage may be unavailable
+        }
+        return false;
+    }
+
+    it('should show error and clear flag when nr_passkey_attempt is set', () => {
+        const storage = new Map();
+        storage.set('nr_passkey_attempt', '1');
+        const mockStorage = {
+            getItem: (key) => storage.get(key) ?? null,
+            removeItem: (key) => storage.delete(key),
+        };
+        let errorMessage = null;
+        const showError = (msg) => { errorMessage = msg; };
+
+        const result = checkForFailedPasskeyLogin(mockStorage, showError);
+
+        expect(result).toBe(true);
+        expect(errorMessage).toContain('Passkey authentication failed');
+        expect(errorMessage).toContain('not accepted');
+        expect(storage.has('nr_passkey_attempt')).toBe(false);
+    });
+
+    it('should not show error when no flag is set', () => {
+        const mockStorage = {
+            getItem: () => null,
+            removeItem: () => {},
+        };
+        let errorMessage = null;
+        const showError = (msg) => { errorMessage = msg; };
+
+        const result = checkForFailedPasskeyLogin(mockStorage, showError);
+
+        expect(result).toBe(false);
+        expect(errorMessage).toBeNull();
+    });
+
+    it('should handle sessionStorage being unavailable', () => {
+        const throwingStorage = {
+            getItem: () => { throw new Error('SecurityError'); },
+            removeItem: () => { throw new Error('SecurityError'); },
+        };
+        let errorMessage = null;
+        const showError = (msg) => { errorMessage = msg; };
+
+        const result = checkForFailedPasskeyLogin(throwingStorage, showError);
+
+        expect(result).toBe(false);
+        expect(errorMessage).toBeNull();
+    });
+});
+
 describe('base64urlToBuffer edge cases', () => {
     it('should handle already-padded input', () => {
         const encoded = 'QQ=='; // With padding

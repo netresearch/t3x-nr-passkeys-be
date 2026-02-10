@@ -41,16 +41,43 @@ class LoginController
             ? (string) $body['username']
             : '';
 
-        if ($username === '') {
-            return new JsonResponse(['error' => 'Username is required'], 400);
-        }
-
         $ip = (string) (GeneralUtility::getIndpEnv('REMOTE_ADDR') ?: '');
+
+        // Discoverable (usernameless) login
+        if ($username === '') {
+            if (!$this->configService->getConfiguration()->isDiscoverableLoginEnabled()) {
+                return new JsonResponse(['error' => 'Username is required'], 400);
+            }
+
+            try {
+                $this->rateLimiterService->checkRateLimit('login_options', $ip);
+            } catch (RuntimeException) {
+                return new JsonResponse(['error' => 'Too many requests'], 429);
+            }
+
+            $this->rateLimiterService->recordAttempt('login_options', $ip);
+
+            try {
+                $result = $this->webAuthnService->createDiscoverableAssertionOptions();
+                $optionsJson = $this->webAuthnService->serializeRequestOptions($result['options']);
+
+                return new JsonResponse([
+                    'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
+                    'challengeToken' => $result['challengeToken'],
+                ]);
+            } catch (Throwable $e) {
+                $this->logger->error('Failed to generate discoverable assertion options', [
+                    'error' => $e->getMessage(),
+                ]);
+
+                return new JsonResponse(['error' => 'Internal error'], 500);
+            }
+        }
 
         try {
             $this->rateLimiterService->checkRateLimit('login_options', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException) {
             return new JsonResponse(['error' => 'Too many requests'], 429);
         }
 
@@ -59,7 +86,6 @@ class LoginController
         // Look up user - return generic response for unknown users to prevent enumeration
         $user = $this->findBeUser($username);
         if ($user === null) {
-            // Return a dummy response to prevent user enumeration
             // Use a short sleep to normalize timing
             \usleep(\random_int(50000, 150000));
 

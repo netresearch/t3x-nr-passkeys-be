@@ -4,20 +4,29 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Authentication;
 
+use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Authentication service for passwordless login via Passkeys (WebAuthn).
  *
  * Priority: 80 (higher than SaltedPasswordService at 50)
- * - If passkey assertion data is present, verify and authenticate
+ * - If passkey assertion data is present in uident, verify and authenticate
  * - If no passkey data, pass through to next service (password)
+ *
+ * The passkey assertion and challenge token are packed into the standard
+ * userident form field as JSON with _type="passkey". This is necessary
+ * because $GLOBALS['TYPO3_REQUEST'] is not available during the auth
+ * service chain, so custom POST fields are inaccessible. The uident
+ * field is the standard TYPO3 mechanism for passing auth credentials.
  */
 class PasskeyAuthenticationService extends AbstractAuthenticationService
 {
@@ -27,18 +36,23 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
     private ?RateLimiterService $rateLimiterService = null;
 
+    /**
+     * Decoded passkey payload from uident, cached per request.
+     *
+     * @var array{assertion: string, challengeToken: string}|null|false false = not yet parsed
+     */
+    private array|null|false $passkeyPayload = false;
+
     public function getUser(): array|false
     {
         $loginData = $this->login;
         $username = (string) ($loginData['uname'] ?? '');
 
-        // Check if this is a passkey login attempt
-        $passkeyAssertion = $this->getPasskeyAssertionFromRequest();
-        if ($passkeyAssertion === null) {
+        $payload = $this->getPasskeyPayload();
+        if ($payload === null) {
             // Not a passkey login - let other services handle it
-            // But check if password login is disabled
             if ($this->getExtensionConfigService()->getConfiguration()->isDisablePasswordLogin()) {
-                $this->getLogger()->info('Password login disabled, blocking non-passkey attempt', [
+                $this->getLogger()->warning('Password login disabled, blocking non-passkey attempt', [
                     'username' => $username,
                 ]);
                 return false;
@@ -46,8 +60,28 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             return false;
         }
 
+        $this->getLogger()->info('Passkey login attempt', [
+            'username' => $username,
+            'assertion_length' => \strlen($payload['assertion']),
+        ]);
+
         if ($username === '') {
-            return false;
+            // Discoverable login: resolve user from credential ID in the assertion
+            $beUserUid = $this->getWebAuthnService()->findBeUserUidFromAssertion($payload['assertion']);
+            if ($beUserUid === null) {
+                $this->getLogger()->info('Discoverable login: could not resolve user from assertion');
+                return false;
+            }
+
+            $user = $this->fetchUserByUid($beUserUid);
+            if (!\is_array($user)) {
+                $this->getLogger()->info('Discoverable login: user not found for resolved UID', [
+                    'be_user_uid' => $beUserUid,
+                ]);
+                return false;
+            }
+
+            return $user;
         }
 
         // Look up the user by username
@@ -65,16 +99,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
     public function authUser(array $user): int
     {
-        $passkeyAssertion = $this->getPasskeyAssertionFromRequest();
-        if ($passkeyAssertion === null) {
+        $payload = $this->getPasskeyPayload();
+        if ($payload === null) {
             // Not a passkey login attempt - pass to next service
             return 100;
-        }
-
-        $challengeToken = $this->getChallengeTokenFromRequest();
-        if ($challengeToken === null) {
-            $this->getLogger()->warning('Passkey assertion without challenge token');
-            return 0;
         }
 
         $username = (string) ($this->login['uname'] ?? '');
@@ -86,8 +114,8 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
             // Verify the assertion
             $result = $this->getWebAuthnService()->verifyAssertionResponse(
-                responseJson: $passkeyAssertion,
-                challengeToken: $challengeToken,
+                responseJson: $payload['assertion'],
+                challengeToken: $payload['challengeToken'],
                 beUserUid: (int) $user['uid'],
             );
 
@@ -109,6 +137,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 'be_user_uid' => $user['uid'],
                 'username' => $username,
                 'error_code' => $e->getCode(),
+                'error_message' => $e->getMessage(),
                 'ip' => $ip,
             ]);
 
@@ -117,34 +146,78 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
     }
 
-    private function getPasskeyAssertionFromRequest(): ?string
+    /**
+     * Extract and validate the passkey payload from the uident login field.
+     *
+     * The JS packs assertion + challengeToken into userident as JSON:
+     * {"_type":"passkey","assertion":{...},"challengeToken":"..."}
+     *
+     * @return array{assertion: string, challengeToken: string}|null
+     */
+    private function getPasskeyPayload(): ?array
     {
-        $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
-        if ($request === null) {
-            return $this->login['passkey_assertion'] ?? null;
+        if ($this->passkeyPayload !== false) {
+            return $this->passkeyPayload;
         }
 
-        $parsedBody = $request->getParsedBody();
-        if (\is_array($parsedBody) && isset($parsedBody['passkey_assertion'])) {
-            return (string) $parsedBody['passkey_assertion'];
+        $this->passkeyPayload = null;
+
+        $uident = (string) ($this->login['uident'] ?? '');
+        if ($uident === '' || $uident[0] !== '{') {
+            return null;
         }
 
-        return $this->login['passkey_assertion'] ?? null;
+        try {
+            $data = \json_decode($uident, true, 16, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return null;
+        }
+
+        if (!\is_array($data) || ($data['_type'] ?? '') !== 'passkey') {
+            return null;
+        }
+
+        $assertion = $data['assertion'] ?? null;
+        $challengeToken = $data['challengeToken'] ?? null;
+
+        if (!\is_array($assertion) || !\is_string($challengeToken) || $challengeToken === '') {
+            $this->getLogger()->warning('Passkey payload has invalid structure');
+            return null;
+        }
+
+        $this->passkeyPayload = [
+            'assertion' => \json_encode($assertion, JSON_THROW_ON_ERROR),
+            'challengeToken' => $challengeToken,
+        ];
+
+        return $this->passkeyPayload;
     }
 
-    private function getChallengeTokenFromRequest(): ?string
+    /**
+     * Fetch a be_users record by UID for discoverable login.
+     *
+     * @return array<string, mixed>|false
+     */
+    private function fetchUserByUid(int $uid): array|false
     {
-        $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
-        if ($request === null) {
-            return $this->login['passkey_challenge_token'] ?? null;
-        }
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('be_users');
 
-        $parsedBody = $request->getParsedBody();
-        if (\is_array($parsedBody) && isset($parsedBody['passkey_challenge_token'])) {
-            return (string) $parsedBody['passkey_challenge_token'];
-        }
+        $row = $queryBuilder
+            ->select('*')
+            ->from('be_users')
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'uid',
+                    $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER),
+                ),
+                $queryBuilder->expr()->eq('disable', 0),
+                $queryBuilder->expr()->eq('deleted', 0),
+            )
+            ->executeQuery()
+            ->fetchAssociative();
 
-        return $this->login['passkey_challenge_token'] ?? null;
+        return $row !== false ? $row : false;
     }
 
     private function getWebAuthnService(): WebAuthnService
@@ -177,7 +250,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     private function getLogger(): \Psr\Log\LoggerInterface
     {
         if ($this->logger === null) {
-            $this->setLogger(new NullLogger());
+            try {
+                $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(static::class));
+            } catch (\Throwable) {
+                $this->setLogger(new NullLogger());
+            }
         }
 
         \assert($this->logger instanceof \Psr\Log\LoggerInterface);

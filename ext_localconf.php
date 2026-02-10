@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Netresearch\NrPasskeysBe\Authentication\PasskeyAuthenticationService;
-use Netresearch\NrPasskeysBe\LoginProvider\PasskeyLoginProvider;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
 defined('TYPO3') or die();
@@ -26,12 +25,14 @@ ExtensionManagementUtility::addService(
     ]
 );
 
-// Register passkey login provider
-$GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['backend']['loginProviders'][1700000000] = [
-    'provider' => PasskeyLoginProvider::class,
-    'sorting' => 25,
-    'iconIdentifier' => 'passkeys-be-login',
-    'label' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:login.provider.label',
+// Security audit logging for passkey authentication events.
+// WARNING and above: failed logins, lockouts, rate limiting, password-disable blocks.
+// INFO: successful logins, discoverable flow resolutions.
+// Uses ??= so site configuration can override.
+$GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfiguration'][\TYPO3\CMS\Core\Log\LogLevel::WARNING] ??= [
+    \TYPO3\CMS\Core\Log\Writer\FileWriter::class => [
+        'logFile' => 'typo3temp/var/log/passkey_auth.log',
+    ],
 ];
 
 // Register cache for challenge nonces

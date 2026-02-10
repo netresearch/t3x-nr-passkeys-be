@@ -1008,4 +1008,28 @@ final class WebAuthnServiceTest extends TestCase
         // Whitespace should be trimmed
         self::assertCount(2, $result['options']->pubKeyCredParams);
     }
+
+    #[Test]
+    public function findBeUserUidFromAssertionReturnsNullForInvalidJson(): void
+    {
+        $result = $this->subject->findBeUserUidFromAssertion('not valid json');
+
+        self::assertNull($result);
+    }
+
+    #[Test]
+    public function findBeUserUidFromAssertionReturnsNullForEmptyString(): void
+    {
+        $result = $this->subject->findBeUserUidFromAssertion('');
+
+        self::assertNull($result);
+    }
+
+    #[Test]
+    public function findBeUserUidFromAssertionReturnsNullForMalformedStructure(): void
+    {
+        $result = $this->subject->findBeUserUidFromAssertion('{"invalid": "structure"}');
+
+        self::assertNull($result);
+    }
 }

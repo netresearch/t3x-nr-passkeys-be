@@ -13,7 +13,7 @@ Tests/
     Controller/                 # Controller tests (Login, Management, Admin)
     Service/                    # Service tests (WebAuthn, Challenge, Credential, RateLimiter)
     Configuration/              # ExtensionConfiguration tests
-    LoginProvider/              # PasskeyLoginProvider tests
+    EventListener/              # InjectPasskeyLoginFields tests
   Functional/                   # Database tests (~24 tests, MySQL required, CI only)
     Service/                    # CredentialRepository functional tests
   Fuzz/                         # Fuzz tests (~122 tests, randomized input)

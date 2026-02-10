@@ -1,17 +1,17 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * E2E tests for the passkey login page rendering and behavior.
+ * E2E tests for the passkey login integration in the standard TYPO3 login form.
  *
- * These tests verify the login page UI without requiring authentication.
- * API endpoint tests are in api-endpoints.spec.ts.
+ * The passkey button is injected into the standard password login form via
+ * a PSR-14 event listener — no separate login provider or ?loginProvider= switching.
  *
  * Prerequisites:
  *   - DDEV running: `ddev start && ddev install-v13`
  *   - TYPO3 accessible at https://v13.nr-passkeys-be.ddev.site/typo3/
  */
 
-test.describe('Passkey Login Page', () => {
+test.describe('Passkey Login on Standard Form', () => {
     test.beforeEach(async ({ page }) => {
         await page.context().clearCookies();
     });
@@ -22,19 +22,16 @@ test.describe('Passkey Login Page', () => {
         await expect(page).toHaveTitle(/TYPO3/);
     });
 
-    test('passkey login form renders all required elements', async ({ page }) => {
-        await page.goto('/typo3/login?loginProvider=1700000000');
+    test('standard login form has passkey button injected', async ({ page }) => {
+        await page.goto('/typo3/login');
+        await page.waitForLoadState('networkidle');
 
+        // The passkey container should be injected by JS
         const container = page.locator('#passkey-login-container');
-
         if (await container.isVisible({ timeout: 5000 }).catch(() => false)) {
-            // Username field
-            await expect(page.locator('#passkey-username')).toBeVisible();
-            await expect(page.locator('#passkey-username')).toHaveAttribute('autocomplete', /username/);
-
             // Login button
             await expect(page.locator('#passkey-login-btn')).toBeVisible();
-            await expect(page.locator('#passkey-btn-text')).toContainText(/Continue with Passkey|Passkey/);
+            await expect(page.locator('#passkey-btn-text')).toContainText(/Sign in with Passkey|Passkey/);
 
             // Loading spinner (hidden initially)
             await expect(page.locator('#passkey-btn-loading')).toHaveClass(/d-none/);
@@ -45,29 +42,36 @@ test.describe('Passkey Login Page', () => {
             // Hidden fields for assertion data
             await expect(page.locator('#passkey-assertion')).toBeAttached();
             await expect(page.locator('#passkey-challenge-token')).toBeAttached();
-
-            // Options URL data attribute
-            await expect(container).toHaveAttribute('data-options-url', '/typo3/passkeys/login/options');
         }
     });
 
-    test('passkey form has correct data attributes', async ({ page }) => {
-        await page.goto('/typo3/login?loginProvider=1700000000');
+    test('passkey uses standard #t3-username field', async ({ page }) => {
+        await page.goto('/typo3/login');
+        await page.waitForLoadState('networkidle');
 
-        const container = page.locator('#passkey-login-container');
-        if (await container.isVisible({ timeout: 5000 }).catch(() => false)) {
-            await expect(container).toHaveAttribute('data-options-url');
-            await expect(container).toHaveAttribute('data-rp-id');
-            await expect(container).toHaveAttribute('data-origin');
-            await expect(container).toHaveAttribute('data-discoverable');
+        // The standard TYPO3 username field should be present
+        await expect(page.locator('#t3-username')).toBeVisible();
+
+        // There should be NO separate passkey username field
+        await expect(page.locator('#passkey-username')).not.toBeAttached();
+    });
+
+    test('passkey config is set via inline script', async ({ page }) => {
+        await page.goto('/typo3/login');
+        await page.waitForLoadState('networkidle');
+
+        const config = await page.evaluate(() => (window as any).NrPasskeysBeConfig);
+        if (config) {
+            expect(config).toHaveProperty('loginOptionsUrl');
+            expect(config).toHaveProperty('rpId');
+            expect(config).toHaveProperty('origin');
+            expect(config).toHaveProperty('discoverableEnabled');
         }
     });
 
     test('passkey login page runs in secure context (HTTPS)', async ({ page }) => {
-        // DDEV redirects HTTP to HTTPS, so we cannot test insecure context behavior.
-        // Instead, verify that the login page is served over a secure context,
-        // which is a prerequisite for WebAuthn to function.
-        await page.goto('/typo3/login?loginProvider=1700000000');
+        await page.goto('/typo3/login');
+        await page.waitForLoadState('networkidle');
 
         const container = page.locator('#passkey-login-container');
         if (await container.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -76,40 +80,31 @@ test.describe('Passkey Login Page', () => {
         }
     });
 
-    test('empty username shows validation error on click', async ({ page }) => {
-        await page.goto('/typo3/login?loginProvider=1700000000');
-        // Wait for JS to initialize and potentially enable/disable the button
+    test('empty username with discoverable login proceeds without validation error', async ({ page }) => {
+        await page.goto('/typo3/login');
         await page.waitForLoadState('networkidle');
 
         const container = page.locator('#passkey-login-container');
         if (await container.isVisible({ timeout: 5000 }).catch(() => false)) {
+            const config = await page.evaluate(() => (window as any).NrPasskeysBeConfig);
+            test.skip(!config?.discoverableEnabled, 'Discoverable login is disabled');
+
             const btn = page.locator('#passkey-login-btn');
-            // Wait a moment for JS initialization to complete
             await page.waitForTimeout(1000);
 
-            // Only test if button is enabled (requires HTTPS + WebAuthn API available)
             const isDisabled = await btn.isDisabled().catch(() => true);
             test.skip(isDisabled, 'Passkey button is disabled (WebAuthn not available in this context)');
 
-            await page.locator('#passkey-username').fill('');
+            // Clear the standard username field
+            await page.locator('#t3-username').fill('');
             await btn.click();
 
+            // With discoverable enabled, empty username should NOT show "Please enter your username"
+            // Instead it proceeds with the discoverable flow (shows loading or WebAuthn prompt)
             const error = page.locator('#passkey-error');
-            await expect(error).toBeVisible({ timeout: 3000 });
-            await expect(error).toContainText(/username/i);
-        }
-    });
-
-    test('password fallback link exists when password login enabled', async ({ page }) => {
-        await page.goto('/typo3/login?loginProvider=1700000000');
-
-        const container = page.locator('#passkey-login-container');
-        if (await container.isVisible({ timeout: 5000 }).catch(() => false)) {
-            const fallback = page.locator('#passkey-password-fallback');
-            // locator.isAttached() is not a valid Playwright method - use count() instead
-            if (await fallback.count() > 0) {
-                await expect(fallback).toContainText(/password/i);
-            }
+            const hasUsernameError = await error.isVisible({ timeout: 2000 }).catch(() => false)
+                && await error.textContent().then(t => /username/i.test(t || '')).catch(() => false);
+            expect(hasUsernameError).toBe(false);
         }
     });
 
@@ -121,7 +116,7 @@ test.describe('Passkey Login Page', () => {
             }
         });
 
-        await page.goto('/typo3/login?loginProvider=1700000000');
+        await page.goto('/typo3/login');
         await page.waitForLoadState('networkidle');
 
         const realErrors = consoleErrors.filter(
@@ -130,25 +125,26 @@ test.describe('Passkey Login Page', () => {
         expect(realErrors).toHaveLength(0);
     });
 
-    test('noscript warning is present in DOM', async ({ page }) => {
-        await page.goto('/typo3/login?loginProvider=1700000000');
-
-        const container = page.locator('#passkey-login-container');
-        if (await container.isVisible({ timeout: 5000 }).catch(() => false)) {
-            const noscript = page.locator('#passkey-login-container noscript');
-            await expect(noscript).toBeAttached();
-        }
-    });
-
-    test('login page has multiple login providers', async ({ page }) => {
+    test('no login provider switching needed', async ({ page }) => {
         await page.goto('/typo3/login');
         await page.waitForLoadState('networkidle');
 
-        // TYPO3 shows login providers as links with data-providerkey attribute
-        const providers = page.locator('[data-providerkey]');
-        const count = await providers.count();
-        // With our passkey provider registered, there should be at least 1 provider link
-        // (the passkey provider switch link, since password is the default)
-        expect(count).toBeGreaterThanOrEqual(1);
+        // The passkey elements should be present on the standard form
+        // without needing ?loginProvider= parameter
+        const container = page.locator('#passkey-login-container');
+        const standardForm = page.locator('#typo3-login-form');
+
+        // Standard form should be present
+        await expect(standardForm).toBeAttached();
+
+        // If passkey container is visible, it should be inside the standard form
+        if (await container.isVisible({ timeout: 5000 }).catch(() => false)) {
+            const isInsideForm = await page.evaluate(() => {
+                const form = document.getElementById('typo3-login-form');
+                const passkeyContainer = document.getElementById('passkey-login-container');
+                return form !== null && passkeyContainer !== null && form.contains(passkeyContainer);
+            });
+            expect(isInsideForm).toBe(true);
+        }
     });
 });

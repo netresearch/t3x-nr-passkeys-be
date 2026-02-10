@@ -51,7 +51,7 @@ Classes/                  -> PHP source (PSR-4: Netresearch\NrPasskeysBe\)
   Configuration/          -> ExtensionConfiguration value object
   Controller/             -> Login, Management, Admin controllers + JsonBodyTrait
   Domain/Model/           -> Credential entity (plain PHP, not Extbase)
-  LoginProvider/          -> PasskeyLoginProvider (TYPO3 login form integration)
+  EventListener/          -> InjectPasskeyLoginFields (PSR-14 event listener for login form)
   Service/                -> WebAuthn, Challenge, Credential, RateLimiter, Config services
   UserSettings/           -> User settings module integration
 Build/                    -> Tooling configuration (NOT .Build/ which is composer output)

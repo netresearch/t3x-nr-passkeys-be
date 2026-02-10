@@ -16,7 +16,7 @@ final class ExtensionConfiguration
         private readonly string $origin = '',
         private readonly int $challengeTtlSeconds = 120,
         string $userVerification = 'required',
-        private readonly bool $discoverableLoginEnabled = false,
+        private readonly bool $discoverableLoginEnabled = true,
         private readonly bool $disablePasswordLogin = false,
         private readonly int $rateLimitMaxAttempts = 10,
         private readonly int $rateLimitWindowSeconds = 300,
