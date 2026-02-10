@@ -1,4 +1,6 @@
-.. include:: ../Includes.rst.txt
+..  include:: ../Includes.rst.txt
+
+..  _configuration:
 
 =============
 Configuration
@@ -11,7 +13,7 @@ All settings are managed through the TYPO3 Extension Configuration module:
 Relying Party settings
 ======================
 
-.. confval:: rpId
+..  confval:: rpId
 
    :type: string
    :Default: *(auto-detected from HTTP_HOST)*
@@ -20,13 +22,13 @@ Relying Party settings
    TYPO3 installation (e.g. ``example.com``). If left empty, it is
    auto-detected from the ``HTTP_HOST`` server variable.
 
-   .. important::
+   ..  important::
 
       Once passkeys are registered against a specific ``rpId``, changing it
       will invalidate all existing registrations. Users would need to register
       new passkeys.
 
-.. confval:: rpName
+..  confval:: rpName
 
    :type: string
    :Default: ``TYPO3 Backend``
@@ -34,7 +36,7 @@ Relying Party settings
    A human-readable name for the Relying Party. This is displayed to users
    during passkey registration (e.g. in the browser's passkey creation dialog).
 
-.. confval:: origin
+..  confval:: origin
 
    :type: string
    :Default: *(auto-detected)*
@@ -46,7 +48,7 @@ Relying Party settings
 Challenge settings
 ==================
 
-.. confval:: challengeTtlSeconds
+..  confval:: challengeTtlSeconds
 
    :type: int
    :Default: ``120``
@@ -58,7 +60,7 @@ Challenge settings
 Discoverable login
 ==================
 
-.. confval:: discoverableLoginEnabled
+..  confval:: discoverableLoginEnabled
 
    :type: bool
    :Default: ``false``
@@ -74,7 +76,7 @@ Discoverable login
 Password login control
 ======================
 
-.. confval:: disablePasswordLogin
+..  confval:: disablePasswordLogin
 
    :type: bool
    :Default: ``false``
@@ -82,7 +84,7 @@ Password login control
    Disable traditional password login entirely. When enabled, only passkey
    authentication is accepted. Non-passkey login attempts are blocked.
 
-   .. warning::
+   ..  warning::
 
       Enabling this setting locks out any backend user who has not yet
       registered a passkey. Ensure all users have at least one registered
@@ -94,7 +96,7 @@ Password login control
 Rate limiting
 =============
 
-.. confval:: rateLimitMaxAttempts
+..  confval:: rateLimitMaxAttempts
 
    :type: int
    :Default: ``10``
@@ -103,7 +105,7 @@ Rate limiting
    rate limit window. Exceeding this limit returns HTTP 429 (Too Many
    Requests).
 
-.. confval:: rateLimitWindowSeconds
+..  confval:: rateLimitWindowSeconds
 
    :type: int
    :Default: ``300``
@@ -114,7 +116,7 @@ Rate limiting
 Account lockout
 ===============
 
-.. confval:: lockoutThreshold
+..  confval:: lockoutThreshold
 
    :type: int
    :Default: ``5``
@@ -122,7 +124,7 @@ Account lockout
    Number of consecutive failed authentication attempts before the account is
    temporarily locked. Applies per username/IP combination.
 
-.. confval:: lockoutDurationSeconds
+..  confval:: lockoutDurationSeconds
 
    :type: int
    :Default: ``900``
@@ -134,7 +136,7 @@ Account lockout
 Cryptographic algorithms
 ========================
 
-.. confval:: allowedAlgorithms
+..  confval:: allowedAlgorithms
 
    :type: string
    :Default: ``ES256``
@@ -152,7 +154,7 @@ Cryptographic algorithms
 User verification
 =================
 
-.. confval:: userVerification
+..  confval:: userVerification
 
    :type: string
    :Default: ``required``

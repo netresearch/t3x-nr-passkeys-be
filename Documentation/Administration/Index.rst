@@ -1,4 +1,6 @@
-.. include:: ../Includes.rst.txt
+..  include:: ../Includes.rst.txt
+
+..  _administration:
 
 ==============
 Administration
@@ -17,7 +19,7 @@ admin privileges.
 List user credentials
 ---------------------
 
-.. code-block:: text
+..  code-block:: text
 
    GET /typo3/passkeys/admin/list?beUserUid=<uid>
 
@@ -36,7 +38,7 @@ Response fields per credential:
 Revoke a credential
 -------------------
 
-.. code-block:: text
+..  code-block:: text
 
    POST /typo3/passkeys/admin/remove
    Content-Type: application/json
@@ -50,7 +52,7 @@ credentials cannot be used for authentication.
 Unlock a locked account
 -----------------------
 
-.. code-block:: text
+..  code-block:: text
 
    POST /typo3/passkeys/admin/unlock
    Content-Type: application/json
@@ -117,7 +119,7 @@ The extension logs all significant events using the PSR-3 logging interface:
 Configure TYPO3 logging writers to capture these events. Example for file
 logging:
 
-.. code-block:: php
+..  code-block:: php
 
    $GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfiguration'] = [
        \Psr\Log\LogLevel::INFO => [

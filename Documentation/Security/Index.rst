@@ -1,4 +1,6 @@
-.. include:: ../Includes.rst.txt
+..  include:: ../Includes.rst.txt
+
+..  _security:
 
 ========
 Security
