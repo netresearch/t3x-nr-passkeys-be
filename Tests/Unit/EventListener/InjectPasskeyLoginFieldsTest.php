@@ -11,6 +11,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
+use ReflectionMethod;
 use TYPO3\CMS\Backend\Controller\LoginController;
 use TYPO3\CMS\Backend\LoginProvider\Event\ModifyPageLayoutOnLoginProviderSelectionEvent;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
@@ -52,6 +53,21 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
 
     private function createEvent(): ModifyPageLayoutOnLoginProviderSelectionEvent
     {
+        $constructor = new ReflectionMethod(
+            ModifyPageLayoutOnLoginProviderSelectionEvent::class,
+            '__construct',
+        );
+
+        // TYPO3 v14 removed LoginController as 1st arg (3 params)
+        // TYPO3 v13 has LoginController as 1st arg (4 params)
+        if ($constructor->getNumberOfParameters() === 3) {
+            return new ModifyPageLayoutOnLoginProviderSelectionEvent(
+                $this->createMock(ViewInterface::class),
+                $this->createMock(PageRenderer::class),
+                $this->createMock(ServerRequestInterface::class),
+            );
+        }
+
         return new ModifyPageLayoutOnLoginProviderSelectionEvent(
             $this->createMock(LoginController::class),
             $this->createMock(ViewInterface::class),
