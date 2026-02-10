@@ -119,7 +119,11 @@ final class Credential
     public function getTransportsArray(): array
     {
         $decoded = \json_decode($this->transports, true);
-        return \is_array($decoded) ? \array_values($decoded) : [];
+        if (!\is_array($decoded)) {
+            return [];
+        }
+
+        return \array_values(\array_filter($decoded, '\is_string'));
     }
 
     /**
