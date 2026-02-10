@@ -40,7 +40,7 @@ Username-first flow (default)
 
 1. Navigate to the TYPO3 backend login page.
 2. Enter your **username**.
-3. Click :guilabel:`Sign in with Passkey`.
+3. Click :guilabel:`Sign in with a passkey`.
 4. Your browser will prompt you to verify with your authenticator.
 5. Upon successful verification, you are logged in.
 
@@ -49,7 +49,7 @@ Username-first flow (default)
     :class: with-shadow
     :width: 400px
 
-    Enter your username, then click Sign in with Passkey.
+    Enter your username, then click Sign in with a passkey.
 
 Discoverable login (usernameless)
 ---------------------------------

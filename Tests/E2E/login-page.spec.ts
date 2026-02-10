@@ -31,7 +31,7 @@ test.describe('Passkey Login on Standard Form', () => {
         if (await container.isVisible({ timeout: 5000 }).catch(() => false)) {
             // Login button
             await expect(page.locator('#passkey-login-btn')).toBeVisible();
-            await expect(page.locator('#passkey-btn-text')).toContainText(/Sign in with Passkey|Passkey/);
+            await expect(page.locator('#passkey-btn-text')).toContainText(/Sign in with a passkey|passkey/i);
 
             // Loading spinner (hidden initially)
             await expect(page.locator('#passkey-btn-loading')).toHaveClass(/d-none/);

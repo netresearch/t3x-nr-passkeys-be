@@ -3,7 +3,7 @@
     <file source-language="en" datatype="plaintext" original="EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf">
         <body>
             <trans-unit id="login.provider.label" resname="login.provider.label">
-                <source>Sign in with Passkey</source>
+                <source>Sign in with a passkey</source>
             </trans-unit>
             <trans-unit id="login.button.passkey" resname="login.button.passkey">
                 <source>Continue with Passkey</source>

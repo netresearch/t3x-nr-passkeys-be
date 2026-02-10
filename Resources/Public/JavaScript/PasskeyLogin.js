@@ -7,7 +7,7 @@
  *
  * Flow:
  * 1. Reads username from the standard #t3-username field
- * 2. Click "Sign in with Passkey"
+ * 2. Click "Sign in with a passkey"
  * 3. Fetch assertion options from server
  * 4. Call navigator.credentials.get()
  * 5. Submit result via the standard TYPO3 login form (#typo3-login-form)
@@ -22,11 +22,11 @@
     var loginForm = document.getElementById('typo3-login-form');
     if (!loginForm) return;
 
-    // Build and inject passkey UI into the login form
+    // Build and inject passkey UI below the login button with an "or" divider
     var container = buildPasskeyUI();
     var submitSection = document.getElementById('t3-login-submit-section');
     if (submitSection) {
-      submitSection.parentNode.insertBefore(container, submitSection);
+      submitSection.parentNode.insertBefore(container, submitSection.nextSibling);
     } else {
       loginForm.appendChild(container);
     }
@@ -228,27 +228,90 @@
     }
   }
 
+  // Material Symbols "passkey" icon (Apache 2.0, google/material-design-icons)
+  var PASSKEY_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="20" ' +
+    'viewBox="0 -960 960 960" width="20" fill="currentColor" ' +
+    'style="vertical-align:middle">' +
+    '<path d="M120-160v-112q0-34 17.5-62.5T184-378q62-31 126-46.5T440-440' +
+    'q20 0 40 1.5t40 4.5q-4 58 21 109.5t73 84.5v80H120ZM760-40l-60-60v-186' +
+    'q-44-13-72-49.5T600-420q0-58 41-99t99-41q58 0 99 41t41 99q0 45-25.5 ' +
+    '80T790-290l50 50-60 60 60 60-80 80ZM440-480q-66 0-113-47t-47-113q0-66' +
+    ' 47-113t113-47q66 0 113 47t47 113q0 66-47 113t-113 47Zm300 80q17 0 ' +
+    '28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 ' +
+    '17 11.5 28.5T740-400Z"/></svg>';
+
   function buildPasskeyUI() {
+    // All content is static/hardcoded — no user input in this markup
+    var divider = document.createElement('div');
+    divider.className = 'passkey-divider mb-2 mt-2';
+    divider.setAttribute('style', 'display:flex;align-items:center;gap:8px');
+    var hrLeft = document.createElement('hr');
+    hrLeft.setAttribute('style', 'flex:1;border:none;border-top:1px solid #ccc;margin:0');
+    var orLabel = document.createElement('span');
+    orLabel.setAttribute('style', 'color:#999;font-size:12px;text-transform:uppercase;letter-spacing:1px');
+    orLabel.textContent = 'or';
+    var hrRight = document.createElement('hr');
+    hrRight.setAttribute('style', 'flex:1;border:none;border-top:1px solid #ccc;margin:0');
+    divider.appendChild(hrLeft);
+    divider.appendChild(orLabel);
+    divider.appendChild(hrRight);
+
     var container = document.createElement('div');
     container.id = 'passkey-login-container';
     container.className = 'passkey-login';
+    container.appendChild(divider);
 
-    container.innerHTML =
-      '<div class="form-group mb-2">' +
-        '<div class="d-grid">' +
-          '<button type="button" id="passkey-login-btn" class="btn btn-default btn-block w-100">' +
-            '<span class="passkey-icon me-2">&#128274;</span>' +
-            '<span id="passkey-btn-text">Sign in with Passkey</span>' +
-            '<span id="passkey-btn-loading" class="d-none">' +
-              '<span class="spinner-border spinner-border-sm me-2" role="status"></span>' +
-              'Authenticating...' +
-            '</span>' +
-          '</button>' +
-        '</div>' +
-      '</div>' +
-      '<div id="passkey-error" class="alert alert-danger d-none mb-2" role="alert"></div>' +
-      '<input type="hidden" name="passkey_assertion" id="passkey-assertion" value="" />' +
-      '<input type="hidden" name="passkey_challenge_token" id="passkey-challenge-token" value="" />';
+    var formGroup = document.createElement('div');
+    formGroup.className = 'form-group mb-2';
+    var grid = document.createElement('div');
+    grid.className = 'd-grid';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'passkey-login-btn';
+    btn.className = 'btn btn-default btn-block w-100';
+
+    // Icon uses static SVG from Material Symbols (Apache 2.0, no user input)
+    var iconSpan = document.createElement('span');
+    iconSpan.className = 'passkey-icon me-2';
+    iconSpan.innerHTML = PASSKEY_ICON; // eslint-disable-line -- static SVG constant
+    var textSpan = document.createElement('span');
+    textSpan.id = 'passkey-btn-text';
+    textSpan.textContent = 'Sign in with a passkey';
+    var loadingSpan = document.createElement('span');
+    loadingSpan.id = 'passkey-btn-loading';
+    loadingSpan.className = 'd-none';
+    var spinner = document.createElement('span');
+    spinner.className = 'spinner-border spinner-border-sm me-2';
+    spinner.setAttribute('role', 'status');
+    loadingSpan.appendChild(spinner);
+    loadingSpan.appendChild(document.createTextNode('Authenticating\u2026'));
+
+    btn.appendChild(iconSpan);
+    btn.appendChild(textSpan);
+    btn.appendChild(loadingSpan);
+    grid.appendChild(btn);
+    formGroup.appendChild(grid);
+    container.appendChild(formGroup);
+
+    var errorDiv = document.createElement('div');
+    errorDiv.id = 'passkey-error';
+    errorDiv.className = 'alert alert-danger d-none mb-2';
+    errorDiv.setAttribute('role', 'alert');
+    container.appendChild(errorDiv);
+
+    var assertionInput = document.createElement('input');
+    assertionInput.type = 'hidden';
+    assertionInput.name = 'passkey_assertion';
+    assertionInput.id = 'passkey-assertion';
+    assertionInput.value = '';
+    container.appendChild(assertionInput);
+
+    var tokenInput = document.createElement('input');
+    tokenInput.type = 'hidden';
+    tokenInput.name = 'passkey_challenge_token';
+    tokenInput.id = 'passkey-challenge-token';
+    tokenInput.value = '';
+    container.appendChild(tokenInput);
 
     return container;
   }

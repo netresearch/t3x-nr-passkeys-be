@@ -63,7 +63,7 @@ Verify the installation
 After activation:
 
 1. The TYPO3 backend login page should show a
-   :guilabel:`Sign in with Passkey` button on the standard login form.
+   :guilabel:`Sign in with a passkey` button below the Login button.
 2. In :guilabel:`User Settings`, a "Passkeys" section should appear
    where authenticated users can register their first passkey.
 
@@ -72,8 +72,8 @@ After activation:
     :class: with-shadow
     :width: 400px
 
-    The passkey button appears on the standard login form after
-    installation.
+    The passkey button appears below the Login button, separated by
+    an "or" divider.
 
 ..  note::
 

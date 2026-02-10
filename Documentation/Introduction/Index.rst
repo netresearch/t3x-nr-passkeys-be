@@ -17,8 +17,8 @@ security keys like YubiKey.
 
 The passkey button is injected directly into the **standard TYPO3 login
 form** via a PSR-14 event listener -- no login provider switching
-needed. Users see the familiar login page with an additional
-:guilabel:`Sign in with Passkey` button.
+needed. Users see the familiar login page with a
+:guilabel:`Sign in with a passkey` button below the Login button.
 
 Passkeys are a modern, phishing-resistant replacement for passwords.
 They use public-key cryptography: the private key never leaves the
