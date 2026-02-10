@@ -10,7 +10,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use stdClass;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -20,6 +22,7 @@ final class PasskeySettingsPanelTest extends TestCase
 {
     private PageRenderer $pageRenderer;
     private CredentialRepository $credentialRepository;
+    private UriBuilder $uriBuilder;
     private PasskeySettingsPanel $subject;
 
     protected function setUp(): void
@@ -28,6 +31,21 @@ final class PasskeySettingsPanelTest extends TestCase
 
         $this->pageRenderer = $this->createMock(PageRenderer::class);
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
+
+        $this->uriBuilder = $this->createMock(UriBuilder::class);
+        $this->uriBuilder
+            ->method('buildUriFromRoute')
+            ->willReturnCallback(static function (string $routeName): Uri {
+                $routeMap = [
+                    'passkeys_manage_list' => '/typo3/passkeys/manage/list?token=test-token',
+                    'passkeys_manage_registration_options' => '/typo3/passkeys/manage/registration/options?token=test-token',
+                    'passkeys_manage_registration_verify' => '/typo3/passkeys/manage/registration/verify?token=test-token',
+                    'passkeys_manage_rename' => '/typo3/passkeys/manage/rename?token=test-token',
+                    'passkeys_manage_remove' => '/typo3/passkeys/manage/remove?token=test-token',
+                ];
+
+                return new Uri($routeMap[$routeName] ?? '/typo3/unknown');
+            });
 
         $this->subject = new PasskeySettingsPanel();
 
@@ -145,11 +163,11 @@ final class PasskeySettingsPanelTest extends TestCase
 
         $result = $this->subject->render([]);
 
-        self::assertStringContainsString('data-list-url="/typo3/passkeys/manage/list"', $result);
-        self::assertStringContainsString('data-register-options-url="/typo3/passkeys/manage/registration/options"', $result);
-        self::assertStringContainsString('data-register-verify-url="/typo3/passkeys/manage/registration/verify"', $result);
-        self::assertStringContainsString('data-rename-url="/typo3/passkeys/manage/rename"', $result);
-        self::assertStringContainsString('data-remove-url="/typo3/passkeys/manage/remove"', $result);
+        self::assertStringContainsString('data-list-url="/typo3/passkeys/manage/list?token=test-token"', $result);
+        self::assertStringContainsString('data-register-options-url="/typo3/passkeys/manage/registration/options?token=test-token"', $result);
+        self::assertStringContainsString('data-register-verify-url="/typo3/passkeys/manage/registration/verify?token=test-token"', $result);
+        self::assertStringContainsString('data-rename-url="/typo3/passkeys/manage/rename?token=test-token"', $result);
+        self::assertStringContainsString('data-remove-url="/typo3/passkeys/manage/remove?token=test-token"', $result);
     }
 
     #[Test]
@@ -319,5 +337,6 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         GeneralUtility::setSingletonInstance(PageRenderer::class, $this->pageRenderer);
         GeneralUtility::addInstance(CredentialRepository::class, $this->credentialRepository);
+        GeneralUtility::setSingletonInstance(UriBuilder::class, $this->uriBuilder);
     }
 }

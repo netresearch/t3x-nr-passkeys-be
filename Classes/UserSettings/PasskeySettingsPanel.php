@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\UserSettings;
 
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
@@ -56,10 +57,22 @@ class PasskeySettingsPanel
         $credentialRepository = GeneralUtility::makeInstance(CredentialRepository::class);
         $passkeyCount = $credentialRepository->countByBeUser($userId);
 
-        return $this->buildHtml($passkeyCount);
+        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+        $urls = [
+            'list' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_list'),
+            'registerOptions' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_registration_options'),
+            'registerVerify' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_registration_verify'),
+            'rename' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_rename'),
+            'remove' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_remove'),
+        ];
+
+        return $this->buildHtml($passkeyCount, $urls);
     }
 
-    private function buildHtml(int $passkeyCount): string
+    /**
+     * @param array<string, string> $urls Token-protected backend route URLs
+     */
+    private function buildHtml(int $passkeyCount, array $urls): string
     {
         $lang = $this->getLanguageService();
 
@@ -79,11 +92,11 @@ class PasskeySettingsPanel
             default => 'badge-success',
         };
 
-        $listUrl = \htmlspecialchars('/typo3/passkeys/manage/list', ENT_QUOTES, 'UTF-8');
-        $registerOptionsUrl = \htmlspecialchars('/typo3/passkeys/manage/registration/options', ENT_QUOTES, 'UTF-8');
-        $registerVerifyUrl = \htmlspecialchars('/typo3/passkeys/manage/registration/verify', ENT_QUOTES, 'UTF-8');
-        $renameUrl = \htmlspecialchars('/typo3/passkeys/manage/rename', ENT_QUOTES, 'UTF-8');
-        $removeUrl = \htmlspecialchars('/typo3/passkeys/manage/remove', ENT_QUOTES, 'UTF-8');
+        $listUrl = \htmlspecialchars($urls['list'], ENT_QUOTES, 'UTF-8');
+        $registerOptionsUrl = \htmlspecialchars($urls['registerOptions'], ENT_QUOTES, 'UTF-8');
+        $registerVerifyUrl = \htmlspecialchars($urls['registerVerify'], ENT_QUOTES, 'UTF-8');
+        $renameUrl = \htmlspecialchars($urls['rename'], ENT_QUOTES, 'UTF-8');
+        $removeUrl = \htmlspecialchars($urls['remove'], ENT_QUOTES, 'UTF-8');
 
         $title = \htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
         $description = \htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
