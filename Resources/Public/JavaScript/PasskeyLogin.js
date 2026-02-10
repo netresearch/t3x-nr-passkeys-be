@@ -11,8 +11,9 @@
 (function () {
   'use strict';
 
-  const container = document.getElementById('passkey-login-container');
-  if (!container) return;
+  function init() {
+    const container = document.getElementById('passkey-login-container');
+    if (!container) return;
 
   const optionsUrl = container.dataset.optionsUrl;
   const loginBtn = document.getElementById('passkey-login-btn');
@@ -213,5 +214,12 @@
       binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary);
+  }
+  } // end init()
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();

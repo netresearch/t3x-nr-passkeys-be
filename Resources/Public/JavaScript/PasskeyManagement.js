@@ -10,8 +10,9 @@
 (function () {
   'use strict';
 
-  const container = document.getElementById('passkey-management-container');
-  if (!container) return;
+  function init() {
+    const container = document.getElementById('passkey-management-container');
+    if (!container) return;
 
   const listUrl = container.dataset.listUrl || '/typo3/passkeys/manage/list';
   const registerOptionsUrl = container.dataset.registerOptionsUrl || '/typo3/passkeys/manage/registration/options';
@@ -373,5 +374,12 @@
       binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary);
+  }
+  } // end init()
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 })();
