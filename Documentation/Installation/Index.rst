@@ -69,10 +69,10 @@ After activation:
        :alt: TYPO3 login form with the passkey button visible
        :class: with-shadow
        :zoom: lightbox
-       :width: 400px
+       :width: 300px
 
-       The passkey button appears below the Login button, separated by
-       an "or" divider.
+       The passkey button appears below the Login button, separated
+       by an "or" divider.
 
 2. In :guilabel:`User Settings`, a "Passkeys" section should appear
    where authenticated users can register their first passkey.

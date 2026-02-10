@@ -69,7 +69,7 @@ When :confval:`discoverableLoginEnabled` is set to ``false``:
     :alt: Login form with username filled and passkey button ready
     :class: with-shadow
     :zoom: lightbox
-    :width: 400px
+    :width: 300px
 
     Enter your username, then click Sign in with a passkey.
 
@@ -84,7 +84,7 @@ page:
     :alt: Login form showing passkey authentication failed error
     :class: with-shadow
     :zoom: lightbox
-    :width: 400px
+    :width: 300px
 
     A clear error message tells you the passkey was not accepted.
 

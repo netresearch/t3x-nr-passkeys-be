@@ -37,10 +37,10 @@ Hello -- directly on the standard TYPO3 login form.
     :alt: TYPO3 login form with Sign in with a passkey button
     :class: with-shadow
     :zoom: lightbox
-    :width: 400px
+    :width: 300px
 
-    The passkey button appears below the Login button with an "or"
-    divider.
+    The passkey button appears below the Login button with an
+    "or" divider.
 
 ----
 
