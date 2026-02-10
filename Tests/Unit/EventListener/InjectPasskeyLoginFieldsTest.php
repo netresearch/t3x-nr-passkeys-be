@@ -58,16 +58,17 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
             '__construct',
         );
 
-        // TYPO3 v14 removed LoginController as 1st arg (3 params)
-        // TYPO3 v13 has LoginController as 1st arg (4 params)
-        if ($constructor->getNumberOfParameters() === 3) {
+        $paramCount = $constructor->getNumberOfParameters();
+
+        // TYPO3 v14: (ViewInterface, ServerRequestInterface) — 2 params
+        if ($paramCount === 2) {
             return new ModifyPageLayoutOnLoginProviderSelectionEvent(
                 $this->createMock(ViewInterface::class),
-                $this->createMock(PageRenderer::class),
                 $this->createMock(ServerRequestInterface::class),
             );
         }
 
+        // TYPO3 v13: (LoginController, ViewInterface, PageRenderer, ServerRequestInterface) — 4 params
         return new ModifyPageLayoutOnLoginProviderSelectionEvent(
             $this->createMock(LoginController::class),
             $this->createMock(ViewInterface::class),
