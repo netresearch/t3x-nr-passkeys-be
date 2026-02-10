@@ -16,6 +16,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\NullLogger;
+use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
@@ -28,6 +29,10 @@ final class RequestPayloadFuzzTest extends TestCase
         parent::setUp();
 
         $webAuthnService = $this->createMock(WebAuthnService::class);
+        $webAuthnService->method('createDiscoverableAssertionOptions')
+            ->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
+        $webAuthnService->method('createAssertionOptions')
+            ->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
         $configService = $this->createMock(ExtensionConfigurationService::class);
         $configService->method('getConfiguration')->willReturn(new ExtensionConfiguration());
         $rateLimiter = $this->createMock(RateLimiterService::class);

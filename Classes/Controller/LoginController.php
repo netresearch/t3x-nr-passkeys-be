@@ -59,7 +59,8 @@ class LoginController
 
             try {
                 $result = $this->webAuthnService->createDiscoverableAssertionOptions();
-                $optionsJson = $this->webAuthnService->serializeRequestOptions($result['options']);
+
+                $optionsJson = $this->webAuthnService->serializeRequestOptions($result['options'] ?? throw new RuntimeException('Missing assertion options'));
 
                 return new JsonResponse([
                     'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
@@ -97,7 +98,7 @@ class LoginController
         try {
             $result = $this->webAuthnService->createAssertionOptions($username, (int) $user['uid']);
 
-            $optionsJson = $this->webAuthnService->serializeRequestOptions($result['options']);
+            $optionsJson = $this->webAuthnService->serializeRequestOptions($result['options'] ?? throw new RuntimeException('Missing assertion options'));
 
             return new JsonResponse([
                 'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
