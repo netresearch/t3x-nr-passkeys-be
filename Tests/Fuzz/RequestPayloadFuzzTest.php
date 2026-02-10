@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Fuzz;
 
+use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Controller\LoginController;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
@@ -28,6 +29,7 @@ final class RequestPayloadFuzzTest extends TestCase
 
         $webAuthnService = $this->createMock(WebAuthnService::class);
         $configService = $this->createMock(ExtensionConfigurationService::class);
+        $configService->method('getConfiguration')->willReturn(new ExtensionConfiguration());
         $rateLimiter = $this->createMock(RateLimiterService::class);
         $connectionPool = $this->createMock(ConnectionPool::class);
 
