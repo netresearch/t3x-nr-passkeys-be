@@ -27,6 +27,20 @@
   const emptyEl = document.getElementById('passkey-empty');
   const countEl = document.getElementById('passkey-count');
 
+  // Use top-level window for WebAuthn API calls.
+  // TYPO3 renders the Setup module inside an iframe (typo3-iframe-module).
+  // Browser extensions like Bitwarden intercept navigator.credentials and fail
+  // inside iframes with "Invalid sameOriginWithAncestors" because they cannot
+  // determine the frame hierarchy. Using window.top avoids this entirely.
+  var credentialsAPI = navigator.credentials;
+  try {
+    if (window.top && window.top !== window && window.top.navigator && window.top.navigator.credentials) {
+      credentialsAPI = window.top.navigator.credentials;
+    }
+  } catch (e) {
+    // Cross-origin iframe - fall back to current window (should not happen in TYPO3 backend)
+  }
+
   // Check WebAuthn support
   if (!window.PublicKeyCredential) {
     showMessage('Your browser does not support Passkeys (WebAuthn).', 'warning');
@@ -189,7 +203,7 @@
         });
       }
 
-      var credential = await navigator.credentials.create({
+      var credential = await credentialsAPI.create({
         publicKey: publicKeyOptions,
       });
 
@@ -230,13 +244,6 @@
     } catch (err) {
       if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
         showMessage('Registration was cancelled.', 'info');
-      } else if (err.message && err.message.indexOf('sameOriginWithAncestors') !== -1) {
-        showMessage(
-          'A browser extension (e.g. Bitwarden) is interfering with passkey registration. '
-          + 'Please disable your password manager\'s passkey/FIDO2 feature and try again.',
-          'warning'
-        );
-        console.warn('Passkey registration blocked by browser extension:', err);
       } else {
         showMessage('Failed to register passkey. ' + err.message, 'danger');
         console.error('Register passkey error:', err);
@@ -331,18 +338,46 @@
     }
   }
 
+  var hideTimeout = null;
+
   function showMessage(text, type) {
-    if (messageEl) {
-      messageEl.className = 'alert alert-' + type;
-      messageEl.textContent = text;
-      messageEl.classList.remove('d-none');
-      setTimeout(hideMessage, 5000);
+    if (!messageEl) return;
+
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
+    }
+
+    // Clear previous content safely
+    while (messageEl.firstChild) {
+      messageEl.removeChild(messageEl.firstChild);
+    }
+
+    messageEl.className = 'alert alert-' + type + ' alert-dismissible';
+    messageEl.classList.remove('d-none');
+
+    var textNode = document.createTextNode(text);
+    messageEl.appendChild(textNode);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'btn-close';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.addEventListener('click', hideMessage);
+    messageEl.appendChild(closeBtn);
+
+    // Only auto-hide success and info messages
+    if (type === 'success' || type === 'info') {
+      hideTimeout = setTimeout(hideMessage, 5000);
     }
   }
 
   function hideMessage() {
-    if (messageEl) {
-      messageEl.classList.add('d-none');
+    if (!messageEl) return;
+    messageEl.classList.add('d-none');
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      hideTimeout = null;
     }
   }
 
