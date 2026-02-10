@@ -85,7 +85,7 @@ Extension settings are available in **Admin Tools > Settings > Extension Configu
 | `maxFailedAttempts` | `5` | Failed login attempts before account lockout |
 | `lockoutDuration` | `900` | Lockout duration in seconds (15 min) |
 | `disablePasswordLogin` | `false` | Block password login when passkey is registered |
-| `discoverableLoginEnabled` | `false` | Allow username-less login via resident credentials |
+| `discoverableLoginEnabled` | `true` | Allow username-less login via resident credentials |
 
 ## How It Works
 

@@ -63,15 +63,15 @@ Discoverable login
 ..  confval:: discoverableLoginEnabled
 
    :type: bool
-   :Default: ``false``
+   :Default: ``true``
 
-   Enable discoverable (identifierless) login. When enabled, the browser can
-   suggest available passkeys without the user entering a username first
-   (Conditional UI / Variant B). The user simply clicks a suggested passkey
-   from the browser's autofill dropdown.
+   Enable discoverable (identifierless) login. When enabled (default), the
+   browser can suggest available passkeys without the user entering a username
+   first (Conditional UI / Variant B). The user simply clicks a suggested
+   passkey from the browser's autofill dropdown.
 
-   When disabled (default), users must enter their username first, then
-   authenticate with their passkey (Variant A: username-first flow).
+   When disabled, users must enter their username first, then authenticate
+   with their passkey (Variant A: username-first flow).
 
 Password login control
 ======================

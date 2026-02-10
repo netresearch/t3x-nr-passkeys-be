@@ -26,6 +26,7 @@ one passkey:
 ..  figure:: /Images/UserSettings/PasskeyManagement.png
     :alt: User Settings page with Passkeys management section
     :class: with-shadow
+    :zoom: lightbox
 
     Manage your passkeys in the User Settings module.
 
@@ -35,26 +36,10 @@ example, one on your laptop and one on a hardware security key.
 Logging in with a passkey
 =========================
 
-Username-first flow (default)
------------------------------
+Discoverable login (default)
+----------------------------
 
-1. Navigate to the TYPO3 backend login page.
-2. Enter your **username**.
-3. Click :guilabel:`Sign in with a passkey`.
-4. Your browser will prompt you to verify with your authenticator.
-5. Upon successful verification, you are logged in.
-
-..  figure:: /Images/Login/LoginPageUsernameFirst.png
-    :alt: Login form with username filled and passkey button ready
-    :class: with-shadow
-    :width: 400px
-
-    Enter your username, then click Sign in with a passkey.
-
-Discoverable login (usernameless)
----------------------------------
-
-When :confval:`discoverableLoginEnabled` is set to ``true``:
+With :confval:`discoverableLoginEnabled` enabled (the default):
 
 1. Navigate to the TYPO3 backend login page.
 2. The browser may automatically show available passkeys in an
@@ -69,6 +54,25 @@ When :confval:`discoverableLoginEnabled` is set to ``true``:
     *resident credential* (stored on the authenticator). Most modern
     authenticators do this by default.
 
+Username-first flow
+-------------------
+
+When :confval:`discoverableLoginEnabled` is set to ``false``:
+
+1. Navigate to the TYPO3 backend login page.
+2. Enter your **username**.
+3. Click :guilabel:`Sign in with a passkey`.
+4. Your browser will prompt you to verify with your authenticator.
+5. Upon successful verification, you are logged in.
+
+..  figure:: /Images/Login/LoginPageUsernameFirst.png
+    :alt: Login form with username filled and passkey button ready
+    :class: with-shadow
+    :zoom: lightbox
+    :width: 400px
+
+    Enter your username, then click Sign in with a passkey.
+
 Error handling
 --------------
 
@@ -79,6 +83,7 @@ page:
 ..  figure:: /Images/Login/LoginPagePasskeyError.png
     :alt: Login form showing passkey authentication failed error
     :class: with-shadow
+    :zoom: lightbox
     :width: 400px
 
     A clear error message tells you the passkey was not accepted.
