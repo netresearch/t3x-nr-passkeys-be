@@ -67,9 +67,8 @@ After activation:
 
    ..  figure:: /Images/Login/LoginPageWithPasskey.png
        :alt: TYPO3 login form with the passkey button visible
-       :class: with-shadow
+       :width: 200px
        :zoom: lightbox
-       :width: 300px
 
        The passkey button appears below the Login button, separated
        by an "or" divider.

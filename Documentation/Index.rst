@@ -35,9 +35,8 @@ Hello -- directly on the standard TYPO3 login form.
 
 ..  figure:: /Images/Login/LoginPageWithPasskey.png
     :alt: TYPO3 login form with Sign in with a passkey button
-    :class: with-shadow
+    :width: 200px
     :zoom: lightbox
-    :width: 300px
 
     The passkey button appears below the Login button with an
     "or" divider.
