@@ -12,6 +12,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
+use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\View\ViewInterface;
 use TYPO3\CMS\Fluid\View\FluidViewAdapter;
@@ -22,6 +24,7 @@ final class PasskeyLoginProviderTest extends TestCase
 {
     private ExtensionConfigurationService $configService;
     private PageRenderer $pageRenderer;
+    private UriBuilder $uriBuilder;
     private PasskeyLoginProvider $subject;
 
     protected function setUp(): void
@@ -31,9 +34,26 @@ final class PasskeyLoginProviderTest extends TestCase
         $this->configService = $this->createMock(ExtensionConfigurationService::class);
         $this->pageRenderer = $this->createMock(PageRenderer::class);
 
+        $this->uriBuilder = $this->createMock(UriBuilder::class);
+        $this->uriBuilder
+            ->method('buildUriFromRoute')
+            ->willReturnCallback(static function (string $routeName, array $params = []): Uri {
+                $routeMap = [
+                    'passkeys_login_options' => '/typo3/passkeys/login/options',
+                    'login' => '/typo3/login',
+                ];
+                $url = $routeMap[$routeName] ?? '/typo3/unknown';
+                if ($params !== []) {
+                    $url .= '?' . \http_build_query($params);
+                }
+
+                return new Uri($url);
+            });
+
         $this->subject = new PasskeyLoginProvider(
             $this->configService,
             $this->pageRenderer,
+            $this->uriBuilder,
         );
     }
 
@@ -43,9 +63,10 @@ final class PasskeyLoginProviderTest extends TestCase
         // Arrange
         $configService = $this->createMock(ExtensionConfigurationService::class);
         $pageRenderer = $this->createMock(PageRenderer::class);
+        $uriBuilder = $this->createMock(UriBuilder::class);
 
         // Act
-        $subject = new PasskeyLoginProvider($configService, $pageRenderer);
+        $subject = new PasskeyLoginProvider($configService, $pageRenderer, $uriBuilder);
 
         // Assert
         self::assertInstanceOf(PasskeyLoginProvider::class, $subject);

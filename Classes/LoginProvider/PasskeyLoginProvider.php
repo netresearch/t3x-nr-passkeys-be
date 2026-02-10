@@ -7,6 +7,7 @@ namespace Netresearch\NrPasskeysBe\LoginProvider;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\LoginProvider\LoginProviderInterface;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\View\ViewInterface;
@@ -18,6 +19,7 @@ class PasskeyLoginProvider implements LoginProviderInterface
     public function __construct(
         private readonly ExtensionConfigurationService $configService,
         private readonly PageRenderer $pageRenderer,
+        private readonly UriBuilder $uriBuilder,
     ) {}
 
     public function render(ViewInterface|StandaloneView $view, PageRenderer $pageRenderer, $loginType): void
@@ -82,10 +84,10 @@ class PasskeyLoginProvider implements LoginProviderInterface
             'passkeysEnabled' => true,
             'rpId' => $this->configService->getEffectiveRpId(),
             'origin' => $this->configService->getEffectiveOrigin(),
-            'loginOptionsUrl' => '/typo3/passkeys/login/options',
+            'loginOptionsUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_options'),
             'discoverableEnabled' => $config->isDiscoverableLoginEnabled(),
             'passwordLoginDisabled' => $config->isDisablePasswordLogin(),
-            'passwordLoginUrl' => '/typo3/login?loginProvider=1433416747',
+            'passwordLoginUrl' => (string) $this->uriBuilder->buildUriFromRoute('login', ['loginProvider' => '1433416747']),
         ]);
     }
 }
