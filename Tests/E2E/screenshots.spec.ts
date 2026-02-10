@@ -75,16 +75,30 @@ test.describe('Documentation Screenshots', () => {
 
         await page.goto('/typo3/module/user/setup');
         await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(500);
 
-        // Try to find the passkey section
-        const passkeySection = page.locator('[data-passkey-management]').or(
-            page.locator('#passkey-management-container'),
+        // Content is inside the list_frame iframe
+        const contentFrame = page.frame('list_frame') ?? page;
+
+        // Click the "Account security" tab
+        const securityTab = contentFrame.locator(
+            'text=Account security',
         );
-
-        if (await passkeySection.isVisible({ timeout: 5000 }).catch(() => false)) {
-            await passkeySection.scrollIntoViewIfNeeded();
+        if (await securityTab.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await securityTab.click();
             await page.waitForTimeout(500);
         }
+
+        // Scroll to show the Passkeys section centered in view
+        await contentFrame.evaluate(() => {
+            const passkeys = Array.from(
+                document.querySelectorAll('h4, h3, legend, label, strong'),
+            ).find(e => e.textContent?.includes('Passkeys'));
+            if (passkeys) {
+                passkeys.scrollIntoView({ block: 'center' });
+            }
+        });
+        await page.waitForTimeout(300);
 
         await page.screenshot({
             path: `${SCREENSHOT_DIR}/UserSettings/PasskeyManagement.png`,
