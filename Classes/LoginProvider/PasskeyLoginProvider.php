@@ -10,6 +10,7 @@ use TYPO3\CMS\Backend\LoginProvider\LoginProviderInterface;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\View\ViewInterface;
+use TYPO3\CMS\Fluid\View\FluidViewAdapter;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 
 class PasskeyLoginProvider implements LoginProviderInterface
@@ -42,7 +43,11 @@ class PasskeyLoginProvider implements LoginProviderInterface
     }
 
     /**
-     * TYPO3 v14+ login provider method (replaces render()).
+     * TYPO3 v13.4+ login provider method (replaces render()).
+     *
+     * Returns a template name relative to the template root paths.
+     * The extension's template root path is added to the view so
+     * that Fluid can resolve Login/PasskeyLogin.html.
      */
     public function modifyView(ServerRequestInterface $request, ViewInterface $view): string
     {
@@ -57,7 +62,16 @@ class PasskeyLoginProvider implements LoginProviderInterface
             true,
         );
 
-        return 'EXT:nr_passkeys_be/Resources/Private/Templates/Login/PasskeyLogin.html';
+        // Add extension template root path so the view can resolve our template.
+        // TYPO3's TemplatePaths::ensureAbsolutePath() resolves EXT: notation.
+        if ($view instanceof FluidViewAdapter) {
+            $templatePaths = $view->getRenderingContext()->getTemplatePaths();
+            $existingPaths = $templatePaths->getTemplateRootPaths();
+            $existingPaths[] = 'EXT:nr_passkeys_be/Resources/Private/Templates';
+            $templatePaths->setTemplateRootPaths($existingPaths);
+        }
+
+        return 'Login/PasskeyLogin';
     }
 
     private function assignViewVariables(ViewInterface|StandaloneView $view): void

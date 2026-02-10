@@ -14,6 +14,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\View\ViewInterface;
+use TYPO3\CMS\Fluid\View\FluidViewAdapter;
 use TYPO3\CMS\Fluid\View\StandaloneView;
 
 #[CoversClass(PasskeyLoginProvider::class)]
@@ -523,7 +524,7 @@ final class PasskeyLoginProviderTest extends TestCase
     }
 
     #[Test]
-    public function modifyViewReturnsTemplatePath(): void
+    public function modifyViewReturnsRelativeTemplateName(): void
     {
         $config = new ExtensionConfiguration();
 
@@ -546,10 +547,81 @@ final class PasskeyLoginProviderTest extends TestCase
 
         $result = $this->subject->modifyView($request, $view);
 
-        self::assertSame(
-            'EXT:nr_passkeys_be/Resources/Private/Templates/Login/PasskeyLogin.html',
-            $result,
-        );
+        self::assertSame('Login/PasskeyLogin', $result);
+    }
+
+    #[Test]
+    public function modifyViewAddsTemplateRootPathForFluidViewAdapter(): void
+    {
+        $config = new ExtensionConfiguration();
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn($config);
+
+        $this->configService
+            ->method('getEffectiveRpId')
+            ->willReturn('example.com');
+
+        $this->configService
+            ->method('getEffectiveOrigin')
+            ->willReturn('https://example.com');
+
+        $templatePaths = $this->createMock(\TYPO3Fluid\Fluid\View\TemplatePaths::class);
+        $templatePaths
+            ->expects(self::once())
+            ->method('getTemplateRootPaths')
+            ->willReturn(['/existing/path']);
+        $templatePaths
+            ->expects(self::once())
+            ->method('setTemplateRootPaths')
+            ->with(['/existing/path', 'EXT:nr_passkeys_be/Resources/Private/Templates']);
+
+        $renderingContext = $this->createMock(\TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface::class);
+        $renderingContext
+            ->method('getTemplatePaths')
+            ->willReturn($templatePaths);
+
+        $fluidView = $this->createMock(FluidViewAdapter::class);
+        $fluidView->method('assignMultiple');
+        $fluidView
+            ->method('getRenderingContext')
+            ->willReturn($renderingContext);
+
+        $request = $this->createMock(ServerRequestInterface::class);
+
+        $result = $this->subject->modifyView($request, $fluidView);
+
+        self::assertSame('Login/PasskeyLogin', $result);
+    }
+
+    #[Test]
+    public function modifyViewSkipsTemplateRootPathForPlainViewInterface(): void
+    {
+        $config = new ExtensionConfiguration();
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn($config);
+
+        $this->configService
+            ->method('getEffectiveRpId')
+            ->willReturn('example.com');
+
+        $this->configService
+            ->method('getEffectiveOrigin')
+            ->willReturn('https://example.com');
+
+        // Plain ViewInterface mock - no template path methods
+        $view = $this->createMock(ViewInterface::class);
+        $view->method('assignMultiple');
+
+        $request = $this->createMock(ServerRequestInterface::class);
+
+        // Should not throw - just skips the template root path addition
+        $result = $this->subject->modifyView($request, $view);
+
+        self::assertSame('Login/PasskeyLogin', $result);
     }
 
     #[Test]
