@@ -116,6 +116,7 @@ final class PasskeyLoginProviderTest extends TestCase
             'loginOptionsUrl' => '/typo3/passkeys/login/options',
             'discoverableEnabled' => true,
             'passwordLoginDisabled' => false,
+            'passwordLoginUrl' => '/typo3/login?loginProvider=1433416747',
         ];
 
         $view = $this->createMock(ViewInterface::class);
@@ -160,6 +161,7 @@ final class PasskeyLoginProviderTest extends TestCase
             'loginOptionsUrl' => '/typo3/passkeys/login/options',
             'discoverableEnabled' => false,
             'passwordLoginDisabled' => true,
+            'passwordLoginUrl' => '/typo3/login?loginProvider=1433416747',
         ];
 
         $view = $this->createMock(ViewInterface::class);
@@ -473,6 +475,7 @@ final class PasskeyLoginProviderTest extends TestCase
             'loginOptionsUrl' => '/typo3/passkeys/login/options',
             'discoverableEnabled' => true,
             'passwordLoginDisabled' => true,
+            'passwordLoginUrl' => '/typo3/login?loginProvider=1433416747',
         ];
 
         $view = $this->createMock(ViewInterface::class);

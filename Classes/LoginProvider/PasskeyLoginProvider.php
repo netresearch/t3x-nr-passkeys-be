@@ -85,6 +85,7 @@ class PasskeyLoginProvider implements LoginProviderInterface
             'loginOptionsUrl' => '/typo3/passkeys/login/options',
             'discoverableEnabled' => $config->isDiscoverableLoginEnabled(),
             'passwordLoginDisabled' => $config->isDisablePasswordLogin(),
+            'passwordLoginUrl' => '/typo3/login?loginProvider=1433416747',
         ]);
     }
 }

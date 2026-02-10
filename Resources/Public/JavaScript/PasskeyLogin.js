@@ -153,13 +153,13 @@
       setLoading(false);
 
       if (err.name === 'NotAllowedError') {
-        showError('Authentication was cancelled.');
+        showError('Authentication was cancelled or no passkey found for this site. Have you registered a passkey?');
       } else if (err.name === 'SecurityError') {
         showError('Security error. Please check your connection.');
       } else if (err.name === 'AbortError') {
         showError('Authentication was cancelled.');
       } else {
-        showError('Authentication failed. Please try again.');
+        showError('Authentication failed: ' + (err.message || 'Please try again.'));
         console.error('Passkey login error:', err);
       }
     }
