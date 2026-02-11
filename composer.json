@@ -42,7 +42,8 @@
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5",
         "saschaegerer/phpstan-typo3": "^2.0",
-        "typo3/testing-framework": "^9.0"
+        "typo3/testing-framework": "^9.0",
+        "phpat/phpat": "^0.12.2"
     },
     "autoload": {
         "psr-4": {

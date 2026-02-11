@@ -2,6 +2,7 @@ parameters:
     level: 10
     paths:
         - ../Classes
+        - ../Tests/Architecture
     tmpDir: ../.Build/var/phpstan
     treatPhpDocTypesAsCertain: false
     reportUnmatchedIgnoredErrors: true
@@ -44,3 +45,9 @@ parameters:
         -
             message: '#no value type specified in iterable type array#'
             path: ../Classes/Authentication/PasskeyAuthenticationService.php
+
+services:
+    -
+        class: Netresearch\NrPasskeysBe\Tests\Architecture\ArchitectureTest
+        tags:
+            - phpat.test
