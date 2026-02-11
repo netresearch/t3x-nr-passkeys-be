@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
+use JsonException;
 use Psr\Http\Message\ServerRequestInterface;
 
 trait JsonBodyTrait
@@ -18,12 +19,21 @@ trait JsonBodyTrait
             return $body;
         }
 
+        $contentType = $request->getHeaderLine('Content-Type');
+        if ($contentType !== '' && !\str_contains($contentType, 'application/json')) {
+            return [];
+        }
+
         $content = (string) $request->getBody();
         if ($content === '') {
             return [];
         }
 
-        $decoded = \json_decode($content, true);
+        try {
+            $decoded = \json_decode($content, true, 16, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return [];
+        }
 
         return \is_array($decoded) ? $decoded : [];
     }
