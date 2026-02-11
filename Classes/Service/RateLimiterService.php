@@ -120,16 +120,16 @@ class RateLimiterService
 
     private function buildKey(string $endpoint, string $identifier): string
     {
-        return 'rl_' . $this->sanitize($endpoint) . '_' . $this->sanitize($identifier);
+        return 'rl_' . \hash('sha256', $endpoint . '|' . $identifier);
     }
 
     private function buildLockoutKey(string $username, string $ip): string
     {
-        return 'lo_' . $this->sanitize($username) . '_' . $this->sanitize($ip);
+        return 'lo_' . \hash('sha256', $username . '|' . $ip);
     }
 
     private function sanitize(string $value): string
     {
-        return \preg_replace('/[^a-zA-Z0-9_]/', '', \str_replace(['.', ':', '-'], '_', $value)) ?? '';
+        return \hash('sha256', $value);
     }
 }

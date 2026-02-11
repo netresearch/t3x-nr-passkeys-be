@@ -246,7 +246,7 @@ final class RateLimiterServiceTest extends TestCase
             ->with(
                 self::isType('string'),
                 '1',
-                ['lockout_admin'],
+                ['lockout_' . \hash('sha256', 'admin')],
                 900, // lockoutDurationSeconds
             );
 
@@ -267,7 +267,7 @@ final class RateLimiterServiceTest extends TestCase
             ->with(
                 self::isType('string'),
                 '3',
-                ['lockout_admin'],
+                ['lockout_' . \hash('sha256', 'admin')],
                 900,
             );
 
@@ -308,7 +308,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('flushByTag')
-            ->with('lockout_admin');
+            ->with('lockout_' . \hash('sha256', 'admin'));
 
         // remove() should NOT be called (it only does flushByTag path)
         $this->rateLimitCacheMock
@@ -319,20 +319,20 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
-    public function rateLimitKeyIsSanitized(): void
+    public function rateLimitKeyUsesHash(): void
     {
-        // Using special characters that should be sanitized
+        // Keys now use sha256 hash for collision-free sanitization
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn(false);
+
+        $expectedKey = 'rl_' . \hash('sha256', 'register/passkey|192.168.1.1');
 
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('set')
             ->with(
-                // Key: rl_ + sanitized(endpoint) + _ + sanitized(identifier)
-                // Dots, colons, dashes converted to underscores, then non-alnum/underscore removed
-                self::matchesRegularExpression('/^rl_[a-zA-Z0-9_]+_[a-zA-Z0-9_]+$/'),
+                $expectedKey,
                 '1',
                 [],
                 300,
@@ -342,24 +342,22 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
-    public function lockoutKeyIsSanitized(): void
+    public function lockoutKeyUsesHash(): void
     {
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn(false);
 
+        $expectedKey = 'lo_' . \hash('sha256', 'user@example.com|2001:db8::1');
+        $expectedTag = 'lockout_' . \hash('sha256', 'user@example.com');
+
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('set')
             ->with(
-                // Key: lo_ + sanitized(username) + _ + sanitized(ip)
-                self::matchesRegularExpression('/^lo_[a-zA-Z0-9_]+_[a-zA-Z0-9_]+$/'),
+                $expectedKey,
                 '1',
-                // Tag: lockout_ + sanitized(username)
-                self::callback(static function (array $tags): bool {
-                    return \count($tags) === 1
-                        && \preg_match('/^lockout_[a-zA-Z0-9_]+$/', $tags[0]) === 1;
-                }),
+                [$expectedTag],
                 900,
             );
 
@@ -373,7 +371,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('flushByTag')
-            ->with('lockout_testuser');
+            ->with('lockout_' . \hash('sha256', 'testuser'));
 
         $this->rateLimitCacheMock
             ->expects(self::never())
@@ -385,29 +383,31 @@ final class RateLimiterServiceTest extends TestCase
     #[Test]
     public function recordSuccessClearsCorrectKey(): void
     {
+        $expectedKey = 'lo_' . \hash('sha256', 'admin|192.168.1.1');
+
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('remove')
-            ->with(self::matchesRegularExpression('/^lo_admin_192_168_1_1$/'));
+            ->with($expectedKey);
 
         $this->subject->recordSuccess('admin', '192.168.1.1');
     }
 
     #[Test]
-    public function sanitizeHandlesSpecialCharacters(): void
+    public function hashHandlesSpecialCharacters(): void
     {
         // Test with special characters in both endpoint and identifier
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn(false);
 
+        $expectedKey = 'rl_' . \hash('sha256', 'login:options/v2|::1');
+
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('set')
             ->with(
-                // Dots, colons, dashes should be converted to underscores
-                // Then non-alnum/underscore removed
-                self::matchesRegularExpression('/^rl_[a-zA-Z0-9_]+_[a-zA-Z0-9_]+$/'),
+                $expectedKey,
                 '1',
                 [],
                 300,
