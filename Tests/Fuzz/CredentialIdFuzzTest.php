@@ -97,7 +97,7 @@ final class CredentialIdFuzzTest extends TestCase
     }
 
     #[Test]
-    public function toPublicArrayNeverLeaksSensitiveData(): void
+    public function toCredentialInfoNeverLeaksSensitiveData(): void
     {
         $credential = new Credential(
             uid: 1,
@@ -112,24 +112,25 @@ final class CredentialIdFuzzTest extends TestCase
             lastUsedAt: \time(),
         );
 
-        $public = $credential->toPublicArray();
+        $info = $credential->toCredentialInfo();
+        $serialized = $info->jsonSerialize();
 
         // Must NOT contain sensitive fields
-        $this->assertArrayNotHasKey('credentialId', $public);
-        $this->assertArrayNotHasKey('credential_id', $public);
-        $this->assertArrayNotHasKey('publicKeyCose', $public);
-        $this->assertArrayNotHasKey('public_key_cose', $public);
-        $this->assertArrayNotHasKey('userHandle', $public);
-        $this->assertArrayNotHasKey('user_handle', $public);
-        $this->assertArrayNotHasKey('beUser', $public);
-        $this->assertArrayNotHasKey('be_user', $public);
-        $this->assertArrayNotHasKey('aaguid', $public);
+        $this->assertArrayNotHasKey('credentialId', $serialized);
+        $this->assertArrayNotHasKey('credential_id', $serialized);
+        $this->assertArrayNotHasKey('publicKeyCose', $serialized);
+        $this->assertArrayNotHasKey('public_key_cose', $serialized);
+        $this->assertArrayNotHasKey('userHandle', $serialized);
+        $this->assertArrayNotHasKey('user_handle', $serialized);
+        $this->assertArrayNotHasKey('beUser', $serialized);
+        $this->assertArrayNotHasKey('be_user', $serialized);
+        $this->assertArrayNotHasKey('aaguid', $serialized);
 
         // Must contain only safe fields
-        $this->assertArrayHasKey('uid', $public);
-        $this->assertArrayHasKey('label', $public);
-        $this->assertArrayHasKey('createdAt', $public);
-        $this->assertArrayHasKey('lastUsedAt', $public);
-        $this->assertArrayHasKey('isRevoked', $public);
+        $this->assertArrayHasKey('uid', $serialized);
+        $this->assertArrayHasKey('label', $serialized);
+        $this->assertArrayHasKey('createdAt', $serialized);
+        $this->assertArrayHasKey('lastUsedAt', $serialized);
+        $this->assertArrayHasKey('isRevoked', $serialized);
     }
 }

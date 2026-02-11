@@ -6,6 +6,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\Authentication;
 
 use Netresearch\NrPasskeysBe\Authentication\PasskeyAuthenticationService;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
+use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
@@ -109,10 +110,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
                 challengeToken: 'challenge-token-123',
                 beUserUid: 42,
             )
-            ->willReturn([
-                'credential' => $credential,
-                'source' => $this->createMock(PublicKeyCredentialSource::class),
-            ]);
+            ->willReturn(new VerifiedAssertion(
+                credential: $credential,
+                source: $this->createMock(PublicKeyCredentialSource::class),
+            ));
 
         $this->rateLimiterService
             ->expects(self::once())
@@ -210,10 +211,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         $this->webAuthnService
             ->method('verifyAssertionResponse')
-            ->willReturn([
-                'credential' => $credential,
-                'source' => $this->createMock(PublicKeyCredentialSource::class),
-            ]);
+            ->willReturn(new VerifiedAssertion(
+                credential: $credential,
+                source: $this->createMock(PublicKeyCredentialSource::class),
+            ));
 
         $this->rateLimiterService
             ->expects(self::once())
@@ -576,10 +577,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
                 challengeToken: 'cached-token',
                 beUserUid: 42,
             )
-            ->willReturn([
-                'credential' => $credential,
-                'source' => $this->createMock(PublicKeyCredentialSource::class),
-            ]);
+            ->willReturn(new VerifiedAssertion(
+                credential: $credential,
+                source: $this->createMock(PublicKeyCredentialSource::class),
+            ));
 
         // Both getUser and authUser should use the same decoded payload
         $user = $service->getUser();

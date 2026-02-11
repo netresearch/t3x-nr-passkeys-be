@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
 
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
+use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
+use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
@@ -97,12 +99,11 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createRegistrationOptions($beUserUid, $username, $displayName);
 
-        self::assertArrayHasKey('options', $result);
-        self::assertArrayHasKey('challengeToken', $result);
-        self::assertInstanceOf(PublicKeyCredentialCreationOptions::class, $result['options']);
-        self::assertSame($challengeToken, $result['challengeToken']);
+        self::assertInstanceOf(RegistrationOptions::class, $result);
+        self::assertInstanceOf(PublicKeyCredentialCreationOptions::class, $result->options);
+        self::assertSame($challengeToken, $result->challengeToken);
 
-        $options = $result['options'];
+        $options = $result->options;
         self::assertSame($challenge, $options->challenge);
         self::assertSame('example.com', $options->rp->id);
         self::assertSame('Test TYPO3', $options->rp->name);
@@ -157,7 +158,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createRegistrationOptions($beUserUid, $username, $displayName);
 
-        $options = $result['options'];
+        $options = $result->options;
         self::assertCount(1, $options->excludeCredentials);
         self::assertSame('existing-credential-id', $options->excludeCredentials[0]->id);
         self::assertSame(['usb', 'nfc'], $options->excludeCredentials[0]->transports);
@@ -209,12 +210,11 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createAssertionOptions($username, $beUserUid);
 
-        self::assertArrayHasKey('options', $result);
-        self::assertArrayHasKey('challengeToken', $result);
-        self::assertInstanceOf(PublicKeyCredentialRequestOptions::class, $result['options']);
-        self::assertSame($challengeToken, $result['challengeToken']);
+        self::assertInstanceOf(AssertionOptions::class, $result);
+        self::assertInstanceOf(PublicKeyCredentialRequestOptions::class, $result->options);
+        self::assertSame($challengeToken, $result->challengeToken);
 
-        $options = $result['options'];
+        $options = $result->options;
         self::assertSame($challenge, $options->challenge);
         self::assertSame('example.com', $options->rpId);
         self::assertSame('preferred', $options->userVerification);
@@ -254,12 +254,11 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createDiscoverableAssertionOptions();
 
-        self::assertArrayHasKey('options', $result);
-        self::assertArrayHasKey('challengeToken', $result);
-        self::assertInstanceOf(PublicKeyCredentialRequestOptions::class, $result['options']);
-        self::assertSame($challengeToken, $result['challengeToken']);
+        self::assertInstanceOf(AssertionOptions::class, $result);
+        self::assertInstanceOf(PublicKeyCredentialRequestOptions::class, $result->options);
+        self::assertSame($challengeToken, $result->challengeToken);
 
-        $options = $result['options'];
+        $options = $result->options;
         self::assertSame($challenge, $options->challenge);
         self::assertSame('example.com', $options->rpId);
         self::assertSame('required', $options->userVerification);
@@ -325,8 +324,8 @@ final class WebAuthnServiceTest extends TestCase
         $result1 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
         $result2 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
 
-        $userHandle1 = $result1['options']->user->id;
-        $userHandle2 = $result2['options']->user->id;
+        $userHandle1 = $result1->options->user->id;
+        $userHandle2 = $result2->options->user->id;
 
         self::assertSame($userHandle1, $userHandle2, 'User handle must be deterministic for same UID');
     }
@@ -344,8 +343,8 @@ final class WebAuthnServiceTest extends TestCase
         $result1 = $this->subject->createRegistrationOptions(100, 'user1', 'User 1');
         $result2 = $this->subject->createRegistrationOptions(200, 'user2', 'User 2');
 
-        $userHandle1 = $result1['options']->user->id;
-        $userHandle2 = $result2['options']->user->id;
+        $userHandle1 = $result1->options->user->id;
+        $userHandle2 = $result2->options->user->id;
 
         self::assertNotSame($userHandle1, $userHandle2, 'Different users must have different user handles');
     }
@@ -361,7 +360,7 @@ final class WebAuthnServiceTest extends TestCase
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
 
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-        $json = $this->subject->serializeCreationOptions($result['options']);
+        $json = $this->subject->serializeCreationOptions($result->options);
 
         self::assertJson($json);
         $decoded = \json_decode($json, true);
@@ -383,7 +382,7 @@ final class WebAuthnServiceTest extends TestCase
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
 
         $result = $this->subject->createAssertionOptions('user', 456);
-        $json = $this->subject->serializeRequestOptions($result['options']);
+        $json = $this->subject->serializeRequestOptions($result->options);
 
         self::assertJson($json);
         $decoded = \json_decode($json, true);
@@ -533,7 +532,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
-        self::assertCount($expectedCount, $result['options']->pubKeyCredParams);
+        self::assertCount($expectedCount, $result->options->pubKeyCredParams);
     }
 
     public static function algorithmProvider(): array
@@ -565,7 +564,7 @@ final class WebAuthnServiceTest extends TestCase
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
         // Only ES256 and RS256 should be in the params (unknown ignored)
-        self::assertCount(2, $result['options']->pubKeyCredParams);
+        self::assertCount(2, $result->options->pubKeyCredParams);
     }
 
     #[Test]
@@ -580,7 +579,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
-        self::assertSame(60000, $result['options']->timeout);
+        self::assertSame(60000, $result->options->timeout);
     }
 
     #[Test]
@@ -595,7 +594,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createAssertionOptions('user', 456);
 
-        self::assertSame(60000, $result['options']->timeout);
+        self::assertSame(60000, $result->options->timeout);
     }
 
     #[Test]
@@ -609,7 +608,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createDiscoverableAssertionOptions();
 
-        self::assertSame(60000, $result['options']->timeout);
+        self::assertSame(60000, $result->options->timeout);
     }
 
     #[Test]
@@ -629,7 +628,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
-        self::assertSame('discouraged', $result['options']->authenticatorSelection->userVerification);
+        self::assertSame('discouraged', $result->options->authenticatorSelection->userVerification);
     }
 
     #[Test]
@@ -648,7 +647,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createAssertionOptions('user', 456);
 
-        self::assertSame('discouraged', $result['options']->userVerification);
+        self::assertSame('discouraged', $result->options->userVerification);
     }
 
     #[Test]
@@ -663,7 +662,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
-        self::assertSame('preferred', $result['options']->authenticatorSelection->residentKey);
+        self::assertSame('preferred', $result->options->authenticatorSelection->residentKey);
     }
 
     #[Test]
@@ -678,7 +677,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
-        self::assertSame('none', $result['options']->attestation);
+        self::assertSame('none', $result->options->attestation);
     }
 
     #[Test]
@@ -726,13 +725,13 @@ final class WebAuthnServiceTest extends TestCase
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
 
         $result1 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
-        $handle1 = $result1['options']->user->id;
+        $handle1 = $result1->options->user->id;
 
         // Change the encryption key (must be >= 32 chars)
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'a-completely-different-key-that-is-long-enough-for-validation';
 
         $result2 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
-        $handle2 = $result2['options']->user->id;
+        $handle2 = $result2->options->user->id;
 
         self::assertNotSame($handle1, $handle2, 'User handle must depend on encryption key');
 
@@ -752,7 +751,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
-        $userHandle = $result['options']->user->id;
+        $userHandle = $result->options->user->id;
         self::assertSame(32, \strlen($userHandle), 'User handle must be 32 bytes (SHA-256)');
     }
 
@@ -799,13 +798,13 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createAssertionOptions('user', $beUserUid);
 
-        self::assertCount(3, $result['options']->allowCredentials);
-        self::assertSame('cred-1', $result['options']->allowCredentials[0]->id);
-        self::assertSame('cred-2', $result['options']->allowCredentials[1]->id);
-        self::assertSame('cred-3', $result['options']->allowCredentials[2]->id);
-        self::assertSame(['usb'], $result['options']->allowCredentials[0]->transports);
-        self::assertSame(['nfc', 'internal'], $result['options']->allowCredentials[1]->transports);
-        self::assertSame([], $result['options']->allowCredentials[2]->transports);
+        self::assertCount(3, $result->options->allowCredentials);
+        self::assertSame('cred-1', $result->options->allowCredentials[0]->id);
+        self::assertSame('cred-2', $result->options->allowCredentials[1]->id);
+        self::assertSame('cred-3', $result->options->allowCredentials[2]->id);
+        self::assertSame(['usb'], $result->options->allowCredentials[0]->transports);
+        self::assertSame(['nfc', 'internal'], $result->options->allowCredentials[1]->transports);
+        self::assertSame([], $result->options->allowCredentials[2]->transports);
     }
 
     #[Test]
@@ -919,7 +918,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createAssertionOptions('user', 999);
 
-        self::assertCount(0, $result['options']->allowCredentials);
+        self::assertCount(0, $result->options->allowCredentials);
     }
 
     #[Test]
@@ -943,9 +942,9 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
 
-        self::assertCount(2, $result['options']->excludeCredentials);
-        self::assertSame('cred-1', $result['options']->excludeCredentials[0]->id);
-        self::assertSame('cred-2', $result['options']->excludeCredentials[1]->id);
+        self::assertCount(2, $result->options->excludeCredentials);
+        self::assertSame('cred-1', $result->options->excludeCredentials[0]->id);
+        self::assertSame('cred-2', $result->options->excludeCredentials[1]->id);
     }
 
     #[Test]
@@ -961,8 +960,8 @@ final class WebAuthnServiceTest extends TestCase
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
         // Call serialize twice - should reuse the same serializer instance internally
-        $json1 = $this->subject->serializeCreationOptions($result['options']);
-        $json2 = $this->subject->serializeCreationOptions($result['options']);
+        $json1 = $this->subject->serializeCreationOptions($result->options);
+        $json2 = $this->subject->serializeCreationOptions($result->options);
 
         self::assertSame($json1, $json2);
     }
@@ -985,7 +984,7 @@ final class WebAuthnServiceTest extends TestCase
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
         // Algorithm names are uppercased internally, so lowercase input should work
-        self::assertCount(2, $result['options']->pubKeyCredParams);
+        self::assertCount(2, $result->options->pubKeyCredParams);
     }
 
     #[Test]
@@ -1006,7 +1005,7 @@ final class WebAuthnServiceTest extends TestCase
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
 
         // Whitespace should be trimmed
-        self::assertCount(2, $result['options']->pubKeyCredParams);
+        self::assertCount(2, $result->options->pubKeyCredParams);
     }
 
     #[Test]
