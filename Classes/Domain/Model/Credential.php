@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Domain\Model;
 
+use Netresearch\NrPasskeysBe\Domain\Dto\AdminCredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
+
 final class Credential
 {
     public function __construct(
@@ -245,17 +248,27 @@ final class Credential
         return \is_string($value) ? $value : $default;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function toPublicArray(): array
+    public function toCredentialInfo(): CredentialInfo
     {
-        return [
-            'uid' => $this->uid,
-            'label' => $this->label,
-            'createdAt' => $this->createdAt,
-            'lastUsedAt' => $this->lastUsedAt,
-            'isRevoked' => $this->isRevoked(),
-        ];
+        return new CredentialInfo(
+            uid: $this->uid,
+            label: $this->label,
+            createdAt: $this->createdAt,
+            lastUsedAt: $this->lastUsedAt,
+            isRevoked: $this->isRevoked(),
+        );
+    }
+
+    public function toAdminCredentialInfo(): AdminCredentialInfo
+    {
+        return new AdminCredentialInfo(
+            uid: $this->uid,
+            label: $this->label,
+            createdAt: $this->createdAt,
+            lastUsedAt: $this->lastUsedAt,
+            isRevoked: $this->isRevoked(),
+            revokedAt: $this->revokedAt,
+            revokedBy: $this->revokedBy,
+        );
     }
 }
