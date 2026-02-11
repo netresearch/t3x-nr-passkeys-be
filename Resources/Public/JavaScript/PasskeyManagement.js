@@ -6,6 +6,7 @@
  * - Registering new passkeys
  * - Renaming passkeys
  * - Removing passkeys
+ * - Sudo mode re-authentication for write operations
  */
 (function () {
   'use strict';
@@ -14,11 +15,11 @@
     const container = document.getElementById('passkey-management-container');
     if (!container) return;
 
-  const listUrl = container.dataset.listUrl || '/typo3/passkeys/manage/list';
-  const registerOptionsUrl = container.dataset.registerOptionsUrl || '/typo3/passkeys/manage/registration/options';
-  const registerVerifyUrl = container.dataset.registerVerifyUrl || '/typo3/passkeys/manage/registration/verify';
-  const renameUrl = container.dataset.renameUrl || '/typo3/passkeys/manage/rename';
-  const removeUrl = container.dataset.removeUrl || '/typo3/passkeys/manage/remove';
+  const listUrl = container.dataset.listUrl || '/typo3/ajax/passkeys/manage/list';
+  const registerOptionsUrl = container.dataset.registerOptionsUrl || '/typo3/ajax/passkeys/manage/registration/options';
+  const registerVerifyUrl = container.dataset.registerVerifyUrl || '/typo3/ajax/passkeys/manage/registration/verify';
+  const renameUrl = container.dataset.renameUrl || '/typo3/ajax/passkeys/manage/rename';
+  const removeUrl = container.dataset.removeUrl || '/typo3/ajax/passkeys/manage/remove';
 
   const listBody = document.getElementById('passkey-list-body');
   const addBtn = document.getElementById('passkey-add-btn');
@@ -54,6 +55,211 @@
 
   // Initial load
   loadPasskeys();
+
+  // --- Sudo Mode handling ---
+
+  /**
+   * Wrapper around fetch() that handles TYPO3 sudo mode 422 responses.
+   *
+   * When a route is protected by sudo mode and the user has not verified
+   * recently, TYPO3 returns HTTP 422 with a JSON body containing
+   * `sudoModeInitialization`. This function intercepts that response,
+   * shows a password verification dialog, submits the password to TYPO3's
+   * sudo mode verify endpoint, and retries the original request on success.
+   */
+  async function sudoFetch(url, options) {
+    var response = await fetch(url, options);
+    if (response.status !== 422) return response;
+
+    var data;
+    try {
+      data = await response.clone().json();
+    } catch (e) {
+      return response;
+    }
+
+    if (!data.sudoModeInitialization) return response;
+
+    var init = data.sudoModeInitialization;
+    var password = await showSudoModeDialog(init.labels || {});
+    if (!password) throw new Error('Verification cancelled');
+
+    var verifyResponse = await fetch(init.verifyActionUri, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'password=' + encodeURIComponent(password),
+    });
+
+    if (!verifyResponse.ok) {
+      var verifyData;
+      try {
+        verifyData = await verifyResponse.json();
+      } catch (e) {
+        verifyData = {};
+      }
+      throw new Error(verifyData.message || 'Password verification failed');
+    }
+
+    // Retry original request -- grant is now stored in session
+    return fetch(url, options);
+  }
+
+  /**
+   * Show a Bootstrap 5 modal dialog for sudo mode password verification.
+   * Returns a Promise that resolves with the entered password or null if cancelled.
+   * Built entirely with safe DOM methods (no innerHTML).
+   */
+  function showSudoModeDialog(labels) {
+    return new Promise(function (resolve) {
+      var title = labels.title || 'Verify your identity';
+      var description = labels.description || 'Please enter your password to continue.';
+      var confirmLabel = labels.confirm || 'Verify';
+      var cancelLabel = labels.cancel || 'Cancel';
+      var passwordLabel = labels.password || 'Password';
+
+      // Create modal backdrop
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop fade show';
+
+      // Create modal wrapper
+      var modal = document.createElement('div');
+      modal.className = 'modal fade show';
+      modal.style.display = 'block';
+      modal.setAttribute('tabindex', '-1');
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+
+      var dialogId = 'sudo-mode-dialog-' + Date.now();
+
+      // Build modal structure with DOM methods
+      var modalDialog = document.createElement('div');
+      modalDialog.className = 'modal-dialog modal-dialog-centered';
+      modalDialog.setAttribute('role', 'document');
+
+      var modalContent = document.createElement('div');
+      modalContent.className = 'modal-content';
+
+      // Header
+      var modalHeader = document.createElement('div');
+      modalHeader.className = 'modal-header';
+
+      var titleEl = document.createElement('h5');
+      titleEl.className = 'modal-title';
+      titleEl.id = dialogId;
+      titleEl.textContent = title;
+      modalHeader.appendChild(titleEl);
+
+      var closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'btn-close';
+      closeBtn.setAttribute('data-action', 'cancel');
+      closeBtn.setAttribute('aria-label', cancelLabel);
+      modalHeader.appendChild(closeBtn);
+
+      // Body
+      var modalBody = document.createElement('div');
+      modalBody.className = 'modal-body';
+
+      var descEl = document.createElement('p');
+      descEl.textContent = description;
+      modalBody.appendChild(descEl);
+
+      var errorEl = document.createElement('div');
+      errorEl.className = 'alert alert-danger d-none';
+      errorEl.setAttribute('role', 'alert');
+      modalBody.appendChild(errorEl);
+
+      var formGroup = document.createElement('div');
+      formGroup.className = 'mb-3';
+
+      var labelEl = document.createElement('label');
+      labelEl.className = 'form-label';
+      labelEl.textContent = passwordLabel;
+
+      var passwordInput = document.createElement('input');
+      passwordInput.type = 'password';
+      passwordInput.className = 'form-control';
+      passwordInput.autocomplete = 'current-password';
+
+      labelEl.setAttribute('for', passwordInput.id || '');
+      formGroup.appendChild(labelEl);
+      formGroup.appendChild(passwordInput);
+      modalBody.appendChild(formGroup);
+
+      // Footer
+      var modalFooter = document.createElement('div');
+      modalFooter.className = 'modal-footer';
+
+      var cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'btn btn-default';
+      cancelBtn.setAttribute('data-action', 'cancel');
+      cancelBtn.textContent = cancelLabel;
+      modalFooter.appendChild(cancelBtn);
+
+      var confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      confirmBtn.className = 'btn btn-primary';
+      confirmBtn.setAttribute('data-action', 'confirm');
+      confirmBtn.textContent = confirmLabel;
+      modalFooter.appendChild(confirmBtn);
+
+      // Assemble
+      modalContent.appendChild(modalHeader);
+      modalContent.appendChild(modalBody);
+      modalContent.appendChild(modalFooter);
+      modalDialog.appendChild(modalContent);
+      modal.appendChild(modalDialog);
+      modal.setAttribute('aria-labelledby', dialogId);
+
+      document.body.appendChild(backdrop);
+      document.body.appendChild(modal);
+      passwordInput.focus();
+
+      function cleanup() {
+        if (modal.parentNode) modal.parentNode.removeChild(modal);
+        if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+      }
+
+      function handleConfirm() {
+        var value = passwordInput.value;
+        if (!value) {
+          while (errorEl.firstChild) errorEl.removeChild(errorEl.firstChild);
+          errorEl.appendChild(document.createTextNode('Please enter your password.'));
+          errorEl.classList.remove('d-none');
+          return;
+        }
+        cleanup();
+        resolve(value);
+      }
+
+      function handleCancel() {
+        cleanup();
+        resolve(null);
+      }
+
+      // Event delegation for buttons
+      modal.addEventListener('click', function (e) {
+        var action = e.target.getAttribute('data-action');
+        if (action === 'confirm') handleConfirm();
+        if (action === 'cancel') handleCancel();
+      });
+
+      // Enter key submits, Escape cancels
+      passwordInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleConfirm();
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          handleCancel();
+        }
+      });
+    });
+  }
+
+  // --- End Sudo Mode handling ---
 
   async function loadPasskeys() {
     try {
@@ -156,8 +362,8 @@
     setAddLoading(true);
 
     try {
-      // Step 1: Get registration options
-      var optionsResponse = await fetch(registerOptionsUrl, {
+      // Step 1: Get registration options (sudo mode protected)
+      var optionsResponse = await sudoFetch(registerOptionsUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
@@ -207,7 +413,7 @@
         publicKey: publicKeyOptions,
       });
 
-      // Step 3: Encode and send to server
+      // Step 3: Encode and send to server (sudo mode protected)
       var credentialResponse = {
         id: bufferToBase64url(credential.rawId),
         rawId: bufferToBase64(credential.rawId),
@@ -223,7 +429,7 @@
         credentialResponse.response.transports = credential.response.getTransports();
       }
 
-      var verifyResponse = await fetch(registerVerifyUrl, {
+      var verifyResponse = await sudoFetch(registerVerifyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -244,6 +450,8 @@
     } catch (err) {
       if (err.name === 'NotAllowedError' || err.name === 'AbortError') {
         showMessage('Registration was cancelled.', 'info');
+      } else if (err.message === 'Verification cancelled') {
+        showMessage('Password verification was cancelled.', 'info');
       } else {
         showMessage('Failed to register passkey. ' + err.message, 'danger');
         console.error('Register passkey error:', err);
@@ -274,7 +482,7 @@
       }
 
       try {
-        var response = await fetch(renameUrl, {
+        var response = await sudoFetch(renameUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ uid: uid, label: newLabel }),
@@ -289,7 +497,11 @@
         }
       } catch (err) {
         labelSpan.textContent = currentLabel;
-        showMessage('Failed to rename passkey.', 'danger');
+        if (err.message === 'Verification cancelled') {
+          showMessage('Password verification was cancelled.', 'info');
+        } else {
+          showMessage('Failed to rename passkey.', 'danger');
+        }
       }
     }
 
@@ -311,7 +523,7 @@
     }
 
     try {
-      var response = await fetch(removeUrl, {
+      var response = await sudoFetch(removeUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: uid }),
@@ -326,8 +538,12 @@
       showMessage('Passkey removed.', 'success');
       loadPasskeys();
     } catch (err) {
-      showMessage('Failed to remove passkey.', 'danger');
-      console.error('Remove passkey error:', err);
+      if (err.message === 'Verification cancelled') {
+        showMessage('Password verification was cancelled.', 'info');
+      } else {
+        showMessage('Failed to remove passkey.', 'danger');
+        console.error('Remove passkey error:', err);
+      }
     }
   }
 
