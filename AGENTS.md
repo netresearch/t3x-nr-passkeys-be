@@ -25,7 +25,7 @@ Supports TouchID, FaceID, YubiKey, Windows Hello for one-click TYPO3 backend log
 - Conventional Commits: `type(scope): subject`
 - `declare(strict_types=1)` in all PHP files
 - PER-CS2.0 code style via php-cs-fixer
-- PHPStan level 8 (do not lower)
+- PHPStan level 10 (do not lower)
 - Do NOT commit `composer.lock` (in `.gitignore`)
 
 ## Commands (verified)
@@ -56,7 +56,7 @@ Classes/                  -> PHP source (PSR-4: Netresearch\NrPasskeysBe\)
   UserSettings/           -> User settings module integration
 Build/                    -> Tooling configuration (NOT .Build/ which is composer output)
   .php-cs-fixer.php       -> Code style rules (PER-CS2.0)
-  phpstan.neon            -> Static analysis config (level 8)
+  phpstan.neon            -> Static analysis config (level 10)
   infection.json5         -> Mutation testing config
   phpunit.xml             -> PHPUnit config for unit + fuzz tests
   phpunit.functional.xml  -> PHPUnit config for functional tests
@@ -110,7 +110,7 @@ Makefile                  -> make up, make ci, make help (wraps composer + ddev)
 - Commit secrets, credentials, API keys
 - Modify `.Build/vendor/` or generated files
 - Push directly to main branch
-- Lower PHPStan level below 8
+- Lower PHPStan level below 10
 - Disable security features (HMAC, nonce replay, rate limiting)
 - Commit `composer.lock`
 

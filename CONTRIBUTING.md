@@ -18,7 +18,7 @@ composer install
 
 # Verify everything works
 composer ci:lint:php          # Code style (PER-CS2.0)
-composer ci:stan              # PHPStan level 8
+composer ci:stan              # PHPStan level 10
 composer ci:test:php:unit     # Unit tests
 ```
 
@@ -29,7 +29,7 @@ All contributions must pass the following quality gates:
 | Check | Command | Requirement |
 |-------|---------|-------------|
 | Code style | `composer ci:lint:php` | PER-CS2.0 compliance |
-| Static analysis | `composer ci:stan` | PHPStan level 8 |
+| Static analysis | `composer ci:stan` | PHPStan level 10 |
 | Unit tests | `composer ci:test:php:unit` | All tests pass |
 | Mutation tests | `composer ci:mutation` | MSI >= 60%, covered MSI >= 75% |
 

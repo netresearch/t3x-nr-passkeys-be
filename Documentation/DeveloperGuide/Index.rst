@@ -212,7 +212,7 @@ Running tests
     # Unit tests (263 tests)
     composer ci:test:php:unit
 
-    # Static analysis (PHPStan level 8)
+    # Static analysis (PHPStan level 10)
     composer ci:stan
 
     # Code style (PER-CS2.0)

@@ -3,7 +3,7 @@
 # AGENTS.md -- Classes
 
 ## Overview
-TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-CS2.0 and PHPStan level 8.
+TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-CS2.0 and PHPStan level 10.
 
 ## Key Files
 | File | Purpose |
@@ -58,7 +58,7 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 
 ## PR/commit checklist
 - [ ] `composer ci:lint:php` passes
-- [ ] `composer ci:stan` passes (PHPStan level 8)
+- [ ] `composer ci:stan` passes (PHPStan level 10)
 - [ ] `composer ci:test:php:unit` passes
 - [ ] TCA changes have matching SQL in `ext_tables.sql`
 - [ ] No deprecated TYPO3 APIs

@@ -24,7 +24,7 @@
 
 <!-- Row 3: Standards badges -->
 <p align="center">
-  <a href="https://phpstan.org/"><img src="https://img.shields.io/badge/PHPStan-Level%208-brightgreen.svg" alt="PHPStan"></a>
+  <a href="https://phpstan.org/"><img src="https://img.shields.io/badge/PHPStan-Level%2010-brightgreen.svg" alt="PHPStan"></a>
   <a href="https://infection.github.io/"><img src="https://img.shields.io/badge/Infection%20MSI-%E2%89%A560%25-yellowgreen" alt="Mutation"></a>
   <a href="https://www.php.net/"><img src="https://img.shields.io/badge/PHP-8.2--8.5-blue.svg?logo=php" alt="PHP"></a>
   <a href="https://typo3.org/"><img src="https://img.shields.io/badge/TYPO3-13%20LTS%20%7C%2014-orange.svg?logo=typo3" alt="TYPO3"></a>
@@ -123,7 +123,7 @@ composer install
 # Code quality
 composer ci:lint:php          # Check code style (PER-CS2.0)
 composer ci:lint:php:fix      # Fix code style
-composer ci:stan              # PHPStan level 8
+composer ci:stan              # PHPStan level 10
 
 # Tests
 composer ci:test:php:unit         # Unit tests

@@ -87,7 +87,7 @@ format: ## Auto-fix code style issues
 	composer ci:lint:php:fix
 
 .PHONY: stan
-stan: ## Run PHPStan static analysis (level 8)
+stan: ## Run PHPStan static analysis (level 10)
 	composer ci:stan
 
 .PHONY: test

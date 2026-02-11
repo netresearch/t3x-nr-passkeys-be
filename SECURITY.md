@@ -52,7 +52,7 @@ This project implements:
 - **Nonce-based replay protection** for authentication challenges
 - **Rate limiting** per IP and per account lockout after failed attempts
 - **User enumeration prevention** with randomized timing for unknown users
-- **PHPStan level 8** static analysis with ergebnis/phpstan-rules
+- **PHPStan level 10** static analysis with ergebnis/phpstan-rules
 - **Mutation testing** to ensure test quality (MSI >= 60%, covered MSI >= 75%)
 - **Fuzz testing** for challenge tokens, credential IDs, and request payloads
 - **Dependency scanning** via Dependabot and `composer audit`

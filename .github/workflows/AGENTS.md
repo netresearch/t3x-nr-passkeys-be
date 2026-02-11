@@ -14,7 +14,7 @@ Single CI workflow (`ci.yml`) with 6 job types across a PHP/TYPO3 version matrix
 | Job | Matrix | Purpose |
 |-----|--------|---------|
 | `lint` | PHP 8.2-8.5 | php-cs-fixer PER-CS2.0 check |
-| `stan` | PHP 8.2-8.5 x TYPO3 13/14 | PHPStan level 8 |
+| `stan` | PHP 8.2-8.5 x TYPO3 13/14 | PHPStan level 10 |
 | `unit` | PHP 8.2-8.5 x TYPO3 13/14 | Unit tests with coverage |
 | `fuzz` | PHP 8.2-8.5 | Fuzz tests (no coverage) |
 | `functional` | PHP 8.2-8.4 x TYPO3 13/14 | Functional tests with MySQL |
