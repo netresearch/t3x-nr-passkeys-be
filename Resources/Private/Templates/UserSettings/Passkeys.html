@@ -29,12 +29,18 @@
     </div>
 
     <div class="mb-3">
-        <button type="button" id="passkey-add-btn" class="btn btn-primary">
-            <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.add">
-                Add Passkey
-            </f:translate>
-        </button>
-        <span class="ms-2 text-muted">
+        <div class="input-group" style="max-width: 480px;">
+            <input type="text" id="passkey-label-input" class="form-control"
+                   maxlength="128"
+                   aria-label="{f:translate(key: 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.register.label', default: 'New passkey name')}"
+                   placeholder="{f:translate(key: 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.register.prompt', default: 'e.g. &quot;Work Laptop&quot;, &quot;Phone&quot;')}" />
+            <button type="button" id="passkey-add-btn" class="btn btn-primary">
+                <f:translate key="LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.add">
+                    Add Passkey
+                </f:translate>
+            </button>
+        </div>
+        <span class="mt-1 d-inline-block text-muted">
             Registered: <span id="passkey-count">0</span>
         </span>
     </div>

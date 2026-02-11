@@ -152,6 +152,50 @@ test.describe('User Settings - Passkey Management Panel', () => {
         await expect(frame.locator('#passkey-add-btn')).toContainText(/Add Passkey/i);
     });
 
+    test('passkey label input is present with correct attributes', async ({ page }) => {
+        test.skip(!isLoggedIn, 'Login failed');
+
+        await page.goto('/typo3/module/user/setup');
+        await page.waitForTimeout(3000);
+
+        const { found, frame } = await findPasskeyContainer(page);
+        test.skip(!found, 'Passkey container not found - PasskeySettingsPanel DI issue');
+
+        const labelInput = frame.locator('#passkey-label-input');
+        await expect(labelInput).toBeVisible();
+        await expect(labelInput).toHaveAttribute('type', 'text');
+        await expect(labelInput).toHaveAttribute('maxlength', '128');
+    });
+
+    test('passkey label input has placeholder text', async ({ page }) => {
+        test.skip(!isLoggedIn, 'Login failed');
+
+        await page.goto('/typo3/module/user/setup');
+        await page.waitForTimeout(3000);
+
+        const { found, frame } = await findPasskeyContainer(page);
+        test.skip(!found, 'Passkey container not found - PasskeySettingsPanel DI issue');
+
+        const placeholder = await frame.locator('#passkey-label-input').getAttribute('placeholder');
+        // Placeholder should contain example names (no trademarks)
+        expect(placeholder).toBeTruthy();
+        expect(placeholder!.length).toBeGreaterThan(0);
+    });
+
+    test('passkey label input and add button are in input-group', async ({ page }) => {
+        test.skip(!isLoggedIn, 'Login failed');
+
+        await page.goto('/typo3/module/user/setup');
+        await page.waitForTimeout(3000);
+
+        const { found, frame } = await findPasskeyContainer(page);
+        test.skip(!found, 'Passkey container not found - PasskeySettingsPanel DI issue');
+
+        // Both input and button should share the same .input-group parent
+        const inputGroup = frame.locator('.input-group:has(#passkey-label-input):has(#passkey-add-btn)');
+        await expect(inputGroup).toBeAttached();
+    });
+
     test('passkey management JS loads without errors', async ({ page }) => {
         test.skip(!isLoggedIn, 'Login failed');
 
