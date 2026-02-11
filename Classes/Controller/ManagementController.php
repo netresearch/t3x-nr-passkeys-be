@@ -244,7 +244,25 @@ final class ManagementController
             return null;
         }
 
-        return AuthenticatedUser::fromBackendUser($backendUser);
+        $userData = $backendUser->user;
+        if (!\is_array($userData)) {
+            return null;
+        }
+
+        $rawUid = $userData['uid'] ?? null;
+        if (!\is_numeric($rawUid)) {
+            return null;
+        }
+
+        $rawUsername = $userData['username'] ?? '';
+        $rawRealName = $userData['realName'] ?? '';
+
+        return new AuthenticatedUser(
+            uid: (int) $rawUid,
+            username: \is_string($rawUsername) ? $rawUsername : '',
+            realName: \is_string($rawRealName) ? $rawRealName : '',
+            isAdmin: $backendUser->isAdmin(),
+        );
     }
 
     private static function intFrom(mixed $value): int

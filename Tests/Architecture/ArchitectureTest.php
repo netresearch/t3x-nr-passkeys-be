@@ -15,11 +15,11 @@ use PHPat\Test\PHPat;
  *   Domain (Model + Dto) → Service → Controller / Auth / Middleware / EventListener / UI
  *
  * Invariants:
- *   - Domain layer has ZERO outward dependencies
+ *   - Domain layer does not depend on extension infrastructure namespaces
  *   - Services never depend on HTTP/controller layer
  *   - Controllers do not depend on each other
  *   - All non-abstract, non-extending classes are final
- *   - DTOs are pure data containers with no infrastructure deps
+ *   - DTOs are pure data containers (framework deps only for third-party value types)
  */
 final class ArchitectureTest
 {

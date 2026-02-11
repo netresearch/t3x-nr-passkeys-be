@@ -192,12 +192,29 @@ final class AdminController
             return null;
         }
 
-        $user = AuthenticatedUser::fromBackendUser($backendUser);
-        if ($user === null || !$user->isAdmin) {
+        $userData = $backendUser->user;
+        if (!\is_array($userData)) {
             return null;
         }
 
-        return $user;
+        $rawUid = $userData['uid'] ?? null;
+        if (!\is_numeric($rawUid)) {
+            return null;
+        }
+
+        if (!$backendUser->isAdmin()) {
+            return null;
+        }
+
+        $rawUsername = $userData['username'] ?? '';
+        $rawRealName = $userData['realName'] ?? '';
+
+        return new AuthenticatedUser(
+            uid: (int) $rawUid,
+            username: \is_string($rawUsername) ? $rawUsername : '',
+            realName: \is_string($rawRealName) ? $rawRealName : '',
+            isAdmin: true,
+        );
     }
 
 }
