@@ -52,7 +52,7 @@ class LoginController
             try {
                 $this->rateLimiterService->checkRateLimit('login_options', $ip);
             } catch (RuntimeException) {
-                return new JsonResponse(['error' => 'Too many requests'], 429);
+                return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
             }
 
             $this->rateLimiterService->recordAttempt('login_options', $ip);
@@ -79,7 +79,7 @@ class LoginController
             $this->rateLimiterService->checkRateLimit('login_options', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
         } catch (RuntimeException) {
-            return new JsonResponse(['error' => 'Too many requests'], 429);
+            return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
         }
 
         $this->rateLimiterService->recordAttempt('login_options', $ip);
@@ -144,8 +144,8 @@ class LoginController
         try {
             $this->rateLimiterService->checkRateLimit('login_verify', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
-        } catch (RuntimeException $e) {
-            return new JsonResponse(['error' => 'Too many requests'], 429);
+        } catch (RuntimeException) {
+            return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
         }
 
         $this->rateLimiterService->recordAttempt('login_verify', $ip);
