@@ -43,7 +43,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      *
      * @var array{assertion: string, challengeToken: string}|null|false false = not yet parsed
      */
-    private array|null|false $passkeyPayload = false;
+    private array|false|null $passkeyPayload = false;
 
     public function getUser(): array|false
     {

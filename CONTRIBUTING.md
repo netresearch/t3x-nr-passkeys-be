@@ -17,7 +17,7 @@ Thank you for considering contributing to the TYPO3 Passkeys Backend Authenticat
 composer install
 
 # Verify everything works
-composer ci:lint:php          # Code style (PER-CS2.0)
+composer ci:lint:php          # Code style (PER-CS3.0)
 composer ci:stan              # PHPStan level 10
 composer ci:test:php:unit     # Unit tests
 ```
@@ -28,10 +28,10 @@ All contributions must pass the following quality gates:
 
 | Check | Command | Requirement |
 |-------|---------|-------------|
-| Code style | `composer ci:lint:php` | PER-CS2.0 compliance |
+| Code style | `composer ci:lint:php` | PER-CS3.0 compliance |
 | Static analysis | `composer ci:stan` | PHPStan level 10 |
 | Unit tests | `composer ci:test:php:unit` | All tests pass |
-| Mutation tests | `composer ci:mutation` | MSI >= 60%, covered MSI >= 75% |
+| Mutation tests | `composer ci:mutation` | MSI >= 80%, covered MSI >= 80% |
 
 ### Writing Tests
 
@@ -42,7 +42,7 @@ All contributions must pass the following quality gates:
 
 ### Code Style
 
-This project uses PHP-CS-Fixer with PER-CS2.0 coding standard. Fix style issues automatically:
+This project uses PHP-CS-Fixer with PER-CS3.0 coding standard. Fix style issues automatically:
 
 ```bash
 composer ci:lint:php:fix

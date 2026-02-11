@@ -30,7 +30,7 @@ Tests/
 | Functional tests | `composer ci:test:php:functional` | MySQL required (CI only) |
 | All tests | `composer ci:test:php:all` | Unit + functional |
 | Fuzz tests | `.Build/bin/phpunit -c phpunit.xml --testsuite fuzz --no-coverage` | May flake due to random data |
-| Mutation testing | `composer ci:mutation` | MSI >= 60%, covered MSI >= 75% |
+| Mutation testing | `composer ci:mutation` | MSI >= 80%, covered MSI >= 80% |
 | Single test file | `.Build/bin/phpunit -c phpunit.xml Tests/Unit/Path/To/Test.php` | |
 
 ## Key Patterns
@@ -52,7 +52,7 @@ Tests/
 | Functional test | `Functional/Service/CredentialRepositoryTest.php` |
 
 ## Code Style
-- Same PER-CS2.0 rules as production code
+- Same PER-CS3.0 rules as production code
 - `declare(strict_types=1)` in all test files
 - One assertion concept per test
 - Mock external services, never real HTTP calls

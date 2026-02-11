@@ -24,7 +24,7 @@ Supports TouchID, FaceID, YubiKey, Windows Hello for one-click TYPO3 backend log
 ## Global Rules
 - Conventional Commits: `type(scope): subject`
 - `declare(strict_types=1)` in all PHP files
-- PER-CS2.0 code style via php-cs-fixer
+- PER-CS3.0 code style via php-cs-fixer
 - PHPStan level 10 (do not lower)
 - Do NOT commit `composer.lock` (in `.gitignore`)
 
@@ -55,7 +55,7 @@ Classes/                  -> PHP source (PSR-4: Netresearch\NrPasskeysBe\)
   Service/                -> WebAuthn, Challenge, Credential, RateLimiter, Config services
   UserSettings/           -> User settings module integration
 Build/                    -> Tooling configuration (NOT .Build/ which is composer output)
-  .php-cs-fixer.php       -> Code style rules (PER-CS2.0)
+  .php-cs-fixer.php       -> Code style rules (PER-CS3.0)
   phpstan.neon            -> Static analysis config (level 10)
   infection.json5         -> Mutation testing config
   phpunit.xml             -> PHPUnit config for unit + fuzz tests

@@ -10,8 +10,8 @@ $finder = (new PhpCsFixer\Finder())
 return (new PhpCsFixer\Config())
     ->setRiskyAllowed(true)
     ->setRules([
-        '@PER-CS2.0' => true,
-        '@PER-CS2.0:risky' => true,
+        '@PER-CS3.0' => true,
+        '@PER-CS3.0:risky' => true,
         'array_syntax' => ['syntax' => 'short'],
         'declare_strict_types' => true,
         'global_namespace_import' => [

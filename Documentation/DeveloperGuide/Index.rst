@@ -215,7 +215,7 @@ Running tests
     # Static analysis (PHPStan level 10)
     composer ci:stan
 
-    # Code style (PER-CS2.0)
+    # Code style (PER-CS3.0)
     composer ci:lint:php
 
     # JavaScript unit tests (Vitest)

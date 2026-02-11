@@ -79,7 +79,7 @@ install: ## Install composer dependencies
 	composer install
 
 .PHONY: lint
-lint: ## Check code style (PER-CS2.0)
+lint: ## Check code style (PER-CS3.0)
 	composer ci:lint:php
 
 .PHONY: format

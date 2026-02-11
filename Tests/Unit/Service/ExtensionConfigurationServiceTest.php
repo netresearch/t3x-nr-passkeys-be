@@ -32,7 +32,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
      *
      * @param array<string, mixed>|null $settings null simulates non-array return
      */
-    private function createService(array|null $settings = []): ExtensionConfigurationService
+    private function createService(?array $settings = []): ExtensionConfigurationService
     {
         $typo3ExtConfig = $this->createMock(ExtensionConfiguration::class);
         $typo3ExtConfig

@@ -64,7 +64,7 @@ lint: ## Run all linters (PHP syntax + PHPStan + code style)
 	@echo "All linters passed"
 
 .PHONY: format
-format: ## Auto-fix code style issues (PER-CS2.0)
+format: ## Auto-fix code style issues (PER-CS3.0)
 	composer ci:lint:php:fix
 
 .PHONY: typecheck

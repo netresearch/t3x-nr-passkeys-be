@@ -3,7 +3,7 @@
 # AGENTS.md -- Classes
 
 ## Overview
-TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-CS2.0 and PHPStan level 10.
+TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-CS3.0 and PHPStan level 10.
 
 ## Key Files
 | File | Purpose |
@@ -30,7 +30,7 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 | Auth service (no DI) | `Authentication/PasskeyAuthenticationService.php` |
 
 ## Code style & conventions
-- **PER-CS2.0** via php-cs-fixer (not PSR-12)
+- **PER-CS3.0** via php-cs-fixer (not PSR-12)
 - `declare(strict_types=1)` in all files
 - Namespace: `Netresearch\NrPasskeysBe\` (PSR-4 from Classes/)
 - Use constructor DI via `Services.yaml` for all services/controllers

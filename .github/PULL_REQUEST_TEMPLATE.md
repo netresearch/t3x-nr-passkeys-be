@@ -28,7 +28,7 @@ Fixes #(issue number)
 
 ## Checklist
 
-- [ ] My code follows the project's coding standards (PER-CS2.0)
+- [ ] My code follows the project's coding standards (PER-CS3.0)
 - [ ] I have added tests covering my changes
 - [ ] I have updated documentation as needed
 - [ ] My commits follow the conventional commit format
