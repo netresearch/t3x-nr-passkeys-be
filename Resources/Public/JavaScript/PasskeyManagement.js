@@ -23,6 +23,7 @@
 
   const listBody = document.getElementById('passkey-list-body');
   const addBtn = document.getElementById('passkey-add-btn');
+  const labelInput = document.getElementById('passkey-label-input');
   const messageEl = document.getElementById('passkey-message');
   const warningEl = document.getElementById('passkey-single-warning');
   const emptyEl = document.getElementById('passkey-empty');
@@ -51,6 +52,15 @@
 
   if (addBtn) {
     addBtn.addEventListener('click', handleAddPasskey);
+  }
+
+  if (labelInput) {
+    labelInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAddPasskey();
+      }
+    });
   }
 
   // Initial load
@@ -355,10 +365,7 @@
 
   async function handleAddPasskey() {
     hideMessage();
-    var label = prompt('Enter a name for this passkey (e.g., "MacBook", "Office iPad"):');
-    if (label === null) return; // Cancelled
-
-    var trimmedLabel = label.trim() || 'Passkey';
+    var trimmedLabel = (labelInput ? labelInput.value.trim() : '') || 'Passkey';
     setAddLoading(true);
 
     try {
@@ -445,6 +452,7 @@
         return;
       }
 
+      if (labelInput) labelInput.value = '';
       showMessage('Passkey registered successfully!', 'success');
       loadPasskeys(); // Refresh list
     } catch (err) {
@@ -551,6 +559,9 @@
     if (addBtn) {
       addBtn.disabled = loading;
       addBtn.textContent = loading ? 'Registering...' : 'Add Passkey';
+    }
+    if (labelInput) {
+      labelInput.disabled = loading;
     }
   }
 

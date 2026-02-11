@@ -75,7 +75,7 @@
                 <source>No passkeys registered yet.</source>
             </trans-unit>
             <trans-unit id="manage.register.prompt" resname="manage.register.prompt">
-                <source>Enter a name for this passkey (e.g., "MacBook", "Office iPad"):</source>
+                <source>e.g. "Work Laptop", "Phone"</source>
             </trans-unit>
             <trans-unit id="manage.register.success" resname="manage.register.success">
                 <source>Passkey registered successfully.</source>
