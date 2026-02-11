@@ -239,11 +239,14 @@
           errorEl.classList.remove('d-none');
           return;
         }
+        // Clear password from input before removing DOM element
+        passwordInput.value = '';
         cleanup();
         resolve(value);
       }
 
       function handleCancel() {
+        passwordInput.value = '';
         cleanup();
         resolve(null);
       }
@@ -461,7 +464,7 @@
       } else if (err.message === 'Verification cancelled') {
         showMessage('Password verification was cancelled.', 'info');
       } else {
-        showMessage('Failed to register passkey. ' + err.message, 'danger');
+        showMessage('Failed to register passkey. Please try again.', 'danger');
         console.error('Register passkey error:', err);
       }
     }
