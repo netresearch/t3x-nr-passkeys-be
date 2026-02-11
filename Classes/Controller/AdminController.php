@@ -10,6 +10,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
 
 class AdminController
@@ -19,6 +20,7 @@ class AdminController
     public function __construct(
         private readonly CredentialRepository $credentialRepository,
         private readonly RateLimiterService $rateLimiterService,
+        private readonly ConnectionPool $connectionPool,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -120,6 +122,19 @@ class AdminController
 
         if ($beUserUid === 0 || $username === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        // Validate that beUserUid matches the given username to ensure audit log integrity
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
+        $row = $queryBuilder
+            ->select('uid', 'username')
+            ->from('be_users')
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, \TYPO3\CMS\Core\Database\Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchAssociative();
+
+        if ($row === false || $row['username'] !== $username) {
+            return new JsonResponse(['error' => 'User not found or username mismatch'], 404);
         }
 
         $this->rateLimiterService->resetLockout($username);

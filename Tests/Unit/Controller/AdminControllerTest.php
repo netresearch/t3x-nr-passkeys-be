@@ -15,6 +15,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 #[CoversClass(AdminController::class)]
 final class AdminControllerTest extends TestCase
@@ -25,6 +28,8 @@ final class AdminControllerTest extends TestCase
 
     private RateLimiterService&MockObject $rateLimiterService;
 
+    private ConnectionPool&MockObject $connectionPool;
+
     private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
@@ -33,11 +38,13 @@ final class AdminControllerTest extends TestCase
 
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
+        $this->connectionPool = $this->createMock(ConnectionPool::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->subject = new AdminController(
             $this->credentialRepository,
             $this->rateLimiterService,
+            $this->connectionPool,
             $this->logger,
         );
     }
@@ -190,6 +197,7 @@ final class AdminControllerTest extends TestCase
     public function unlockActionSuccess(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpFindBeUserByUid(42, ['uid' => 42, 'username' => 'lockeduser']);
 
         $request = $this->createJsonRequest([
             'beUserUid' => 42,
@@ -215,6 +223,50 @@ final class AdminControllerTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
+    }
+
+    #[Test]
+    public function unlockActionUserMismatch(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpFindBeUserByUid(42, ['uid' => 42, 'username' => 'differentuser']);
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+            'username' => 'lockeduser',
+        ]);
+
+        $this->rateLimiterService
+            ->expects(self::never())
+            ->method('resetLockout');
+
+        $response = $this->subject->unlockAction($request);
+
+        self::assertSame(404, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('User not found or username mismatch', $body['error']);
+    }
+
+    #[Test]
+    public function unlockActionUserNotFound(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpFindBeUserByUid(42, null);
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+            'username' => 'lockeduser',
+        ]);
+
+        $this->rateLimiterService
+            ->expects(self::never())
+            ->method('resetLockout');
+
+        $response = $this->subject->unlockAction($request);
+
+        self::assertSame(404, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('User not found or username mismatch', $body['error']);
     }
 
     /**
@@ -245,6 +297,33 @@ final class AdminControllerTest extends TestCase
         ];
         $backendUser->method('isAdmin')->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
+    }
+
+    /**
+     * Set up the ConnectionPool mock to simulate finding (or not finding) a BE user by UID.
+     *
+     * @param array<string, mixed>|null $userRow
+     */
+    private function setUpFindBeUserByUid(int $uid, ?array $userRow): void
+    {
+        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder->method('eq')->willReturn('1=1');
+
+        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result->method('fetchAssociative')->willReturn($userRow ?? false);
+
+        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder->method('select')->willReturnSelf();
+        $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('expr')->willReturn($expressionBuilder);
+        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
+        $queryBuilder->method('executeQuery')->willReturn($result);
+
+        $this->connectionPool
+            ->method('getQueryBuilderForTable')
+            ->with('be_users')
+            ->willReturn($queryBuilder);
     }
 
     /**
