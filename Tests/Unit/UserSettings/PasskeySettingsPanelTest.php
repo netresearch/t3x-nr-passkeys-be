@@ -37,11 +37,11 @@ final class PasskeySettingsPanelTest extends TestCase
             ->method('buildUriFromRoute')
             ->willReturnCallback(static function (string $routeName): Uri {
                 $routeMap = [
-                    'passkeys_manage_list' => '/typo3/passkeys/manage/list?token=test-token',
-                    'passkeys_manage_registration_options' => '/typo3/passkeys/manage/registration/options?token=test-token',
-                    'passkeys_manage_registration_verify' => '/typo3/passkeys/manage/registration/verify?token=test-token',
-                    'passkeys_manage_rename' => '/typo3/passkeys/manage/rename?token=test-token',
-                    'passkeys_manage_remove' => '/typo3/passkeys/manage/remove?token=test-token',
+                    'ajax_passkeys_manage_list' => '/typo3/ajax/passkeys/manage/list?token=test-token',
+                    'ajax_passkeys_manage_registration_options' => '/typo3/ajax/passkeys/manage/registration/options?token=test-token',
+                    'ajax_passkeys_manage_registration_verify' => '/typo3/ajax/passkeys/manage/registration/verify?token=test-token',
+                    'ajax_passkeys_manage_rename' => '/typo3/ajax/passkeys/manage/rename?token=test-token',
+                    'ajax_passkeys_manage_remove' => '/typo3/ajax/passkeys/manage/remove?token=test-token',
                 ];
 
                 return new Uri($routeMap[$routeName] ?? '/typo3/unknown');
@@ -163,11 +163,11 @@ final class PasskeySettingsPanelTest extends TestCase
 
         $result = $this->subject->render([]);
 
-        self::assertStringContainsString('data-list-url="/typo3/passkeys/manage/list?token=test-token"', $result);
-        self::assertStringContainsString('data-register-options-url="/typo3/passkeys/manage/registration/options?token=test-token"', $result);
-        self::assertStringContainsString('data-register-verify-url="/typo3/passkeys/manage/registration/verify?token=test-token"', $result);
-        self::assertStringContainsString('data-rename-url="/typo3/passkeys/manage/rename?token=test-token"', $result);
-        self::assertStringContainsString('data-remove-url="/typo3/passkeys/manage/remove?token=test-token"', $result);
+        self::assertStringContainsString('data-list-url="/typo3/ajax/passkeys/manage/list?token=test-token"', $result);
+        self::assertStringContainsString('data-register-options-url="/typo3/ajax/passkeys/manage/registration/options?token=test-token"', $result);
+        self::assertStringContainsString('data-register-verify-url="/typo3/ajax/passkeys/manage/registration/verify?token=test-token"', $result);
+        self::assertStringContainsString('data-rename-url="/typo3/ajax/passkeys/manage/rename?token=test-token"', $result);
+        self::assertStringContainsString('data-remove-url="/typo3/ajax/passkeys/manage/remove?token=test-token"', $result);
     }
 
     #[Test]
