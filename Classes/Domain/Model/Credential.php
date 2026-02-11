@@ -218,21 +218,31 @@ final class Credential
     public static function fromArray(array $data): self
     {
         return new self(
-            uid: (int) ($data['uid'] ?? 0),
-            pid: (int) ($data['pid'] ?? 0),
-            beUser: (int) ($data['be_user'] ?? 0),
-            credentialId: (string) ($data['credential_id'] ?? ''),
-            publicKeyCose: (string) ($data['public_key_cose'] ?? ''),
-            signCount: (int) ($data['sign_count'] ?? 0),
-            userHandle: (string) ($data['user_handle'] ?? ''),
-            aaguid: (string) ($data['aaguid'] ?? ''),
-            transports: (string) ($data['transports'] ?? '[]'),
-            label: (string) ($data['label'] ?? ''),
-            createdAt: (int) ($data['created_at'] ?? 0),
-            lastUsedAt: (int) ($data['last_used_at'] ?? 0),
-            revokedAt: (int) ($data['revoked_at'] ?? 0),
-            revokedBy: (int) ($data['revoked_by'] ?? 0),
+            uid: self::intVal($data['uid'] ?? null),
+            pid: self::intVal($data['pid'] ?? null),
+            beUser: self::intVal($data['be_user'] ?? null),
+            credentialId: self::stringVal($data['credential_id'] ?? null),
+            publicKeyCose: self::stringVal($data['public_key_cose'] ?? null),
+            signCount: self::intVal($data['sign_count'] ?? null),
+            userHandle: self::stringVal($data['user_handle'] ?? null),
+            aaguid: self::stringVal($data['aaguid'] ?? null),
+            transports: self::stringVal($data['transports'] ?? null, '[]'),
+            label: self::stringVal($data['label'] ?? null),
+            createdAt: self::intVal($data['created_at'] ?? null),
+            lastUsedAt: self::intVal($data['last_used_at'] ?? null),
+            revokedAt: self::intVal($data['revoked_at'] ?? null),
+            revokedBy: self::intVal($data['revoked_by'] ?? null),
         );
+    }
+
+    private static function intVal(mixed $value, int $default = 0): int
+    {
+        return \is_numeric($value) ? (int) $value : $default;
+    }
+
+    private static function stringVal(mixed $value, string $default = ''): string
+    {
+        return \is_string($value) ? $value : $default;
     }
 
     /**

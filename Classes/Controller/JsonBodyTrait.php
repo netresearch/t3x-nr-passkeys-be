@@ -16,6 +16,7 @@ trait JsonBodyTrait
     {
         $body = $request->getParsedBody();
         if (\is_array($body)) {
+            /** @var array<string, mixed> $body */
             return $body;
         }
 
@@ -35,6 +36,11 @@ trait JsonBodyTrait
             return [];
         }
 
-        return \is_array($decoded) ? $decoded : [];
+        if (!\is_array($decoded)) {
+            return [];
+        }
+
+        /** @var array<string, mixed> $decoded */
+        return $decoded;
     }
 }

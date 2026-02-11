@@ -154,7 +154,7 @@ class CredentialRepository
     {
         $queryBuilder = $this->getQueryBuilder();
 
-        return (int) $queryBuilder
+        $result = $queryBuilder
             ->count('uid')
             ->from(self::TABLE)
             ->where(
@@ -167,6 +167,8 @@ class CredentialRepository
             )
             ->executeQuery()
             ->fetchOne();
+
+        return \is_numeric($result) ? (int) $result : 0;
     }
 
     /**

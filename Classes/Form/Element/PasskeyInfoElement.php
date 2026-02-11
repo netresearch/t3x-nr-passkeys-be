@@ -26,6 +26,7 @@ class PasskeyInfoElement extends AbstractFormElement
      */
     public function render(): array
     {
+        /** @var array<string, mixed> $resultArray */
         $resultArray = $this->initializeResultArray();
 
         $tableName = $this->data['tableName'] ?? '';
@@ -33,7 +34,11 @@ class PasskeyInfoElement extends AbstractFormElement
             return $resultArray;
         }
 
-        $userId = (int) ($this->data['databaseRow']['uid'] ?? 0);
+        $databaseRow = \is_array($this->data['databaseRow'] ?? null)
+            ? $this->data['databaseRow']
+            : [];
+        $rawUid = $databaseRow['uid'] ?? null;
+        $userId = \is_numeric($rawUid) ? (int) $rawUid : 0;
         if ($userId === 0) {
             return $resultArray;
         }
@@ -47,7 +52,9 @@ class PasskeyInfoElement extends AbstractFormElement
         // (which requires a database connection for setBeUserByUid).
         $isManagementAllowed = $isAdmin;
         if ($isAdmin) {
-            $systemMaintainers = $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] ?? [];
+            $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+            $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
+            $systemMaintainers = \is_array($sysConf) ? ($sysConf['systemMaintainers'] ?? []) : [];
             if (\is_array($systemMaintainers) && $systemMaintainers !== []) {
                 $systemMaintainerIds = \array_map('\intval', $systemMaintainers);
                 $targetIsSystemMaintainer = \in_array($userId, $systemMaintainerIds, true);
@@ -65,7 +72,8 @@ class PasskeyInfoElement extends AbstractFormElement
 
         $enabledLabel = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled');
         $disabledLabel = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.disabled');
-        $username = (string) ($this->data['databaseRow']['username'] ?? '');
+        $rawUsername = $databaseRow['username'] ?? null;
+        $username = \is_string($rawUsername) ? $rawUsername : '';
 
         // Status badge
         if ($activeCount > 0) {
@@ -191,12 +199,15 @@ class PasskeyInfoElement extends AbstractFormElement
 
         // Load JavaScript when management is allowed and there's something to interact with
         if ($isManagementAllowed) {
-            $resultArray['javaScriptModules'][] = JavaScriptModuleInstruction::create(
+            /** @var list<JavaScriptModuleInstruction> $jsModules */
+            $jsModules = $resultArray['javaScriptModules'] ?? [];
+            $jsModules[] = JavaScriptModuleInstruction::create(
                 '@netresearch/nr-passkeys-be/PasskeyAdminInfo.js',
             )->instance('#' . $fieldId, [
                 'userId' => $userId,
                 'username' => $username,
             ]);
+            $resultArray['javaScriptModules'] = $jsModules;
         }
 
         $resultArray['html'] = $this->wrapWithFieldsetAndLegend($status . \implode(PHP_EOL, $html));
@@ -206,8 +217,12 @@ class PasskeyInfoElement extends AbstractFormElement
 
     private function formatTimestamp(int $timestamp): string
     {
-        $format = $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy'] ?? 'Y-m-d';
-        $timeFormat = $GLOBALS['TYPO3_CONF_VARS']['SYS']['hhmm'] ?? 'H:i';
+        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
+        $rawDateFormat = \is_array($sysConf) ? ($sysConf['ddmmyy'] ?? 'Y-m-d') : 'Y-m-d';
+        $rawTimeFormat = \is_array($sysConf) ? ($sysConf['hhmm'] ?? 'H:i') : 'H:i';
+        $format = \is_string($rawDateFormat) ? $rawDateFormat : 'Y-m-d';
+        $timeFormat = \is_string($rawTimeFormat) ? $rawTimeFormat : 'H:i';
 
         return \date($format . ' ' . $timeFormat, $timestamp);
     }

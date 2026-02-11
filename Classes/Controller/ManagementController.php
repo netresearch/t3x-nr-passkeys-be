@@ -38,11 +38,15 @@ class ManagementController
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
+        $userUid = self::intFrom($user['uid'] ?? null);
+        $userName = self::stringFrom($user['username'] ?? null);
+        $realName = self::stringFrom($user['realName'] ?? null);
+
         try {
             $result = $this->webAuthnService->createRegistrationOptions(
-                beUserUid: (int) $user['uid'],
-                username: (string) $user['username'],
-                displayName: (string) ($user['realName'] ?: $user['username']),
+                beUserUid: $userUid,
+                username: $userName,
+                displayName: $realName !== '' ? $realName : $userName,
             );
 
             $optionsJson = $this->webAuthnService->serializeCreationOptions($result['options']);
@@ -76,8 +80,10 @@ class ManagementController
 
         $body = $this->getJsonBody($request);
         $credentialJson = isset($body['credential']) ? \json_encode($body['credential'], JSON_THROW_ON_ERROR) : '';
-        $challengeToken = (string) ($body['challengeToken'] ?? '');
-        $label = (string) ($body['label'] ?? 'Passkey');
+        $rawToken = $body['challengeToken'] ?? '';
+        $challengeToken = \is_string($rawToken) ? $rawToken : '';
+        $rawLabel = $body['label'] ?? 'Passkey';
+        $label = \is_string($rawLabel) ? $rawLabel : 'Passkey';
 
         if ($credentialJson === '' || $challengeToken === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -89,18 +95,22 @@ class ManagementController
             $label = 'Passkey';
         }
 
+        $userUid = self::intFrom($user['uid'] ?? null);
+        $userName = self::stringFrom($user['username'] ?? null);
+        $realName = self::stringFrom($user['realName'] ?? null);
+
         try {
             $source = $this->webAuthnService->verifyRegistrationResponse(
                 responseJson: $credentialJson,
                 challengeToken: $challengeToken,
-                beUserUid: (int) $user['uid'],
-                username: (string) $user['username'],
-                displayName: (string) ($user['realName'] ?: $user['username']),
+                beUserUid: $userUid,
+                username: $userName,
+                displayName: $realName !== '' ? $realName : $userName,
             );
 
             $credential = $this->webAuthnService->storeCredential(
                 source: $source,
-                beUserUid: (int) $user['uid'],
+                beUserUid: $userUid,
                 label: $label,
             );
 
@@ -136,7 +146,7 @@ class ManagementController
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
-        $credentials = $this->credentialRepository->findByBeUser((int) $user['uid']);
+        $credentials = $this->credentialRepository->findByBeUser(self::intFrom($user['uid'] ?? null));
         $list = \array_map(
             static fn($cred) => $cred->toPublicArray(),
             $credentials,
@@ -163,8 +173,9 @@ class ManagementController
         }
 
         $body = $this->getJsonBody($request);
-        $credentialUid = (int) ($body['uid'] ?? 0);
-        $label = (string) ($body['label'] ?? '');
+        $credentialUid = self::intFrom($body['uid'] ?? null);
+        $rawLabel = $body['label'] ?? null;
+        $label = \is_string($rawLabel) ? $rawLabel : '';
 
         if ($credentialUid === 0 || $label === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -173,7 +184,7 @@ class ManagementController
         $label = \mb_substr(\trim($label), 0, 128);
 
         // Verify ownership
-        $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, (int) $user['uid']);
+        $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, self::intFrom($user['uid'] ?? null));
         if ($credential === null) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
@@ -203,13 +214,13 @@ class ManagementController
         }
 
         $body = $this->getJsonBody($request);
-        $credentialUid = (int) ($body['uid'] ?? 0);
+        $credentialUid = self::intFrom($body['uid'] ?? null);
 
         if ($credentialUid === 0) {
             return new JsonResponse(['error' => 'Missing credential uid'], 400);
         }
 
-        $beUserUid = (int) $user['uid'];
+        $beUserUid = self::intFrom($user['uid'] ?? null);
 
         // Verify ownership
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $beUserUid);
@@ -249,7 +260,19 @@ class ManagementController
             return null;
         }
 
-        return $backendUser->user;
+        /** @var array<string, mixed> $user */
+        $user = $backendUser->user;
+
+        return $user;
     }
 
+    private static function intFrom(mixed $value): int
+    {
+        return \is_numeric($value) ? (int) $value : 0;
+    }
+
+    private static function stringFrom(mixed $value): string
+    {
+        return \is_string($value) ? $value : '';
+    }
 }

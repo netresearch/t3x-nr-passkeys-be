@@ -492,7 +492,20 @@ class WebAuthnService
 
     private function createUserHandle(int $beUserUid): string
     {
-        $key = $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] ?? '';
+        $key = $this->getEncryptionKey();
+        $derivedKey = \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_user_handle');
+
+        return \hash_hmac('sha256', (string) $beUserUid, $derivedKey, true);
+    }
+
+    private function getEncryptionKey(): string
+    {
+        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
+        $key = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
+            ? $sysConf['encryptionKey']
+            : '';
+
         if (\strlen($key) < 32) {
             throw new RuntimeException(
                 'TYPO3 encryptionKey is missing or too short (min 32 chars). '
@@ -501,10 +514,7 @@ class WebAuthnService
             );
         }
 
-        // Derive a purpose-specific key via HKDF to avoid reusing encryptionKey directly
-        $derivedKey = \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_user_handle');
-
-        return \hash_hmac('sha256', (string) $beUserUid, $derivedKey, true);
+        return $key;
     }
 
     private function credentialToSource(Credential $credential): PublicKeyCredentialSource

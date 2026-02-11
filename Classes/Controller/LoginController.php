@@ -96,7 +96,8 @@ class LoginController
         }
 
         try {
-            $result = $this->webAuthnService->createAssertionOptions($username, (int) $user['uid']);
+            $rawUid = $user['uid'] ?? null;
+            $result = $this->webAuthnService->createAssertionOptions($username, \is_numeric($rawUid) ? (int) $rawUid : 0);
 
             $optionsJson = $this->webAuthnService->serializeRequestOptions($result['options'] ?? throw new RuntimeException('Missing assertion options'));
 
@@ -160,7 +161,7 @@ class LoginController
             $this->webAuthnService->verifyAssertionResponse(
                 responseJson: $assertion,
                 challengeToken: $challengeToken,
-                beUserUid: (int) $user['uid'],
+                beUserUid: \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0,
             );
 
             $this->rateLimiterService->recordSuccess($username, $ip);

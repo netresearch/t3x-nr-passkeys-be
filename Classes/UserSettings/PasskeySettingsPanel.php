@@ -39,7 +39,8 @@ class PasskeySettingsPanel
             return '';
         }
 
-        $userId = (int) ($backendUser->user['uid'] ?? 0);
+        $rawUid = $backendUser->user['uid'] ?? null;
+        $userId = \is_numeric($rawUid) ? (int) $rawUid : 0;
         if ($userId === 0) {
             return '';
         }

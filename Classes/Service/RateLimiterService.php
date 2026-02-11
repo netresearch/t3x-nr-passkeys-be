@@ -115,7 +115,7 @@ class RateLimiterService
             return 0;
         }
 
-        return (int) $value;
+        return \is_numeric($value) ? (int) $value : 0;
     }
 
     private function buildKey(string $endpoint, string $identifier): string

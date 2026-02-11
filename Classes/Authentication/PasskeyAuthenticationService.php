@@ -48,7 +48,8 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     public function getUser(): array|false
     {
         $loginData = $this->login;
-        $username = (string) ($loginData['uname'] ?? '');
+        $rawUsername = $loginData['uname'] ?? '';
+        $username = \is_string($rawUsername) ? $rawUsername : '';
 
         $payload = $this->getPasskeyPayload();
         if ($payload === null) {
@@ -107,8 +108,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             return 100;
         }
 
-        $username = (string) ($this->login['uname'] ?? '');
-        $ip = (string) (GeneralUtility::getIndpEnv('REMOTE_ADDR') ?: '');
+        $rawUname = $this->login['uname'] ?? '';
+        $username = \is_string($rawUname) ? $rawUname : '';
+        $rawIp = GeneralUtility::getIndpEnv('REMOTE_ADDR');
+        $ip = \is_string($rawIp) ? $rawIp : '';
 
         try {
             // Check lockout
@@ -118,7 +121,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             $result = $this->getWebAuthnService()->verifyAssertionResponse(
                 responseJson: $payload['assertion'],
                 challengeToken: $payload['challengeToken'],
-                beUserUid: (int) $user['uid'],
+                beUserUid: \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0,
             );
 
             // Clear lockout on success
@@ -164,7 +167,8 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         $this->passkeyPayload = null;
 
-        $uident = (string) ($this->login['uident'] ?? '');
+        $rawUident = $this->login['uident'] ?? '';
+        $uident = \is_string($rawUident) ? $rawUident : '';
         if ($uident === '' || $uident[0] !== '{') {
             return null;
         }

@@ -19,18 +19,18 @@ class ExtensionConfigurationService
             $settings = [];
         }
         $this->config = new \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration(
-            rpId: (string) ($settings['rpId'] ?? ''),
-            rpName: (string) ($settings['rpName'] ?? 'TYPO3 Backend'),
-            origin: (string) ($settings['origin'] ?? ''),
-            challengeTtlSeconds: (int) ($settings['challengeTtlSeconds'] ?? 120),
-            userVerification: (string) ($settings['userVerification'] ?? 'required'),
-            discoverableLoginEnabled: (bool) ($settings['discoverableLoginEnabled'] ?? true),
-            disablePasswordLogin: (bool) ($settings['disablePasswordLogin'] ?? false),
-            rateLimitMaxAttempts: (int) ($settings['rateLimitMaxAttempts'] ?? 10),
-            rateLimitWindowSeconds: (int) ($settings['rateLimitWindowSeconds'] ?? 300),
-            lockoutThreshold: (int) ($settings['lockoutThreshold'] ?? 5),
-            lockoutDurationSeconds: (int) ($settings['lockoutDurationSeconds'] ?? 900),
-            allowedAlgorithms: (string) ($settings['allowedAlgorithms'] ?? 'ES256'),
+            rpId: self::stringVal($settings['rpId'] ?? null),
+            rpName: self::stringVal($settings['rpName'] ?? null, 'TYPO3 Backend'),
+            origin: self::stringVal($settings['origin'] ?? null),
+            challengeTtlSeconds: self::intVal($settings['challengeTtlSeconds'] ?? null, 120),
+            userVerification: self::stringVal($settings['userVerification'] ?? null, 'required'),
+            discoverableLoginEnabled: !empty($settings['discoverableLoginEnabled'] ?? true),
+            disablePasswordLogin: !empty($settings['disablePasswordLogin'] ?? false),
+            rateLimitMaxAttempts: self::intVal($settings['rateLimitMaxAttempts'] ?? null, 10),
+            rateLimitWindowSeconds: self::intVal($settings['rateLimitWindowSeconds'] ?? null, 300),
+            lockoutThreshold: self::intVal($settings['lockoutThreshold'] ?? null, 5),
+            lockoutDurationSeconds: self::intVal($settings['lockoutDurationSeconds'] ?? null, 900),
+            allowedAlgorithms: self::stringVal($settings['allowedAlgorithms'] ?? null, 'ES256'),
         );
     }
 
@@ -46,7 +46,8 @@ class ExtensionConfigurationService
             return $rpId;
         }
 
-        $host = (string) GeneralUtility::getIndpEnv('HTTP_HOST');
+        $rawHost = GeneralUtility::getIndpEnv('HTTP_HOST');
+        $host = \is_string($rawHost) ? $rawHost : '';
 
         return $host !== '' ? $host : 'localhost';
     }
@@ -58,10 +59,22 @@ class ExtensionConfigurationService
             return $origin;
         }
 
-        $isHttps = (bool) GeneralUtility::getIndpEnv('TYPO3_SSL');
+        $rawSsl = GeneralUtility::getIndpEnv('TYPO3_SSL');
+        $isHttps = \is_string($rawSsl) ? $rawSsl !== '' && $rawSsl !== '0' : !empty($rawSsl);
         $scheme = $isHttps ? 'https' : 'http';
-        $host = (string) GeneralUtility::getIndpEnv('HTTP_HOST');
+        $rawHost = GeneralUtility::getIndpEnv('HTTP_HOST');
+        $host = \is_string($rawHost) ? $rawHost : '';
 
         return $scheme . '://' . ($host !== '' ? $host : 'localhost');
+    }
+
+    private static function intVal(mixed $value, int $default = 0): int
+    {
+        return \is_numeric($value) ? (int) $value : $default;
+    }
+
+    private static function stringVal(mixed $value, string $default = ''): string
+    {
+        return \is_string($value) ? $value : $default;
     }
 }

@@ -1,5 +1,5 @@
 parameters:
-    level: 8
+    level: 10
     paths:
         - ../Classes
     tmpDir: ../.Build/var/phpstan
@@ -33,14 +33,14 @@ parameters:
         -
             identifier: phpstanTypo3.requestAttributeValidation
             reportUnmatched: false
-        # TYPO3 AbstractAuthenticationService uses untyped arrays
+        # TYPO3's AbstractUserAuthentication::$user is typed as plain array
+        -
+            identifier: varTag.nativeType
+            path: ../Classes/Controller/AdminController.php
+        -
+            identifier: varTag.nativeType
+            path: ../Classes/Controller/ManagementController.php
+        # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
             message: '#no value type specified in iterable type array#'
             path: ../Classes/Authentication/PasskeyAuthenticationService.php
-        # TYPO3 v14 without phpstan-typo3: GeneralUtility::getIndpEnv() returns union type
-        -
-            identifier: cast.string
-            reportUnmatched: false
-        -
-            identifier: cast.bool
-            reportUnmatched: false

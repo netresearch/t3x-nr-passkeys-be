@@ -37,7 +37,8 @@ class AdminController
         }
 
         $queryParams = $request->getQueryParams();
-        $beUserUid = (int) ($queryParams['beUserUid'] ?? 0);
+        $rawUid = $queryParams['beUserUid'] ?? null;
+        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($beUserUid === 0) {
             return new JsonResponse(['error' => 'Missing beUserUid parameter'], 400);
@@ -78,8 +79,10 @@ class AdminController
         }
 
         $body = $this->getJsonBody($request);
-        $beUserUid = (int) ($body['beUserUid'] ?? 0);
-        $credentialUid = (int) ($body['credentialUid'] ?? 0);
+        $rawUid = $body['beUserUid'] ?? null;
+        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $rawCredUid = $body['credentialUid'] ?? null;
+        $credentialUid = \is_numeric($rawCredUid) ? (int) $rawCredUid : 0;
 
         if ($beUserUid === 0 || $credentialUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -91,7 +94,8 @@ class AdminController
             return new JsonResponse(['error' => 'Credential not found for this user'], 404);
         }
 
-        $adminUid = (int) $admin['uid'];
+        $rawAdminUid = $admin['uid'] ?? null;
+        $adminUid = \is_numeric($rawAdminUid) ? (int) $rawAdminUid : 0;
         $this->credentialRepository->revoke($credentialUid, $adminUid);
 
         $this->logger->info('Admin revoked passkey', [
@@ -117,8 +121,10 @@ class AdminController
         }
 
         $body = $this->getJsonBody($request);
-        $beUserUid = (int) ($body['beUserUid'] ?? 0);
-        $username = (string) ($body['username'] ?? '');
+        $rawUid = $body['beUserUid'] ?? null;
+        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $rawUsername = $body['username'] ?? null;
+        $username = \is_string($rawUsername) ? $rawUsername : '';
 
         if ($beUserUid === 0 || $username === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -162,13 +168,15 @@ class AdminController
         }
 
         $body = $this->getJsonBody($request);
-        $beUserUid = (int) ($body['beUserUid'] ?? 0);
+        $rawUid = $body['beUserUid'] ?? null;
+        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($beUserUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $adminUid = (int) $admin['uid'];
+        $rawAdminUid = $admin['uid'] ?? null;
+        $adminUid = \is_numeric($rawAdminUid) ? (int) $rawAdminUid : 0;
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
         $revokedCount = 0;
 
@@ -206,7 +214,10 @@ class AdminController
             return null;
         }
 
-        return $backendUser->user;
+        /** @var array<string, mixed> $user */
+        $user = $backendUser->user;
+
+        return $user;
     }
 
 }

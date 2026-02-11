@@ -93,7 +93,19 @@ class ChallengeService
 
     private function getSigningKey(): string
     {
-        $key = $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] ?? '';
+        $key = $this->getEncryptionKey();
+
+        return \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_challenge');
+    }
+
+    private function getEncryptionKey(): string
+    {
+        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
+        $key = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
+            ? $sysConf['encryptionKey']
+            : '';
+
         if (\strlen($key) < 32) {
             throw new RuntimeException(
                 'TYPO3 encryptionKey is missing or too short (min 32 chars). '
@@ -102,7 +114,7 @@ class ChallengeService
             );
         }
 
-        return \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_challenge');
+        return $key;
     }
 
     private function getNonceCacheKey(string $nonce): string

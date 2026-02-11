@@ -35,7 +35,8 @@ class PublicRouteResolver implements MiddlewareInterface
 
         if ($route !== null
             && $route->getOption('access') === 'public'
-            && \str_starts_with((string) $route->getOption('_identifier'), self::PASSKEYS_ROUTE_PREFIX)
+            && \is_string($route->getOption('_identifier'))
+            && \str_starts_with($route->getOption('_identifier'), self::PASSKEYS_ROUTE_PREFIX)
         ) {
             return $this->dispatcher->dispatch($request);
         }
