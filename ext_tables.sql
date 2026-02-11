@@ -1,6 +1,6 @@
 CREATE TABLE tx_nrpasskeysbe_credential (
     be_user int(11) unsigned NOT NULL DEFAULT 0,
-    credential_id varbinary(255) NOT NULL,
+    credential_id varbinary(1024) NOT NULL,
     public_key_cose blob NOT NULL,
     sign_count int(11) unsigned NOT NULL DEFAULT 0,
     user_handle varbinary(64) DEFAULT NULL,
