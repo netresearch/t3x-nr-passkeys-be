@@ -10,6 +10,6 @@ declare(strict_types=1);
  * production code retains the final declaration.
  */
 
-DG\BypassFinals::enable();
-
 require __DIR__ . '/../.Build/vendor/autoload.php';
+
+DG\BypassFinals::enable();

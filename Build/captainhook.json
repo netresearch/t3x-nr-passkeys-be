@@ -27,7 +27,7 @@
                 "action": "composer ci:test:php:unit"
             },
             {
-                "action": ".Build/bin/phpunit -c Build/phpunit.xml --testsuite fuzz --no-progress"
+                "action": "composer ci:test:php:fuzz"
             }
         ]
     },
