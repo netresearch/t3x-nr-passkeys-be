@@ -22,6 +22,12 @@
             },
             {
                 "action": "composer ci:stan"
+            },
+            {
+                "action": "composer ci:test:php:unit"
+            },
+            {
+                "action": ".Build/bin/phpunit -c Build/phpunit.xml --testsuite fuzz --no-progress"
             }
         ]
     },
