@@ -74,6 +74,9 @@
             <trans-unit id="manage.noPasskeys" resname="manage.noPasskeys">
                 <source>No passkeys registered yet.</source>
             </trans-unit>
+            <trans-unit id="manage.register.label" resname="manage.register.label">
+                <source>New passkey name</source>
+            </trans-unit>
             <trans-unit id="manage.register.prompt" resname="manage.register.prompt">
                 <source>e.g. "Work Laptop", "Phone"</source>
             </trans-unit>
