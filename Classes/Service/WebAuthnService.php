@@ -9,6 +9,9 @@ use Cose\Algorithm\Signature\ECDSA\ES256;
 use Cose\Algorithm\Signature\ECDSA\ES384;
 use Cose\Algorithm\Signature\ECDSA\ES512;
 use Cose\Algorithm\Signature\RSA\RS256;
+use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
+use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
+use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -32,7 +35,7 @@ use Webauthn\PublicKeyCredentialSource;
 use Webauthn\PublicKeyCredentialUserEntity;
 use Webauthn\TrustPath\EmptyTrustPath;
 
-class WebAuthnService
+final class WebAuthnService
 {
     private const ALGORITHM_MAP = [
         'ES256' => -7,
@@ -52,10 +55,8 @@ class WebAuthnService
 
     /**
      * Create registration options for a backend user.
-     *
-     * @return array{options: PublicKeyCredentialCreationOptions, challengeToken: string}
      */
-    public function createRegistrationOptions(int $beUserUid, string $username, string $displayName): array
+    public function createRegistrationOptions(int $beUserUid, string $username, string $displayName): RegistrationOptions
     {
         $rpId = $this->configService->getEffectiveRpId();
         $rpName = $this->configService->getConfiguration()->getRpName();
@@ -102,10 +103,10 @@ class WebAuthnService
             timeout: 60000,
         );
 
-        return [
-            'options' => $options,
-            'challengeToken' => $challengeToken,
-        ];
+        return new RegistrationOptions(
+            options: $options,
+            challengeToken: $challengeToken,
+        );
     }
 
     /**
@@ -192,10 +193,8 @@ class WebAuthnService
 
     /**
      * Create assertion options for login (Variant A: username-first).
-     *
-     * @return array{options: PublicKeyCredentialRequestOptions, challengeToken: string}
      */
-    public function createAssertionOptions(string $username, int $beUserUid): array
+    public function createAssertionOptions(string $username, int $beUserUid): AssertionOptions
     {
         $rpId = $this->configService->getEffectiveRpId();
         $challenge = $this->challengeService->generateChallenge();
@@ -219,18 +218,16 @@ class WebAuthnService
             timeout: 60000,
         );
 
-        return [
-            'options' => $options,
-            'challengeToken' => $challengeToken,
-        ];
+        return new AssertionOptions(
+            options: $options,
+            challengeToken: $challengeToken,
+        );
     }
 
     /**
      * Create assertion options for discoverable login (Variant B: identifierless).
-     *
-     * @return array{options: PublicKeyCredentialRequestOptions, challengeToken: string}
      */
-    public function createDiscoverableAssertionOptions(): array
+    public function createDiscoverableAssertionOptions(): AssertionOptions
     {
         $rpId = $this->configService->getEffectiveRpId();
         $challenge = $this->challengeService->generateChallenge();
@@ -244,10 +241,10 @@ class WebAuthnService
             timeout: 60000,
         );
 
-        return [
-            'options' => $options,
-            'challengeToken' => $challengeToken,
-        ];
+        return new AssertionOptions(
+            options: $options,
+            challengeToken: $challengeToken,
+        );
     }
 
     /**
@@ -283,14 +280,13 @@ class WebAuthnService
     /**
      * Verify an assertion response for login.
      *
-     * @return array{credential: Credential, source: PublicKeyCredentialSource}
      * @throws RuntimeException on verification failure
      */
     public function verifyAssertionResponse(
         string $responseJson,
         string $challengeToken,
         int $beUserUid,
-    ): array {
+    ): VerifiedAssertion {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
         $rpId = $this->configService->getEffectiveRpId();
 
@@ -373,10 +369,10 @@ class WebAuthnService
             'credential_uid' => $credential->getUid(),
         ]);
 
-        return [
-            'credential' => $credential,
-            'source' => $updatedSource,
-        ];
+        return new VerifiedAssertion(
+            credential: $credential,
+            source: $updatedSource,
+        );
     }
 
     /**

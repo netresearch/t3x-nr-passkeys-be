@@ -20,7 +20,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * Note: Dependencies are resolved via GeneralUtility::makeInstance() because
  * TYPO3's callUserFunction() does not use the DI container for instantiation.
  */
-class PasskeySettingsPanel
+final class PasskeySettingsPanel
 {
     private const LLL_PREFIX = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:';
 

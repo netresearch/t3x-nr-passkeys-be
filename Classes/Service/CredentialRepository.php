@@ -8,7 +8,7 @@ use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
-class CredentialRepository
+final class CredentialRepository
 {
     private const TABLE = 'tx_nrpasskeysbe_credential';
 

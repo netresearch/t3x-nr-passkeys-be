@@ -7,7 +7,7 @@ namespace Netresearch\NrPasskeysBe\Service;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 
-class RateLimiterService
+final class RateLimiterService
 {
     public function __construct(
         private readonly FrontendInterface $rateLimitCache,

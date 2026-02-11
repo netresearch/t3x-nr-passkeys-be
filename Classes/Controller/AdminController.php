@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
+use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Psr\Http\Message\ResponseInterface;
@@ -13,7 +14,7 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
 
-class AdminController
+final class AdminController
 {
     use JsonBodyTrait;
 
@@ -31,7 +32,7 @@ class AdminController
      */
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
-        $admin = $this->requireAdmin($request);
+        $admin = $this->requireAdmin();
         if ($admin === null) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -46,15 +47,7 @@ class AdminController
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
         $list = \array_map(
-            static fn($cred) => [
-                'uid' => $cred->getUid(),
-                'label' => $cred->getLabel(),
-                'createdAt' => $cred->getCreatedAt(),
-                'lastUsedAt' => $cred->getLastUsedAt(),
-                'isRevoked' => $cred->isRevoked(),
-                'revokedAt' => $cred->getRevokedAt(),
-                'revokedBy' => $cred->getRevokedBy(),
-            ],
+            static fn($cred) => $cred->toAdminCredentialInfo(),
             $credentials,
         );
 
@@ -73,7 +66,7 @@ class AdminController
      */
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
-        $admin = $this->requireAdmin($request);
+        $admin = $this->requireAdmin();
         if ($admin === null) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -94,12 +87,10 @@ class AdminController
             return new JsonResponse(['error' => 'Credential not found for this user'], 404);
         }
 
-        $rawAdminUid = $admin['uid'] ?? null;
-        $adminUid = \is_numeric($rawAdminUid) ? (int) $rawAdminUid : 0;
-        $this->credentialRepository->revoke($credentialUid, $adminUid);
+        $this->credentialRepository->revoke($credentialUid, $admin->uid);
 
         $this->logger->info('Admin revoked passkey', [
-            'admin_uid' => $adminUid,
+            'admin_uid' => $admin->uid,
             'be_user_uid' => $beUserUid,
             'credential_uid' => $credentialUid,
         ]);
@@ -115,7 +106,7 @@ class AdminController
      */
     public function unlockAction(ServerRequestInterface $request): ResponseInterface
     {
-        $admin = $this->requireAdmin($request);
+        $admin = $this->requireAdmin();
         if ($admin === null) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -146,7 +137,7 @@ class AdminController
         $this->rateLimiterService->resetLockout($username);
 
         $this->logger->info('Admin unlocked user account', [
-            'admin_uid' => $admin['uid'],
+            'admin_uid' => $admin->uid,
             'be_user_uid' => $beUserUid,
             'username' => $username,
         ]);
@@ -162,7 +153,7 @@ class AdminController
      */
     public function revokeAllAction(ServerRequestInterface $request): ResponseInterface
     {
-        $admin = $this->requireAdmin($request);
+        $admin = $this->requireAdmin();
         if ($admin === null) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -175,20 +166,18 @@ class AdminController
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $rawAdminUid = $admin['uid'] ?? null;
-        $adminUid = \is_numeric($rawAdminUid) ? (int) $rawAdminUid : 0;
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
         $revokedCount = 0;
 
         foreach ($credentials as $credential) {
             if (!$credential->isRevoked()) {
-                $this->credentialRepository->revoke($credential->getUid(), $adminUid);
+                $this->credentialRepository->revoke($credential->getUid(), $admin->uid);
                 ++$revokedCount;
             }
         }
 
         $this->logger->info('Admin revoked all passkeys', [
-            'admin_uid' => $adminUid,
+            'admin_uid' => $admin->uid,
             'be_user_uid' => $beUserUid,
             'revoked_count' => $revokedCount,
         ]);
@@ -196,26 +185,17 @@ class AdminController
         return new JsonResponse(['status' => 'ok', 'revokedCount' => $revokedCount]);
     }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function requireAdmin(ServerRequestInterface $request): ?array
+    private function requireAdmin(): ?AuthenticatedUser
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
         if (!$backendUser instanceof BackendUserAuthentication) {
             return null;
         }
 
-        if (!isset($backendUser->user['uid'])) {
+        $user = AuthenticatedUser::fromBackendUser($backendUser);
+        if ($user === null || !$user->isAdmin) {
             return null;
         }
-
-        if (!$backendUser->isAdmin()) {
-            return null;
-        }
-
-        /** @var array<string, mixed> $user */
-        $user = $backendUser->user;
 
         return $user;
     }
