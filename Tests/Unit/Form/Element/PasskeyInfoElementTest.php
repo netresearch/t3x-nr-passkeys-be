@@ -33,7 +33,7 @@ final class PasskeyInfoElementTest extends TestCase
 
     protected function tearDown(): void
     {
-        unset($GLOBALS['BE_USER'], $GLOBALS['LANG']);
+        unset($GLOBALS['BE_USER'], $GLOBALS['LANG'], $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers']);
         parent::tearDown();
     }
 
@@ -333,6 +333,72 @@ final class PasskeyInfoElementTest extends TestCase
         $html = $result['html'];
 
         self::assertStringContainsString('Passkey #10', $html);
+    }
+
+    #[Test]
+    public function renderHidesManagementButtonsForNonMaintainerAdminEditingMaintainer(): void
+    {
+        // Current user is admin but NOT a system maintainer
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = ['uid' => 2, 'admin' => 1];
+        $backendUser->method('isAdmin')->willReturn(true);
+        $backendUser->method('isSystemMaintainer')->willReturn(false);
+        $backendUser->method('shallDisplayDebugInformation')->willReturn(false);
+        $GLOBALS['BE_USER'] = $backendUser;
+        $this->setUpLanguageService();
+
+        // Target user (uid=1) IS a system maintainer
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [1];
+
+        $cred = new Credential(uid: 10, beUser: 1, label: 'Maintainer Key', createdAt: 1700000000);
+        $this->credentialRepository
+            ->method('findAllByBeUser')
+            ->willReturn([$cred]);
+
+        $subject = $this->createSubject([
+            'tableName' => 'be_users',
+            'databaseRow' => ['uid' => 1, 'username' => 'maintainer'],
+            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+        ]);
+
+        $result = $subject->render();
+        $html = $result['html'];
+
+        // Should still show credential info but no management buttons
+        self::assertStringContainsString('Maintainer Key', $html);
+        self::assertStringNotContainsString('t3js-passkey-revoke-button', $html);
+        self::assertStringNotContainsString('t3js-passkey-revoke-all-button', $html);
+        self::assertStringNotContainsString('t3js-passkey-unlock-button', $html);
+        self::assertEmpty($result['javaScriptModules'] ?? []);
+    }
+
+    #[Test]
+    public function renderShowsManagementButtonsForMaintainerAdminEditingMaintainer(): void
+    {
+        // Current user is admin AND a system maintainer
+        $this->setUpAdminUser(1);
+        $this->setUpLanguageService();
+
+        // Target user (uid=2) IS also a system maintainer
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [1, 2];
+
+        $cred = new Credential(uid: 10, beUser: 2, label: 'Maintainer Key', createdAt: 1700000000);
+        $this->credentialRepository
+            ->method('findAllByBeUser')
+            ->willReturn([$cred]);
+
+        $subject = $this->createSubject([
+            'tableName' => 'be_users',
+            'databaseRow' => ['uid' => 2, 'username' => 'maintainer2'],
+            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+        ]);
+
+        $result = $subject->render();
+        $html = $result['html'];
+
+        // System maintainer editing another maintainer -> management allowed
+        self::assertStringContainsString('t3js-passkey-revoke-button', $html);
+        self::assertStringContainsString('t3js-passkey-revoke-all-button', $html);
     }
 
     /**

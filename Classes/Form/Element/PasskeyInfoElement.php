@@ -58,27 +58,25 @@ class PasskeyInfoElement extends AbstractFormElement
         }
 
         $credentials = $this->credentialRepository->findAllByBeUser($userId);
-        $activeCount = 0;
-        foreach ($credentials as $credential) {
-            if (!$credential->isRevoked()) {
-                ++$activeCount;
-            }
-        }
+        $activeCount = \count(\array_filter(
+            $credentials,
+            static fn(\Netresearch\NrPasskeysBe\Domain\Model\Credential $credential): bool => !$credential->isRevoked(),
+        ));
 
-        $enabledLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled'));
-        $disabledLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.disabled'));
+        $enabledLabel = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled');
+        $disabledLabel = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.disabled');
         $username = (string) ($this->data['databaseRow']['username'] ?? '');
 
         // Status badge
         if ($activeCount > 0) {
             $badgeText = $activeCount . ' ' . $enabledLabel;
             $status = '<span class="badge badge-success badge-space-end t3js-passkey-status-label mb-2"'
-                . ' data-alternative-label="' . $disabledLabel . '">'
+                . ' data-alternative-label="' . \htmlspecialchars($disabledLabel) . '">'
                 . \htmlspecialchars($badgeText) . '</span>';
         } else {
             $status = '<span class="badge badge-danger badge-space-end t3js-passkey-status-label"'
-                . ' data-alternative-label="' . $enabledLabel . '">'
-                . $disabledLabel . '</span>';
+                . ' data-alternative-label="' . \htmlspecialchars($enabledLabel) . '">'
+                . \htmlspecialchars($disabledLabel) . '</span>';
         }
 
         $html = [];

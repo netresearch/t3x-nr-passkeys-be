@@ -150,10 +150,7 @@ class PasskeyAdminInfo {
         const data = await response.resolve();
         if (data.status === 'ok') {
           Notification.success('Passkey revoked');
-          const item = this.fullElement.querySelector('#passkey-credential-' + credentialUid);
-          if (item) {
-            item.remove();
-          }
+          this.markItemAsRevoked(credentialUid);
           this.updateStatusAfterRevoke();
         } else {
           Notification.error('Failed to revoke passkey', data.error || '');
@@ -182,7 +179,7 @@ class PasskeyAdminInfo {
         const data = await response.resolve();
         if (data.status === 'ok') {
           Notification.success('All passkeys revoked (' + data.revokedCount + ')');
-          this.clearAllCredentials();
+          this.markAllItemsAsRevoked();
         } else {
           Notification.error('Failed to revoke passkeys', data.error || '');
         }
@@ -221,27 +218,70 @@ class PasskeyAdminInfo {
       });
   }
 
+  markItemAsRevoked(credentialUid) {
+    const item = this.fullElement.querySelector('#passkey-credential-' + credentialUid);
+    if (!item) {
+      return;
+    }
+    // Replace "Active" badge with "Revoked" badge
+    const activeBadge = item.querySelector('.badge-success');
+    if (activeBadge) {
+      activeBadge.classList.remove('badge-success');
+      activeBadge.classList.add('badge-danger');
+      activeBadge.textContent = 'Revoked';
+    }
+    // Remove the per-item revoke button
+    const revokeBtn = item.querySelector('.t3js-passkey-revoke-button');
+    if (revokeBtn) {
+      revokeBtn.remove();
+    }
+    item.dataset.passkeyStatus = 'revoked';
+  }
+
   updateStatusAfterRevoke() {
     const list = this.fullElement.querySelector('.t3js-passkey-credentials-list');
-    const remaining = list ? list.querySelectorAll('li').length : 0;
-    if (remaining === 0) {
-      this.clearAllCredentials();
+    const remainingActive = list
+      ? list.querySelectorAll('li:not([data-passkey-status="revoked"])').length
+      : 0;
+    if (remainingActive === 0) {
+      this.updateStatusBadge();
+    }
+    // Disable "revoke all" button when no active credentials remain
+    const revokeAllBtn = this.fullElement.querySelector('.t3js-passkey-revoke-all-button');
+    if (revokeAllBtn && remainingActive === 0) {
+      revokeAllBtn.classList.add('disabled');
+      revokeAllBtn.setAttribute('disabled', 'disabled');
     }
   }
 
-  clearAllCredentials() {
+  markAllItemsAsRevoked() {
     const list = this.fullElement.querySelector('.t3js-passkey-credentials-list');
-    if (list) {
-      list.remove();
+    if (!list) {
+      return;
     }
+    list.querySelectorAll('li:not([data-passkey-status="revoked"])').forEach((item) => {
+      const activeBadge = item.querySelector('.badge-success');
+      if (activeBadge) {
+        activeBadge.classList.remove('badge-success');
+        activeBadge.classList.add('badge-danger');
+        activeBadge.textContent = 'Revoked';
+      }
+      const revokeBtn = item.querySelector('.t3js-passkey-revoke-button');
+      if (revokeBtn) {
+        revokeBtn.remove();
+      }
+      item.dataset.passkeyStatus = 'revoked';
+    });
     const revokeAllBtn = this.fullElement.querySelector('.t3js-passkey-revoke-all-button');
     if (revokeAllBtn) {
       revokeAllBtn.classList.add('disabled');
       revokeAllBtn.setAttribute('disabled', 'disabled');
     }
-    const statusLabel = this.fullElement.parentElement
-      ? this.fullElement.parentElement.querySelector('.t3js-passkey-status-label')
-      : null;
+    this.updateStatusBadge();
+  }
+
+  updateStatusBadge() {
+    const statusLabel = this.fullElement.closest('fieldset')?.querySelector('.t3js-passkey-status-label') ?? null;
     if (statusLabel && statusLabel.dataset.alternativeLabel) {
       statusLabel.innerText = statusLabel.dataset.alternativeLabel;
       statusLabel.classList.remove('badge-success');

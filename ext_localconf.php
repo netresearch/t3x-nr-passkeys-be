@@ -35,7 +35,6 @@ $GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfigu
     ],
 ];
 
-// Register cache for challenge nonces
 // Register custom FormEngine element for passkey info display in be_users records
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1739000000] = [
     'nodeName' => 'passkeyInfo',
@@ -43,6 +42,7 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1739000000] = [
     'class' => \Netresearch\NrPasskeysBe\Form\Element\PasskeyInfoElement::class,
 ];
 
+// Register cache for challenge nonces
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce'] ??= [];
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['backend'] ??=
     \TYPO3\CMS\Core\Cache\Backend\SimpleFileBackend::class;
