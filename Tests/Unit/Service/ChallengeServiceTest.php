@@ -303,7 +303,8 @@ final class ChallengeServiceTest extends TestCase
         $invalidChallengeB64 = '!!!invalid-base64!!!';
         $payload = $invalidChallengeB64 . '|' . $expiresAt . '|' . $nonce;
         $key = $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
-        $hmac = \hash_hmac('sha256', $payload, $key);
+        $signingKey = \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_challenge');
+        $hmac = \hash_hmac('sha256', $payload, $signingKey);
 
         // Store a valid nonce
         $this->nonceCacheMock

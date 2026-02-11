@@ -72,14 +72,16 @@ class ChallengeService
             throw new RuntimeException('Challenge token expired', 1700000004);
         }
 
-        // Check nonce single-use (replay protection) -- atomic get+remove avoids TOCTOU race
+        // Invalidate nonce first (single-use replay protection).
+        // Remove-before-check avoids TOCTOU race: if two concurrent requests
+        // try to use the same nonce, only the first remove() returns true.
         $nonceCacheKey = $this->getNonceCacheKey($nonce);
-        if ($this->nonceCache->get($nonceCacheKey) === false) {
+        $nonceExisted = $this->nonceCache->get($nonceCacheKey) !== false;
+        $this->nonceCache->remove($nonceCacheKey);
+
+        if (!$nonceExisted) {
             throw new RuntimeException('Challenge nonce already used or expired', 1700000005);
         }
-
-        // Invalidate nonce (single-use)
-        $this->nonceCache->remove($nonceCacheKey);
 
         $challenge = \base64_decode($challengeB64, true);
         if ($challenge === false) {
@@ -100,7 +102,7 @@ class ChallengeService
             );
         }
 
-        return $key;
+        return \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_challenge');
     }
 
     private function getNonceCacheKey(string $nonce): string
