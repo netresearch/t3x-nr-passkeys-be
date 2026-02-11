@@ -72,6 +72,16 @@ return [
         ],
     ],
 
+    'passkeys_admin_revoke_all' => [
+        'path' => '/passkeys/admin/revoke-all',
+        'target' => AdminController::class . '::revokeAllAction',
+        'methods' => ['POST'],
+        'sudoMode' => [
+            'group' => 'passkey_admin',
+            'lifetime' => AccessLifetime::medium,
+        ],
+    ],
+
     // Admin read -- no sudo mode (low risk)
     'passkeys_admin_list' => [
         'path' => '/passkeys/admin/list',

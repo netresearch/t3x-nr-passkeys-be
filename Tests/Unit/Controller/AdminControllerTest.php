@@ -532,6 +532,126 @@ final class AdminControllerTest extends TestCase
         self::assertSame('Unauthorized', $body['error']);
     }
 
+    #[Test]
+    public function revokeAllActionSuccess(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $cred1 = new Credential(uid: 10, beUser: 42, label: 'Key 1');
+        $cred2 = new Credential(uid: 11, beUser: 42, label: 'Key 2');
+        $cred3 = new Credential(uid: 12, beUser: 42, label: 'Revoked', revokedAt: 1700000000, revokedBy: 1);
+
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('findAllByBeUser')
+            ->with(42)
+            ->willReturn([$cred1, $cred2, $cred3]);
+
+        $this->credentialRepository
+            ->expects(self::exactly(2))
+            ->method('revoke')
+            ->willReturnCallback(static function (int $uid, int $adminUid): void {
+                \assert(\in_array($uid, [10, 11], true));
+                \assert($adminUid === 1);
+            });
+
+        $this->logger
+            ->expects(self::once())
+            ->method('info')
+            ->with('Admin revoked all passkeys', self::callback(static function (array $context): bool {
+                return $context['admin_uid'] === 1
+                    && $context['be_user_uid'] === 42
+                    && $context['revoked_count'] === 2;
+            }));
+
+        $response = $this->subject->revokeAllAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('ok', $body['status']);
+        self::assertSame(2, $body['revokedCount']);
+    }
+
+    #[Test]
+    public function revokeAllActionAsNonAdmin(): void
+    {
+        $this->setUpNonAdminUser(42, 'editor');
+
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
+
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('findAllByBeUser');
+
+        $response = $this->subject->revokeAllAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
+    #[Test]
+    public function revokeAllActionWithMissingBeUserUid(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([]);
+
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('findAllByBeUser');
+
+        $response = $this->subject->revokeAllAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function revokeAllActionWithNoActiveCredentials(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
+
+        $cred = new Credential(uid: 10, beUser: 42, label: 'Revoked', revokedAt: 1700000000, revokedBy: 1);
+
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('findAllByBeUser')
+            ->with(42)
+            ->willReturn([$cred]);
+
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('revoke');
+
+        $response = $this->subject->revokeAllAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('ok', $body['status']);
+        self::assertSame(0, $body['revokedCount']);
+    }
+
+    #[Test]
+    public function revokeAllActionWithoutBeUser(): void
+    {
+        // Do NOT set $GLOBALS['BE_USER']
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
+
+        $response = $this->subject->revokeAllAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
     /**
      * Decode a PSR-7 response body as JSON.
      *

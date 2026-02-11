@@ -98,6 +98,60 @@
             <trans-unit id="userSettings.passkeys.label" resname="userSettings.passkeys.label">
                 <source>Passkeys</source>
             </trans-unit>
+            <trans-unit id="admin.passkeys.label" resname="admin.passkeys.label">
+                <source>Passkeys</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.enabled" resname="admin.passkeys.enabled">
+                <source>Enabled</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.disabled" resname="admin.passkeys.disabled">
+                <source>No passkeys</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.revoke" resname="admin.passkeys.revoke">
+                <source>Revoke</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.revokeAll" resname="admin.passkeys.revokeAll">
+                <source>Revoke all passkeys</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.revokeAll.confirm.title" resname="admin.passkeys.revokeAll.confirm.title">
+                <source>Revoke all passkeys</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.revokeAll.confirm.text" resname="admin.passkeys.revokeAll.confirm.text">
+                <source>Are you sure? This will immediately revoke all passkeys for this user.</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.revoke.confirm.title" resname="admin.passkeys.revoke.confirm.title">
+                <source>Revoke passkey</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.revoke.confirm.text" resname="admin.passkeys.revoke.confirm.text">
+                <source>Are you sure you want to revoke this passkey?</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.unlock" resname="admin.passkeys.unlock">
+                <source>Unlock account</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.unlock.confirm.title" resname="admin.passkeys.unlock.confirm.title">
+                <source>Unlock account</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.unlock.confirm.text" resname="admin.passkeys.unlock.confirm.text">
+                <source>Reset the rate limiter for this user?</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.status.active" resname="admin.passkeys.status.active">
+                <source>Active</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.status.revoked" resname="admin.passkeys.status.revoked">
+                <source>Revoked</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.created" resname="admin.passkeys.created">
+                <source>Created</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.lastUsed" resname="admin.passkeys.lastUsed">
+                <source>Last used</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.never" resname="admin.passkeys.never">
+                <source>Never</source>
+            </trans-unit>
+            <trans-unit id="admin.cancel" resname="admin.cancel">
+                <source>Cancel</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

@@ -134,6 +134,46 @@ class AdminController
     }
 
     /**
+     * Revoke all active passkeys for a backend user.
+     *
+     * POST /passkeys/admin/revoke-all
+     * Body: { "beUserUid": 123 }
+     */
+    public function revokeAllAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $admin = $this->requireAdmin($request);
+        if ($admin === null) {
+            return new JsonResponse(['error' => 'Unauthorized'], 403);
+        }
+
+        $body = $this->getJsonBody($request);
+        $beUserUid = (int) ($body['beUserUid'] ?? 0);
+
+        if ($beUserUid === 0) {
+            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        $adminUid = (int) $admin['uid'];
+        $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
+        $revokedCount = 0;
+
+        foreach ($credentials as $credential) {
+            if (!$credential->isRevoked()) {
+                $this->credentialRepository->revoke($credential->getUid(), $adminUid);
+                ++$revokedCount;
+            }
+        }
+
+        $this->logger->info('Admin revoked all passkeys', [
+            'admin_uid' => $adminUid,
+            'be_user_uid' => $beUserUid,
+            'revoked_count' => $revokedCount,
+        ]);
+
+        return new JsonResponse(['status' => 'ok', 'revokedCount' => $revokedCount]);
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     private function requireAdmin(ServerRequestInterface $request): ?array
