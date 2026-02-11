@@ -97,17 +97,19 @@ The extension registers a TYPO3 authentication service at priority 80 (above `Sa
 - `POST /passkeys/login/options` -- Generate authentication challenge
 - `POST /passkeys/login/verify` -- Verify passkey assertion
 
-**Self-Service** (authenticated):
-- `POST /passkeys/manage/registration/options` -- Generate registration challenge
-- `POST /passkeys/manage/registration/verify` -- Complete passkey registration
-- `GET /passkeys/manage/list` -- List own passkeys
-- `POST /passkeys/manage/rename` -- Rename a passkey label
-- `POST /passkeys/manage/remove` -- Remove a passkey
+**Self-Service** (authenticated, AJAX routes):
+- `POST /ajax/passkeys/manage/registration/options` -- Generate registration challenge *
+- `POST /ajax/passkeys/manage/registration/verify` -- Complete passkey registration *
+- `GET /ajax/passkeys/manage/list` -- List own passkeys
+- `POST /ajax/passkeys/manage/rename` -- Rename a passkey label *
+- `POST /ajax/passkeys/manage/remove` -- Remove a passkey *
 
-**Admin** (admin-only):
-- `GET /passkeys/admin/list?beUserUid=N` -- List any user's passkeys
-- `POST /passkeys/admin/remove` -- Revoke a user's passkey
-- `POST /passkeys/admin/unlock` -- Unlock a locked-out user
+**Admin** (admin-only, AJAX routes):
+- `GET /ajax/passkeys/admin/list?beUserUid=N` -- List any user's passkeys
+- `POST /ajax/passkeys/admin/remove` -- Revoke a user's passkey *
+- `POST /ajax/passkeys/admin/unlock` -- Unlock a locked-out user *
+
+\* Protected by TYPO3 **Sudo Mode** -- write operations require password re-verification (15 min grant lifetime).
 
 ## Documentation
 

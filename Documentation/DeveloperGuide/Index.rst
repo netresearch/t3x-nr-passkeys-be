@@ -106,7 +106,9 @@ Controllers
 
 The extension registers backend routes for three controller groups.
 All controllers use the ``JsonBodyTrait`` for parsing JSON request
-bodies.
+bodies. Login routes use ``Routes.php`` (public access). Management
+and admin routes use ``AjaxRoutes.php`` (AJAX, with Sudo Mode on
+write operations).
 
 ..  card-grid::
     :columns: 1
@@ -117,28 +119,37 @@ bodies.
     ..  card:: LoginController (public)
 
         Handles the passkey login flow. Routes have
-        ``access: public``.
+        ``access: public`` (via ``Routes.php``).
 
         - ``POST /passkeys/login/options``
         - ``POST /passkeys/login/verify``
 
-    ..  card:: ManagementController
+    ..  card:: ManagementController (AJAX)
 
-        Passkey lifecycle for the current user.
+        Passkey lifecycle for the current user
+        (via ``AjaxRoutes.php``). Write operations
+        require Sudo Mode re-authentication.
 
-        - ``POST .../registration/options``
-        - ``POST .../registration/verify``
-        - ``GET /passkeys/manage/list``
-        - ``POST /passkeys/manage/rename``
-        - ``POST /passkeys/manage/remove``
+        - ``POST /ajax/passkeys/manage/registration/options`` *
+        - ``POST /ajax/passkeys/manage/registration/verify`` *
+        - ``GET /ajax/passkeys/manage/list``
+        - ``POST /ajax/passkeys/manage/rename`` *
+        - ``POST /ajax/passkeys/manage/remove`` *
 
-    ..  card:: AdminController (admin)
+    ..  card:: AdminController (AJAX, admin)
 
-        Administrative operations for any user.
+        Administrative operations for any user
+        (via ``AjaxRoutes.php``). Write operations
+        require Sudo Mode re-authentication.
 
-        - ``GET /passkeys/admin/list``
-        - ``POST /passkeys/admin/remove``
-        - ``POST /passkeys/admin/unlock``
+        - ``GET /ajax/passkeys/admin/list``
+        - ``POST /ajax/passkeys/admin/remove`` *
+        - ``POST /ajax/passkeys/admin/unlock`` *
+
+Routes marked with ``*`` are protected by TYPO3's Sudo Mode. When
+accessed without a recent password verification, they return HTTP 422
+with ``sudoModeInitialization`` data. The JavaScript handles this
+transparently by showing a password dialog and retrying the request.
 
 Service classes
 ===============

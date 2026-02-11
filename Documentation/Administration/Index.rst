@@ -12,16 +12,17 @@ across all backend users.
 Admin API endpoints
 ===================
 
-The extension provides admin-only REST endpoints for credential and account
+The extension provides admin-only AJAX endpoints for credential and account
 management. All admin endpoints require the requesting user to have TYPO3
-admin privileges.
+admin privileges. Write operations are protected by **Sudo Mode** (password
+re-verification with a 15-minute grant lifetime).
 
 List user credentials
 ---------------------
 
 ..  code-block:: text
 
-   GET /typo3/passkeys/admin/list?beUserUid=<uid>
+   GET /typo3/ajax/passkeys/admin/list?beUserUid=<uid>
 
 Returns all credentials (including revoked ones) for a specific backend user.
 
@@ -40,7 +41,7 @@ Revoke a credential
 
 ..  code-block:: text
 
-   POST /typo3/passkeys/admin/remove
+   POST /typo3/ajax/passkeys/admin/remove
    Content-Type: application/json
 
    {"beUserUid": 123, "credentialUid": 456}
@@ -49,12 +50,14 @@ Revokes a specific passkey for a backend user. The credential is not deleted
 but marked as revoked with a timestamp and the revoking admin's UID. Revoked
 credentials cannot be used for authentication.
 
+This endpoint requires Sudo Mode verification (HTTP 422 if not verified).
+
 Unlock a locked account
 -----------------------
 
 ..  code-block:: text
 
-   POST /typo3/passkeys/admin/unlock
+   POST /typo3/ajax/passkeys/admin/unlock
    Content-Type: application/json
 
    {"beUserUid": 123, "username": "johndoe"}
@@ -62,6 +65,8 @@ Unlock a locked account
 Resets the lockout counter for a specific backend user. Use this when a user
 has been locked out due to too many failed authentication attempts and cannot
 wait for the lockout to expire automatically.
+
+This endpoint requires Sudo Mode verification (HTTP 422 if not verified).
 
 Credential lifecycle
 ====================
