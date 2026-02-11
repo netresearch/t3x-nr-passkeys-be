@@ -59,11 +59,11 @@ class PasskeySettingsPanel
 
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         $urls = [
-            'list' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_list'),
-            'registerOptions' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_registration_options'),
-            'registerVerify' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_registration_verify'),
-            'rename' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_rename'),
-            'remove' => (string) $uriBuilder->buildUriFromRoute('passkeys_manage_remove'),
+            'list' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
+            'registerOptions' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_options'),
+            'registerVerify' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_verify'),
+            'rename' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_rename'),
+            'remove' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_remove'),
         ];
 
         return $this->buildHtml($passkeyCount, $urls);
