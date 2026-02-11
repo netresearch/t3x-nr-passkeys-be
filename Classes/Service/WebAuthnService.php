@@ -492,15 +492,19 @@ class WebAuthnService
 
     private function createUserHandle(int $beUserUid): string
     {
-        $salt = $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] ?? '';
-        if ($salt === '') {
+        $key = $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] ?? '';
+        if (\strlen($key) < 32) {
             throw new RuntimeException(
-                'TYPO3 encryptionKey is not configured. Required for secure user handle generation.',
+                'TYPO3 encryptionKey is missing or too short (min 32 chars). '
+                . 'Configure it in Settings > Configure Installation-Wide Options.',
                 1700000040,
             );
         }
 
-        return \hash('sha256', $beUserUid . '|' . $salt, true);
+        // Derive a purpose-specific key via HKDF to avoid reusing encryptionKey directly
+        $derivedKey = \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_user_handle');
+
+        return \hash_hmac('sha256', (string) $beUserUid, $derivedKey, true);
     }
 
     private function credentialToSource(Credential $credential): PublicKeyCredentialSource

@@ -728,8 +728,8 @@ final class WebAuthnServiceTest extends TestCase
         $result1 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
         $handle1 = $result1['options']->user->id;
 
-        // Change the encryption key
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'different-key';
+        // Change the encryption key (must be >= 32 chars)
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'a-completely-different-key-that-is-long-enough-for-validation';
 
         $result2 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
         $handle2 = $result2['options']->user->id;
@@ -822,7 +822,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000040);
-        $this->expectExceptionMessage('TYPO3 encryptionKey is not configured');
+        $this->expectExceptionMessage('TYPO3 encryptionKey is missing or too short');
 
         $this->subject->createRegistrationOptions(123, 'user', 'User');
     }
