@@ -41,7 +41,8 @@ final class LoginController
             ? (string) $body['username']
             : '';
 
-        $ip = (string) (GeneralUtility::getIndpEnv('REMOTE_ADDR') ?: '');
+        $remoteAddr = GeneralUtility::getIndpEnv('REMOTE_ADDR');
+        $ip = \is_string($remoteAddr) ? $remoteAddr : '';
 
         // Discoverable (usernameless) login
         if ($username === '') {
@@ -139,7 +140,8 @@ final class LoginController
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $ip = (string) (GeneralUtility::getIndpEnv('REMOTE_ADDR') ?: '');
+        $remoteAddr = GeneralUtility::getIndpEnv('REMOTE_ADDR');
+        $ip = \is_string($remoteAddr) ? $remoteAddr : '';
 
         try {
             $this->rateLimiterService->checkRateLimit('login_verify', $ip);
