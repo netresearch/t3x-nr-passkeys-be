@@ -58,7 +58,7 @@ final class ManagementController
                 'error' => $e->getMessage(),
             ]);
 
-            return new JsonResponse(['error' => 'Failed to generate options'], 500);
+            return new JsonResponse(['error' => 'Failed to generate options: ' . $e->getMessage()], 500);
         }
     }
 
@@ -123,7 +123,7 @@ final class ManagementController
                 'error' => $e->getMessage(),
             ]);
 
-            return new JsonResponse(['error' => 'Registration failed'], 400);
+            return new JsonResponse(['error' => 'Registration failed: ' . $e->getMessage()], 400);
         }
     }
 
