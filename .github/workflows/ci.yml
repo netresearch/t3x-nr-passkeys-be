@@ -288,16 +288,7 @@ jobs:
         run: npm install
 
       - name: Run JavaScript tests
-        run: npm run test:js:coverage
-
-      - name: Upload JS coverage to Codecov
-        if: always()
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage/lcov.info
-          flags: javascript
-          fail_ci_if_error: false
+        run: npm run test:js
 
   fuzz:
     name: Fuzz Tests
