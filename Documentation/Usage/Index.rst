@@ -16,12 +16,13 @@ one passkey:
 2. Go to :guilabel:`User Settings` (click your avatar in the
    top-right corner).
 3. Find the **Passkeys** section.
-4. Click :guilabel:`Register new passkey`.
-5. Your browser will prompt you to create a passkey using your
+4. Enter a descriptive name in the text field (e.g. "MacBook TouchID"
+   or "Office YubiKey"). The default is "Passkey".
+5. Click :guilabel:`Add Passkey`.
+6. Your browser will prompt you to create a passkey using your
    preferred authenticator (TouchID, Windows Hello, YubiKey, etc.).
-6. Optionally give the passkey a descriptive label (e.g. "MacBook
-   TouchID" or "Office YubiKey").
-7. Click :guilabel:`Save`.
+7. After successful registration the passkey appears in the list and
+   the name input resets for the next registration.
 
 ..  figure:: /Images/UserSettings/PasskeyManagement.png
     :alt: User Settings page with Passkeys management section
