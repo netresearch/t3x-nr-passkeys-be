@@ -33,8 +33,7 @@ The passkey button is injected into the standard TYPO3 login form via
 the ``InjectPasskeyLoginFields`` PSR-14 event listener. It listens to
 ``ModifyPageLayoutOnLoginProviderSelectionEvent`` and:
 
-- Loads :file:`PasskeyLogin.js` via
-  ``PageRenderer::loadJavaScriptModule()``
+- Loads :file:`PasskeyLogin.js` via ``PageRenderer::addJsFile()``
 - Injects an inline script with ``window.NrPasskeysBeConfig`` that
   provides ``loginOptionsUrl``, ``rpId``, ``origin``, and
   ``discoverableEnabled`` to the JavaScript
