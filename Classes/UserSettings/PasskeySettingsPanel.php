@@ -45,6 +45,22 @@ final class PasskeySettingsPanel
             return '';
         }
 
+        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
+        $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
+            ? $sysConf['encryptionKey']
+            : '';
+        if (\strlen($encryptionKey) < 32) {
+            $lang = $this->getLanguageService();
+            $warning = $this->translate(
+                $lang,
+                'manage.warning.encryptionKey',
+                'Passkey management is unavailable. The TYPO3 encryption key is missing or too short (minimum 32 characters). Configure it in Admin Tools > Settings > Configure Installation-Wide Options.',
+            );
+
+            return '<div class="alert alert-danger">' . \htmlspecialchars($warning, ENT_QUOTES, 'UTF-8') . '</div>';
+        }
+
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
         $pageRenderer->addJsFile(
             'EXT:nr_passkeys_be/Resources/Public/JavaScript/PasskeyManagement.js',

@@ -49,6 +49,9 @@ final class PasskeySettingsPanelTest extends TestCase
 
         $this->subject = new PasskeySettingsPanel();
 
+        // Set up a valid encryptionKey so existing tests reach panel rendering
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 64);
+
         // Set up language service mock
         $languageService = $this->createMock(LanguageService::class);
         $languageService
@@ -74,7 +77,7 @@ final class PasskeySettingsPanelTest extends TestCase
     protected function tearDown(): void
     {
         GeneralUtility::purgeInstances();
-        unset($GLOBALS['LANG'], $GLOBALS['BE_USER']);
+        unset($GLOBALS['LANG'], $GLOBALS['BE_USER'], $GLOBALS['TYPO3_CONF_VARS']);
         parent::tearDown();
     }
 
@@ -324,6 +327,51 @@ final class PasskeySettingsPanelTest extends TestCase
 
         self::assertStringNotContainsString('<script>', $result);
         self::assertStringContainsString('&lt;script&gt;', $result);
+    }
+
+    #[Test]
+    public function renderReturnsWarningWhenEncryptionKeyTooShort(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short';
+
+        $result = $this->subject->render([]);
+
+        self::assertStringContainsString('alert alert-danger', $result);
+        self::assertStringContainsString('encryption key', $result);
+        self::assertStringNotContainsString('passkey-management-container', $result);
+    }
+
+    #[Test]
+    public function renderReturnsWarningWhenEncryptionKeyMissing(): void
+    {
+        $this->setUpBackendUser(1);
+
+        unset($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']);
+
+        $result = $this->subject->render([]);
+
+        self::assertStringContainsString('alert alert-danger', $result);
+        self::assertStringNotContainsString('passkey-management-container', $result);
+    }
+
+    #[Test]
+    public function renderProceedsNormallyWhenEncryptionKeyValid(): void
+    {
+        $this->setUpBackendUser(1);
+        $this->registerDependencies();
+
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 32);
+
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(0);
+
+        $result = $this->subject->render([]);
+
+        self::assertStringContainsString('passkey-management-container', $result);
+        self::assertStringNotContainsString('alert alert-danger', $result);
     }
 
     private function setUpBackendUser(int $uid): void

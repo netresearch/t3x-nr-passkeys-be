@@ -74,6 +74,9 @@
             <trans-unit id="manage.noPasskeys" resname="manage.noPasskeys">
                 <source>No passkeys registered yet.</source>
             </trans-unit>
+            <trans-unit id="manage.warning.encryptionKey" resname="manage.warning.encryptionKey">
+                <source>Passkey management is unavailable. The TYPO3 encryption key is missing or too short (minimum 32 characters). Configure it in Admin Tools &gt; Settings &gt; Configure Installation-Wide Options.</source>
+            </trans-unit>
             <trans-unit id="manage.register.label" resname="manage.register.label">
                 <source>New passkey name</source>
             </trans-unit>
