@@ -161,7 +161,8 @@ class PasskeyManagement {
   }
 
   async handleAddPasskey() {
-    const trimmedLabel = 'Passkey';
+    const nameInput = document.getElementById('passkey-name-input');
+    const label = nameInput ? nameInput.value.trim() : '';
     this.setAddLoading(true);
 
     try {
@@ -221,11 +222,15 @@ class PasskeyManagement {
         .post({
           credential: credentialResponse,
           challengeToken: challengeToken,
-          label: trimmedLabel,
+          label: label || 'Passkey',
         });
       const verifyData = await verifyResponse.resolve();
       if (verifyData.status === 'ok') {
         Notification.success('Passkey registered', 'Passkey registered successfully.');
+        const nameInput = document.getElementById('passkey-name-input');
+        if (nameInput) {
+          nameInput.value = 'Passkey';
+        }
         this.loadPasskeys();
       } else {
         Notification.error('Registration failed', verifyData.error || 'Registration failed.');
@@ -336,6 +341,10 @@ class PasskeyManagement {
     if (this.addBtn) {
       this.addBtn.disabled = loading;
       this.addBtn.textContent = loading ? 'Registering...' : 'Add Passkey';
+    }
+    const nameInput = document.getElementById('passkey-name-input');
+    if (nameInput) {
+      nameInput.disabled = loading;
     }
   }
 
