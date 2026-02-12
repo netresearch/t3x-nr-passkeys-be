@@ -7,6 +7,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
 use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
+use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
@@ -1030,5 +1031,122 @@ final class WebAuthnServiceTest extends TestCase
         $result = $this->subject->findBeUserUidFromAssertion('{"invalid": "structure"}');
 
         self::assertNull($result);
+    }
+
+    #[Test]
+    public function verifyAssertionResponseReturnsVerifiedAssertionOnSuccess(): void
+    {
+        $rpId = 'example.com';
+        $origin = 'https://example.com';
+        $challenge = \random_bytes(32);
+        $beUserUid = 42;
+        $challengeToken = 'test-challenge-token';
+        $userHandle = 'user-handle-hash';
+
+        // Generate ES256 key pair (software authenticator)
+        $key = \openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
+        self::assertNotFalse($key);
+
+        $details = \openssl_pkey_get_details($key);
+        self::assertIsArray($details);
+
+        $x = $details['ec']['x'];
+        $y = $details['ec']['y'];
+
+        // Create COSE-encoded public key (EC2 / ES256)
+        $coseKey = \CBOR\MapObject::create()
+            ->add(\CBOR\UnsignedIntegerObject::create(1), \CBOR\UnsignedIntegerObject::create(2))
+            ->add(\CBOR\UnsignedIntegerObject::create(3), \CBOR\NegativeIntegerObject::create(-7))
+            ->add(\CBOR\NegativeIntegerObject::create(-1), \CBOR\UnsignedIntegerObject::create(1))
+            ->add(\CBOR\NegativeIntegerObject::create(-2), \CBOR\ByteStringObject::create($x))
+            ->add(\CBOR\NegativeIntegerObject::create(-3), \CBOR\ByteStringObject::create($y));
+        $publicKeyCose = (string) $coseKey;
+
+        $credentialId = \random_bytes(32);
+        $b64url = static fn(string $d): string => \rtrim(\strtr(\base64_encode($d), '+/', '-_'), '=');
+
+        // Build clientDataJSON
+        $clientDataJSON = \json_encode([
+            'type' => 'webauthn.get',
+            'challenge' => $b64url($challenge),
+            'origin' => $origin,
+            'crossOrigin' => false,
+        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+        // Build authenticatorData: rpIdHash (32) + flags (1) + counter (4)
+        $authData = \hash('sha256', $rpId, true) . \chr(0x05) . \pack('N', 1);
+
+        // Sign: authenticatorData || SHA-256(clientDataJSON)
+        \openssl_sign($authData . \hash('sha256', $clientDataJSON, true), $signature, $key, OPENSSL_ALGO_SHA256);
+
+        // Build assertion JSON
+        $assertionJson = \json_encode([
+            'type' => 'public-key',
+            'id' => $b64url($credentialId),
+            'rawId' => $b64url($credentialId),
+            'response' => [
+                'clientDataJSON' => $b64url($clientDataJSON),
+                'authenticatorData' => $b64url($authData),
+                'signature' => $b64url($signature),
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+        // Set up mocks
+        $config = new ExtensionConfiguration(
+            rpId: $rpId,
+            allowedAlgorithms: 'ES256',
+        );
+
+        $this->configServiceMock->method('getConfiguration')->willReturn($config);
+        $this->configServiceMock->method('getEffectiveRpId')->willReturn($rpId);
+        $this->configServiceMock->method('getEffectiveOrigin')->willReturn($origin);
+
+        $this->challengeServiceMock
+            ->method('verifyChallengeToken')
+            ->with($challengeToken)
+            ->willReturn($challenge);
+
+        $credential = new Credential(
+            uid: 10,
+            beUser: $beUserUid,
+            credentialId: $credentialId,
+            publicKeyCose: $publicKeyCose,
+            transports: '[]',
+            label: 'Test Key',
+            signCount: 0,
+            userHandle: $userHandle,
+            aaguid: \Symfony\Component\Uid\Uuid::v4()->toString(),
+        );
+
+        $this->credentialRepositoryMock
+            ->method('findByCredentialId')
+            ->with($credentialId)
+            ->willReturn($credential);
+
+        $this->credentialRepositoryMock
+            ->expects(self::once())
+            ->method('updateSignCount')
+            ->with(10, 1);
+
+        $this->credentialRepositoryMock
+            ->expects(self::once())
+            ->method('updateLastUsed')
+            ->with(10);
+
+        $this->loggerMock
+            ->expects(self::once())
+            ->method('info')
+            ->with('Passkey login successful', self::callback(
+                static fn(array $ctx): bool => $ctx['be_user_uid'] === $beUserUid && $ctx['credential_uid'] === 10,
+            ));
+
+        // Execute
+        $result = $this->subject->verifyAssertionResponse($assertionJson, $challengeToken, $beUserUid);
+
+        // Assert
+        self::assertInstanceOf(VerifiedAssertion::class, $result);
+        self::assertSame($credential, $result->credential);
+        self::assertInstanceOf(PublicKeyCredentialSource::class, $result->source);
+        self::assertSame(1, $result->source->counter);
     }
 }
