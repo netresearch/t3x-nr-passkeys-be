@@ -600,6 +600,20 @@ final class ManagementControllerTest extends TestCase
     }
 
     #[Test]
+    public function getAuthenticatedUserReturnsNullWhenUserDataIsNotArray(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = null; // not an array
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = $this->createJsonRequest([]);
+
+        $response = $this->subject->listAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+    }
+
+    #[Test]
     public function getAuthenticatedUserReturnsNullWhenNoUidInUserArray(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);

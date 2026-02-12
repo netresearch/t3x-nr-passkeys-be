@@ -525,6 +525,24 @@ final class AdminControllerTest extends TestCase
     }
 
     #[Test]
+    public function requireAdminReturnsNullWhenUserDataIsNotArray(): void
+    {
+        $backendUser = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $backendUser->user = null; // not an array
+        $backendUser->method('isAdmin')->willReturn(true);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+            'credentialUid' => 10,
+        ]);
+
+        $response = $this->subject->removeAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
     public function requireAdminReturnsNullWhenUserHasNoUid(): void
     {
         $backendUser = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
