@@ -130,7 +130,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             $this->getLogger()->info('Passkey authentication successful', [
                 'be_user_uid' => $user['uid'],
                 'username' => $username,
-                'credential_uid' => $result['credential']->getUid(),
+                'credential_uid' => $result->credential->getUid(),
             ]);
 
             // Return 200 = authenticated, stop further auth processing

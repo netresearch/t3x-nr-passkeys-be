@@ -7,6 +7,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 use Error;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Controller\LoginController;
+use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
@@ -78,10 +79,10 @@ final class LoginControllerTest extends TestCase
             ->expects(self::once())
             ->method('createAssertionOptions')
             ->with('admin', 42)
-            ->willReturn([
-                'options' => $options,
-                'challengeToken' => 'ct_abc123',
-            ]);
+            ->willReturn(new AssertionOptions(
+                options: $options,
+                challengeToken: 'ct_abc123',
+            ));
 
         $this->webAuthnService
             ->expects(self::once())
@@ -132,10 +133,10 @@ final class LoginControllerTest extends TestCase
         $this->webAuthnService
             ->expects(self::once())
             ->method('createDiscoverableAssertionOptions')
-            ->willReturn([
-                'options' => $options,
-                'challengeToken' => 'ct_discoverable',
-            ]);
+            ->willReturn(new AssertionOptions(
+                options: $options,
+                challengeToken: 'ct_discoverable',
+            ));
 
         $this->webAuthnService
             ->expects(self::once())
@@ -501,7 +502,10 @@ final class LoginControllerTest extends TestCase
         );
         $this->webAuthnService
             ->method('createAssertionOptions')
-            ->willReturn(['options' => $options, 'challengeToken' => 'ct']);
+            ->willReturn(new AssertionOptions(
+                options: $options,
+                challengeToken: 'ct',
+            ));
         $this->webAuthnService
             ->method('serializeRequestOptions')
             ->willReturn('{"challenge":"abc"}');

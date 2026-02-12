@@ -34,13 +34,6 @@ parameters:
         -
             identifier: phpstanTypo3.requestAttributeValidation
             reportUnmatched: false
-        # TYPO3's AbstractUserAuthentication::$user is typed as plain array
-        -
-            identifier: varTag.nativeType
-            path: ../Classes/Controller/AdminController.php
-        -
-            identifier: varTag.nativeType
-            path: ../Classes/Controller/ManagementController.php
         # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
             message: '#no value type specified in iterable type array#'

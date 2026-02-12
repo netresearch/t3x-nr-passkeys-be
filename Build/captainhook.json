@@ -22,6 +22,12 @@
             },
             {
                 "action": "composer ci:stan"
+            },
+            {
+                "action": "composer ci:test:php:unit"
+            },
+            {
+                "action": "composer ci:test:php:fuzz"
             }
         ]
     },

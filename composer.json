@@ -43,7 +43,8 @@
         "phpunit/phpunit": "^11.5",
         "saschaegerer/phpstan-typo3": "^2.0",
         "typo3/testing-framework": "^9.0",
-        "phpat/phpat": "^0.12.2"
+        "phpat/phpat": "^0.12.2",
+        "dg/bypass-finals": "^1.9"
     },
     "autoload": {
         "psr-4": {
@@ -85,6 +86,7 @@
             "@ci:test:php:functional"
         ],
         "ci:stan": "phpstan analyse -c Build/phpstan.neon",
+        "ci:test:php:fuzz": "phpunit -c Build/phpunit.xml --testsuite fuzz",
         "ci:mutation": "infection --configuration=Build/infection.json5 --min-msi=60 --min-covered-msi=75"
     }
 }

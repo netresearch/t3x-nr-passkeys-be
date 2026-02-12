@@ -7,7 +7,7 @@ namespace Netresearch\NrPasskeysBe\Service;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class ExtensionConfigurationService
+final class ExtensionConfigurationService
 {
     private readonly \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration $config;
 

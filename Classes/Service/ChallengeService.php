@@ -7,7 +7,7 @@ namespace Netresearch\NrPasskeysBe\Service;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 
-class ChallengeService
+final class ChallengeService
 {
     private const HMAC_ALGO = 'sha256';
 

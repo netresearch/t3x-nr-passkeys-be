@@ -20,7 +20,7 @@ use TYPO3\CMS\Backend\Routing\Route;
  * the login page. This middleware short-circuits authentication for our
  * public passkeys endpoints by dispatching them directly.
  */
-class PublicRouteResolver implements MiddlewareInterface
+final class PublicRouteResolver implements MiddlewareInterface
 {
     private const PASSKEYS_ROUTE_PREFIX = 'passkeys_login_';
 

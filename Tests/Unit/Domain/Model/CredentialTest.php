@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Domain\Model;
 
+use Netresearch\NrPasskeysBe\Domain\Dto\AdminCredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Credential::class)]
+#[CoversClass(CredentialInfo::class)]
+#[CoversClass(AdminCredentialInfo::class)]
 final class CredentialTest extends TestCase
 {
     #[Test]
@@ -387,7 +391,7 @@ final class CredentialTest extends TestCase
     }
 
     #[Test]
-    public function toPublicArrayReturnsOnlyPublicFields(): void
+    public function toCredentialInfoReturnsCredentialInfoWithCorrectValues(): void
     {
         $credential = new Credential(
             uid: 42,
@@ -406,31 +410,18 @@ final class CredentialTest extends TestCase
             revokedBy: 0,
         );
 
-        $public = $credential->toPublicArray();
+        $info = $credential->toCredentialInfo();
 
-        self::assertSame(42, $public['uid']);
-        self::assertSame('My Key', $public['label']);
-        self::assertSame(1700000000, $public['createdAt']);
-        self::assertSame(1700001000, $public['lastUsedAt']);
-        self::assertFalse($public['isRevoked']);
-
-        // Ensure sensitive fields are NOT exposed
-        self::assertArrayNotHasKey('credentialId', $public);
-        self::assertArrayNotHasKey('credential_id', $public);
-        self::assertArrayNotHasKey('publicKeyCose', $public);
-        self::assertArrayNotHasKey('public_key_cose', $public);
-        self::assertArrayNotHasKey('userHandle', $public);
-        self::assertArrayNotHasKey('user_handle', $public);
-        self::assertArrayNotHasKey('beUser', $public);
-        self::assertArrayNotHasKey('be_user', $public);
-        self::assertArrayNotHasKey('signCount', $public);
-        self::assertArrayNotHasKey('sign_count', $public);
-        self::assertArrayNotHasKey('aaguid', $public);
-        self::assertArrayNotHasKey('transports', $public);
+        self::assertInstanceOf(CredentialInfo::class, $info);
+        self::assertSame(42, $info->uid);
+        self::assertSame('My Key', $info->label);
+        self::assertSame(1700000000, $info->createdAt);
+        self::assertSame(1700001000, $info->lastUsedAt);
+        self::assertFalse($info->isRevoked);
     }
 
     #[Test]
-    public function toPublicArrayReflectsRevokedState(): void
+    public function toCredentialInfoReflectsRevokedState(): void
     {
         $credential = new Credential(
             uid: 1,
@@ -440,22 +431,97 @@ final class CredentialTest extends TestCase
             revokedAt: 1700002000,
         );
 
-        $public = $credential->toPublicArray();
+        $info = $credential->toCredentialInfo();
 
-        self::assertTrue($public['isRevoked']);
+        self::assertInstanceOf(CredentialInfo::class, $info);
+        self::assertTrue($info->isRevoked);
     }
 
     #[Test]
-    public function toPublicArrayContainsExactlyFiveKeys(): void
+    public function toCredentialInfoHasExactlyFiveProperties(): void
     {
         $credential = new Credential(uid: 1, label: 'Test');
-        $public = $credential->toPublicArray();
+        $info = $credential->toCredentialInfo();
 
-        self::assertCount(5, $public);
-        self::assertArrayHasKey('uid', $public);
-        self::assertArrayHasKey('label', $public);
-        self::assertArrayHasKey('createdAt', $public);
-        self::assertArrayHasKey('lastUsedAt', $public);
-        self::assertArrayHasKey('isRevoked', $public);
+        self::assertInstanceOf(CredentialInfo::class, $info);
+
+        $serialized = $info->jsonSerialize();
+        self::assertCount(5, $serialized);
+        self::assertArrayHasKey('uid', $serialized);
+        self::assertArrayHasKey('label', $serialized);
+        self::assertArrayHasKey('createdAt', $serialized);
+        self::assertArrayHasKey('lastUsedAt', $serialized);
+        self::assertArrayHasKey('isRevoked', $serialized);
+    }
+
+    #[Test]
+    public function toAdminCredentialInfoReturnsAdminCredentialInfoWithCorrectValues(): void
+    {
+        $credential = new Credential(
+            uid: 42,
+            pid: 1,
+            beUser: 7,
+            credentialId: 'secret-cred-id',
+            publicKeyCose: 'secret-cose-data',
+            signCount: 5,
+            userHandle: 'secret-handle',
+            aaguid: '00000000-0000-0000-0000-000000000000',
+            transports: '["usb"]',
+            label: 'My Key',
+            createdAt: 1700000000,
+            lastUsedAt: 1700001000,
+            revokedAt: 1700002000,
+            revokedBy: 99,
+        );
+
+        $info = $credential->toAdminCredentialInfo();
+
+        self::assertInstanceOf(AdminCredentialInfo::class, $info);
+        self::assertSame(42, $info->uid);
+        self::assertSame('My Key', $info->label);
+        self::assertSame(1700000000, $info->createdAt);
+        self::assertSame(1700001000, $info->lastUsedAt);
+        self::assertTrue($info->isRevoked);
+        self::assertSame(1700002000, $info->revokedAt);
+        self::assertSame(99, $info->revokedBy);
+    }
+
+    #[Test]
+    public function toAdminCredentialInfoIncludesRevocationDetailsWhenNotRevoked(): void
+    {
+        $credential = new Credential(
+            uid: 1,
+            label: 'Active Key',
+            createdAt: 1700000000,
+            lastUsedAt: 1700001000,
+            revokedAt: 0,
+            revokedBy: 0,
+        );
+
+        $info = $credential->toAdminCredentialInfo();
+
+        self::assertInstanceOf(AdminCredentialInfo::class, $info);
+        self::assertFalse($info->isRevoked);
+        self::assertSame(0, $info->revokedAt);
+        self::assertSame(0, $info->revokedBy);
+    }
+
+    #[Test]
+    public function toAdminCredentialInfoHasExactlySevenProperties(): void
+    {
+        $credential = new Credential(uid: 1, label: 'Test');
+        $info = $credential->toAdminCredentialInfo();
+
+        self::assertInstanceOf(AdminCredentialInfo::class, $info);
+
+        $serialized = $info->jsonSerialize();
+        self::assertCount(7, $serialized);
+        self::assertArrayHasKey('uid', $serialized);
+        self::assertArrayHasKey('label', $serialized);
+        self::assertArrayHasKey('createdAt', $serialized);
+        self::assertArrayHasKey('lastUsedAt', $serialized);
+        self::assertArrayHasKey('isRevoked', $serialized);
+        self::assertArrayHasKey('revokedAt', $serialized);
+        self::assertArrayHasKey('revokedBy', $serialized);
     }
 }

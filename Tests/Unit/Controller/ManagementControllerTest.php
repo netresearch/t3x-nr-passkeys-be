@@ -6,6 +6,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Controller\ManagementController;
+use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
@@ -85,10 +86,10 @@ final class ManagementControllerTest extends TestCase
             ->expects(self::once())
             ->method('createRegistrationOptions')
             ->with(42, 'admin', 'Admin User')
-            ->willReturn([
-                'options' => $options,
-                'challengeToken' => 'ct_reg_abc',
-            ]);
+            ->willReturn(new RegistrationOptions(
+                options: $options,
+                challengeToken: 'ct_reg_abc',
+            ));
 
         $this->webAuthnService
             ->expects(self::once())
@@ -599,6 +600,20 @@ final class ManagementControllerTest extends TestCase
     }
 
     #[Test]
+    public function getAuthenticatedUserReturnsNullWhenUserDataIsNotArray(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = null; // not an array
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = $this->createJsonRequest([]);
+
+        $response = $this->subject->listAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+    }
+
+    #[Test]
     public function getAuthenticatedUserReturnsNullWhenNoUidInUserArray(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
@@ -815,6 +830,7 @@ final class ManagementControllerTest extends TestCase
             'username' => $username,
             'realName' => $realName,
         ];
+        $backendUser->method('isAdmin')->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 

@@ -16,7 +16,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-class LoginController
+final class LoginController
 {
     use JsonBodyTrait;
 
@@ -41,7 +41,8 @@ class LoginController
             ? (string) $body['username']
             : '';
 
-        $ip = (string) (GeneralUtility::getIndpEnv('REMOTE_ADDR') ?: '');
+        $remoteAddr = GeneralUtility::getIndpEnv('REMOTE_ADDR');
+        $ip = \is_string($remoteAddr) ? $remoteAddr : '';
 
         // Discoverable (usernameless) login
         if ($username === '') {
@@ -60,11 +61,11 @@ class LoginController
             try {
                 $result = $this->webAuthnService->createDiscoverableAssertionOptions();
 
-                $optionsJson = $this->webAuthnService->serializeRequestOptions($result['options'] ?? throw new RuntimeException('Missing assertion options'));
+                $optionsJson = $this->webAuthnService->serializeRequestOptions($result->options);
 
                 return new JsonResponse([
                     'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
-                    'challengeToken' => $result['challengeToken'],
+                    'challengeToken' => $result->challengeToken,
                 ]);
             } catch (Throwable $e) {
                 $this->logger->error('Failed to generate discoverable assertion options', [
@@ -85,8 +86,8 @@ class LoginController
         $this->rateLimiterService->recordAttempt('login_options', $ip);
 
         // Look up user - return generic response for unknown users to prevent enumeration
-        $user = $this->findBeUser($username);
-        if ($user === null) {
+        $beUserUid = $this->findBeUserUid($username);
+        if ($beUserUid === null) {
             // Use a short sleep to normalize timing
             \usleep(\random_int(50000, 150000));
 
@@ -96,14 +97,13 @@ class LoginController
         }
 
         try {
-            $rawUid = $user['uid'] ?? null;
-            $result = $this->webAuthnService->createAssertionOptions($username, \is_numeric($rawUid) ? (int) $rawUid : 0);
+            $result = $this->webAuthnService->createAssertionOptions($username, $beUserUid);
 
-            $optionsJson = $this->webAuthnService->serializeRequestOptions($result['options'] ?? throw new RuntimeException('Missing assertion options'));
+            $optionsJson = $this->webAuthnService->serializeRequestOptions($result->options);
 
             return new JsonResponse([
                 'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
-                'challengeToken' => $result['challengeToken'],
+                'challengeToken' => $result->challengeToken,
             ]);
         } catch (Throwable $e) {
             $this->logger->error('Failed to generate assertion options', [
@@ -140,7 +140,8 @@ class LoginController
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $ip = (string) (GeneralUtility::getIndpEnv('REMOTE_ADDR') ?: '');
+        $remoteAddr = GeneralUtility::getIndpEnv('REMOTE_ADDR');
+        $ip = \is_string($remoteAddr) ? $remoteAddr : '';
 
         try {
             $this->rateLimiterService->checkRateLimit('login_verify', $ip);
@@ -151,8 +152,8 @@ class LoginController
 
         $this->rateLimiterService->recordAttempt('login_verify', $ip);
 
-        $user = $this->findBeUser($username);
-        if ($user === null) {
+        $beUserUid = $this->findBeUserUid($username);
+        if ($beUserUid === null) {
             \usleep(\random_int(50000, 150000));
             return new JsonResponse(['error' => 'Authentication failed'], 401);
         }
@@ -161,7 +162,7 @@ class LoginController
             $this->webAuthnService->verifyAssertionResponse(
                 responseJson: $assertion,
                 challengeToken: $challengeToken,
-                beUserUid: \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0,
+                beUserUid: $beUserUid,
             );
 
             $this->rateLimiterService->recordSuccess($username, $ip);
@@ -180,14 +181,11 @@ class LoginController
         }
     }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function findBeUser(string $username): ?array
+    private function findBeUserUid(string $username): ?int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
         $row = $queryBuilder
-            ->select('*')
+            ->select('uid')
             ->from('be_users')
             ->where(
                 $queryBuilder->expr()->eq(
@@ -200,7 +198,13 @@ class LoginController
             ->executeQuery()
             ->fetchAssociative();
 
-        return $row !== false ? $row : null;
+        if ($row === false) {
+            return null;
+        }
+
+        $rawUid = $row['uid'] ?? null;
+
+        return \is_numeric($rawUid) ? (int) $rawUid : null;
     }
 
 }
