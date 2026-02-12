@@ -50,6 +50,13 @@
     return;
   }
 
+  // Check secure context (HTTPS required for WebAuthn)
+  if (!window.isSecureContext) {
+    showMessage('Passkeys require a secure connection (HTTPS).', 'warning');
+    if (addBtn) addBtn.disabled = true;
+    return;
+  }
+
   if (addBtn) {
     addBtn.addEventListener('click', handleAddPasskey);
   }
@@ -282,7 +289,9 @@
       });
 
       if (!response.ok) {
-        showMessage('Failed to load passkeys.', 'danger');
+        var loadError = await readResponseError(response, 'Failed to load passkeys.');
+        showMessage(loadError, 'danger');
+        console.error('Load passkeys error:', response.status, loadError);
         return;
       }
 
@@ -380,7 +389,9 @@
       });
 
       if (!optionsResponse.ok) {
-        showMessage('Failed to start registration.', 'danger');
+        var optError = await readResponseError(optionsResponse, 'Failed to start registration.');
+        showMessage(optError, 'danger');
+        console.error('Registration options error:', optionsResponse.status, optError);
         setAddLoading(false);
         return;
       }
@@ -450,7 +461,9 @@
       });
 
       if (!verifyResponse.ok) {
-        showMessage('Registration failed. Please try again.', 'danger');
+        var verifyError = await readResponseError(verifyResponse, 'Registration failed. Please try again.');
+        showMessage(verifyError, 'danger');
+        console.error('Registration verify error:', verifyResponse.status, verifyError);
         setAddLoading(false);
         return;
       }
@@ -503,8 +516,10 @@
           labelSpan.textContent = newLabel;
           showMessage('Passkey renamed.', 'success');
         } else {
+          var renameError = await readResponseError(response, 'Failed to rename passkey.');
           labelSpan.textContent = currentLabel;
-          showMessage('Failed to rename passkey.', 'danger');
+          showMessage(renameError, 'danger');
+          console.error('Rename passkey error:', response.status, renameError);
         }
       } catch (err) {
         labelSpan.textContent = currentLabel;
@@ -541,8 +556,9 @@
       });
 
       if (!response.ok) {
-        var data = await response.json().catch(function () { return {}; });
-        showMessage(data.error || 'Failed to remove passkey.', 'danger');
+        var removeError = await readResponseError(response, 'Failed to remove passkey.');
+        showMessage(removeError, 'danger');
+        console.error('Remove passkey error:', response.status, removeError);
         return;
       }
 
@@ -608,6 +624,15 @@
     if (hideTimeout) {
       clearTimeout(hideTimeout);
       hideTimeout = null;
+    }
+  }
+
+  async function readResponseError(response, fallback) {
+    try {
+      var data = await response.json();
+      return data.error || fallback;
+    } catch (e) {
+      return fallback;
     }
   }
 
