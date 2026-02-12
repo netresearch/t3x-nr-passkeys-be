@@ -51,7 +51,8 @@
   }
 
   // Check secure context (HTTPS required for WebAuthn)
-  if (!window.isSecureContext) {
+  // Use strict equality to avoid false positives when isSecureContext is undefined (jsdom, older browsers)
+  if (window.isSecureContext === false) {
     showMessage('Passkeys require a secure connection (HTTPS).', 'warning');
     if (addBtn) addBtn.disabled = true;
     return;
