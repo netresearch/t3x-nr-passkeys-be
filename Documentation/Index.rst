@@ -84,6 +84,11 @@ Hello -- directly on the standard TYPO3 login form.
         WebAuthn security model, HMAC-signed challenges, rate
         limiting, and user enumeration prevention.
 
+    ..  card:: :ref:`Troubleshooting <troubleshooting>`
+
+        Common error messages, encryptionKey issues, HTTPS
+        requirements, and debug logging.
+
     ..  card:: :ref:`Changelog <changelog>`
 
         Version history and release notes.
@@ -100,4 +105,5 @@ Hello -- directly on the standard TYPO3 login form.
     Administration/Index
     DeveloperGuide/Index
     Security/Index
+    Troubleshooting/Index
     Changelog/Index
