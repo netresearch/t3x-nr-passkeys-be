@@ -62,14 +62,7 @@ final class PasskeySettingsPanel
         }
 
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
-        $pageRenderer->addJsFile(
-            'EXT:nr_passkeys_be/Resources/Public/JavaScript/PasskeyManagement.js',
-            'text/javascript',
-            false,
-            false,
-            '',
-            true,
-        );
+        $pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyManagement.js');
 
         $credentialRepository = GeneralUtility::makeInstance(CredentialRepository::class);
         $passkeyCount = $credentialRepository->countByBeUser($userId);
@@ -134,7 +127,6 @@ final class PasskeySettingsPanel
      data-remove-url="{$removeUrl}">
     <h4>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h4>
     <p class="text-body-secondary">{$description}</p>
-    <div id="passkey-message" class="alert d-none" role="alert"></div>
     <div id="passkey-single-warning" class="alert alert-warning d-none">{$singleKeyWarning}</div>
     <div class="mb-3">
         <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>

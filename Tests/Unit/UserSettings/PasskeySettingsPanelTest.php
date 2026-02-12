@@ -130,7 +130,7 @@ final class PasskeySettingsPanelTest extends TestCase
     }
 
     #[Test]
-    public function renderAddsJavaScriptFile(): void
+    public function renderLoadsJavaScriptModule(): void
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
@@ -141,15 +141,8 @@ final class PasskeySettingsPanelTest extends TestCase
 
         $this->pageRenderer
             ->expects(self::once())
-            ->method('addJsFile')
-            ->with(
-                'EXT:nr_passkeys_be/Resources/Public/JavaScript/PasskeyManagement.js',
-                'text/javascript',
-                false,
-                false,
-                '',
-                true,
-            );
+            ->method('loadJavaScriptModule')
+            ->with('@netresearch/nr-passkeys-be/PasskeyManagement.js');
 
         $this->subject->render([]);
     }
@@ -272,7 +265,6 @@ final class PasskeySettingsPanelTest extends TestCase
         self::assertStringContainsString('id="passkey-list-table"', $result);
         self::assertStringContainsString('id="passkey-list-body"', $result);
         self::assertStringContainsString('id="passkey-add-btn"', $result);
-        self::assertStringContainsString('id="passkey-message"', $result);
         self::assertStringContainsString('id="passkey-single-warning"', $result);
         self::assertStringContainsString('id="passkey-empty"', $result);
     }
