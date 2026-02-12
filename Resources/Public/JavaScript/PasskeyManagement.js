@@ -227,6 +227,10 @@ class PasskeyManagement {
       const verifyData = await verifyResponse.resolve();
       if (verifyData.status === 'ok') {
         Notification.success('Passkey registered', 'Passkey registered successfully.');
+        const nameInput = document.getElementById('passkey-name-input');
+        if (nameInput) {
+          nameInput.value = 'Passkey';
+        }
         this.loadPasskeys();
       } else {
         Notification.error('Registration failed', verifyData.error || 'Registration failed.');

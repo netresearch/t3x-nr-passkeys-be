@@ -130,7 +130,7 @@ final class PasskeySettingsPanel
     <p class="text-body-secondary">{$description}</p>
     <div id="passkey-single-warning" class="alert alert-warning d-none">{$singleKeyWarning}</div>
     <div class="mb-3 d-flex align-items-center gap-2">
-        <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" />
+        <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" />
         <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
     </div>
     <div id="passkey-empty" class="alert alert-info d-none">{$noPasskeys}</div>
