@@ -1050,8 +1050,8 @@ final class WebAuthnServiceTest extends TestCase
         $details = \openssl_pkey_get_details($key);
         self::assertIsArray($details);
 
-        $x = $details['ec']['x'];
-        $y = $details['ec']['y'];
+        $x = \str_pad($details['ec']['x'], 32, "\0", STR_PAD_LEFT);
+        $y = \str_pad($details['ec']['y'], 32, "\0", STR_PAD_LEFT);
 
         // Create COSE-encoded public key (EC2 / ES256)
         $coseKey = \CBOR\MapObject::create()
