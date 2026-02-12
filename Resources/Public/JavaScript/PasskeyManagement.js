@@ -27,7 +27,6 @@ class PasskeyManagement {
 
     this.listBody = document.getElementById('passkey-list-body');
     this.addBtn = document.getElementById('passkey-add-btn');
-    this.labelInput = document.getElementById('passkey-label-input');
     this.warningEl = document.getElementById('passkey-single-warning');
     this.emptyEl = document.getElementById('passkey-empty');
     this.countEl = document.getElementById('passkey-count');
@@ -66,14 +65,6 @@ class PasskeyManagement {
 
     if (this.addBtn) {
       this.addBtn.addEventListener('click', () => this.handleAddPasskey());
-    }
-    if (this.labelInput) {
-      this.labelInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          this.handleAddPasskey();
-        }
-      });
     }
 
     this.loadPasskeys();
@@ -165,7 +156,7 @@ class PasskeyManagement {
   }
 
   async handleAddPasskey() {
-    const trimmedLabel = (this.labelInput ? this.labelInput.value.trim() : '') || 'Passkey';
+    const trimmedLabel = 'Passkey';
     this.setAddLoading(true);
 
     try {
@@ -228,9 +219,6 @@ class PasskeyManagement {
           label: trimmedLabel,
         });
 
-      if (this.labelInput) {
-        this.labelInput.value = '';
-      }
       Notification.success('Passkey registered', 'Passkey registered successfully.');
       this.loadPasskeys();
     } catch (error) {
@@ -289,9 +277,10 @@ class PasskeyManagement {
   }
 
   handleRemove(uid, label) {
+    const safeLabel = this.escapeHtml(label || 'Unnamed');
     const modal = Modal.show(
       'Remove passkey',
-      'Are you sure you want to remove the passkey "' + (label || 'Unnamed') + '"?',
+      'Are you sure you want to remove the passkey "' + safeLabel + '"?',
       SeverityEnum.warning,
       [
         {
@@ -328,9 +317,6 @@ class PasskeyManagement {
       this.addBtn.disabled = loading;
       this.addBtn.textContent = loading ? 'Registering...' : 'Add Passkey';
     }
-    if (this.labelInput) {
-      this.labelInput.disabled = loading;
-    }
   }
 
   formatTimestamp(ts) {
@@ -339,6 +325,12 @@ class PasskeyManagement {
     }
     const d = new Date(ts * 1000);
     return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+  }
+
+  escapeHtml(text) {
+    const el = document.createElement('span');
+    el.textContent = text;
+    return el.innerHTML;
   }
 
   // Base64URL utilities
