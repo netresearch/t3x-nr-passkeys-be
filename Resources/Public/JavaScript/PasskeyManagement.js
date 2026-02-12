@@ -161,7 +161,8 @@ class PasskeyManagement {
   }
 
   async handleAddPasskey() {
-    const trimmedLabel = 'Passkey';
+    const nameInput = document.getElementById('passkey-name-input');
+    const label = nameInput ? nameInput.value.trim() : '';
     this.setAddLoading(true);
 
     try {
@@ -221,7 +222,7 @@ class PasskeyManagement {
         .post({
           credential: credentialResponse,
           challengeToken: challengeToken,
-          label: trimmedLabel,
+          label: label || 'Passkey',
         });
       const verifyData = await verifyResponse.resolve();
       if (verifyData.status === 'ok') {

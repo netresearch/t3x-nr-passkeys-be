@@ -128,7 +128,8 @@ final class PasskeySettingsPanel
     <h4>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h4>
     <p class="text-body-secondary">{$description}</p>
     <div id="passkey-single-warning" class="alert alert-warning d-none">{$singleKeyWarning}</div>
-    <div class="mb-3">
+    <div class="mb-3 d-flex align-items-center gap-2">
+        <input type="text" id="passkey-name-input" class="form-control form-control-sm" style="max-width:200px" value="Passkey" maxlength="128" placeholder="{$nameLabel}" />
         <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
     </div>
     <div id="passkey-empty" class="alert alert-info d-none">{$noPasskeys}</div>
