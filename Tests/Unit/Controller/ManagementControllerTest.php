@@ -409,7 +409,7 @@ final class ManagementControllerTest extends TestCase
 
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Registration failed', $body['error']);
+        self::assertSame('Registration failed: Verification failed', $body['error']);
     }
 
     #[Test]
@@ -432,7 +432,7 @@ final class ManagementControllerTest extends TestCase
 
         self::assertSame(500, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Failed to generate options', $body['error']);
+        self::assertSame('Failed to generate options: Internal failure', $body['error']);
     }
 
     #[Test]
