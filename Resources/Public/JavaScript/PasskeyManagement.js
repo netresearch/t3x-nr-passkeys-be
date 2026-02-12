@@ -630,7 +630,7 @@
   async function readResponseError(response, fallback) {
     try {
       var data = await response.json();
-      return data.error || fallback;
+      return (data && data.error) || fallback;
     } catch (e) {
       return fallback;
     }
