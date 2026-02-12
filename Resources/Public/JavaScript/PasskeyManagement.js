@@ -7,6 +7,7 @@
  * - Modal for confirmation dialogs
  */
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
+import DocumentService from '@typo3/core/document-service.js';
 import Notification from '@typo3/backend/notification.js';
 import Modal from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
@@ -14,6 +15,10 @@ import { sudoModeInterceptor } from '@typo3/backend/security/sudo-mode-intercept
 
 class PasskeyManagement {
   constructor() {
+    DocumentService.ready().then(() => this.initialize());
+  }
+
+  initialize() {
     this.container = document.getElementById('passkey-management-container');
     if (!this.container) {
       return;
@@ -211,16 +216,20 @@ class PasskeyManagement {
         credentialResponse.response.transports = credential.response.getTransports();
       }
 
-      await new AjaxRequest(this.registerVerifyUrl)
+      const verifyResponse = await new AjaxRequest(this.registerVerifyUrl)
         .addMiddleware(sudoModeInterceptor)
         .post({
           credential: credentialResponse,
           challengeToken: challengeToken,
           label: trimmedLabel,
         });
-
-      Notification.success('Passkey registered', 'Passkey registered successfully.');
-      this.loadPasskeys();
+      const verifyData = await verifyResponse.resolve();
+      if (verifyData.status === 'ok') {
+        Notification.success('Passkey registered', 'Passkey registered successfully.');
+        this.loadPasskeys();
+      } else {
+        Notification.error('Registration failed', verifyData.error || 'Registration failed.');
+      }
     } catch (error) {
       if (error.name === 'NotAllowedError' || error.name === 'AbortError') {
         Notification.info('Cancelled', 'Registration was cancelled.');
@@ -253,11 +262,17 @@ class PasskeyManagement {
       }
 
       try {
-        await new AjaxRequest(this.renameUrl)
+        const response = await new AjaxRequest(this.renameUrl)
           .addMiddleware(sudoModeInterceptor)
           .post({ uid: uid, label: newLabel });
-        labelSpan.textContent = newLabel;
-        Notification.success('Passkey renamed', 'Passkey renamed successfully.');
+        const data = await response.resolve();
+        if (data.status === 'ok') {
+          labelSpan.textContent = newLabel;
+          Notification.success('Passkey renamed', 'Passkey renamed successfully.');
+        } else {
+          labelSpan.textContent = currentLabel;
+          Notification.error('Rename failed', data.error || 'Failed to rename passkey.');
+        }
       } catch (error) {
         labelSpan.textContent = currentLabel;
         Notification.error('Rename failed', error.message || 'Failed to rename passkey.');
@@ -295,11 +310,16 @@ class PasskeyManagement {
           name: 'remove',
           trigger: async () => {
             try {
-              await new AjaxRequest(this.removeUrl)
+              const response = await new AjaxRequest(this.removeUrl)
                 .addMiddleware(sudoModeInterceptor)
                 .post({ uid: uid });
-              Notification.success('Passkey removed', 'Passkey removed successfully.');
-              this.loadPasskeys();
+              const data = await response.resolve();
+              if (data.status === 'ok') {
+                Notification.success('Passkey removed', 'Passkey removed successfully.');
+                this.loadPasskeys();
+              } else {
+                Notification.error('Remove failed', data.error || 'Failed to remove passkey.');
+              }
             } catch (error) {
               Notification.error('Remove failed', error.message || 'Failed to remove passkey.');
             }
