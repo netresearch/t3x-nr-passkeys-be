@@ -338,6 +338,10 @@ class PasskeyManagement {
       this.addBtn.disabled = loading;
       this.addBtn.textContent = loading ? 'Registering...' : 'Add Passkey';
     }
+    const nameInput = document.getElementById('passkey-name-input');
+    if (nameInput) {
+      nameInput.disabled = loading;
+    }
   }
 
   formatTimestamp(ts) {
