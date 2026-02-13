@@ -6,14 +6,15 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened]
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   auto-merge:
     name: Auto-merge dependency PRs
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     if: github.event.pull_request.user.login == 'dependabot[bot]'
 
     steps:
