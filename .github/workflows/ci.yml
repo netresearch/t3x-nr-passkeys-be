@@ -7,13 +7,14 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
@@ -38,6 +39,8 @@ jobs:
   lint:
     name: Lint (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -67,6 +70,8 @@ jobs:
   stan:
     name: PHPStan (PHP ${{ matrix.php }}, TYPO3 ${{ matrix.typo3 }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -120,6 +125,8 @@ jobs:
   unit:
     name: Unit Tests (PHP ${{ matrix.php }}, TYPO3 ${{ matrix.typo3 }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -185,6 +192,8 @@ jobs:
   functional:
     name: Functional Tests (PHP ${{ matrix.php }}, TYPO3 ${{ matrix.typo3 }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -270,6 +279,8 @@ jobs:
   javascript:
     name: JavaScript Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
@@ -293,6 +304,8 @@ jobs:
   fuzz:
     name: Fuzz Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [unit]
     steps:
       - name: Harden Runner
@@ -327,6 +340,8 @@ jobs:
   mutation:
     name: Mutation Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [unit]
     steps:
       - name: Harden Runner
