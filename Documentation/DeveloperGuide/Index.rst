@@ -33,7 +33,7 @@ The passkey button is injected into the standard TYPO3 login form via
 the ``InjectPasskeyLoginFields`` PSR-14 event listener. It listens to
 ``ModifyPageLayoutOnLoginProviderSelectionEvent`` and:
 
-- Adds :file:`PasskeyLogin.js` via ``PageRenderer::addJsFile()``
+- Loads :file:`PasskeyLogin.js` via ``PageRenderer::addJsFile()``
 - Injects an inline script with ``window.NrPasskeysBeConfig`` that
   provides ``loginOptionsUrl``, ``rpId``, ``origin``, and
   ``discoverableEnabled`` to the JavaScript
@@ -42,6 +42,12 @@ The JavaScript builds the passkey UI (button, error area, hidden
 fields) dynamically via DOM manipulation and inserts it into
 ``#typo3-login-form``. No Fluid partial or separate template is
 needed.
+
+The passkey management panel in User Settings also uses
+``loadJavaScriptModule()`` to load :file:`PasskeyManagement.js` as an
+ES module, which imports TYPO3 native APIs (``AjaxRequest``,
+``Notification``, ``Modal``, ``sudoModeInterceptor``,
+``DocumentService``).
 
 Authentication data flow
 ========================
@@ -209,8 +215,14 @@ Running tests
 ..  code-block:: bash
     :caption: Available test commands
 
-    # Unit tests (263 tests)
+    # Unit tests (301 tests, 1060 assertions)
     composer ci:test:php:unit
+
+    # Fuzz tests (122 tests, 1608 assertions)
+    composer ci:test:php:fuzz
+
+    # Functional tests (24 tests, requires MySQL)
+    composer ci:test:php:functional
 
     # Static analysis (PHPStan level 10)
     composer ci:stan
@@ -218,11 +230,8 @@ Running tests
     # Code style (PER-CS3.0)
     composer ci:lint:php
 
-    # JavaScript unit tests (Vitest)
-    npx vitest run
+    # JavaScript unit tests (33 tests, Vitest)
+    npm run test:js
 
-    # E2E tests (Playwright)
-    npx playwright test
-
-    # Mutation testing
+    # Mutation testing (Infection, MSI >= 80%)
     composer ci:mutation
