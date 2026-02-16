@@ -12,6 +12,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use ReflectionMethod;
+use ReflectionUnionType;
 use TYPO3\CMS\Backend\Controller\LoginController;
 use TYPO3\CMS\Backend\LoginProvider\Event\ModifyPageLayoutOnLoginProviderSelectionEvent;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
@@ -68,10 +69,16 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
             );
         }
 
-        // TYPO3 v13: (LoginController, ViewInterface, PageRenderer, ServerRequestInterface) — 4 params
+        // TYPO3 v12/v13: (LoginController, view, PageRenderer, ServerRequestInterface) — 4 params
+        // v12 type-hints StandaloneView; v13 uses StandaloneView|ViewInterface union
+        $viewParamType = $constructor->getParameters()[1]->getType();
+        $viewMock = $viewParamType instanceof ReflectionUnionType
+            ? $this->createMock(ViewInterface::class)
+            : $this->createMock($viewParamType->getName());
+
         return new ModifyPageLayoutOnLoginProviderSelectionEvent(
             $this->createMock(LoginController::class),
-            $this->createMock(ViewInterface::class),
+            $viewMock,
             $this->createMock(PageRenderer::class),
             $this->createMock(ServerRequestInterface::class),
         );

@@ -44,7 +44,7 @@ sed -i "/'deprecations'/,/^[[:space:]]*'disabled' => true,/s/'disabled' => true,
 
 vendor/bin/typo3 extension:setup
 
-# Configure site sets for v12 (adds Bootstrap Package for frontend rendering)
+# Configure site configuration dependencies for v12 (adds Bootstrap Package for frontend rendering)
 if [ -f config/sites/main/config.yaml ]; then
     if ! grep -q "^dependencies:" config/sites/main/config.yaml; then
         echo "" >> config/sites/main/config.yaml
