@@ -4,7 +4,7 @@ TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passk
 
 ## Key context
 - Extension key: `nr_passkeys_be`, Namespace: `Netresearch\NrPasskeysBe`
-- PHP ^8.2, TYPO3 ^13.4 || ^14.1, `web-auth/webauthn-lib` ^5.2
+- PHP ^8.2, TYPO3 ^12.4 || ^13.4 || ^14.1, `web-auth/webauthn-lib` ^5.2
 - Passkeys are **primary credentials** (NOT MFA), auth priority 80
 - PER-CS3.0 code style, PHPStan level 10, `declare(strict_types=1)` in all files
 - Do NOT commit `composer.lock`
