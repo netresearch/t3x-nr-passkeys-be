@@ -22,6 +22,23 @@ class PasskeyInfoElement extends AbstractFormElement
     ) {}
 
     /**
+     * Set FormEngine data array after DI instantiation.
+     *
+     * Required for TYPO3 v12: AbstractNode::setData() is commented out in v12
+     * (enabled in v13+). NodeFactory uses method_exists() to choose between
+     * the DI path (setData) and the legacy constructor path. Without this
+     * method, NodeFactory passes NodeFactory+data as constructor args, which
+     * conflicts with the DI constructor expecting CredentialRepository.
+     *
+     * @param array<string, mixed> $data
+     * @see https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/12.4/Deprecation-100670-DIAwareFormEngineNodes.html
+     */
+    public function setData(array $data): void
+    {
+        $this->data = $data;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function render(): array

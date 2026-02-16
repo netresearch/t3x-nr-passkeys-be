@@ -62,4 +62,4 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 - [ ] `composer ci:test:php:unit` passes
 - [ ] TCA changes have matching SQL in `ext_tables.sql`
 - [ ] No deprecated TYPO3 APIs
-- [ ] Tested on TYPO3 ^13.4 and ^14.1
+- [ ] Tested on TYPO3 ^12.4, ^13.4, and ^14.1

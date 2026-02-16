@@ -25,6 +25,10 @@ start: ## Start DDEV environment
 stop: ## Stop DDEV environment
 	ddev stop
 
+.PHONY: install-v12
+install-v12: ## Install TYPO3 12.4 LTS with extension
+	ddev install-v12
+
 .PHONY: install-v13
 install-v13: ## Install TYPO3 13.4 LTS with extension
 	ddev install-v13
@@ -53,6 +57,10 @@ urls: ## Show all access URLs
 	@echo ""
 	@echo "Landing page:"
 	@echo "  https://nr-passkeys-be.ddev.site/"
+	@echo ""
+	@echo "TYPO3 12.4 LTS:"
+	@echo "  Frontend: https://v12.nr-passkeys-be.ddev.site/"
+	@echo "  Backend:  https://v12.nr-passkeys-be.ddev.site/typo3/"
 	@echo ""
 	@echo "TYPO3 13.4 LTS:"
 	@echo "  Frontend: https://v13.nr-passkeys-be.ddev.site/"

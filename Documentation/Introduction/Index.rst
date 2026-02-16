@@ -73,9 +73,9 @@ Features
         Supports ES256, ES384, ES512, and RS256 signing algorithms.
         Configurable user verification requirement.
 
-    ..  card:: TYPO3 v13 and v14
+    ..  card:: TYPO3 v12, v13, and v14
 
-        Compatible with TYPO3 13.4 LTS and TYPO3 14.x.
+        Compatible with TYPO3 12.4 LTS, 13.4 LTS, and 14.x.
         PHP 8.2, 8.3, 8.4, and 8.5 supported.
 
 Supported authenticators

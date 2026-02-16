@@ -17,7 +17,7 @@ Supports TouchID, FaceID, YubiKey, Windows Hello for one-click TYPO3 backend log
 | Composer | `netresearch/nr-passkeys-be` |
 | Extension key | `nr_passkeys_be` |
 | Namespace | `Netresearch\NrPasskeysBe` |
-| TYPO3 | ^13.4 \|\| ^14.1 |
+| TYPO3 | ^12.4 \|\| ^13.4 \|\| ^14.1 |
 | PHP | ^8.2 |
 | WebAuthn lib | `web-auth/webauthn-lib` ^5.2 |
 
@@ -118,7 +118,7 @@ Makefile                  -> make up, make ci, make help (wraps composer + ddev)
 - Extension is fully functional with all CI checks passing
 - Passkeys are primary credentials (NOT MFA) -- registered at auth priority 80
 - `web-auth/webauthn-lib` v5.x classes are `final` -- cannot mock, must use test doubles
-- `saschaegerer/phpstan-typo3` v2 only supports TYPO3 v13 (removed for v14 CI jobs)
+- `saschaegerer/phpstan-typo3` v2 only supports TYPO3 v13 (removed for v12 and v14 CI jobs)
 - Functional tests require MySQL (CI only, not local)
 - Discoverable login behind `discoverableLoginEnabled` feature flag
 

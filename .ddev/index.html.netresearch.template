@@ -915,6 +915,19 @@
                         <h2 class="section-title">TYPO3 Instances</h2>
                     </div>
                     <div class="instances-grid">
+                        <!-- TYPO3 v12 -->
+                        <div class="instance-card instance-card--v12">
+                            <div class="instance-header">
+                                <span class="instance-version">TYPO3 v12</span>
+                                <span class="instance-badge">LTS</span>
+                            </div>
+                            <p class="instance-description">TYPO3 12.4 LTS with extension installed and configured for development.</p>
+                            <div class="instance-links">
+                                <a href="https://v12.{{DDEV_PROJECT}}.ddev.site/typo3" target="_blank" rel="noopener" class="instance-link instance-link--primary">Backend</a>
+                                <a href="https://v12.{{DDEV_PROJECT}}.ddev.site/" target="_blank" rel="noopener" class="instance-link instance-link--secondary">Frontend</a>
+                            </div>
+                        </div>
+
                         <!-- TYPO3 v13 -->
                         <div class="instance-card instance-card--v13">
                             <div class="instance-header">
@@ -1080,7 +1093,7 @@
                     <span class="footer-divider"></span>
                     <span>PHP 8.2+</span>
                     <span class="footer-divider"></span>
-                    <span>TYPO3 13.4 LTS – 14.x</span>
+                    <span>TYPO3 12.4 – 14.x</span>
                 </div>
             </footer>
         </div>

@@ -19,9 +19,12 @@ services:
               source: ../
               target: /var/www/nr_passkeys_be
               consistency: cached
+            - v12-data:/var/www/html/v12
             - v13-data:/var/www/html/v13
             - v14-data:/var/www/html/v14
 volumes:
+    v12-data:
+        name: "${DDEV_SITENAME}-v12-data"
     v13-data:
         name: "${DDEV_SITENAME}-v13-data"
     v14-data:

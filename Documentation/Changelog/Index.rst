@@ -6,6 +6,20 @@
 Changelog
 =========
 
+0.4.0
+=====
+
+Features
+--------
+
+- TYPO3 12.4 LTS support (PHP 8.2+ required)
+- Event listener registered via Services.yaml tag for v12 compatibility
+  (``#[AsEventListener]`` attribute retained for v13+)
+- ``PasskeyInfoElement`` DI-aware FormEngine node with ``setData()``
+  for v12 ``NodeFactory`` compatibility
+- CI matrix expanded with TYPO3 v12.4 test jobs
+- DDEV development environment includes v12 installation
+
 0.3.0
 =====
 

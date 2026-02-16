@@ -25,6 +25,10 @@ setup: ## Complete setup (install all TYPO3 versions)
 	@ddev describe >/dev/null 2>&1 || ddev start
 	ddev install-all
 
+.PHONY: install-v12
+install-v12: ## Install TYPO3 12.4 LTS with extension
+	ddev install-v12
+
 .PHONY: install-v13
 install-v13: ## Install TYPO3 13.4 LTS with extension
 	ddev install-v13
@@ -101,6 +105,10 @@ urls: ## Show all access URLs
 	@echo ""
 	@echo "{{EXTENSION_NAME}} - Access URLs"
 	@echo "==============================="
+	@echo ""
+	@echo "TYPO3 12.4 LTS:"
+	@echo "  Frontend: https://v12.{{DDEV_PROJECT}}.ddev.site/"
+	@echo "  Backend:  https://v12.{{DDEV_PROJECT}}.ddev.site/typo3/"
 	@echo ""
 	@echo "TYPO3 13.4 LTS:"
 	@echo "  Frontend: https://v13.{{DDEV_PROJECT}}.ddev.site/"

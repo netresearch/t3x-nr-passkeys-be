@@ -77,6 +77,12 @@ jobs:
       matrix:
         include:
           - php: '8.2'
+            typo3: '^12.4'
+          - php: '8.3'
+            typo3: '^12.4'
+          - php: '8.4'
+            typo3: '^12.4'
+          - php: '8.2'
             typo3: '^13.4'
           - php: '8.3'
             typo3: '^13.4'
@@ -105,8 +111,8 @@ jobs:
           php-version: ${{ matrix.php }}
           coverage: none
 
-      - name: Remove incompatible dev deps for TYPO3 v14
-        if: startsWith(matrix.typo3, '^14')
+      - name: Remove incompatible dev deps for non-v13 TYPO3
+        if: "!startsWith(matrix.typo3, '^13')"
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
 
       - name: Install TYPO3
@@ -131,6 +137,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - php: '8.2'
+            typo3: '^12.4'
+          - php: '8.3'
+            typo3: '^12.4'
+          - php: '8.4'
+            typo3: '^12.4'
           - php: '8.2'
             typo3: '^13.4'
           - php: '8.3'
@@ -163,8 +175,8 @@ jobs:
           extensions: mbstring, json, openssl
           coverage: pcov
 
-      - name: Remove incompatible dev deps for TYPO3 v14
-        if: startsWith(matrix.typo3, '^14')
+      - name: Remove incompatible dev deps for non-v13 TYPO3
+        if: "!startsWith(matrix.typo3, '^13')"
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
 
       - name: Install TYPO3
@@ -198,6 +210,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - php: '8.2'
+            typo3: '^12.4'
+          - php: '8.3'
+            typo3: '^12.4'
+          - php: '8.4'
+            typo3: '^12.4'
           - php: '8.2'
             typo3: '^13.4'
           - php: '8.3'
@@ -243,8 +261,8 @@ jobs:
           extensions: mbstring, json, openssl, pdo_mysql
           coverage: pcov
 
-      - name: Remove incompatible dev deps for TYPO3 v14
-        if: startsWith(matrix.typo3, '^14')
+      - name: Remove incompatible dev deps for non-v13 TYPO3
+        if: "!startsWith(matrix.typo3, '^13')"
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
 
       - name: Install TYPO3
@@ -323,7 +341,7 @@ jobs:
           extensions: mbstring, json, openssl
           coverage: none
 
-      - name: Remove incompatible dev deps for TYPO3 v14
+      - name: Remove incompatible dev deps for non-v13 TYPO3
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
 
       - name: Install TYPO3
@@ -359,7 +377,7 @@ jobs:
           extensions: mbstring, json, openssl
           coverage: pcov
 
-      - name: Remove incompatible dev deps for TYPO3 v14
+      - name: Remove incompatible dev deps for non-v13 TYPO3
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
 
       - name: Install TYPO3

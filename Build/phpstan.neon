@@ -34,6 +34,11 @@ parameters:
         -
             identifier: phpstanTypo3.requestAttributeValidation
             reportUnmatched: false
+        # AsEventListener attribute does not exist in TYPO3 v12 (introduced in v13)
+        -
+            identifier: attribute.notFound
+            path: ../Classes/EventListener/InjectPasskeyLoginFields.php
+            reportUnmatched: false
         # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
             message: '#no value type specified in iterable type array#'

@@ -27,9 +27,9 @@
     },
     "require": {
         "php": "^8.2",
-        "typo3/cms-core": "^13.4 || ^14.1",
-        "typo3/cms-backend": "^13.4 || ^14.1",
-        "typo3/cms-setup": "^13.4 || ^14.1",
+        "typo3/cms-core": "^12.4 || ^13.4 || ^14.1",
+        "typo3/cms-backend": "^12.4 || ^13.4 || ^14.1",
+        "typo3/cms-setup": "^12.4 || ^13.4 || ^14.1",
         "web-auth/webauthn-lib": "^5.2"
     },
     "require-dev": {
@@ -42,7 +42,7 @@
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5",
         "saschaegerer/phpstan-typo3": "^2.0",
-        "typo3/testing-framework": "^9.0",
+        "typo3/testing-framework": "^8.2 || ^9.0",
         "phpat/phpat": "^0.12.2",
         "dg/bypass-finals": "^1.9"
     },
