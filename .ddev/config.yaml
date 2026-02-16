@@ -10,6 +10,7 @@ router_https_port: "443"
 xdebug_enabled: false
 additional_hostnames:
     - docs.nr-passkeys-be
+    - v12.nr-passkeys-be
     - v13.nr-passkeys-be
     - v14.nr-passkeys-be
 additional_fqdns: []

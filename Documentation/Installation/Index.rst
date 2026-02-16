@@ -9,7 +9,7 @@ Installation
 Prerequisites
 =============
 
-- TYPO3 13.4 LTS or TYPO3 14.x
+- TYPO3 12.4 LTS, TYPO3 13.4 LTS, or TYPO3 14.x
 - PHP 8.2, 8.3, 8.4, or 8.5
 - HTTPS is **required** for WebAuthn (except for ``localhost`` during
   development)

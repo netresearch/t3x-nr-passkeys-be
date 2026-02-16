@@ -6,6 +6,18 @@
 Changelog
 =========
 
+0.4.0
+=====
+
+Features
+--------
+
+- TYPO3 12.4 LTS support (PHP 8.2+ required)
+- Event listener registered via Services.yaml tag for v12 compatibility
+  (``#[AsEventListener]`` attribute retained for v13+)
+- CI matrix expanded with TYPO3 v12.4 test jobs
+- DDEV development environment includes v12 installation
+
 0.3.0
 =====
 
@@ -86,7 +98,7 @@ Features
   sessionStorage detection
 - Default audit log writer (WARNING+ to
   :file:`typo3temp/var/log/passkey_auth.log`)
-- TYPO3 13.4 LTS and TYPO3 14.x compatibility
+- TYPO3 12.4 LTS, 13.4 LTS, and TYPO3 14.x compatibility
 - PHP 8.2, 8.3, 8.4, and 8.5 support
 - Comprehensive test suite (unit, fuzz, functional, JavaScript)
 - PSR-3 logging for all significant events

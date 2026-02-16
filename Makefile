@@ -37,6 +37,10 @@ install-v14: ## Install TYPO3 14.x with extension
 install-all: ## Install all TYPO3 versions
 	ddev install-all
 
+.PHONY: install-v12
+install-v12: ## Install TYPO3 12.4 LTS with extension
+	ddev install-v12
+
 .PHONY: ssh
 ssh: ## SSH into DDEV web container
 	ddev ssh
@@ -53,6 +57,10 @@ urls: ## Show all access URLs
 	@echo ""
 	@echo "Landing page:"
 	@echo "  https://nr-passkeys-be.ddev.site/"
+	@echo ""
+	@echo "TYPO3 12.4 LTS:"
+	@echo "  Frontend: https://v12.nr-passkeys-be.ddev.site/"
+	@echo "  Backend:  https://v12.nr-passkeys-be.ddev.site/typo3/"
 	@echo ""
 	@echo "TYPO3 13.4 LTS:"
 	@echo "  Frontend: https://v13.nr-passkeys-be.ddev.site/"

@@ -9,6 +9,14 @@ services:
     exclude:
       - '../Classes/Domain/Model/*'
 
+  # Event listener tag for TYPO3 v12 (does not support #[AsEventListener] attribute).
+  # v13+ ignores this tag when the attribute is present.
+  Netresearch\NrPasskeysBe\EventListener\InjectPasskeyLoginFields:
+    tags:
+      - name: event.listener
+        identifier: 'nr-passkeys-be/inject-passkey-login-fields'
+        event: TYPO3\CMS\Backend\LoginProvider\Event\ModifyPageLayoutOnLoginProviderSelectionEvent
+
   cache.nr_passkeys_be_nonce:
     class: TYPO3\CMS\Core\Cache\Frontend\FrontendInterface
     factory: ['@TYPO3\CMS\Core\Cache\CacheManager', 'getCache']
