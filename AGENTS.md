@@ -118,7 +118,7 @@ Makefile                  -> make up, make ci, make help (wraps composer + ddev)
 - Extension is fully functional with all CI checks passing
 - Passkeys are primary credentials (NOT MFA) -- registered at auth priority 80
 - `web-auth/webauthn-lib` v5.x classes are `final` -- cannot mock, must use test doubles
-- `saschaegerer/phpstan-typo3` v2 only supports TYPO3 v13 (removed for v14 CI jobs)
+- `saschaegerer/phpstan-typo3` v2 only supports TYPO3 v13 (removed for v12 and v14 CI jobs)
 - Functional tests require MySQL (CI only, not local)
 - Discoverable login behind `discoverableLoginEnabled` feature flag
 

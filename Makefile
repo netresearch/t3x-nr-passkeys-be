@@ -25,6 +25,10 @@ start: ## Start DDEV environment
 stop: ## Stop DDEV environment
 	ddev stop
 
+.PHONY: install-v12
+install-v12: ## Install TYPO3 12.4 LTS with extension
+	ddev install-v12
+
 .PHONY: install-v13
 install-v13: ## Install TYPO3 13.4 LTS with extension
 	ddev install-v13
@@ -36,10 +40,6 @@ install-v14: ## Install TYPO3 14.x with extension
 .PHONY: install-all
 install-all: ## Install all TYPO3 versions
 	ddev install-all
-
-.PHONY: install-v12
-install-v12: ## Install TYPO3 12.4 LTS with extension
-	ddev install-v12
 
 .PHONY: ssh
 ssh: ## SSH into DDEV web container
