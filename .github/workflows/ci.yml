@@ -341,7 +341,7 @@ jobs:
           extensions: mbstring, json, openssl
           coverage: none
 
-      - name: Remove incompatible dev deps for TYPO3 v14
+      - name: Remove incompatible dev deps for non-v13 TYPO3
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
 
       - name: Install TYPO3
@@ -377,7 +377,7 @@ jobs:
           extensions: mbstring, json, openssl
           coverage: pcov
 
-      - name: Remove incompatible dev deps for TYPO3 v14
+      - name: Remove incompatible dev deps for non-v13 TYPO3
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
 
       - name: Install TYPO3

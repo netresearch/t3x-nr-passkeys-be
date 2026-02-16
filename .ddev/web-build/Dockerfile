@@ -79,6 +79,13 @@ $prUrl = $githubUrl && $prNumber ? $githubUrl . '/pull/' . $prNumber : null;
         <div class="card">
             <h3>TYPO3 Environments</h3>
             <div class="version-card">
+                <strong>TYPO3 12.4 LTS</strong>
+                <div class="links">
+                    <a href="https://v12.nr-passkeys-be.ddev.site/" class="btn">Frontend</a>
+                    <a href="https://v12.nr-passkeys-be.ddev.site/typo3/" class="btn">Backend</a>
+                </div>
+            </div>
+            <div class="version-card">
                 <strong>TYPO3 13.4 LTS</strong>
                 <div class="links">
                     <a href="https://v13.nr-passkeys-be.ddev.site/" class="btn">Frontend</a>
@@ -106,6 +113,7 @@ $prUrl = $githubUrl && $prNumber ? $githubUrl . '/pull/' . $prNumber : null;
             <ul>
                 <li><code>ddev setup</code> - <strong>Complete setup (all-in-one)</strong></li>
                 <li><code>ddev docs</code> - Render documentation</li>
+                <li><code>ddev install-v12</code> - Install TYPO3 12.4 LTS</li>
                 <li><code>ddev install-v13</code> - Install TYPO3 13.4 LTS</li>
                 <li><code>ddev install-v14</code> - Install TYPO3 14.x</li>
                 <li><code>ddev install-all</code> - Install all TYPO3 versions</li>
@@ -115,6 +123,10 @@ $prUrl = $githubUrl && $prNumber ? $githubUrl . '/pull/' . $prNumber : null;
 </body>
 </html>
 PHPEOF
+
+RUN mkdir -p /var/www/html/v12/public/typo3
+RUN echo "<h1>Perform this first</h1> <code>ddev install-v12</code>" > /var/www/html/v12/public/index.html
+RUN echo "<h1>Perform this first</h1> <code>ddev install-v12</code>" > /var/www/html/v12/public/typo3/index.html
 
 RUN mkdir -p /var/www/html/v13/public/typo3
 RUN echo "<h1>Perform this first</h1> <code>ddev install-v13</code>" > /var/www/html/v13/public/index.html
