@@ -6,6 +6,8 @@ namespace Netresearch\NrPasskeysBe\Service;
 
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
+use TYPO3\CMS\Core\Locking\LockFactory;
+use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
 final class ChallengeService
 {
@@ -14,6 +16,7 @@ final class ChallengeService
     public function __construct(
         private readonly FrontendInterface $nonceCache,
         private readonly ExtensionConfigurationService $configService,
+        private readonly LockFactory $lockFactory,
     ) {}
 
     public function generateChallenge(): string
@@ -72,12 +75,24 @@ final class ChallengeService
             throw new RuntimeException('Challenge token expired', 1700000004);
         }
 
-        // Invalidate nonce first (single-use replay protection).
-        // Remove-before-check avoids TOCTOU race: if two concurrent requests
-        // try to use the same nonce, only the first remove() returns true.
+        // Atomic nonce invalidation: lock ensures only one concurrent request
+        // can consume a given nonce, preventing replay via TOCTOU race.
         $nonceCacheKey = $this->getNonceCacheKey($nonce);
-        $nonceExisted = $this->nonceCache->get($nonceCacheKey) !== false;
-        $this->nonceCache->remove($nonceCacheKey);
+        $locker = $this->lockFactory->createLocker(
+            'passkey_nonce_' . $nonceCacheKey,
+            LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE,
+        );
+
+        if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
+            throw new RuntimeException('Failed to acquire nonce lock', 1700000007);
+        }
+
+        try {
+            $nonceExisted = $this->nonceCache->get($nonceCacheKey) !== false;
+            $this->nonceCache->remove($nonceCacheKey);
+        } finally {
+            $locker->release();
+        }
 
         if (!$nonceExisted) {
             throw new RuntimeException('Challenge nonce already used or expired', 1700000005);
