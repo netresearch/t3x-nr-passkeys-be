@@ -187,7 +187,7 @@ value ``.*`` allows **any** host header.
    :caption: config/system/settings.php
 
    $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern']
-       = 'example\.com';
+       = '(^|\.)example\.com$';
 
 Alternatively, set :confval:`rpId` and :confval:`origin` explicitly in the
 extension configuration. This bypasses auto-detection entirely and removes the
@@ -215,8 +215,8 @@ Configure TYPO3 to trust your reverse proxy:
 ..  code-block:: php
    :caption: config/system/settings.php
 
-   // IP address(es) of your reverse proxy
-   $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyIP'] = '10.0.0.1';
+   // IP address(es) of your reverse proxy (comma-separated)
+   $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyIP'] = '10.0.0.1,10.0.0.2';
 
    // Use the last (rightmost) value in X-Forwarded-For
    $GLOBALS['TYPO3_CONF_VARS']['SYS']['reverseProxyHeaderMultiValue']
@@ -263,6 +263,9 @@ For multi-server deployments, configure a shared cache backend:
        ['nr_passkeys_be_nonce']['options'] = [
            'database' => 3,
            'defaultLifetime' => 300,
+           // 'hostname' => '127.0.0.1',
+           // 'port' => 6379,
+           // 'password' => '',
        ];
 
    // Use Redis for rate-limit cache
@@ -273,6 +276,9 @@ For multi-server deployments, configure a shared cache backend:
        ['nr_passkeys_be_ratelimit']['options'] = [
            'database' => 4,
            'defaultLifetime' => 600,
+           // 'hostname' => '127.0.0.1',
+           // 'port' => 6379,
+           // 'password' => '',
        ];
 
 ..  note::
