@@ -11,6 +11,8 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
+use TYPO3\CMS\Core\Locking\LockFactory;
+use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
 final class ChallengeTokenFuzzTest extends TestCase
 {
@@ -32,7 +34,13 @@ final class ChallengeTokenFuzzTest extends TestCase
         );
         $configService->method('getConfiguration')->willReturn($config);
 
-        $this->challengeService = new ChallengeService($cache, $configService);
+        $lockFactory = $this->createMock(LockFactory::class);
+        $locker = $this->createMock(LockingStrategyInterface::class);
+        $locker->method('acquire')->willReturn(true);
+        $locker->method('release')->willReturn(true);
+        $lockFactory->method('createLocker')->willReturn($locker);
+
+        $this->challengeService = new ChallengeService($cache, $configService, $lockFactory);
     }
 
     protected function tearDown(): void

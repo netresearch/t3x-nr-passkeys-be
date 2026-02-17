@@ -13,11 +13,14 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Locking\LockFactory;
+use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
 #[CoversClass(ChallengeService::class)]
 final class ChallengeServiceTest extends TestCase
 {
     private FrontendInterface&MockObject $nonceCacheMock;
+    private LockFactory&MockObject $lockFactoryMock;
     private ExtensionConfigurationService $configService;
     private ChallengeService $subject;
 
@@ -28,13 +31,21 @@ final class ChallengeServiceTest extends TestCase
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'test-encryption-key-that-is-long-enough-for-hmac';
 
         $this->nonceCacheMock = $this->createMock(FrontendInterface::class);
+        $this->lockFactoryMock = $this->createMock(LockFactory::class);
         $this->configService = $this->createConfigService([
             'challengeTtlSeconds' => 120,
         ]);
 
+        // Default: lock factory returns a no-op locker
+        $lockerMock = $this->createMock(LockingStrategyInterface::class);
+        $lockerMock->method('acquire')->willReturn(true);
+        $lockerMock->method('release')->willReturn(true);
+        $this->lockFactoryMock->method('createLocker')->willReturn($lockerMock);
+
         $this->subject = new ChallengeService(
             $this->nonceCacheMock,
             $this->configService,
+            $this->lockFactoryMock,
         );
     }
 
@@ -147,7 +158,7 @@ final class ChallengeServiceTest extends TestCase
     {
         // Create a service with a very short TTL so the token is already expired
         $configService = $this->createConfigService(['challengeTtlSeconds' => -1]);
-        $service = new ChallengeService($this->nonceCacheMock, $configService);
+        $service = new ChallengeService($this->nonceCacheMock, $configService, $this->lockFactoryMock);
 
         $challenge = \random_bytes(32);
         $token = $service->createChallengeToken($challenge);
@@ -364,6 +375,33 @@ final class ChallengeServiceTest extends TestCase
             ->with(self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'));
 
         $this->subject->verifyChallengeToken($token);
+    }
+
+    #[Test]
+    public function verifyChallengeTokenThrowsWhenLockAcquisitionFails(): void
+    {
+        $challenge = \random_bytes(32);
+        $this->nonceCacheMock->method('set');
+        $token = $this->subject->createChallengeToken($challenge);
+
+        // Replace lock factory with one that fails to acquire
+        $failingLocker = $this->createMock(LockingStrategyInterface::class);
+        $failingLocker->method('acquire')->willReturn(false);
+
+        $failingLockFactory = $this->createMock(LockFactory::class);
+        $failingLockFactory->method('createLocker')->willReturn($failingLocker);
+
+        $service = new ChallengeService(
+            $this->nonceCacheMock,
+            $this->configService,
+            $failingLockFactory,
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000007);
+        $this->expectExceptionMessage('Failed to acquire nonce lock');
+
+        $service->verifyChallengeToken($token);
     }
 
     #[Test]
