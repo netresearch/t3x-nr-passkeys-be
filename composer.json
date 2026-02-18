@@ -44,8 +44,7 @@
         "saschaegerer/phpstan-typo3": "^3.0",
         "typo3/testing-framework": "^8.2 || ^9.0",
         "phpat/phpat": "^0.12.2",
-        "dg/bypass-finals": "^1.9",
-        "netresearch/composer-audit-responsibility": "^0.1"
+        "dg/bypass-finals": "^1.9"
     },
     "autoload": {
         "psr-4": {
@@ -63,8 +62,7 @@
             "typo3/cms-composer-installers": true,
             "infection/extension-installer": true,
             "phpstan/extension-installer": true,
-            "captainhook/hook-installer": true,
-            "netresearch/composer-audit-responsibility": true
+            "captainhook/hook-installer": true
         },
         "bin-dir": ".Build/bin",
         "vendor-dir": ".Build/vendor"

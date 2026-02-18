@@ -30,6 +30,11 @@ jobs:
           php-version: '8.4'
           coverage: none
 
+      - name: Install audit-responsibility plugin
+        run: |
+          composer global config allow-plugins.netresearch/composer-audit-responsibility true
+          composer global require netresearch/composer-audit-responsibility:@dev --no-interaction
+
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
 
@@ -60,6 +65,11 @@ jobs:
           php-version: ${{ matrix.php }}
           tools: php-cs-fixer
           coverage: none
+
+      - name: Install audit-responsibility plugin
+        run: |
+          composer global config allow-plugins.netresearch/composer-audit-responsibility true
+          composer global require netresearch/composer-audit-responsibility:@dev --no-interaction
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress
@@ -110,6 +120,11 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
+
+      - name: Install audit-responsibility plugin
+        run: |
+          composer global config allow-plugins.netresearch/composer-audit-responsibility true
+          composer global require netresearch/composer-audit-responsibility:@dev --no-interaction
 
       - name: Remove incompatible dev deps for non-v13 TYPO3
         if: "!startsWith(matrix.typo3, '^13')"
@@ -174,6 +189,11 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: mbstring, json, openssl
           coverage: pcov
+
+      - name: Install audit-responsibility plugin
+        run: |
+          composer global config allow-plugins.netresearch/composer-audit-responsibility true
+          composer global require netresearch/composer-audit-responsibility:@dev --no-interaction
 
       - name: Remove incompatible dev deps for non-v13 TYPO3
         if: "!startsWith(matrix.typo3, '^13')"
@@ -261,6 +281,11 @@ jobs:
           extensions: mbstring, json, openssl, pdo_mysql
           coverage: pcov
 
+      - name: Install audit-responsibility plugin
+        run: |
+          composer global config allow-plugins.netresearch/composer-audit-responsibility true
+          composer global require netresearch/composer-audit-responsibility:@dev --no-interaction
+
       - name: Remove incompatible dev deps for non-v13 TYPO3
         if: "!startsWith(matrix.typo3, '^13')"
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
@@ -341,6 +366,11 @@ jobs:
           extensions: mbstring, json, openssl
           coverage: none
 
+      - name: Install audit-responsibility plugin
+        run: |
+          composer global config allow-plugins.netresearch/composer-audit-responsibility true
+          composer global require netresearch/composer-audit-responsibility:@dev --no-interaction
+
       - name: Remove incompatible dev deps for non-v13 TYPO3
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
 
@@ -376,6 +406,11 @@ jobs:
           php-version: '8.4'
           extensions: mbstring, json, openssl
           coverage: pcov
+
+      - name: Install audit-responsibility plugin
+        run: |
+          composer global config allow-plugins.netresearch/composer-audit-responsibility true
+          composer global require netresearch/composer-audit-responsibility:@dev --no-interaction
 
       - name: Remove incompatible dev deps for non-v13 TYPO3
         run: composer remove --dev --no-update saschaegerer/phpstan-typo3
