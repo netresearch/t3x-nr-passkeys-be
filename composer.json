@@ -66,9 +66,6 @@
             "captainhook/hook-installer": true,
             "netresearch/composer-audit-responsibility": true
         },
-        "audit": {
-            "block-insecure": false
-        },
         "bin-dir": ".Build/bin",
         "vendor-dir": ".Build/vendor"
     },

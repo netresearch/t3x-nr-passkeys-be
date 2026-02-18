@@ -31,7 +31,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
+        run: composer install --prefer-dist --no-progress --no-security-blocking
 
       - name: Composer audit
         run: composer audit --format=plain --abandoned=ignore
@@ -62,7 +62,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --prefer-dist --no-progress
+        run: composer install --prefer-dist --no-progress --no-security-blocking
 
       - name: Run php-cs-fixer
         run: composer ci:lint:php
@@ -123,7 +123,7 @@ jobs:
             "typo3/cms-core:${TYPO3_VERSION}" \
             "typo3/cms-backend:${TYPO3_VERSION}" \
             "typo3/cms-setup:${TYPO3_VERSION}"
-          composer install --prefer-dist --no-progress
+          composer install --prefer-dist --no-progress --no-security-blocking
 
       - name: Run PHPStan
         run: composer ci:stan
@@ -187,7 +187,7 @@ jobs:
             "typo3/cms-core:${TYPO3_VERSION}" \
             "typo3/cms-backend:${TYPO3_VERSION}" \
             "typo3/cms-setup:${TYPO3_VERSION}"
-          composer install --prefer-dist --no-progress
+          composer install --prefer-dist --no-progress --no-security-blocking
 
       - name: Run unit tests
         run: composer ci:test:php:unit -- --coverage-clover=coverage-unit.xml
@@ -273,7 +273,7 @@ jobs:
             "typo3/cms-core:${TYPO3_VERSION}" \
             "typo3/cms-backend:${TYPO3_VERSION}" \
             "typo3/cms-setup:${TYPO3_VERSION}"
-          composer install --prefer-dist --no-progress
+          composer install --prefer-dist --no-progress --no-security-blocking
 
       - name: Run functional tests
         env:
@@ -350,7 +350,7 @@ jobs:
             "typo3/cms-core:^14.1" \
             "typo3/cms-backend:^14.1" \
             "typo3/cms-setup:^14.1"
-          composer install --prefer-dist --no-progress
+          composer install --prefer-dist --no-progress --no-security-blocking
 
       - name: Run fuzz tests
         run: .Build/bin/phpunit -c Build/phpunit.xml --testsuite fuzz --no-coverage
@@ -386,7 +386,7 @@ jobs:
             "typo3/cms-core:^14.1" \
             "typo3/cms-backend:^14.1" \
             "typo3/cms-setup:^14.1"
-          composer install --prefer-dist --no-progress
+          composer install --prefer-dist --no-progress --no-security-blocking
 
       - name: Run mutation tests
         run: composer ci:mutation
