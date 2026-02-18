@@ -35,6 +35,9 @@
         "enabled": true,
         "actions": [
             {
+                "action": "Build/Scripts/check-tag-version.sh"
+            },
+            {
                 "action": "composer ci:test:php:unit"
             }
         ]
