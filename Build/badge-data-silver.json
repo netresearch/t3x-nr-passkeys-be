@@ -1,6 +1,6 @@
 {
   "dco_status": "Met",
-  "dco_justification": "All commits require --signoff (Signed-off-by trailer) for DCO compliance. This is enforced by CaptainHook commit-msg hooks and documented in CONTRIBUTING.md which requires signed commits. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#pull-request-process and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/captainhook.json",
+  "dco_justification": "All commits are required to use --signoff (Signed-off-by trailer) for DCO compliance, as documented in CONTRIBUTING.md. Compliance is verified during code review and via project contribution guidelines. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#pull-request-process",
 
   "governance_status": "Met",
   "governance_justification": "The project is maintained by Netresearch DTT GmbH with governance documented in CONTRIBUTING.md (contribution process, quality requirements, PR review process) and CODEOWNERS (team ownership). Architectural decisions are documented in the DeveloperGuide. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/CODEOWNERS",

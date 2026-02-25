@@ -6,10 +6,10 @@
   "small_tasks_justification": "The repository uses 'good first issue' and 'help wanted' labels for newcomer-friendly tasks. See https://github.com/netresearch/t3x-nr-passkeys-be/labels/good%20first%20issue and https://github.com/netresearch/t3x-nr-passkeys-be/labels/help%20wanted",
 
   "require_2FA_status": "Met",
-  "require_2FA_justification": "The Netresearch GitHub organization enforces security policies. Repository requires signed commits for all contributors. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
+  "require_2FA_justification": "The Netresearch GitHub organization enforces 2FA for all organization members via GitHub organization security settings. All repository collaborators must be org members. See https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-two-factor-authentication-for-your-organization and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md",
 
   "secure_2FA_status": "Met",
-  "secure_2FA_justification": "GitHub supports FIDO2/WebAuthn hardware security keys for 2FA authentication. Maintainers use hardware-backed authentication. See https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md",
+  "secure_2FA_justification": "GitHub supports FIDO2/WebAuthn hardware security keys for 2FA authentication. The platform enables hardware-backed authentication for all users. See https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa",
 
   "code_review_standards_status": "Met",
   "code_review_standards_justification": "CONTRIBUTING.md documents code review requirements: PHPStan level 10, PER-CS3.0 code style, test coverage, conventional commits. PR template includes quality checklist. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
