@@ -78,6 +78,17 @@ Use ``TYPO3_CONTEXT`` to apply different settings per environment:
 This lets you enforce passkey-only login on production while keeping
 password login available locally for new users or quick access.
 
+..  important::
+
+   Before enabling :confval:`disablePasswordLogin` on production:
+
+   1. Verify all regular backend users have registered at least one
+      passkey.
+   2. Ensure at least one admin account has multiple passkeys on different
+      authenticators for emergency recovery.
+   3. Communicate the change to all backend users in advance.
+   4. Consider enabling on staging first to verify the workflow.
+
 ..  _deployment-db-sync:
 
 Database synchronisation
@@ -110,7 +121,11 @@ this initial registration.
 ..  note::
 
    You do **not** need to exclude ``be_users`` or any other table. Only
-   ``tx_nrpasskeysbe_credential`` is domain-specific.
+   ``tx_nrpasskeysbe_credential`` is domain-specific. If the credential
+   table is accidentally included in a sync, the imported credentials
+   will not work on the different domain -- users simply register fresh
+   passkeys. No security data is exposed because the public keys are
+   useless without the private keys stored on users' authenticators.
 
 Shared rpId across subdomains
 =============================
@@ -134,10 +149,13 @@ registered on ``staging.example.com`` to also work on
    -  The **backend user UIDs** (``be_users.uid``) -- user handles are
       derived from the UID.
 
-   Sharing the ``encryptionKey`` between environments is a security risk.
-   The encryption key should be treated like a private key and never
-   leave the production system. It is used for HMAC signing, session
-   tokens, and other security-critical operations throughout TYPO3.
+   Sharing the ``encryptionKey`` between environments creates a
+   **cross-environment attack vector**: if a staging environment is
+   compromised, the attacker can forge CSRF tokens, session tokens, and
+   passkey challenge tokens that are valid on production. Staging
+   environments typically have weaker access controls and debug mode
+   enabled, making them a more attractive target. The ``encryptionKey``
+   must be unique per environment and treated as a production secret.
 
 If you still need shared subdomains (e.g. ``staging`` and ``www``), set
 :confval:`rpId` only on those environments and keep local development on
@@ -192,9 +210,11 @@ Recovery scenarios
 If a user loses access to their authenticator:
 
 1. An admin revokes the user's passkeys via the
-   :ref:`Admin API <administration>`.
+   :ref:`Admin API <administration>`. Each revocation is recorded with
+   the admin's UID and timestamp for audit purposes.
 2. Once all passkeys are revoked, password login becomes available again
-   for that user (because they no longer have active passkeys).
+   for that user (the per-user enforcement lifts when no active
+   credentials remain).
 3. The user logs in with their password and registers a new passkey.
 
 ..  tip::
