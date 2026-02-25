@@ -19,9 +19,9 @@ Single environment
 
 The simplest setup: one TYPO3 instance with one domain.
 
-Leave ``rpId`` and ``origin`` empty (the default). The extension
-auto-detects both values from the incoming HTTP request. Each passkey is
-registered against the domain it was created on.
+Leave :confval:`rpId` and :confval:`origin` empty (the default). The
+extension auto-detects both values from the incoming HTTP request. Each
+passkey is registered against the domain it was created on.
 
 This works for:
 
@@ -31,7 +31,7 @@ This works for:
 No additional configuration is needed.
 
 Multi-environment (local / staging / production)
-=================================================
+================================================
 
 A typical setup has three environments:
 
@@ -44,9 +44,9 @@ A typical setup has three environments:
 Recommended: separate passkeys per environment
 ----------------------------------------------
 
-Leave ``rpId`` empty on all environments. Each environment auto-detects
-its own domain, so passkeys are environment-specific. Users register a
-separate passkey on each environment they need access to.
+Leave :confval:`rpId` empty on all environments. Each environment
+auto-detects its own domain, so passkeys are environment-specific. Users
+register a separate passkey on each environment they need access to.
 
 Modern authenticators (iCloud Keychain, Windows Hello, 1Password,
 YubiKey) make registering on multiple environments trivial -- it takes
@@ -102,9 +102,10 @@ domain.
      - tx_nrpasskeysbe_credential
 
 After importing a production database dump, users simply register fresh
-passkeys on the local or staging environment. If ``disablePasswordLogin``
-is active but environment-specific (see above), password login is
-available on non-production environments for this initial registration.
+passkeys on the local or staging environment. If
+:confval:`disablePasswordLogin` is active but environment-specific (see
+above), password login is available on non-production environments for
+this initial registration.
 
 ..  note::
 
@@ -114,8 +115,8 @@ available on non-production environments for this initial registration.
 Shared rpId across subdomains
 =============================
 
-WebAuthn allows the ``rpId`` to be set to a registrable domain suffix.
-For example, setting ``rpId`` to ``example.com`` allows passkeys
+WebAuthn allows the :confval:`rpId` to be set to a registrable domain
+suffix. For example, setting ``rpId`` to ``example.com`` allows passkeys
 registered on ``staging.example.com`` to also work on
 ``www.example.com``.
 
@@ -126,8 +127,8 @@ registered on ``staging.example.com`` to also work on
 
    -  The **TYPO3** ``encryptionKey``
       (``$GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']``) -- the
-      extension derives user handles from it via HMAC. Different keys
-      produce different handles, making credentials unresolvable.
+      extension derives user handles from it cryptographically. Different
+      keys produce different handles, making credentials unresolvable.
    -  The **credential table** (``tx_nrpasskeysbe_credential``) -- the
       public key material and metadata must be present on both systems.
    -  The **backend user UIDs** (``be_users.uid``) -- user handles are
@@ -139,7 +140,7 @@ registered on ``staging.example.com`` to also work on
    tokens, and other security-critical operations throughout TYPO3.
 
 If you still need shared subdomains (e.g. ``staging`` and ``www``), set
-``rpId`` only on those environments and keep local development on
+:confval:`rpId` only on those environments and keep local development on
 auto-detect:
 
 ..  code-block:: php
@@ -147,24 +148,25 @@ auto-detect:
 
    if (str_starts_with((string)getenv('TYPO3_CONTEXT'), 'Production')) {
        $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['nr_passkeys_be']['rpId'] = 'example.com';
-       $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['nr_passkeys_be']['origin'] = 'https://www.example.com';
+       // Leave 'origin' empty -- it is auto-detected per subdomain.
+       // Setting it explicitly would break verification on other subdomains.
    }
    // Development: rpId stays empty -> auto-detect -> mysite.ddev.site
 
 ..  important::
 
-   Changing the ``rpId`` invalidates all existing passkey registrations.
-   Users must register new passkeys after the change.
+   Changing the :confval:`rpId` invalidates all existing passkey
+   registrations. Users must register new passkeys after the change.
+
+..  _deployment-onboarding:
 
 User onboarding
 ===============
 
-..  _deployment-onboarding:
-
 Onboarding workflow with ``disablePasswordLogin``
 -------------------------------------------------
 
-When ``disablePasswordLogin`` is enabled, the extension enforces
+When :confval:`disablePasswordLogin` is enabled, the extension enforces
 passkey-only login **per user**: password login is blocked only for users
 who have at least one registered passkey. Users without passkeys can
 still log in with a password.
@@ -200,8 +202,21 @@ If a user loses access to their authenticator:
    Consider requiring users to register at least two passkeys on
    different authenticators (e.g. laptop + phone) for redundancy.
 
+Containerized and multi-server deployments
+==========================================
+
+When running TYPO3 in Docker containers or behind a load balancer,
+the file-based cache backends lose state on container restart and are
+not shared across servers. This affects nonce replay protection and
+rate limiting.
+
+See :ref:`Multi-server cache backends <security-multi-server-caching>`
+for Redis configuration, and
+:ref:`Reverse proxy and IP detection <security-reverse-proxy>` for
+rate limiting behind a load balancer.
+
 Local development with DDEV
-============================
+===========================
 
 DDEV sites (``*.ddev.site``) use HTTPS by default and are treated as
 secure contexts by browsers. Passkeys work out of the box.
@@ -217,3 +232,9 @@ domains over plain HTTP (e.g. ``http://mysite.local``) will **not**
 work -- WebAuthn requires a secure context.
 
 See also :ref:`Troubleshooting: HTTPS requirement <troubleshooting>`.
+
+..  seealso::
+
+   :ref:`Security: Production deployment requirements <security-deployment>`
+   for trusted hosts pattern, reverse proxy configuration, and
+   multi-server cache backends.
