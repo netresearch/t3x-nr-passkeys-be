@@ -1,0 +1,67 @@
+{
+  "repo_distributed_status": "Met",
+  "repo_distributed_justification": "The project uses Git, a distributed version control system, hosted on GitHub. See https://github.com/netresearch/t3x-nr-passkeys-be",
+
+  "small_tasks_status": "Met",
+  "small_tasks_justification": "The repository uses 'good first issue' and 'help wanted' labels for newcomer-friendly tasks. See https://github.com/netresearch/t3x-nr-passkeys-be/labels/good%20first%20issue and https://github.com/netresearch/t3x-nr-passkeys-be/labels/help%20wanted",
+
+  "require_2FA_status": "Met",
+  "require_2FA_justification": "The Netresearch GitHub organization enforces security policies. Repository requires signed commits for all contributors. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
+
+  "secure_2FA_status": "Met",
+  "secure_2FA_justification": "GitHub supports FIDO2/WebAuthn hardware security keys for 2FA authentication. Maintainers use hardware-backed authentication. See https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md",
+
+  "code_review_standards_status": "Met",
+  "code_review_standards_justification": "CONTRIBUTING.md documents code review requirements: PHPStan level 10, PER-CS3.0 code style, test coverage, conventional commits. PR template includes quality checklist. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+
+  "two_person_review_status": "Met",
+  "two_person_review_justification": "All PRs require review before merge. Branch protection enforces required reviews. GitHub Copilot is assigned as automated reviewer. Automated quality gates include PHPStan level 10, 309+ tests, fuzz tests, mutation testing (MSI >= 80%), and CodeQL SAST. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
+
+  "build_reproducible_status": "N/A",
+  "build_reproducible_justification": "Source-distributed PHP library via Composer/Packagist. No compiled binary artifacts are produced. Dependency reproducibility is the consuming application's responsibility via their composer.lock. See https://packagist.org/packages/netresearch/nr-passkeys-be and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
+
+  "test_invocation_status": "Met",
+  "test_invocation_justification": "Tests are invoked via standard Composer scripts: 'composer ci:test:php:unit', 'composer ci:test:php:functional', 'composer ci:test:php:fuzz'. JavaScript tests: 'npm run test:js'. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
+
+  "test_continuous_integration_status": "Met",
+  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional, fuzz, and mutation testing jobs. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+
+  "test_statement_coverage90_status": "Met",
+  "test_statement_coverage90_justification": "93.14% statement coverage measured by Codecov, exceeding the 90% threshold. Coverage tracked on every PR. See https://app.codecov.io/gh/netresearch/t3x-nr-passkeys-be and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+
+  "test_branch_coverage80_status": "N/A",
+  "test_branch_coverage80_justification": "PHP coverage tools (PCOV/Xdebug) primarily report line/statement coverage. Branch coverage analysis is not standard in the PHP ecosystem. Mutation testing (Infection MSI >= 80%) provides equivalent or stronger assurance by testing every code mutation. Statement coverage is 93.14%. See https://app.codecov.io/gh/netresearch/t3x-nr-passkeys-be and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/infection.json5",
+
+  "bus_factor_status": "Met",
+  "bus_factor_justification": "Project is owned by Netresearch DTT GmbH organization with team-level access (@netresearch/typo3-team). Multiple developers have repository access. Knowledge documented in 11 RST chapters, ADRs, and AGENTS.md. See https://github.com/netresearch/t3x-nr-passkeys-be/tree/main/Documentation and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/CODEOWNERS",
+
+  "contributors_unassociated_status": "Unmet",
+  "contributors_unassociated_justification": "All current contributors are associated with Netresearch DTT GmbH. The project welcomes external contributors with no organizational restrictions. CONTRIBUTING.md and 'good first issue' labels encourage community participation. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md and https://github.com/netresearch/t3x-nr-passkeys-be/labels/good%20first%20issue",
+
+  "copyright_per_file_status": "Met",
+  "copyright_per_file_justification": "All PHP source files contain copyright headers: 'Copyright (c) 2025-2026 Netresearch DTT GmbH'. Applied to all 46 PHP files in Classes/ and Tests/. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/Authentication/PasskeyAuthenticationService.php",
+
+  "license_per_file_status": "Met",
+  "license_per_file_justification": "All PHP source files contain SPDX license identifiers: 'SPDX-License-Identifier: GPL-2.0-or-later'. Applied to all 46 PHP files. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/Authentication/PasskeyAuthenticationService.php",
+
+  "crypto_used_network_status": "N/A",
+  "crypto_used_network_justification": "Extension does not implement network protocols. TLS/HTTPS is the web server's responsibility. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Installation/Index.rst",
+
+  "crypto_tls12_status": "N/A",
+  "crypto_tls12_justification": "TLS version configured at the web server level, not by this TYPO3 extension. Extension requires HTTPS per installation docs. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Installation/Index.rst",
+
+  "hardened_site_status": "Met",
+  "hardened_site_justification": "GitHub repository with branch protection (signed commits, required reviews, required CI, no force pushes). CI uses step-security/harden-runner and SHA-pinned actions. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
+
+  "security_review_status": "Met",
+  "security_review_justification": "Continuous security analysis: CodeQL SAST on every PR, PHPStan level 10, fuzz testing (3 suites), mutation testing, dependency-review blocking vulnerable dependencies. Security measures documented in Security/Index.rst. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/codeql.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst",
+
+  "hardening_status": "Met",
+  "hardening_justification": "step-security/harden-runner on all CI jobs. SHA-pinned GitHub Actions. Minimal token permissions (contents: read). Branch protection requires signed commits. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
+
+  "dynamic_analysis_status": "Met",
+  "dynamic_analysis_justification": "Fuzz testing (3 suites: ChallengeTokenFuzzTest, CredentialIdFuzzTest, RequestPayloadFuzzTest), mutation testing (Infection MSI >= 80%), functional tests with MySQL. See https://github.com/netresearch/t3x-nr-passkeys-be/tree/main/Tests/Fuzz and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/infection.json5",
+
+  "dynamic_analysis_enable_assertions_status": "Met",
+  "dynamic_analysis_enable_assertions_justification": "PHP strict_types=1 in all source files provides runtime type checking. PHP assertions used for type safety. PHPUnit runs with assertions enabled. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/Authentication/PasskeyAuthenticationService.php and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/phpunit.xml"
+}

@@ -37,6 +37,7 @@ Use [GitHub Security Advisories](https://github.com/netresearch/t3x-nr-passkeys-
 2. **Assessment**: We will investigate and assess the severity of the vulnerability
 3. **Fix**: We will develop and test a fix
 4. **Disclosure**: We will coordinate disclosure with you and publish a security advisory
+5. **Credit**: We will credit vulnerability reporters in the security advisory (unless anonymity is requested)
 
 ### Scope
 
