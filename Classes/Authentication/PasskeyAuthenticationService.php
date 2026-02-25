@@ -54,12 +54,6 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $payload = $this->getPasskeyPayload();
         if ($payload === null) {
             // Not a passkey login - let other services handle it
-            if ($this->getExtensionConfigService()->getConfiguration()->isDisablePasswordLogin()) {
-                $this->getLogger()->warning('Password login disabled, blocking non-passkey attempt', [
-                    'username' => $username,
-                ]);
-                return false;
-            }
             return false;
         }
 
@@ -104,7 +98,18 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     {
         $payload = $this->getPasskeyPayload();
         if ($payload === null) {
-            // Not a passkey login attempt - pass to next service
+            // Not a passkey login attempt - check per-user enforcement
+            if ($this->getExtensionConfigService()->getConfiguration()->isDisablePasswordLogin()) {
+                $uid = \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
+                if ($uid > 0 && $this->hasRegisteredPasskeys($uid)) {
+                    $this->getLogger()->warning('Password login blocked for user with registered passkeys', [
+                        'be_user_uid' => $uid,
+                    ]);
+
+                    return 0;
+                }
+            }
+
             return 100;
         }
 
@@ -224,6 +229,36 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             ->fetchAssociative();
 
         return $row !== false ? $row : false;
+    }
+
+    /**
+     * Check whether a backend user has at least one active (non-deleted, non-revoked) passkey credential.
+     *
+     * This duplicates the query logic in {@see \Netresearch\NrPasskeysBe\Service\CredentialRepository::countByBeUser()}.
+     * The duplication exists because this auth service cannot use DI (AbstractAuthenticationService
+     * is instantiated via GeneralUtility::makeInstance) and CredentialRepository requires DI.
+     * If the query conditions change, both locations must be updated.
+     */
+    private function hasRegisteredPasskeys(int $beUserUid): bool
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
+
+        $count = $queryBuilder
+            ->count('uid')
+            ->from('tx_nrpasskeysbe_credential')
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'be_user',
+                    $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER),
+                ),
+                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder->expr()->eq('revoked_at', 0),
+            )
+            ->executeQuery()
+            ->fetchOne();
+
+        return \is_numeric($count) && (int) $count > 0;
     }
 
     private function getWebAuthnService(): WebAuthnService

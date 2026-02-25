@@ -81,14 +81,17 @@ Password login control
    :type: bool
    :Default: ``false``
 
-   Disable traditional password login entirely. When enabled, only passkey
-   authentication is accepted. Non-passkey login attempts are blocked.
+   Enforce passkey-only authentication on a per-user basis. When enabled,
+   password login is blocked **only for users who have registered at least
+   one passkey**. Users without passkeys can still log in with a password,
+   allowing gradual migration without lockouts.
 
-   ..  warning::
+   This enables a smooth onboarding workflow:
 
-      Enabling this setting locks out any backend user who has not yet
-      registered a passkey. Ensure all users have at least one registered
-      passkey before enabling this option.
+   1. Admin creates a new backend user with a password (as usual).
+   2. User logs in with password, registers a passkey in User Settings.
+   3. From that point on, the user must use their passkey -- password login
+      is no longer accepted for that account.
 
    When this setting is active, users cannot remove their last passkey to
    prevent locking themselves out.

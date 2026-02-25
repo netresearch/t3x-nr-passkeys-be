@@ -172,6 +172,226 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
+    public function authUserBlocksPasswordLoginWhenUserHasPasskeys(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configWithPasswordDisabled = new ExtensionConfiguration(
+            disablePasswordLogin: true,
+        );
+        $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceDisabled
+            ->method('getConfiguration')
+            ->willReturn($configWithPasswordDisabled);
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger
+            ->expects(self::once())
+            ->method('warning')
+            ->with('Password login blocked for user with registered passkeys', self::anything());
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $logger);
+
+        $subject->login = [
+            'uname' => 'admin',
+            'uident' => 'regularPassword123',
+        ];
+
+        $this->setUpCredentialCount(42, 2);
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $subject->authUser($user);
+
+        self::assertSame(0, $result);
+    }
+
+    #[Test]
+    public function authUserAllowsPasswordLoginWhenUserHasNoPasskeys(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configWithPasswordDisabled = new ExtensionConfiguration(
+            disablePasswordLogin: true,
+        );
+        $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceDisabled
+            ->method('getConfiguration')
+            ->willReturn($configWithPasswordDisabled);
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
+            'uname' => 'newuser',
+            'uident' => 'regularPassword123',
+        ];
+
+        $this->setUpCredentialCount(99, 0);
+
+        $user = ['uid' => 99, 'username' => 'newuser'];
+
+        $result = $subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    // --- Per-user enforcement edge cases ---
+    // These tests cover security-critical boundaries in the disablePasswordLogin
+    // enforcement path that could silently skip enforcement for malformed user data.
+
+    #[Test]
+    public function authUserSkipsEnforcementWhenUserUidIsZero(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configWithPasswordDisabled = new ExtensionConfiguration(
+            disablePasswordLogin: true,
+        );
+        $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceDisabled
+            ->method('getConfiguration')
+            ->willReturn($configWithPasswordDisabled);
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
+            'uname' => 'ghost',
+            'uident' => 'regularPassword123',
+        ];
+
+        // uid=0 is not a valid be_users UID; enforcement is silently skipped
+        // and no DB query is executed (no ConnectionPool mock needed).
+        $user = ['uid' => 0, 'username' => 'ghost'];
+
+        $result = $subject->authUser($user);
+
+        // Passes through to the next auth service because uid <= 0 short-circuits
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function authUserSkipsEnforcementWhenUserUidIsNonNumericString(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configWithPasswordDisabled = new ExtensionConfiguration(
+            disablePasswordLogin: true,
+        );
+        $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceDisabled
+            ->method('getConfiguration')
+            ->willReturn($configWithPasswordDisabled);
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
+            'uname' => 'injector',
+            'uident' => 'regularPassword123',
+        ];
+
+        // Non-numeric uid (e.g. from a corrupted/tampered user record) should
+        // not trigger the DB query and should fall through safely.
+        $user = ['uid' => 'not-a-number', 'username' => 'injector'];
+
+        $result = $subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function authUserSkipsEnforcementWhenUserUidIsMissing(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configWithPasswordDisabled = new ExtensionConfiguration(
+            disablePasswordLogin: true,
+        );
+        $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceDisabled
+            ->method('getConfiguration')
+            ->willReturn($configWithPasswordDisabled);
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
+            'uname' => 'nouid',
+            'uident' => 'regularPassword123',
+        ];
+
+        // User array without 'uid' key at all
+        $user = ['username' => 'nouid'];
+
+        $result = $subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function authUserSkipsEnforcementWhenUserUidIsNegative(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configWithPasswordDisabled = new ExtensionConfiguration(
+            disablePasswordLogin: true,
+        );
+        $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceDisabled
+            ->method('getConfiguration')
+            ->willReturn($configWithPasswordDisabled);
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
+            'uname' => 'negative',
+            'uident' => 'regularPassword123',
+        ];
+
+        // Negative UID is not valid; enforcement must not be applied
+        $user = ['uid' => -1, 'username' => 'negative'];
+
+        $result = $subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
+    public function authUserDoesNotQueryDatabaseWhenPasswordLoginIsAllowed(): void
+    {
+        // Default setUp() configures disablePasswordLogin=false.
+        // This test verifies no ConnectionPool instance is consumed,
+        // which serves as a performance regression guard: the DB query
+        // for hasRegisteredPasskeys() must not execute when enforcement is off.
+
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => 'regularPassword123',
+        ];
+
+        // If the code incorrectly called hasRegisteredPasskeys(), it would
+        // try GeneralUtility::makeInstance(ConnectionPool::class) which would
+        // fail because no ConnectionPool mock is in the FIFO queue.
+        // The test passing without setUpCredentialCount() proves no DB access.
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $this->subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
     public function authUserRecordsFailureOnError(): void
     {
         $this->subject->login = [
@@ -289,7 +509,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
-    public function getUserBlocksNonPasskeyWhenPasswordDisabled(): void
+    public function getUserReturnsFalseForNonPasskeyLoginRegardlessOfSetting(): void
     {
         $configWithPasswordDisabled = new ExtensionConfiguration(
             disablePasswordLogin: true,
@@ -591,6 +811,34 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     // --- Helper methods ---
+
+    /**
+     * Set up ConnectionPool mock for hasRegisteredPasskeys (credential count query).
+     */
+    private function setUpCredentialCount(int $beUserUid, int $count): void
+    {
+        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder->method('eq')->willReturn('1=1');
+
+        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result->method('fetchOne')->willReturn($count);
+
+        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder->method('count')->willReturnSelf();
+        $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('expr')->willReturn($expressionBuilder);
+        $queryBuilder->method('createNamedParameter')->willReturn((string) $beUserUid);
+        $queryBuilder->method('executeQuery')->willReturn($result);
+
+        $connectionPool = $this->createMock(ConnectionPool::class);
+        $connectionPool
+            ->method('getQueryBuilderForTable')
+            ->with('tx_nrpasskeysbe_credential')
+            ->willReturn($queryBuilder);
+
+        GeneralUtility::addInstance(ConnectionPool::class, $connectionPool);
+    }
 
     /**
      * Set up ConnectionPool mock for fetchUserByUid.
