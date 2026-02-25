@@ -52,6 +52,7 @@
 - **Discoverable login** -- Optional username-less login via resident credentials
 - **Admin management** -- Admins can list, revoke passkeys and unlock locked accounts
 - **Self-service** -- Users register, rename, and remove their own passkeys
+- **Per-user enforcement** -- Gradually migrate to passkey-only: block passwords only for users with passkeys
 - **Rate limiting** -- Per-endpoint and per-account lockout protection
 - **Replay protection** -- HMAC-signed challenge tokens with single-use nonces
 
@@ -84,7 +85,7 @@ Extension settings are available in **Admin Tools > Settings > Extension Configu
 | `challengeTtl` | `120` | Challenge token lifetime in seconds |
 | `maxFailedAttempts` | `5` | Failed login attempts before account lockout |
 | `lockoutDuration` | `900` | Lockout duration in seconds (15 min) |
-| `disablePasswordLogin` | `false` | Block password login when passkey is registered |
+| `disablePasswordLogin` | `false` | Block password login for users with registered passkeys |
 | `discoverableLoginEnabled` | `true` | Allow username-less login via resident credentials |
 
 ## How It Works

@@ -6,6 +6,18 @@
 Changelog
 =========
 
+0.5.0
+=====
+
+Features
+--------
+
+- Per-user password login enforcement: ``disablePasswordLogin`` now blocks
+  passwords only for users who have registered passkeys, enabling gradual
+  onboarding without locking out new users
+- Deployment Scenarios documentation chapter covering multi-environment
+  setup, database sync, user onboarding, and local DDEV development
+
 0.4.0
 =====
 
