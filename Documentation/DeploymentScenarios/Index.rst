@@ -75,19 +75,17 @@ Use ``TYPO3_CONTEXT`` to apply different settings per environment:
    // Development: keep password login available for convenience
    // (disablePasswordLogin defaults to '0', no override needed)
 
-This lets you enforce passkey-only login on production while keeping
-password login available locally for new users or quick access.
+Because enforcement is **per user** (only users with registered passkeys
+are affected), enabling :confval:`disablePasswordLogin` on production is
+safe even if not all users have passkeys yet -- they can still log in with
+a password. Keeping the setting disabled on development means all users
+(including those with passkeys) can use password login for convenience.
 
-..  important::
+..  tip::
 
-   Before enabling :confval:`disablePasswordLogin` on production:
-
-   1. Verify all regular backend users have registered at least one
-      passkey.
-   2. Ensure at least one admin account has multiple passkeys on different
-      authenticators for emergency recovery.
-   3. Communicate the change to all backend users in advance.
-   4. Consider enabling on staging first to verify the workflow.
+   Consider enabling on staging first to verify the workflow, and
+   communicate the change to backend users who already have passkeys --
+   they will no longer be able to fall back to password login.
 
 ..  _deployment-db-sync:
 
@@ -113,19 +111,27 @@ domain.
      - tx_nrpasskeysbe_credential
 
 After importing a production database dump, users simply register fresh
-passkeys on the local or staging environment. If
-:confval:`disablePasswordLogin` is active but environment-specific (see
-above), password login is available on non-production environments for
-this initial registration.
+passkeys on the local or staging environment. Because enforcement is
+per user, users with no credentials in the table can log in with a
+password regardless of the :confval:`disablePasswordLogin` setting.
+
+..  important::
+
+   **Exclude the credential table from syncs** when
+   :confval:`disablePasswordLogin` is enabled. The per-user enforcement
+   counts all non-deleted, non-revoked credentials regardless of which
+   domain they were registered on (see
+   `ADR-0002 <https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/docs/adr/0002-no-rpid-aware-enforcement.md>`__).
+   If production credentials are imported into a different environment,
+   users appear to have passkeys (blocking password login) even though
+   those passkeys do not work on the new domain.
 
 ..  note::
 
    You do **not** need to exclude ``be_users`` or any other table. Only
-   ``tx_nrpasskeysbe_credential`` is domain-specific. If the credential
-   table is accidentally included in a sync, the imported credentials
-   will not work on the different domain -- users simply register fresh
-   passkeys. No security data is exposed because the public keys are
-   useless without the private keys stored on users' authenticators.
+   ``tx_nrpasskeysbe_credential`` is domain-specific. No security data
+   is exposed by an accidental sync because the public keys are useless
+   without the private keys stored on users' authenticators.
 
 Shared rpId across subdomains
 =============================
