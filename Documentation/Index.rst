@@ -64,6 +64,11 @@ Hello -- directly on the standard TYPO3 login form.
         Configure relying party, challenge TTL, discoverable login,
         rate limiting, account lockout, and cryptographic algorithms.
 
+    ..  card:: :ref:`Deployment Scenarios <deployment-scenarios>`
+
+        Multi-environment setup, database sync, user onboarding, and
+        local development with DDEV.
+
     ..  card:: :ref:`Usage <usage>`
 
         Register passkeys, log in with a single touch, and manage
@@ -101,6 +106,7 @@ Hello -- directly on the standard TYPO3 login form.
     Introduction/Index
     Installation/Index
     Configuration/Index
+    DeploymentScenarios/Index
     Usage/Index
     Administration/Index
     DeveloperGuide/Index
