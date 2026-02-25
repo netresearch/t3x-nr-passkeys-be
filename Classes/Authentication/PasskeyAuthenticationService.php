@@ -231,6 +231,14 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         return $row !== false ? $row : false;
     }
 
+    /**
+     * Check whether a backend user has at least one active (non-deleted, non-revoked) passkey credential.
+     *
+     * This duplicates the query logic in {@see \Netresearch\NrPasskeysBe\Service\CredentialRepository::countByBeUser()}.
+     * The duplication exists because this auth service cannot use DI (AbstractAuthenticationService
+     * is instantiated via GeneralUtility::makeInstance) and CredentialRepository requires DI.
+     * If the query conditions change, both locations must be updated.
+     */
     private function hasRegisteredPasskeys(int $beUserUid): bool
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
