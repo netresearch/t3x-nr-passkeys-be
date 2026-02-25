@@ -19,6 +19,7 @@
 
 <!-- Row 2: Security badges -->
 <p align="center">
+  <a href="https://www.bestpractices.dev/projects/12037"><img src="https://www.bestpractices.dev/projects/12037/badge" alt="OpenSSF Best Practices"></a>
   <a href="https://securityscorecards.dev/viewer/?uri=github.com/netresearch/t3x-nr-passkeys-be"><img src="https://api.securityscorecards.dev/projects/github.com/netresearch/t3x-nr-passkeys-be/badge" alt="OpenSSF Scorecard"></a>
 </p>
 

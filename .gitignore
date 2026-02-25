@@ -16,3 +16,5 @@
 /playwright-report/
 /package-lock.json
 /.playwright-mcp/
+/submit-badge.py
+/docs/plans/

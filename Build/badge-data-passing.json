@@ -1,0 +1,205 @@
+{
+  "description_good_status": "Met",
+  "description_good_justification": "The project provides a clear description in README.md: 'Passwordless TYPO3 backend authentication via Passkeys (WebAuthn/FIDO2)' with comprehensive overview, features, and API documentation. See https://github.com/netresearch/t3x-nr-passkeys-be#overview",
+
+  "interact_status": "Met",
+  "interact_justification": "The project uses GitHub Issues for interaction, with bug report and feature request templates. See https://github.com/netresearch/t3x-nr-passkeys-be/issues",
+
+  "contribution_status": "Met",
+  "contribution_justification": "CONTRIBUTING.md explains how to contribute, including development setup, quality requirements, and PR process. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md",
+
+  "contribution_requirements_status": "Met",
+  "contribution_requirements_justification": "CONTRIBUTING.md documents quality requirements (PHPStan level 10, PER-CS3.0 code style, unit tests, mutation tests) and PR process including conventional commits and signed commits. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md",
+
+  "floss_license_status": "Met",
+  "floss_license_justification": "Licensed under GPL-2.0-or-later, an OSI-approved and FSF-approved license. LICENSE file present in repository root. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/LICENSE",
+
+  "floss_license_osi_status": "Met",
+  "floss_license_osi_justification": "GPL-2.0-or-later is approved by the Open Source Initiative. See https://opensource.org/licenses/GPL-2.0 and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/LICENSE",
+
+  "license_location_status": "Met",
+  "license_location_justification": "LICENSE file is in the repository root, and license is declared in composer.json as GPL-2.0-or-later. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/LICENSE",
+
+  "documentation_basics_status": "Met",
+  "documentation_basics_justification": "README.md covers installation, configuration, API endpoints, and features. Full RST documentation in Documentation/ with 11 chapters (Introduction, Installation, Configuration, Usage, Administration, DeveloperGuide, Security, Troubleshooting, Changelog, DeploymentScenarios). See https://github.com/netresearch/t3x-nr-passkeys-be/tree/main/Documentation",
+
+  "documentation_interface_status": "Met",
+  "documentation_interface_justification": "All API endpoints are documented in README.md (login, self-service, admin) with HTTP methods and paths. The DeveloperGuide RST chapter documents the architecture, data flow, controllers, service classes, and domain model. See https://github.com/netresearch/t3x-nr-passkeys-be#api-endpoints and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/DeveloperGuide/Index.rst",
+
+  "sites_https_status": "Met",
+  "sites_https_justification": "The project is hosted on GitHub which enforces HTTPS. The project URL is https://github.com/netresearch/t3x-nr-passkeys-be",
+
+  "discussion_status": "Met",
+  "discussion_justification": "GitHub Issues are used for discussion, with structured templates for bug reports and feature requests. See https://github.com/netresearch/t3x-nr-passkeys-be/issues",
+
+  "english_status": "Met",
+  "english_justification": "All project documentation, code comments, README, CONTRIBUTING, SECURITY, and issue templates are in English. See https://github.com/netresearch/t3x-nr-passkeys-be",
+
+  "maintained_status": "Met",
+  "maintained_justification": "The project is actively maintained with recent releases (v0.5.0 February 2026), regular commits, responsive issue handling, and comprehensive CI/CD pipeline. See https://github.com/netresearch/t3x-nr-passkeys-be/releases",
+
+  "repo_public_status": "Met",
+  "repo_public_justification": "The repository is publicly accessible on GitHub. See https://github.com/netresearch/t3x-nr-passkeys-be",
+
+  "repo_track_status": "Met",
+  "repo_track_justification": "The project uses Git for version control, tracking all changes with full history. See https://github.com/netresearch/t3x-nr-passkeys-be",
+
+  "repo_interim_status": "Met",
+  "repo_interim_justification": "The project uses pull requests for all changes to main, enforced by branch protection rules requiring PR review and CI checks. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
+
+  "repo_distributed_status": "Met",
+  "repo_distributed_justification": "The project uses Git, a distributed version control system, hosted on GitHub. See https://github.com/netresearch/t3x-nr-passkeys-be",
+
+  "version_unique_status": "Met",
+  "version_unique_justification": "Each release has a unique semantic version (0.1.0 through 0.5.0), with signed Git tags and corresponding GitHub releases. See https://github.com/netresearch/t3x-nr-passkeys-be/releases",
+
+  "version_semver_status": "Met",
+  "version_semver_justification": "The project uses semantic versioning (MAJOR.MINOR.PATCH) for all releases. See https://github.com/netresearch/t3x-nr-passkeys-be/releases",
+
+  "version_tags_status": "Met",
+  "version_tags_justification": "All releases are tagged in Git with signed tags (git tag -s). Tags: 0.1.0 through 0.5.0. See https://github.com/netresearch/t3x-nr-passkeys-be/tags",
+
+  "release_notes_status": "Met",
+  "release_notes_justification": "Each release has detailed release notes in the Changelog documentation and on GitHub Releases. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Changelog/Index.rst and https://github.com/netresearch/t3x-nr-passkeys-be/releases",
+
+  "release_notes_vulns_status": "Met",
+  "release_notes_vulns_justification": "Release notes document security-related changes (e.g., v0.3.0 documents XSS prevention fix in label sanitization). Security advisories would be published via GitHub Security Advisories per SECURITY.md. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Changelog/Index.rst",
+
+  "report_process_status": "Met",
+  "report_process_justification": "Bug reports use the structured GitHub Issue template with steps to reproduce, expected/actual behavior, and environment details. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/ISSUE_TEMPLATE/bug_report.md",
+
+  "report_tracker_status": "Met",
+  "report_tracker_justification": "GitHub Issues is used as the public issue tracker, with structured templates for bugs and feature requests. See https://github.com/netresearch/t3x-nr-passkeys-be/issues",
+
+  "report_responses_status": "Met",
+  "report_responses_justification": "The project is actively maintained with recent commits within the last 90 days and responsive issue handling. SECURITY.md commits to response timelines (48 hours for critical, 5 business days for high). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
+
+  "report_archive_status": "Met",
+  "report_archive_justification": "GitHub Issues provides a permanent, searchable archive of all reported bugs. See https://github.com/netresearch/t3x-nr-passkeys-be/issues?q=is%3Aissue",
+
+  "enhancement_responses_status": "Met",
+  "enhancement_responses_justification": "Enhancement requests are tracked via GitHub Issues with a dedicated feature request template. The project actively responds to and implements requested enhancements. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/ISSUE_TEMPLATE/feature_request.md",
+
+  "vulnerability_report_process_status": "Met",
+  "vulnerability_report_process_justification": "SECURITY.md documents the vulnerability reporting process: use GitHub Security Advisories for private reporting, includes what to include in reports and response timeline by severity. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md",
+
+  "vulnerability_report_private_status": "Met",
+  "vulnerability_report_private_justification": "Vulnerabilities are reported privately via GitHub Security Advisories. SECURITY.md explicitly states 'Do NOT open a public GitHub issue for security vulnerabilities.' See https://github.com/netresearch/t3x-nr-passkeys-be/security/advisories and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md",
+
+  "vulnerability_report_response_status": "Met",
+  "vulnerability_report_response_justification": "SECURITY.md defines response SLAs: Critical 48 hours initial response / 7 days fix, High 5 business days / 30 days, Medium 10 business days / 90 days. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
+
+  "build_status": "Met",
+  "build_justification": "The project uses Composer for PHP dependency management and npm for JavaScript. Build commands documented in README.md and composer.json scripts section. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
+
+  "build_common_tools_status": "Met",
+  "build_common_tools_justification": "The project uses Composer (PHP standard build tool), PHPUnit (testing), PHPStan (static analysis), PHP-CS-Fixer (code style), and npm/Vitest (JavaScript). All are widely-used FLOSS tools. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
+
+  "build_floss_tools_status": "Met",
+  "build_floss_tools_justification": "All build tools are FLOSS: Composer (MIT), PHPUnit (BSD-3-Clause), PHPStan (MIT), PHP-CS-Fixer (MIT), Infection (BSD-3-Clause), Vitest (MIT). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
+
+  "test_status": "Met",
+  "test_justification": "The project has a comprehensive test suite: 301 unit tests, fuzz tests (3 suites), 24 functional tests, and JavaScript tests. See https://github.com/netresearch/t3x-nr-passkeys-be/tree/main/Tests",
+
+  "test_invocation_status": "Met",
+  "test_invocation_justification": "Tests are easily invoked via standard Composer scripts: 'composer ci:test:php:unit', 'composer ci:test:php:functional', 'composer ci:test:php:fuzz', 'npm run test:js'. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
+
+  "test_most_status": "Met",
+  "test_most_justification": "The test suite covers unit, fuzz, functional, and mutation testing across all major code paths. Mutation testing (Infection) enforces MSI >= 80% and covered MSI >= 80%, ensuring most branches are tested. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/infection.json5",
+
+  "test_continuous_integration_status": "Met",
+  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. The CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional, fuzz, and mutation jobs. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+
+  "test_policy_status": "Met",
+  "test_policy_justification": "CONTRIBUTING.md states: 'New features must include unit tests' and 'Bug fixes should include a regression test'. PR template includes checkbox 'I have added tests covering my changes'. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests",
+
+  "tests_are_added_status": "Met",
+  "tests_are_added_justification": "CONTRIBUTING.md requires tests for all contributions, enforced by the PR checklist and CI quality gates including mutation testing. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+
+  "tests_documented_added_status": "Met",
+  "tests_documented_added_justification": "CONTRIBUTING.md requires tests for all new features and bug fixes. Tests are documented with PHPDoc comments and organized in structured directories (Unit, Functional, Fuzz). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests",
+
+  "warnings_status": "Met",
+  "warnings_justification": "PHPStan level 10 (maximum strictness) with ergebnis/phpstan-rules is enforced in CI. PHP strict_types=1 is declared in all 23 PHP source files. PHP-CS-Fixer enforces strict_param rule. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/phpstan.neon and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/.php-cs-fixer.php",
+
+  "warnings_fixed_status": "Met",
+  "warnings_fixed_justification": "All warnings from PHPStan level 10, PHP-CS-Fixer, and CodeQL are fixed before merge. CI pipeline fails on any warning or error. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+
+  "warnings_strict_status": "Met",
+  "warnings_strict_justification": "PHPStan runs at maximum level 10 with strict rules (ergebnis/phpstan-rules). PHP strict_types=1 in all source files. PHP-CS-Fixer enforces PER-CS3.0 with strict_param. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/phpstan.neon",
+
+  "know_secure_design_status": "Met",
+  "know_secure_design_justification": "The Security documentation chapter demonstrates knowledge of secure design principles: HMAC-signed challenge tokens, nonce replay protection, rate limiting, user enumeration prevention, credential ownership verification, and signature counter validation. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst",
+
+  "know_common_errors_status": "Met",
+  "know_common_errors_justification": "The extension addresses common security errors: timing attacks (hash_equals), replay attacks (nonce protection), XSS (label sanitization), CSRF (TYPO3 backend tokens), user enumeration (randomized timing), injection (parameterized queries via TYPO3 ConnectionPool). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst",
+
+  "crypto_published_status": "Met",
+  "crypto_published_justification": "All cryptographic mechanisms are fully documented: HMAC-SHA256 for challenge tokens, random_bytes for challenge/nonce generation, hash_equals for constant-time comparison. No custom cryptographic algorithms are used. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst#hmac-signed-challenge-tokens",
+
+  "crypto_call_status": "Met",
+  "crypto_call_justification": "The extension uses well-established cryptographic primitives from PHP's standard library (hash_hmac, random_bytes, hash_equals, bin2hex) and delegates WebAuthn verification to the web-auth/webauthn-lib library. No custom crypto implementations. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/Service/ChallengeService.php",
+
+  "crypto_floss_status": "Met",
+  "crypto_floss_justification": "All cryptographic functionality uses FLOSS implementations: PHP's built-in OpenSSL functions and the web-auth/webauthn-lib v5.2 library (MIT license). See https://github.com/web-auth/webauthn-lib and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
+
+  "crypto_keylength_status": "Met",
+  "crypto_keylength_justification": "The extension enforces minimum 32-character TYPO3 encryption key for HMAC-SHA256 signing, uses 32-byte (256-bit) random challenges, and supports ES256/ES384/ES512/RS256 signing algorithms for WebAuthn. Key lengths meet NIST recommendations. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst#hmac-signed-challenge-tokens",
+
+  "crypto_working_status": "Met",
+  "crypto_working_justification": "The default cryptographic algorithms (HMAC-SHA256 for challenge tokens, ES256 for WebAuthn) are industry-standard and considered secure by NIST. No deprecated algorithms are used. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/Service/ChallengeService.php",
+
+  "crypto_weaknesses_status": "Met",
+  "crypto_weaknesses_justification": "The extension does not use known-weak algorithms. HMAC-SHA256 is used for token signing. WebAuthn uses ECDSA/RSA. Constant-time comparison (hash_equals) prevents timing attacks. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst",
+
+  "crypto_pfs_status": "N/A",
+  "crypto_pfs_justification": "This is a TYPO3 extension that does not implement TLS/network protocols. Perfect forward secrecy is the responsibility of the web server and TYPO3 infrastructure. The extension requires HTTPS (documented in Installation guide). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Installation/Index.rst",
+
+  "crypto_password_storage_status": "N/A",
+  "crypto_password_storage_justification": "This extension replaces password authentication with WebAuthn passkeys. It does not store passwords. Password handling is delegated to TYPO3 core's SaltedPasswordService. See https://github.com/netresearch/t3x-nr-passkeys-be#overview",
+
+  "crypto_random_status": "Met",
+  "crypto_random_justification": "The extension uses PHP's random_bytes() (CSPRNG) for all random data: 32-byte challenges and 16-byte nonces. random_int() is used for timing randomization. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/Service/ChallengeService.php",
+
+  "delivery_mitm_status": "Met",
+  "delivery_mitm_justification": "The extension is distributed via Composer (Packagist over HTTPS) and the TYPO3 Extension Repository (TER over HTTPS). GitHub releases use signed tags (git tag -s). See https://packagist.org/packages/netresearch/nr-passkeys-be and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ter-publish.yml",
+
+  "delivery_unsigned_status": "Met",
+  "delivery_unsigned_justification": "Release tags are signed locally with GPG (git tag -s) before pushing. Composer verifies package integrity via checksums in composer.lock. See https://github.com/netresearch/t3x-nr-passkeys-be/tags",
+
+  "vulnerabilities_fixed_60_days_status": "Met",
+  "vulnerabilities_fixed_60_days_justification": "SECURITY.md commits to fixing critical vulnerabilities within 7 days, high within 30 days, and medium within 90 days. All timelines are within or equal to the 60-day expectation for critical/high issues. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
+
+  "vulnerabilities_critical_fixed_status": "Met",
+  "vulnerabilities_critical_fixed_justification": "SECURITY.md commits to fixing critical vulnerabilities within 7 days. No known unpatched critical vulnerabilities exist. Dependency vulnerabilities are monitored via Dependabot, composer audit in CI, and dependency-review action. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
+
+  "no_leaked_credentials_status": "Met",
+  "no_leaked_credentials_justification": "The repository contains no credentials or secrets. .gitignore excludes build artifacts. CI secrets are stored in GitHub encrypted secrets. The TYPO3 encryption key is read from server configuration, never committed. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.gitignore",
+
+  "hardened_site_status": "Met",
+  "hardened_site_justification": "The project site (GitHub) uses HTTPS, two-factor authentication, branch protection rules (signed commits, required reviews, required CI checks, no force pushes). GitHub Actions use SHA-pinned dependencies and step-security/harden-runner on every job. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+
+  "static_analysis_status": "Met",
+  "static_analysis_justification": "PHPStan level 10 (maximum) with ergebnis/phpstan-rules runs in CI. PHP-CS-Fixer enforces PER-CS3.0 coding standard. CodeQL analyzes JavaScript/TypeScript and GitHub Actions. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/codeql.yml",
+
+  "static_analysis_common_vulnerabilities_status": "Met",
+  "static_analysis_common_vulnerabilities_justification": "CodeQL (SAST) analyzes for common vulnerability patterns in JavaScript and Actions. PHPStan level 10 catches type errors, null references, and dead code. dependency-review-action blocks high-severity vulnerable dependencies. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/codeql.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/dependency-review.yml",
+
+  "static_analysis_fixed_status": "Met",
+  "static_analysis_fixed_justification": "PHPStan level 10 with 0 errors enforced in CI (pipeline fails on any issue). PHP-CS-Fixer enforced in CI (fails on style violations). All static analysis findings are fixed before merge. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+
+  "static_analysis_often_status": "Met",
+  "static_analysis_often_justification": "Static analysis (PHPStan, PHP-CS-Fixer, CodeQL) runs on every push to main and every pull request. Additionally, PHPStan and linting run as pre-commit hooks via CaptainHook. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/captainhook.json",
+
+  "dynamic_analysis_status": "Met",
+  "dynamic_analysis_justification": "The project uses fuzz testing (3 fuzz test suites for challenge tokens, credential IDs, and request payloads) and mutation testing (Infection MSI >= 80%) as forms of dynamic analysis. Functional tests with MySQL exercise real database interactions. See https://github.com/netresearch/t3x-nr-passkeys-be/tree/main/Tests/Fuzz and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+
+  "dynamic_analysis_unsafe_status": "Met",
+  "dynamic_analysis_unsafe_justification": "Fuzz tests specifically target security-sensitive code paths: challenge token parsing (ChallengeTokenFuzzTest), credential ID handling (CredentialIdFuzzTest), and request payload parsing (RequestPayloadFuzzTest). These detect memory safety and input validation issues. See https://github.com/netresearch/t3x-nr-passkeys-be/tree/main/Tests/Fuzz",
+
+  "dynamic_analysis_enable_assertions_status": "Met",
+  "dynamic_analysis_enable_assertions_justification": "PHP assertions are used in production code for type safety (assert for LanguageService and LoggerInterface types). PHP's strict_types=1 is enabled in all 23 source files, providing runtime type checking. PHPUnit runs with assertions enabled. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/Authentication/PasskeyAuthenticationService.php and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/UserSettings/PasskeySettingsPanel.php",
+
+  "dynamic_analysis_fixed_status": "Met",
+  "dynamic_analysis_fixed_justification": "All dynamic analysis issues are fixed: fuzz tests, functional tests, and mutation tests must pass in CI before merge. Mutation testing enforces MSI >= 80% ensuring surviving mutants are addressed. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml"
+}
