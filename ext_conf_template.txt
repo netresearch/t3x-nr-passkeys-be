@@ -16,7 +16,7 @@ userVerification = required
 # cat=security/200/120; type=boolean; label=Enable Discoverable Login:Allow login without entering a username (passkey identifies the user).
 discoverableLoginEnabled = 1
 
-# cat=security/200/130; type=boolean; label=Disable Password Login:When enabled, password-only login is blocked for all users.
+# cat=security/200/130; type=boolean; label=Disable Password Login:When enabled, password login is blocked for users who have registered passkeys. Users without passkeys can still log in with a password.
 disablePasswordLogin = 0
 
 # cat=ratelimit/300/100; type=int+; label=Rate Limit Max Attempts:Maximum requests per window per IP+user.

@@ -172,6 +172,74 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
+    public function authUserBlocksPasswordLoginWhenUserHasPasskeys(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configWithPasswordDisabled = new ExtensionConfiguration(
+            disablePasswordLogin: true,
+        );
+        $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceDisabled
+            ->method('getConfiguration')
+            ->willReturn($configWithPasswordDisabled);
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger
+            ->expects(self::once())
+            ->method('warning')
+            ->with('Password login blocked for user with registered passkeys', self::anything());
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $logger);
+
+        $subject->login = [
+            'uname' => 'admin',
+            'uident' => 'regularPassword123',
+        ];
+
+        $this->setUpCredentialCount(42, 2);
+
+        $user = ['uid' => 42, 'username' => 'admin'];
+
+        $result = $subject->authUser($user);
+
+        self::assertSame(0, $result);
+    }
+
+    #[Test]
+    public function authUserAllowsPasswordLoginWhenUserHasNoPasskeys(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configWithPasswordDisabled = new ExtensionConfiguration(
+            disablePasswordLogin: true,
+        );
+        $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceDisabled
+            ->method('getConfiguration')
+            ->willReturn($configWithPasswordDisabled);
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $subject->login = [
+            'uname' => 'newuser',
+            'uident' => 'regularPassword123',
+        ];
+
+        $this->setUpCredentialCount(99, 0);
+
+        $user = ['uid' => 99, 'username' => 'newuser'];
+
+        $result = $subject->authUser($user);
+
+        self::assertSame(100, $result);
+    }
+
+    #[Test]
     public function authUserRecordsFailureOnError(): void
     {
         $this->subject->login = [
@@ -289,7 +357,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
-    public function getUserBlocksNonPasskeyWhenPasswordDisabled(): void
+    public function getUserReturnsFalseForNonPasskeyLoginRegardlessOfSetting(): void
     {
         $configWithPasswordDisabled = new ExtensionConfiguration(
             disablePasswordLogin: true,
@@ -591,6 +659,34 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     // --- Helper methods ---
+
+    /**
+     * Set up ConnectionPool mock for hasRegisteredPasskeys (credential count query).
+     */
+    private function setUpCredentialCount(int $beUserUid, int $count): void
+    {
+        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder->method('eq')->willReturn('1=1');
+
+        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result->method('fetchOne')->willReturn($count);
+
+        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder->method('count')->willReturnSelf();
+        $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('expr')->willReturn($expressionBuilder);
+        $queryBuilder->method('createNamedParameter')->willReturn((string) $beUserUid);
+        $queryBuilder->method('executeQuery')->willReturn($result);
+
+        $connectionPool = $this->createMock(ConnectionPool::class);
+        $connectionPool
+            ->method('getQueryBuilderForTable')
+            ->with('tx_nrpasskeysbe_credential')
+            ->willReturn($queryBuilder);
+
+        GeneralUtility::addInstance(ConnectionPool::class, $connectionPool);
+    }
 
     /**
      * Set up ConnectionPool mock for fetchUserByUid.
