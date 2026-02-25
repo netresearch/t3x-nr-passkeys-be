@@ -2,6 +2,8 @@
 
 Thank you for considering contributing to the TYPO3 Passkeys Backend Authentication extension.
 
+This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to abide by its terms.
+
 ## Getting Started
 
 1. Fork the repository
