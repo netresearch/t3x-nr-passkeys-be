@@ -34,9 +34,9 @@ Supports TouchID, FaceID, YubiKey, Windows Hello for one-click TYPO3 backend log
 | Task | Command | ~Time |
 |------|---------|-------|
 | Install | `composer install` | 30s |
-| Lint (check) | `composer ci:lint:php` | 5s |
-| Lint (fix) | `composer ci:lint:php:fix` | 5s |
-| Static analysis | `composer ci:stan` | 10s |
+| CGL (check) | `composer ci:test:php:cgl` | 5s |
+| CGL (fix) | `composer ci:cgl` | 5s |
+| Static analysis | `composer ci:test:php:phpstan` | 10s |
 | Unit tests | `composer ci:test:php:unit` | 5s |
 | Functional tests | `composer ci:test:php:functional` | 30s |
 | All tests | `composer ci:test:php:all` | 35s |
@@ -93,7 +93,7 @@ Makefile                  -> make up, make ci, make help (wraps composer + ddev)
 ## Boundaries
 
 ### Always Do
-- Run `composer ci:lint:php` and `composer ci:stan` before committing
+- Run `composer ci:test:php:cgl` and `composer ci:test:php:phpstan` before committing
 - Add tests for new code paths
 - Use conventional commit format
 - Validate all user inputs

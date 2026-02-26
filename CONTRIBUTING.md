@@ -19,8 +19,8 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 composer install
 
 # Verify everything works
-composer ci:lint:php          # Code style (PER-CS3.0)
-composer ci:stan              # PHPStan level 10
+composer ci:test:php:cgl          # Code style (PER-CS3.0)
+composer ci:test:php:phpstan              # PHPStan level 10
 composer ci:test:php:unit     # Unit tests
 ```
 
@@ -30,8 +30,8 @@ All contributions must pass the following quality gates:
 
 | Check | Command | Requirement |
 |-------|---------|-------------|
-| Code style | `composer ci:lint:php` | PER-CS3.0 compliance |
-| Static analysis | `composer ci:stan` | PHPStan level 10 |
+| Code style | `composer ci:test:php:cgl` | PER-CS3.0 compliance |
+| Static analysis | `composer ci:test:php:phpstan` | PHPStan level 10 |
 | Unit tests | `composer ci:test:php:unit` | All tests pass |
 | Mutation tests | `composer ci:mutation` | MSI >= 80%, covered MSI >= 80% |
 
@@ -47,7 +47,7 @@ All contributions must pass the following quality gates:
 This project uses PHP-CS-Fixer with PER-CS3.0 coding standard. Fix style issues automatically:
 
 ```bash
-composer ci:lint:php:fix
+composer ci:cgl
 ```
 
 ## Pull Request Process

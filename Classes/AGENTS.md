@@ -51,14 +51,14 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 ## Build & tests
 | Task | Command |
 |------|---------|
-| Lint check | `composer ci:lint:php` |
-| Lint fix | `composer ci:lint:php:fix` |
-| PHPStan | `composer ci:stan` |
+| CGL check | `composer ci:test:php:cgl` |
+| CGL fix | `composer ci:cgl` |
+| PHPStan | `composer ci:test:php:phpstan` |
 | Unit tests | `composer ci:test:php:unit` |
 
 ## PR/commit checklist
-- [ ] `composer ci:lint:php` passes
-- [ ] `composer ci:stan` passes (PHPStan level 10)
+- [ ] `composer ci:test:php:cgl` passes
+- [ ] `composer ci:test:php:phpstan` passes (PHPStan level 10)
 - [ ] `composer ci:test:php:unit` passes
 - [ ] TCA changes have matching SQL in `ext_tables.sql`
 - [ ] No deprecated TYPO3 APIs
