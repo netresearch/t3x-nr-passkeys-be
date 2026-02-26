@@ -82,7 +82,7 @@
             "@ci:test:php:unit",
             "@ci:test:php:functional"
         ],
-        "ci:test:php:cgl": "@ci:cgl -- --dry-run --diff",
+        "ci:test:php:cgl": "php-cs-fixer fix --config Build/.php-cs-fixer.php --dry-run --diff",
         "ci:test:php:functional": "phpunit -c Build/phpunit.functional.xml",
         "ci:test:php:fuzz": "phpunit -c Build/phpunit.xml --testsuite fuzz",
         "ci:test:php:phpstan": "phpstan analyse -c Build/phpstan.neon",
