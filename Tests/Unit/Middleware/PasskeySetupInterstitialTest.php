@@ -113,7 +113,7 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
-    public function passesThroughForAjaxRequests(): void
+    public function passesThroughForAjaxRoutes(): void
     {
         $this->setUpBackendUser(1);
 
@@ -125,7 +125,7 @@ final class PasskeySetupInterstitialTest extends TestCase
         );
         $this->enforcementService->method('getStatus')->willReturn($status);
 
-        $request = $this->createMockRequest('main', 'GET', null, 'application/json');
+        $request = $this->createMockRequest('ajax_page_tree');
         $handler = $this->createMockHandler();
 
         $handler->expects(self::once())->method('handle')->with($request);
@@ -630,7 +630,6 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMock(ServerRequestInterface::class);
         $request->method('getAttribute')
             ->willReturnCallback(static fn(string $name): mixed => null);
-        $request->method('getHeaderLine')->with('Accept')->willReturn('text/html');
         $request->method('getMethod')->willReturn('GET');
         $request->method('getParsedBody')->willReturn(null);
 
@@ -721,7 +720,6 @@ final class PasskeySetupInterstitialTest extends TestCase
         string $routeIdentifier = 'main',
         string $method = 'GET',
         ?array $parsedBody = null,
-        string $acceptHeader = 'text/html',
     ): ServerRequestInterface&MockObject {
         $route = $this->createMock(\TYPO3\CMS\Backend\Routing\Route::class);
         $route->method('getOption')
@@ -742,7 +740,6 @@ final class PasskeySetupInterstitialTest extends TestCase
 
                 return null;
             });
-        $request->method('getHeaderLine')->with('Accept')->willReturn($acceptHeader);
         $request->method('getMethod')->willReturn($method);
         $request->method('getParsedBody')->willReturn($parsedBody);
 

@@ -167,15 +167,6 @@
             <trans-unit id="manage.info.passkeys" resname="manage.info.passkeys">
                 <source>Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup — for example, your laptop and your phone.</source>
             </trans-unit>
-            <trans-unit id="login.help.whatArePasskeys" resname="login.help.whatArePasskeys">
-                <source>What are passkeys?</source>
-            </trans-unit>
-            <trans-unit id="login.help.passkeysExplainer" resname="login.help.passkeysExplainer">
-                <source>Passkeys are a modern replacement for passwords. They use your device's biometric sensors (fingerprint, face) or security keys to verify your identity. They're faster and more secure than passwords because they can't be phished or stolen.</source>
-            </trans-unit>
-            <trans-unit id="login.help.learnMore" resname="login.help.learnMore">
-                <source>Learn more about passkeys</source>
-            </trans-unit>
             <trans-unit id="dashboard.title" resname="dashboard.title">
                 <source>Passkey Adoption Dashboard</source>
             </trans-unit>

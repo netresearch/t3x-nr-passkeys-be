@@ -38,8 +38,8 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
      * @var list<string>
      */
     private const EXEMPT_ROUTE_PREFIXES = [
+        'ajax_',
         'setup',
-        'ajax_setup',
         'logout',
         'passkeys_manage_',
         'passkeys_login_',
@@ -140,12 +140,6 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
      */
     private function isExemptRequest(ServerRequestInterface $request): bool
     {
-        // AJAX requests are exempt
-        $acceptHeader = $request->getHeaderLine('Accept');
-        if (\str_contains($acceptHeader, 'application/json')) {
-            return true;
-        }
-
         // Check route identifier against exempt prefixes
         $route = $request->getAttribute('route');
         if (!$route instanceof Route) {
