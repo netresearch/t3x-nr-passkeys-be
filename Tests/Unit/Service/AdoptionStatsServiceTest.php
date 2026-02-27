@@ -79,10 +79,6 @@ final class AdoptionStatsServiceTest extends TestCase
                     ]),
                     // 7th call: getUsersWithoutPasskeys subquery (tx_nrpasskeysbe_credential)
                     $callIndex === 7 => $this->createSubQueryBuilder(),
-                    // 8th call: buildGroupTitleMap (be_groups)
-                    $callIndex === 8 => $this->createGroupFetchQueryBuilder([
-                        ['uid' => 1, 'title' => 'Editors'],
-                    ]),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -129,8 +125,6 @@ final class AdoptionStatsServiceTest extends TestCase
                     $callIndex === 4 => $this->createFetchQueryBuilder([]),
                     // subquery builder
                     $callIndex === 5 => $this->createSubQueryBuilder(),
-                    // buildGroupTitleMap - no groups
-                    $callIndex === 6 => $this->createGroupFetchQueryBuilder([]),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -174,11 +168,6 @@ final class AdoptionStatsServiceTest extends TestCase
                     // getUsersWithoutPasskeys
                     $callIndex === 8 => $this->createFetchQueryBuilder([]),
                     $callIndex === 9 => $this->createSubQueryBuilder(),
-                    // buildGroupTitleMap
-                    $callIndex === 10 => $this->createGroupFetchQueryBuilder([
-                        ['uid' => 1, 'title' => 'Editors'],
-                        ['uid' => 2, 'title' => 'Admins'],
-                    ]),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -218,18 +207,21 @@ final class AdoptionStatsServiceTest extends TestCase
                 return match (true) {
                     $callIndex === 1 => $this->createCountQueryBuilder(5),
                     $callIndex === 2 => $this->createSelectLiteralQueryBuilder(3),
-                    $callIndex === 3 => $this->createGroupFetchQueryBuilder([]),
-                    $callIndex === 4 => $this->createFetchQueryBuilder([
+                    // getGroupStats - returns groups for title map
+                    $callIndex === 3 => $this->createGroupFetchQueryBuilder([
+                        ['uid' => 1, 'title' => 'Editors', 'passkey_enforcement' => 'off', 'passkey_grace_period_days' => 0],
+                        ['uid' => 2, 'title' => 'Admins', 'passkey_enforcement' => 'off', 'passkey_grace_period_days' => 0],
+                        ['uid' => 3, 'title' => 'Authors', 'passkey_enforcement' => 'off', 'passkey_grace_period_days' => 0],
+                    ]),
+                    // countUsersInGroup / countUsersWithPasskeysInGroup for each group
+                    $callIndex === 4, $callIndex === 6, $callIndex === 8 => $this->createCountQueryBuilder(0),
+                    $callIndex === 5, $callIndex === 7, $callIndex === 9 => $this->createSelectLiteralQueryBuilder(0),
+                    // getUsersWithoutPasskeys
+                    $callIndex === 10 => $this->createFetchQueryBuilder([
                         ['uid' => 10, 'username' => 'alice', 'realName' => 'Alice Smith', 'usergroup' => '1,2', 'passkey_grace_period_start' => 1_700_000_000],
                         ['uid' => 20, 'username' => 'bob', 'realName' => 'Bob Jones', 'usergroup' => '3', 'passkey_grace_period_start' => 0],
                     ]),
-                    $callIndex === 5 => $this->createSubQueryBuilder(),
-                    // buildGroupTitleMap
-                    $callIndex === 6 => $this->createGroupFetchQueryBuilder([
-                        ['uid' => 1, 'title' => 'Editors'],
-                        ['uid' => 2, 'title' => 'Admins'],
-                        ['uid' => 3, 'title' => 'Authors'],
-                    ]),
+                    $callIndex === 11 => $this->createSubQueryBuilder(),
                     default => $this->createCountQueryBuilder(0),
                 };
             });

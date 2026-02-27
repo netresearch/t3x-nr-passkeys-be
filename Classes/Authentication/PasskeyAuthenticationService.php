@@ -17,7 +17,6 @@ use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use Psr\Log\NullLogger;
-use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -177,7 +176,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
             // Return 200 = authenticated, stop further auth processing
             return 200;
-        } catch (RuntimeException $e) {
+        } catch (Throwable $e) {
             $this->getRateLimiterService()->recordFailure($username, $ip);
 
             $this->getLogger()->warning('Passkey authentication failed', [

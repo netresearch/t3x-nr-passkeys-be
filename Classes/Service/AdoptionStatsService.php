@@ -38,8 +38,8 @@ final class AdoptionStatsService
     {
         $totalUsers = $this->countTotalActiveUsers();
         $usersWithPasskeys = $this->countUsersWithPasskeys();
-        $groups = $this->getGroupStats();
-        $usersWithoutPasskeys = $this->getUsersWithoutPasskeys();
+        [$groups, $groupTitleMap] = $this->getGroupStats();
+        $usersWithoutPasskeys = $this->getUsersWithoutPasskeys($groupTitleMap);
 
         return new AdoptionStats(
             totalUsers: $totalUsers,
@@ -94,7 +94,9 @@ final class AdoptionStatsService
     /**
      * Get enforcement and adoption statistics for all active (non-deleted) groups.
      *
-     * @return list<GroupEnforcementInfo>
+     * Returns both the group info list and a UID-to-title map for reuse.
+     *
+     * @return array{list<GroupEnforcementInfo>, array<int, string>}
      */
     private function getGroupStats(): array
     {
@@ -111,6 +113,7 @@ final class AdoptionStatsService
             ->fetchAllAssociative();
 
         $result = [];
+        $titleMap = [];
 
         foreach ($groups as $group) {
             $uidValue = $group['uid'] ?? 0;
@@ -118,6 +121,10 @@ final class AdoptionStatsService
 
             $titleValue = $group['title'] ?? '';
             $title = \is_string($titleValue) ? $titleValue : '';
+
+            if ($groupUid > 0) {
+                $titleMap[$groupUid] = $title;
+            }
 
             $enforcementValue = $group['passkey_enforcement'] ?? 'off';
             $enforcement = \is_string($enforcementValue) ? $enforcementValue : 'off';
@@ -138,7 +145,7 @@ final class AdoptionStatsService
             );
         }
 
-        return $result;
+        return [$result, $titleMap];
     }
 
     /**
@@ -203,9 +210,11 @@ final class AdoptionStatsService
     /**
      * Get users who have no active credentials, with their grace period status.
      *
+     * @param array<int, string> $groupTitleMap UID-to-title map from getGroupStats()
+     *
      * @return list<UserPasskeyStatus>
      */
-    private function getUsersWithoutPasskeys(): array
+    private function getUsersWithoutPasskeys(array $groupTitleMap): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
         $queryBuilder->getRestrictions()->removeAll();
@@ -234,7 +243,6 @@ final class AdoptionStatsService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        $groupTitleMap = $this->buildGroupTitleMap();
         $result = [];
 
         foreach ($rows as $row) {
@@ -273,42 +281,6 @@ final class AdoptionStatsService
         }
 
         return $result;
-    }
-
-    /**
-     * Build a map of group UID to title for all active groups.
-     *
-     * @return array<int, string>
-     */
-    private function buildGroupTitleMap(): array
-    {
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_GROUPS);
-        $queryBuilder->getRestrictions()->removeAll();
-
-        $rows = $queryBuilder
-            ->select('uid', 'title')
-            ->from(self::TABLE_GROUPS)
-            ->where(
-                $queryBuilder->expr()->eq('deleted', 0),
-            )
-            ->executeQuery()
-            ->fetchAllAssociative();
-
-        $map = [];
-
-        foreach ($rows as $row) {
-            $uidValue = $row['uid'] ?? 0;
-            $uid = \is_numeric($uidValue) ? (int) $uidValue : 0;
-
-            $titleValue = $row['title'] ?? '';
-            $title = \is_string($titleValue) ? $titleValue : '';
-
-            if ($uid > 0) {
-                $map[$uid] = $title;
-            }
-        }
-
-        return $map;
     }
 
     /**

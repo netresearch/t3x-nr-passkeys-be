@@ -176,6 +176,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
     {
         $remainingDays = $status->gracePeriodRemainingDays();
         $canSkip = $status->canSkip();
+        $escapedBackendPath = \htmlspecialchars($backendPath, ENT_QUOTES, 'UTF-8');
 
         $graceMessage = $remainingDays > 0
             ? 'You have ' . \htmlspecialchars((string) $remainingDays, ENT_QUOTES, 'UTF-8') . ' days remaining to set up your passkey.'
@@ -281,7 +282,7 @@ HTML;
         </p>
         <div class="grace-period">{$graceMessage}</div>
         <div class="actions">
-            <a href="{$backendPath}setup/" class="btn-setup">Set up now</a>
+            <a href="{$escapedBackendPath}setup/" class="btn-setup">Set up now</a>
             {$skipButton}
         </div>
     </div>
