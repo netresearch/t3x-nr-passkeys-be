@@ -17,8 +17,8 @@ TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passk
 - Controllers use `JsonBodyTrait` for JSON request body parsing
 
 ## Commands
-- `composer ci:lint:php` -- code style check
-- `composer ci:stan` -- PHPStan level 10
+- `composer ci:test:php:cgl` -- code style check
+- `composer ci:test:php:phpstan` -- PHPStan level 10
 - `composer ci:test:php:unit` -- unit tests
 - `composer ci:test:php:functional` -- functional tests (MySQL required)
 - `composer ci:mutation` -- mutation testing (MSI >= 80%)

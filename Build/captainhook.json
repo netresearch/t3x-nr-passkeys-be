@@ -18,10 +18,10 @@
         "enabled": true,
         "actions": [
             {
-                "action": "composer ci:lint:php"
+                "action": "composer ci:test:php:cgl"
             },
             {
-                "action": "composer ci:stan"
+                "action": "composer ci:test:php:phpstan"
             },
             {
                 "action": "composer ci:test:php:unit"

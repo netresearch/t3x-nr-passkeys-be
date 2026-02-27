@@ -123,9 +123,9 @@ Full documentation is available in the [Documentation/](Documentation/) director
 composer install
 
 # Code quality
-composer ci:lint:php          # Check code style (PER-CS3.0)
-composer ci:lint:php:fix      # Fix code style
-composer ci:stan              # PHPStan level 10
+composer ci:test:php:cgl       # Check code style (PER-CS3.0)
+composer ci:cgl                # Fix code style
+composer ci:test:php:phpstan   # PHPStan level 10
 
 # Tests
 composer ci:test:php:unit         # Unit tests

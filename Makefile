@@ -86,17 +86,17 @@ urls: ## Show all access URLs
 install: ## Install composer dependencies
 	composer install
 
-.PHONY: lint
-lint: ## Check code style (PER-CS3.0)
-	composer ci:lint:php
+.PHONY: cgl
+cgl: ## Check code style (dry-run)
+	composer ci:test:php:cgl
 
-.PHONY: format
-format: ## Auto-fix code style issues
-	composer ci:lint:php:fix
+.PHONY: cgl-fix
+cgl-fix: ## Fix code style
+	composer ci:cgl
 
-.PHONY: stan
-stan: ## Run PHPStan static analysis (level 10)
-	composer ci:stan
+.PHONY: phpstan
+phpstan: ## Run PHPStan static analysis
+	composer ci:test:php:phpstan
 
 .PHONY: test
 test: test-unit ## Run unit tests
@@ -134,7 +134,7 @@ mutation: ## Run mutation tests (Infection)
 	composer ci:mutation
 
 .PHONY: ci
-ci: lint stan test-unit test-fuzz test-js ## Run all local CI checks (no DB required)
+ci: cgl phpstan test-unit test-fuzz test-js ## Run all local CI checks (no DB required)
 
 .PHONY: clean
 clean: ## Clean temporary files and caches

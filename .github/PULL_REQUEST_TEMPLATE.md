@@ -23,8 +23,8 @@ Fixes #(issue number)
 ## Testing
 
 - [ ] Unit tests pass (`composer ci:test:php:unit`)
-- [ ] PHPStan passes (`composer ci:stan`)
-- [ ] Code style passes (`composer ci:lint:php`)
+- [ ] PHPStan passes (`composer ci:test:php:phpstan`)
+- [ ] Code style passes (`composer ci:test:php:cgl`)
 
 ## Checklist
 
