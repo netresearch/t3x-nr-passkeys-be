@@ -88,4 +88,11 @@ return [
         'target' => AdminController::class . '::listAction',
         'methods' => ['GET'],
     ],
+
+    // Enforcement status -- banner display decision (low risk)
+    'passkeys_enforcement_status' => [
+        'path' => '/passkeys/enforcement/status',
+        'target' => ManagementController::class . '::enforcementStatusAction',
+        'methods' => ['GET'],
+    ],
 ];

@@ -46,6 +46,9 @@ services:
   Netresearch\NrPasskeysBe\Service\EnforcementService:
     public: true
 
+  Netresearch\NrPasskeysBe\Service\AdoptionStatsService:
+    public: true
+
   Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService:
     public: true
 
@@ -65,4 +68,3 @@ services:
   # Required by NodeFactory on TYPO3 v12 (setData path) and v13+ alike.
   Netresearch\NrPasskeysBe\Form\Element\PasskeyInfoElement:
     public: true
-

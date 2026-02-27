@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Controller;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
+use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use Psr\Http\Message\ResponseInterface;
@@ -29,6 +30,7 @@ final class ManagementController
         private readonly WebAuthnService $webAuthnService,
         private readonly CredentialRepository $credentialRepository,
         private readonly ExtensionConfigurationService $configService,
+        private readonly EnforcementService $enforcementService,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -154,6 +156,34 @@ final class ManagementController
             'credentials' => $list,
             'count' => \count($list),
             'enforcementEnabled' => $this->configService->getConfiguration()->isDisablePasswordLogin(),
+        ]);
+    }
+
+    /**
+     * Return the enforcement status for the current user.
+     *
+     * GET /passkeys/enforcement/status
+     */
+    public function enforcementStatusAction(ServerRequestInterface $request): ResponseInterface
+    {
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        if (!$backendUser instanceof BackendUserAuthentication) {
+            return new JsonResponse(['error' => 'Not authenticated'], 401);
+        }
+
+        $userRow = $backendUser->user;
+        if (!\is_array($userRow)) {
+            return new JsonResponse(['error' => 'Not authenticated'], 401);
+        }
+
+        /** @var array<string, mixed> $userRow */
+        $status = $this->enforcementService->getStatus($userRow);
+
+        return new JsonResponse([
+            'level' => $status->level->value,
+            'hasPasskeys' => $status->hasPasskeys,
+            'requiresBanner' => $status->level->requiresBanner() && !$status->hasPasskeys,
+            'gracePeriodRemainingDays' => $status->gracePeriodRemainingDays(),
         ]);
     }
 

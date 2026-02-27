@@ -11,9 +11,12 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Controller\ManagementController;
+use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
+use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
+use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -41,6 +44,8 @@ final class ManagementControllerTest extends TestCase
 
     private ExtensionConfigurationService&MockObject $configService;
 
+    private EnforcementService&MockObject $enforcementService;
+
     private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
@@ -50,6 +55,7 @@ final class ManagementControllerTest extends TestCase
         $this->webAuthnService = $this->createMock(WebAuthnService::class);
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
         $this->configService = $this->createMock(ExtensionConfigurationService::class);
+        $this->enforcementService = $this->createMock(EnforcementService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $extensionConfig = new ExtensionConfiguration(
@@ -63,6 +69,7 @@ final class ManagementControllerTest extends TestCase
             $this->webAuthnService,
             $this->credentialRepository,
             $this->configService,
+            $this->enforcementService,
             $this->logger,
         );
     }
@@ -295,6 +302,7 @@ final class ManagementControllerTest extends TestCase
             $this->webAuthnService,
             $this->credentialRepository,
             $configServiceEnforced,
+            $this->enforcementService,
             $this->logger,
         );
 
@@ -587,6 +595,7 @@ final class ManagementControllerTest extends TestCase
             $this->webAuthnService,
             $this->credentialRepository,
             $configServiceEnforced,
+            $this->enforcementService,
             $this->logger,
         );
 
@@ -782,6 +791,7 @@ final class ManagementControllerTest extends TestCase
             $this->webAuthnService,
             $this->credentialRepository,
             $configServiceEnforced,
+            $this->enforcementService,
             $this->logger,
         );
 
@@ -822,6 +832,120 @@ final class ManagementControllerTest extends TestCase
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function enforcementStatusActionReturnsStatusForAuthenticatedUser(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+        $request = $this->createJsonRequest([]);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Encourage,
+            gracePeriodDays: 14,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+
+        $this->enforcementService
+            ->expects(self::once())
+            ->method('getStatus')
+            ->with([
+                'uid' => 42,
+                'username' => 'admin',
+                'realName' => 'Admin User',
+            ])
+            ->willReturn($status);
+
+        $response = $this->subject->enforcementStatusAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('encourage', $body['level']);
+        self::assertFalse($body['hasPasskeys']);
+        self::assertTrue($body['requiresBanner']);
+        self::assertSame(14, $body['gracePeriodRemainingDays']);
+    }
+
+    #[Test]
+    public function enforcementStatusActionReturnsFalseRequiresBannerWhenUserHasPasskeys(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+        $request = $this->createJsonRequest([]);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 7,
+            gracePeriodStart: 0,
+            hasPasskeys: true,
+        );
+
+        $this->enforcementService
+            ->method('getStatus')
+            ->willReturn($status);
+
+        $response = $this->subject->enforcementStatusAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('required', $body['level']);
+        self::assertTrue($body['hasPasskeys']);
+        self::assertFalse($body['requiresBanner']);
+    }
+
+    #[Test]
+    public function enforcementStatusActionReturnsFalseRequiresBannerWhenLevelOff(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+        $request = $this->createJsonRequest([]);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Off,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+
+        $this->enforcementService
+            ->method('getStatus')
+            ->willReturn($status);
+
+        $response = $this->subject->enforcementStatusAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('off', $body['level']);
+        self::assertFalse($body['hasPasskeys']);
+        self::assertFalse($body['requiresBanner']);
+    }
+
+    #[Test]
+    public function enforcementStatusActionNotAuthenticated(): void
+    {
+        unset($GLOBALS['BE_USER']);
+        $request = $this->createJsonRequest([]);
+
+        $response = $this->subject->enforcementStatusAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Not authenticated', $body['error']);
+    }
+
+    #[Test]
+    public function enforcementStatusActionNotAuthenticatedWhenUserDataNotArray(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = null;
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = $this->createJsonRequest([]);
+
+        $response = $this->subject->enforcementStatusAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Not authenticated', $body['error']);
     }
 
     /**
