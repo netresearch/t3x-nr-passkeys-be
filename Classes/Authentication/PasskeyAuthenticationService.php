@@ -168,6 +168,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 'credential_uid' => $result->credential->getUid(),
             ]);
 
+            // Mark session as passkey-authenticated so the interstitial middleware
+            // knows to skip — users who logged in via passkey should never see it.
+            $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', ['passkey_authenticated' => true]);
+
             // Return 200 = authenticated, stop further auth processing
             return 200;
         } catch (RuntimeException $e) {

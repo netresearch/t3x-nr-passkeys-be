@@ -493,6 +493,9 @@ final class PasskeySetupInterstitialTest extends TestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
+        $backendUser->method('getSessionData')
+            ->with('tx_nrpasskeysbe')
+            ->willReturn(null);
         $backendUser->expects(self::once())
             ->method('setAndSaveSessionData')
             ->with('tx_nrpasskeysbe', ['setup_skipped' => true]);
@@ -587,7 +590,8 @@ final class PasskeySetupInterstitialTest extends TestCase
         $this->enforcementService->method('getStatus')->willReturn($status);
 
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')->with('route')->willReturn(null);
+        $request->method('getAttribute')
+            ->willReturnCallback(static fn(string $name): mixed => null);
         $request->method('getHeaderLine')->with('Accept')->willReturn('text/html');
         $request->method('getMethod')->willReturn('GET');
         $request->method('getParsedBody')->willReturn(null);
@@ -652,7 +656,14 @@ final class PasskeySetupInterstitialTest extends TestCase
             });
 
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')->with('route')->willReturn($route);
+        $request->method('getAttribute')
+            ->willReturnCallback(static function (string $name) use ($route): mixed {
+                if ($name === 'route') {
+                    return $route;
+                }
+
+                return null;
+            });
         $request->method('getHeaderLine')->with('Accept')->willReturn($acceptHeader);
         $request->method('getMethod')->willReturn($method);
         $request->method('getParsedBody')->willReturn($parsedBody);

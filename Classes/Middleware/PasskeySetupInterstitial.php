@@ -45,6 +45,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
         'login',
         'password_reset',
         'mfa',
+        'install',
     ];
 
     public function __construct(
@@ -70,13 +71,23 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             return $handler->handle($request);
         }
 
+        // Read session data once for both passkey-auth and skip checks
+        $sessionData = $backendUser->getSessionData(self::SESSION_KEY);
+        $sessionArray = \is_array($sessionData) ? $sessionData : [];
+
+        // Users who authenticated via passkey should never see the interstitial
+        if (($sessionArray['passkey_authenticated'] ?? false) === true) {
+            return $handler->handle($request);
+        }
+
         // Handle skip POST before any other checks
         if ($request->getMethod() === 'POST') {
             $parsedBody = $request->getParsedBody();
             if (\is_array($parsedBody) && ($parsedBody['passkey_setup_skip'] ?? '') === '1') {
-                $backendUser->setAndSaveSessionData(self::SESSION_KEY, ['setup_skipped' => true]);
+                $sessionArray['setup_skipped'] = true;
+                $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
 
-                return new RedirectResponse('/typo3/', 303);
+                return new RedirectResponse($this->resolveBackendPath($request), 303);
             }
         }
 
@@ -98,15 +109,13 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
         }
 
         // Check session skip flag
-        $sessionData = $backendUser->getSessionData(self::SESSION_KEY);
-        if (\is_array($sessionData)
-            && ($sessionData['setup_skipped'] ?? false) === true
-            && $status->canSkip()
-        ) {
+        if (($sessionArray['setup_skipped'] ?? false) === true && $status->canSkip()) {
             return $handler->handle($request);
         }
 
-        return $this->renderInterstitial($status);
+        $backendPath = $this->resolveBackendPath($request);
+
+        return $this->renderInterstitial($status, $backendPath);
     }
 
     /**
@@ -145,7 +154,25 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
      *
      * Uses inline PHP-rendered HTML for cross-version compatibility (v12/v13/v14).
      */
-    private function renderInterstitial(EnforcementStatus $status): HtmlResponse
+    /**
+     * Determine the backend base path from the normalized request parameters.
+     *
+     * Falls back to '/typo3/' when normalized params are unavailable.
+     */
+    private function resolveBackendPath(ServerRequestInterface $request): string
+    {
+        $normalizedParams = $request->getAttribute('normalizedParams');
+        if (\is_object($normalizedParams) && \method_exists($normalizedParams, 'getSitePath')) {
+            $sitePath = $normalizedParams->getSitePath();
+            if (\is_string($sitePath) && $sitePath !== '') {
+                return rtrim($sitePath, '/') . '/typo3/';
+            }
+        }
+
+        return '/typo3/';
+    }
+
+    private function renderInterstitial(EnforcementStatus $status, string $backendPath = '/typo3/'): HtmlResponse
     {
         $remainingDays = $status->gracePeriodRemainingDays();
         $canSkip = $status->canSkip();
@@ -254,7 +281,7 @@ HTML;
         </p>
         <div class="grace-period">{$graceMessage}</div>
         <div class="actions">
-            <a href="/typo3/setup/" class="btn-setup">Set up now</a>
+            <a href="{$backendPath}setup/" class="btn-setup">Set up now</a>
             {$skipButton}
         </div>
     </div>

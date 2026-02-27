@@ -84,6 +84,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $this->subject = new PasskeyAuthenticationService();
         // Inject logger via the LoggerAwareTrait property inherited from AbstractAuthenticationService
         $this->injectLogger($this->subject, $this->logger);
+
+        // Set pObj (parent auth object) for session data access in passkey auth success path
+        $pObj = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $this->subject->pObj = $pObj;
     }
 
     protected function tearDown(): void
@@ -1018,6 +1022,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             'uident' => self::buildPasskeyUident(['cached' => 'test'], 'cached-token'),
         ];
         $this->injectLogger($service, $this->logger);
+        $service->pObj = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
 
         GeneralUtility::addInstance(ExtensionConfigurationService::class, $this->configService);
         GeneralUtility::addInstance(WebAuthnService::class, $this->webAuthnService);
