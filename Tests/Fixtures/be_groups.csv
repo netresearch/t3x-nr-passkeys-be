@@ -1,0 +1,5 @@
+be_groups
+,uid,pid,title,passkey_enforcement,passkey_grace_period_days,deleted,hidden
+,1,0,"Editors","required",14,0,0
+,2,0,"Content Managers","encourage",14,0,0
+,3,0,"No Enforcement","off",14,0,0

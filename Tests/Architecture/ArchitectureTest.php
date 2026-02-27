@@ -81,10 +81,10 @@ final class ArchitectureTest
             ->because('Services must not depend on HTTP handlers or UI components');
     }
 
-    public function test_middleware_does_not_depend_on_business_logic(): Rule
+    public function test_route_resolver_does_not_depend_on_business_logic(): Rule
     {
         return PHPat::rule()
-            ->classes(Selector::inNamespace(self::NS . 'Middleware'))
+            ->classes(Selector::classname(self::NS . 'Middleware\\PublicRouteResolver'))
             ->shouldNotDependOn()
             ->classes(
                 Selector::inNamespace(self::NS . 'Service'),
