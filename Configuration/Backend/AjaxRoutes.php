@@ -95,4 +95,26 @@ return [
         'target' => ManagementController::class . '::enforcementStatusAction',
         'methods' => ['GET'],
     ],
+
+    // Admin dashboard -- update group enforcement level
+    'passkeys_admin_update_enforcement' => [
+        'path' => '/passkeys/admin/update-enforcement',
+        'target' => AdminController::class . '::updateEnforcementAction',
+        'methods' => ['POST'],
+        'sudoMode' => [
+            'group' => 'passkey_admin',
+            'lifetime' => AccessLifetime::medium,
+        ],
+    ],
+
+    // Admin dashboard -- send passkey setup reminder to user
+    'passkeys_admin_send_reminder' => [
+        'path' => '/passkeys/admin/send-reminder',
+        'target' => AdminController::class . '::sendReminderAction',
+        'methods' => ['POST'],
+        'sudoMode' => [
+            'group' => 'passkey_admin',
+            'lifetime' => AccessLifetime::medium,
+        ],
+    ],
 ];

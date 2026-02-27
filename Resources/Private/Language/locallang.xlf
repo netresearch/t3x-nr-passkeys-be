@@ -170,6 +170,39 @@
             <trans-unit id="login.help.learnMore" resname="login.help.learnMore">
                 <source>Learn more about passkeys</source>
             </trans-unit>
+            <trans-unit id="dashboard.title" resname="dashboard.title">
+                <source>Passkey Adoption Dashboard</source>
+            </trans-unit>
+            <trans-unit id="dashboard.adoption.title" resname="dashboard.adoption.title">
+                <source>Overall Adoption</source>
+            </trans-unit>
+            <trans-unit id="dashboard.totalUsers" resname="dashboard.totalUsers">
+                <source>Total Active Users</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithPasskeys" resname="dashboard.usersWithPasskeys">
+                <source>Users with Passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.adoptionRate" resname="dashboard.adoptionRate">
+                <source>Adoption Rate</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.title" resname="dashboard.groups.title">
+                <source>Group Enforcement</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.title" resname="dashboard.usersWithout.title">
+                <source>Users Without Passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.sendReminder" resname="dashboard.usersWithout.sendReminder">
+                <source>Send Reminder</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.expired" resname="dashboard.usersWithout.expired">
+                <source>Expired</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.notStarted" resname="dashboard.usersWithout.notStarted">
+                <source>Not started</source>
+            </trans-unit>
+            <trans-unit id="dashboard.allAdopted" resname="dashboard.allAdopted">
+                <source>All active users have registered passkeys. No enforcement groups configured.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>
