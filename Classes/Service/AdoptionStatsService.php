@@ -94,7 +94,7 @@ final class AdoptionStatsService
     /**
      * Get enforcement and adoption statistics for all active (non-deleted) groups.
      *
-     * Returns both the group info list and a UID-to-title map for reuse.
+     * Uses batch queries for user counts instead of per-group queries to avoid N+1.
      *
      * @return array{list<GroupEnforcementInfo>, array<int, string>}
      */
@@ -112,8 +112,25 @@ final class AdoptionStatsService
             ->executeQuery()
             ->fetchAllAssociative();
 
-        $result = [];
+        $groupUids = [];
         $titleMap = [];
+
+        foreach ($groups as $group) {
+            $uidValue = $group['uid'] ?? 0;
+            $groupUid = \is_numeric($uidValue) ? (int) $uidValue : 0;
+
+            if ($groupUid > 0) {
+                $groupUids[] = $groupUid;
+                $titleValue = $group['title'] ?? '';
+                $titleMap[$groupUid] = \is_string($titleValue) ? $titleValue : '';
+            }
+        }
+
+        // Batch-fetch user counts per group (avoids N+1 queries)
+        $totalCountMap = $this->countUsersPerGroup($groupUids);
+        $passkeyCountMap = $this->countUsersWithPasskeysPerGroup($groupUids);
+
+        $result = [];
 
         foreach ($groups as $group) {
             $uidValue = $group['uid'] ?? 0;
@@ -122,26 +139,19 @@ final class AdoptionStatsService
             $titleValue = $group['title'] ?? '';
             $title = \is_string($titleValue) ? $titleValue : '';
 
-            if ($groupUid > 0) {
-                $titleMap[$groupUid] = $title;
-            }
-
             $enforcementValue = $group['passkey_enforcement'] ?? 'off';
             $enforcement = \is_string($enforcementValue) ? $enforcementValue : 'off';
 
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
             $gracePeriodDays = \is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
 
-            $totalUsersInGroup = $this->countUsersInGroup($groupUid);
-            $usersWithPasskeysInGroup = $this->countUsersWithPasskeysInGroup($groupUid);
-
             $result[] = new GroupEnforcementInfo(
                 uid: $groupUid,
                 title: $title,
                 enforcement: $enforcement,
                 gracePeriodDays: $gracePeriodDays,
-                totalUsers: $totalUsersInGroup,
-                usersWithPasskeys: $usersWithPasskeysInGroup,
+                totalUsers: $totalCountMap[$groupUid] ?? 0,
+                usersWithPasskeys: $passkeyCountMap[$groupUid] ?? 0,
             );
         }
 
@@ -149,39 +159,55 @@ final class AdoptionStatsService
     }
 
     /**
-     * Count active users in a specific group using FIND_IN_SET for TYPO3's comma-separated usergroup field.
+     * Batch-count active users per group.
+     *
+     * Fetches all active users with their comma-separated usergroup field
+     * and counts membership in PHP, reducing the query count to O(1).
+     *
+     * @param list<int> $groupUids
+     *
+     * @return array<int, int> Map of group UID to total user count
      */
-    private function countUsersInGroup(int $groupUid): int
+    private function countUsersPerGroup(array $groupUids): array
     {
+        if ($groupUids === []) {
+            return [];
+        }
+
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
         $queryBuilder->getRestrictions()->removeAll();
 
-        $result = $queryBuilder
-            ->count('uid')
+        $rows = $queryBuilder
+            ->select('usergroup')
             ->from(self::TABLE_USERS)
             ->where(
                 $queryBuilder->expr()->eq('deleted', 0),
                 $queryBuilder->expr()->eq('disable', 0),
-                'FIND_IN_SET('
-                    . $queryBuilder->createNamedParameter($groupUid, \Doctrine\DBAL\ParameterType::INTEGER)
-                    . ', ' . $queryBuilder->quoteIdentifier('usergroup') . ')',
             )
             ->executeQuery()
-            ->fetchOne();
+            ->fetchAllAssociative();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return $this->countGroupMembership($rows, $groupUids);
     }
 
     /**
-     * Count users with active passkeys in a specific group.
+     * Batch-count users with active passkeys per group.
+     *
+     * @param list<int> $groupUids
+     *
+     * @return array<int, int> Map of group UID to passkey-user count
      */
-    private function countUsersWithPasskeysInGroup(int $groupUid): int
+    private function countUsersWithPasskeysPerGroup(array $groupUids): array
     {
+        if ($groupUids === []) {
+            return [];
+        }
+
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
         $queryBuilder->getRestrictions()->removeAll();
 
-        $result = $queryBuilder
-            ->addSelectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid') . ') AS cnt')
+        $rows = $queryBuilder
+            ->select(self::TABLE_USERS . '.usergroup')
             ->from(self::TABLE_USERS)
             ->join(
                 self::TABLE_USERS,
@@ -197,18 +223,51 @@ final class AdoptionStatsService
                 $queryBuilder->expr()->eq(self::TABLE_USERS . '.disable', 0),
                 $queryBuilder->expr()->eq('c.deleted', 0),
                 $queryBuilder->expr()->eq('c.revoked_at', 0),
-                'FIND_IN_SET('
-                    . $queryBuilder->createNamedParameter($groupUid, \Doctrine\DBAL\ParameterType::INTEGER)
-                    . ', ' . $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.usergroup') . ')',
             )
+            ->groupBy(self::TABLE_USERS . '.uid')
             ->executeQuery()
-            ->fetchOne();
+            ->fetchAllAssociative();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return $this->countGroupMembership($rows, $groupUids);
+    }
+
+    /**
+     * Count how many rows belong to each group by parsing TYPO3's comma-separated usergroup field.
+     *
+     * @param list<array<string, mixed>> $rows      Rows containing a 'usergroup' column
+     * @param list<int>                  $groupUids Group UIDs to count for
+     *
+     * @return array<int, int>
+     */
+    private function countGroupMembership(array $rows, array $groupUids): array
+    {
+        $groupSet = \array_flip($groupUids);
+        $counts = \array_fill_keys($groupUids, 0);
+
+        foreach ($rows as $row) {
+            $usergroupValue = $row['usergroup'] ?? '';
+            $usergroup = \is_string($usergroupValue) ? $usergroupValue : '';
+
+            if ($usergroup === '') {
+                continue;
+            }
+
+            foreach (\explode(',', $usergroup) as $gid) {
+                $intGid = \is_numeric($gid) ? (int) $gid : 0;
+
+                if ($intGid > 0 && isset($groupSet[$intGid])) {
+                    $counts[$intGid]++;
+                }
+            }
+        }
+
+        return $counts;
     }
 
     /**
      * Get users who have no active credentials, with their grace period status.
+     *
+     * Uses LEFT JOIN instead of NOT IN subquery for better MySQL performance.
      *
      * @param array<int, string> $groupTitleMap UID-to-title map from getGroupStats()
      *
@@ -219,26 +278,32 @@ final class AdoptionStatsService
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
         $queryBuilder->getRestrictions()->removeAll();
 
-        $subQueryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_CREDENTIALS);
-        $subQueryBuilder->getRestrictions()->removeAll();
-
-        $subQuery = $subQueryBuilder
-            ->select('be_user')
-            ->from(self::TABLE_CREDENTIALS)
-            ->where(
-                $subQueryBuilder->expr()->eq('deleted', 0),
-                $subQueryBuilder->expr()->eq('revoked_at', 0),
-            )
-            ->groupBy('be_user')
-            ->getSQL();
-
         $rows = $queryBuilder
-            ->select('uid', 'username', 'realName', 'usergroup', 'passkey_grace_period_start')
+            ->select(
+                self::TABLE_USERS . '.uid',
+                self::TABLE_USERS . '.username',
+                self::TABLE_USERS . '.realName',
+                self::TABLE_USERS . '.usergroup',
+                self::TABLE_USERS . '.passkey_grace_period_start',
+            )
             ->from(self::TABLE_USERS)
+            ->leftJoin(
+                self::TABLE_USERS,
+                self::TABLE_CREDENTIALS,
+                'c',
+                (string) $queryBuilder->expr()->and(
+                    $queryBuilder->expr()->eq(
+                        'c.be_user',
+                        $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid'),
+                    ),
+                    $queryBuilder->expr()->eq('c.deleted', 0),
+                    $queryBuilder->expr()->eq('c.revoked_at', 0),
+                ),
+            )
             ->where(
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
-                $queryBuilder->quoteIdentifier('uid') . ' NOT IN (' . $subQuery . ')',
+                $queryBuilder->expr()->eq(self::TABLE_USERS . '.deleted', 0),
+                $queryBuilder->expr()->eq(self::TABLE_USERS . '.disable', 0),
+                $queryBuilder->expr()->isNull('c.uid'),
             )
             ->setMaxResults(500)
             ->executeQuery()

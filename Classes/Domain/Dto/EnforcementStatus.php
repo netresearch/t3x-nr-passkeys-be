@@ -44,11 +44,11 @@ final readonly class EnforcementStatus
             return $this->gracePeriodDays;
         }
 
-        $elapsedSeconds = time() - $this->gracePeriodStart;
-        $elapsedDays = (int) floor($elapsedSeconds / 86_400);
+        $elapsedSeconds = \time() - $this->gracePeriodStart;
+        $elapsedDays = (int) \floor($elapsedSeconds / 86_400);
         $remaining = $this->gracePeriodDays - $elapsedDays;
 
-        return max(0, $remaining);
+        return \max(0, $remaining);
     }
 
     /**

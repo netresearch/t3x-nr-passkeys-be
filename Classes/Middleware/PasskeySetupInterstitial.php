@@ -177,7 +177,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
         if (\is_object($normalizedParams) && \method_exists($normalizedParams, 'getSitePath')) {
             $sitePath = $normalizedParams->getSitePath();
             if (\is_string($sitePath) && $sitePath !== '') {
-                return rtrim($sitePath, '/') . '/typo3/';
+                return \rtrim($sitePath, '/') . '/typo3/';
             }
         }
 

@@ -39,6 +39,6 @@ final readonly class AdoptionStats
             return 0.0;
         }
 
-        return round(($this->usersWithPasskeys / $this->totalUsers) * 100, 1);
+        return \round(($this->usersWithPasskeys / $this->totalUsers) * 100, 1);
     }
 }

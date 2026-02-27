@@ -52,7 +52,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function gracePeriodRemainingDaysCalculatesDaysLeft(): void
     {
-        $now = time();
+        $now = \time();
         $fiveDaysAgo = $now - (5 * 86_400);
 
         $status = new EnforcementStatus(
@@ -68,7 +68,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function gracePeriodRemainingDaysReturnsZeroWhenExpired(): void
     {
-        $now = time();
+        $now = \time();
         $twentyDaysAgo = $now - (20 * 86_400);
 
         $status = new EnforcementStatus(
@@ -84,7 +84,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function gracePeriodRemainingDaysReturnsZeroWhenExactlyExpired(): void
     {
-        $now = time();
+        $now = \time();
         $fourteenDaysAgo = $now - (14 * 86_400);
 
         $status = new EnforcementStatus(
@@ -128,7 +128,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredReturnsTrueWhenFullyExpired(): void
     {
-        $now = time();
+        $now = \time();
         $twentyDaysAgo = $now - (20 * 86_400);
 
         $status = new EnforcementStatus(
@@ -144,7 +144,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredReturnsTrueWhenExactlyExpired(): void
     {
-        $now = time();
+        $now = \time();
         $fourteenDaysAgo = $now - (14 * 86_400);
 
         $status = new EnforcementStatus(
@@ -160,7 +160,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredReturnsFalseWhenStillActive(): void
     {
-        $now = time();
+        $now = \time();
         $fiveDaysAgo = $now - (5 * 86_400);
 
         $status = new EnforcementStatus(
@@ -258,7 +258,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function canSkipReturnsFalseForRequiredWithExpiredGracePeriod(): void
     {
-        $now = time();
+        $now = \time();
         $twentyDaysAgo = $now - (20 * 86_400);
 
         $status = new EnforcementStatus(
@@ -274,7 +274,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function canSkipReturnsTrueForRequiredWithActiveGracePeriod(): void
     {
-        $now = time();
+        $now = \time();
         $fiveDaysAgo = $now - (5 * 86_400);
 
         $status = new EnforcementStatus(

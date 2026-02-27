@@ -27,8 +27,11 @@ ExtensionManagementUtility::addFieldsToUserSettings(
     'after:mfaProviders',
 );
 
-// Register CSH (Context-Sensitive Help) for the passkeys field in be_users records
-ExtensionManagementUtility::addLLrefForTCAdescr(
-    'be_users',
-    'EXT:nr_passkeys_be/Resources/Private/Language/locallang_csh_be_users.xlf',
-);
+// Register CSH (Context-Sensitive Help) for the passkeys field in be_users records.
+// addLLrefForTCAdescr() was removed in TYPO3 v13 — only call it on v12.
+if (\method_exists(ExtensionManagementUtility::class, 'addLLrefForTCAdescr')) {
+    ExtensionManagementUtility::addLLrefForTCAdescr(
+        'be_users',
+        'EXT:nr_passkeys_be/Resources/Private/Language/locallang_csh_be_users.xlf',
+    );
+}

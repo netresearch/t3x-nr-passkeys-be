@@ -307,7 +307,7 @@ final class AdminController
         }
 
         // Set passkey_nudge_until to a future timestamp so the banner picks up the nudge
-        $nudgeUntil = time() + (self::NUDGE_DURATION_DAYS * 86_400);
+        $nudgeUntil = \time() + (self::NUDGE_DURATION_DAYS * 86_400);
 
         $connection = $this->connectionPool->getConnectionForTable('be_users');
         $connection->update(

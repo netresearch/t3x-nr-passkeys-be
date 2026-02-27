@@ -51,7 +51,7 @@ final class AdoptionStatsServiceTest extends TestCase
     {
         // Total users: 10 active
         // Users with passkeys: 6
-        // Groups: 1 group with enforcement
+        // Groups: 1 group (uid=1) with 8 total users, 5 with passkeys
         // Users without passkeys: 1 user
 
         $callIndex = 0;
@@ -61,24 +61,26 @@ final class AdoptionStatsServiceTest extends TestCase
                 $callIndex++;
 
                 return match (true) {
-                    // 1st call: countTotalActiveUsers (be_users)
+                    // 1st: countTotalActiveUsers (be_users)
                     $callIndex === 1 => $this->createCountQueryBuilder(10),
-                    // 2nd call: countUsersWithPasskeys (tx_nrpasskeysbe_credential)
+                    // 2nd: countUsersWithPasskeys (tx_nrpasskeysbe_credential)
                     $callIndex === 2 => $this->createSelectLiteralQueryBuilder(6),
-                    // 3rd call: getGroupStats - fetch groups (be_groups)
-                    $callIndex === 3 => $this->createGroupFetchQueryBuilder([
+                    // 3rd: getGroupStats — fetch groups (be_groups)
+                    $callIndex === 3 => $this->createFetchAllQueryBuilder([
                         ['uid' => 1, 'title' => 'Editors', 'passkey_enforcement' => 'required', 'passkey_grace_period_days' => 14],
                     ]),
-                    // 4th call: countUsersInGroup (be_users)
-                    $callIndex === 4 => $this->createCountQueryBuilder(8),
-                    // 5th call: countUsersWithPasskeysInGroup (be_users JOIN credential)
-                    $callIndex === 5 => $this->createSelectLiteralQueryBuilder(5),
-                    // 6th call: getUsersWithoutPasskeys (be_users)
-                    $callIndex === 6 => $this->createFetchQueryBuilder([
+                    // 4th: countUsersPerGroup — batch fetch usergroup (be_users)
+                    $callIndex === 4 => $this->createFetchAllQueryBuilder(
+                        \array_fill(0, 8, ['usergroup' => '1']),
+                    ),
+                    // 5th: countUsersWithPasskeysPerGroup — batch fetch with JOIN (be_users)
+                    $callIndex === 5 => $this->createFetchAllQueryBuilder(
+                        \array_fill(0, 5, ['usergroup' => '1']),
+                    ),
+                    // 6th: getUsersWithoutPasskeys — LEFT JOIN (be_users)
+                    $callIndex === 6 => $this->createFetchAllQueryBuilder([
                         ['uid' => 42, 'username' => 'jdoe', 'realName' => 'John Doe', 'usergroup' => '1', 'passkey_grace_period_start' => 1_700_000_000],
                     ]),
-                    // 7th call: getUsersWithoutPasskeys subquery (tx_nrpasskeysbe_credential)
-                    $callIndex === 7 => $this->createSubQueryBuilder(),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -119,12 +121,10 @@ final class AdoptionStatsServiceTest extends TestCase
                     $callIndex === 1 => $this->createCountQueryBuilder(0),
                     // countUsersWithPasskeys
                     $callIndex === 2 => $this->createSelectLiteralQueryBuilder(0),
-                    // getGroupStats - no groups
-                    $callIndex === 3 => $this->createGroupFetchQueryBuilder([]),
-                    // getUsersWithoutPasskeys - no users
-                    $callIndex === 4 => $this->createFetchQueryBuilder([]),
-                    // subquery builder
-                    $callIndex === 5 => $this->createSubQueryBuilder(),
+                    // getGroupStats — no groups (batch counts skipped due to empty groupUids)
+                    $callIndex === 3 => $this->createFetchAllQueryBuilder([]),
+                    // getUsersWithoutPasskeys — no users
+                    $callIndex === 4 => $this->createFetchAllQueryBuilder([]),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -152,22 +152,23 @@ final class AdoptionStatsServiceTest extends TestCase
                     $callIndex === 1 => $this->createCountQueryBuilder(20),
                     // countUsersWithPasskeys
                     $callIndex === 2 => $this->createSelectLiteralQueryBuilder(12),
-                    // getGroupStats - 2 groups
-                    $callIndex === 3 => $this->createGroupFetchQueryBuilder([
+                    // getGroupStats — 2 groups
+                    $callIndex === 3 => $this->createFetchAllQueryBuilder([
                         ['uid' => 1, 'title' => 'Editors', 'passkey_enforcement' => 'required', 'passkey_grace_period_days' => 14],
                         ['uid' => 2, 'title' => 'Admins', 'passkey_enforcement' => 'enforced', 'passkey_grace_period_days' => 0],
                     ]),
-                    // countUsersInGroup for group 1
-                    $callIndex === 4 => $this->createCountQueryBuilder(15),
-                    // countUsersWithPasskeysInGroup for group 1
-                    $callIndex === 5 => $this->createSelectLiteralQueryBuilder(9),
-                    // countUsersInGroup for group 2
-                    $callIndex === 6 => $this->createCountQueryBuilder(5),
-                    // countUsersWithPasskeysInGroup for group 2
-                    $callIndex === 7 => $this->createSelectLiteralQueryBuilder(5),
+                    // countUsersPerGroup: 10 in group 1 only + 5 in both groups = 15 in g1, 5 in g2
+                    $callIndex === 4 => $this->createFetchAllQueryBuilder([
+                        ...\array_fill(0, 10, ['usergroup' => '1']),
+                        ...\array_fill(0, 5, ['usergroup' => '1,2']),
+                    ]),
+                    // countUsersWithPasskeysPerGroup: 4 in group 1 only + 5 in both = 9 in g1, 5 in g2
+                    $callIndex === 5 => $this->createFetchAllQueryBuilder([
+                        ...\array_fill(0, 4, ['usergroup' => '1']),
+                        ...\array_fill(0, 5, ['usergroup' => '1,2']),
+                    ]),
                     // getUsersWithoutPasskeys
-                    $callIndex === 8 => $this->createFetchQueryBuilder([]),
-                    $callIndex === 9 => $this->createSubQueryBuilder(),
+                    $callIndex === 6 => $this->createFetchAllQueryBuilder([]),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -207,21 +208,24 @@ final class AdoptionStatsServiceTest extends TestCase
                 return match (true) {
                     $callIndex === 1 => $this->createCountQueryBuilder(5),
                     $callIndex === 2 => $this->createSelectLiteralQueryBuilder(3),
-                    // getGroupStats - returns groups for title map
-                    $callIndex === 3 => $this->createGroupFetchQueryBuilder([
+                    // getGroupStats — returns groups for title map
+                    $callIndex === 3 => $this->createFetchAllQueryBuilder([
                         ['uid' => 1, 'title' => 'Editors', 'passkey_enforcement' => 'off', 'passkey_grace_period_days' => 0],
                         ['uid' => 2, 'title' => 'Admins', 'passkey_enforcement' => 'off', 'passkey_grace_period_days' => 0],
                         ['uid' => 3, 'title' => 'Authors', 'passkey_enforcement' => 'off', 'passkey_grace_period_days' => 0],
                     ]),
-                    // countUsersInGroup / countUsersWithPasskeysInGroup for each group
-                    $callIndex === 4, $callIndex === 6, $callIndex === 8 => $this->createCountQueryBuilder(0),
-                    $callIndex === 5, $callIndex === 7, $callIndex === 9 => $this->createSelectLiteralQueryBuilder(0),
+                    // countUsersPerGroup — some users in groups
+                    $callIndex === 4 => $this->createFetchAllQueryBuilder([
+                        ['usergroup' => '1,2'],
+                        ['usergroup' => '3'],
+                    ]),
+                    // countUsersWithPasskeysPerGroup — none
+                    $callIndex === 5 => $this->createFetchAllQueryBuilder([]),
                     // getUsersWithoutPasskeys
-                    $callIndex === 10 => $this->createFetchQueryBuilder([
+                    $callIndex === 6 => $this->createFetchAllQueryBuilder([
                         ['uid' => 10, 'username' => 'alice', 'realName' => 'Alice Smith', 'usergroup' => '1,2', 'passkey_grace_period_start' => 1_700_000_000],
                         ['uid' => 20, 'username' => 'bob', 'realName' => 'Bob Jones', 'usergroup' => '3', 'passkey_grace_period_start' => 0],
                     ]),
-                    $callIndex === 11 => $this->createSubQueryBuilder(),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -268,27 +272,11 @@ final class AdoptionStatsServiceTest extends TestCase
      */
     private function createCountQueryBuilder(int $count): QueryBuilder&MockObject
     {
-        $restrictions = $this->createMock(QueryRestrictionContainerInterface::class);
-        $restrictions->method('removeAll')->willReturnSelf();
-
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-        $expressionBuilder->method('neq')->willReturn('1=1');
+        $queryBuilder = $this->createBaseQueryBuilder();
+        $queryBuilder->method('count')->willReturnSelf();
 
         $result = $this->createMock(Result::class);
         $result->method('fetchOne')->willReturn($count);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
-        $queryBuilder->method('count')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('join')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn("'mocked'");
-        $queryBuilder->method('quoteIdentifier')->willReturnCallback(
-            static fn(string $identifier): string => '`' . $identifier . '`',
-        );
         $queryBuilder->method('executeQuery')->willReturn($result);
 
         return $queryBuilder;
@@ -299,37 +287,43 @@ final class AdoptionStatsServiceTest extends TestCase
      */
     private function createSelectLiteralQueryBuilder(int $count): QueryBuilder&MockObject
     {
-        $restrictions = $this->createMock(QueryRestrictionContainerInterface::class);
-        $restrictions->method('removeAll')->willReturnSelf();
-
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
+        $queryBuilder = $this->createBaseQueryBuilder();
+        $queryBuilder->method('addSelectLiteral')->willReturnSelf();
 
         $result = $this->createMock(Result::class);
         $result->method('fetchOne')->willReturn($count);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
-        $queryBuilder->method('addSelectLiteral')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('join')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn("'mocked'");
-        $queryBuilder->method('quoteIdentifier')->willReturnCallback(
-            static fn(string $identifier): string => '`' . $identifier . '`',
-        );
         $queryBuilder->method('executeQuery')->willReturn($result);
 
         return $queryBuilder;
     }
 
     /**
-     * Create a QueryBuilder mock for fetching group rows.
+     * Create a QueryBuilder mock that returns rows via fetchAllAssociative.
+     *
+     * Supports all query patterns: simple select, JOIN, LEFT JOIN, GROUP BY.
      *
      * @param list<array<string, mixed>> $rows
      */
-    private function createGroupFetchQueryBuilder(array $rows): QueryBuilder&MockObject
+    private function createFetchAllQueryBuilder(array $rows): QueryBuilder&MockObject
+    {
+        $queryBuilder = $this->createBaseQueryBuilder();
+        $queryBuilder->method('select')->willReturnSelf();
+        $queryBuilder->method('join')->willReturnSelf();
+        $queryBuilder->method('leftJoin')->willReturnSelf();
+        $queryBuilder->method('groupBy')->willReturnSelf();
+        $queryBuilder->method('setMaxResults')->willReturnSelf();
+
+        $result = $this->createMock(Result::class);
+        $result->method('fetchAllAssociative')->willReturn($rows);
+        $queryBuilder->method('executeQuery')->willReturn($result);
+
+        return $queryBuilder;
+    }
+
+    /**
+     * Create a base QueryBuilder mock with common methods.
+     */
+    private function createBaseQueryBuilder(): QueryBuilder&MockObject
     {
         $restrictions = $this->createMock(QueryRestrictionContainerInterface::class);
         $restrictions->method('removeAll')->willReturnSelf();
@@ -337,73 +331,17 @@ final class AdoptionStatsServiceTest extends TestCase
         $expressionBuilder = $this->createMock(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('1=1');
         $expressionBuilder->method('neq')->willReturn('1=1');
-
-        $result = $this->createMock(Result::class);
-        $result->method('fetchAllAssociative')->willReturn($rows);
+        $expressionBuilder->method('isNull')->willReturn('c.uid IS NULL');
 
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $queryBuilder->method('getRestrictions')->willReturn($restrictions);
-        $queryBuilder->method('select')->willReturnSelf();
         $queryBuilder->method('from')->willReturnSelf();
         $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn("'mocked'");
-        $queryBuilder->method('executeQuery')->willReturn($result);
-
-        return $queryBuilder;
-    }
-
-    /**
-     * Create a QueryBuilder mock for fetching user rows.
-     *
-     * @param list<array<string, mixed>> $rows
-     */
-    private function createFetchQueryBuilder(array $rows): QueryBuilder&MockObject
-    {
-        $restrictions = $this->createMock(QueryRestrictionContainerInterface::class);
-        $restrictions->method('removeAll')->willReturnSelf();
-
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(Result::class);
-        $result->method('fetchAllAssociative')->willReturn($rows);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('setMaxResults')->willReturnSelf();
         $queryBuilder->method('expr')->willReturn($expressionBuilder);
         $queryBuilder->method('createNamedParameter')->willReturn("'mocked'");
         $queryBuilder->method('quoteIdentifier')->willReturnCallback(
             static fn(string $identifier): string => '`' . $identifier . '`',
         );
-        $queryBuilder->method('executeQuery')->willReturn($result);
-
-        return $queryBuilder;
-    }
-
-    /**
-     * Create a QueryBuilder mock for the subquery (credentials NOT IN).
-     */
-    private function createSubQueryBuilder(): QueryBuilder&MockObject
-    {
-        $restrictions = $this->createMock(QueryRestrictionContainerInterface::class);
-        $restrictions->method('removeAll')->willReturnSelf();
-
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('groupBy')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('getSQL')->willReturn('SELECT be_user FROM tx_nrpasskeysbe_credential WHERE deleted = 0 AND revoked_at = 0 GROUP BY be_user');
 
         return $queryBuilder;
     }

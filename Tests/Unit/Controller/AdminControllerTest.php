@@ -906,7 +906,7 @@ final class AdminControllerTest extends TestCase
                 self::callback(static function (array $data): bool {
                     return isset($data['passkey_nudge_until'])
                         && \is_int($data['passkey_nudge_until'])
-                        && $data['passkey_nudge_until'] > time();
+                        && $data['passkey_nudge_until'] > \time();
                 }),
                 ['uid' => 42],
             );
@@ -928,7 +928,7 @@ final class AdminControllerTest extends TestCase
                     && $context['be_user_uid'] === 42
                     && $context['username'] === 'editor'
                     && \is_int($context['nudge_until'])
-                    && $context['nudge_until'] > time();
+                    && $context['nudge_until'] > \time();
             }));
 
         $response = $this->subject->sendReminderAction($request);
@@ -937,7 +937,7 @@ final class AdminControllerTest extends TestCase
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
         self::assertArrayHasKey('nudgeUntil', $body);
-        self::assertGreaterThan(time(), $body['nudgeUntil']);
+        self::assertGreaterThan(\time(), $body['nudgeUntil']);
     }
 
     #[Test]

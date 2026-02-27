@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
 
-use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
@@ -23,6 +22,7 @@ use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+
 #[CoversClass(EnforcementService::class)]
 final class EnforcementServiceTest extends TestCase
 {

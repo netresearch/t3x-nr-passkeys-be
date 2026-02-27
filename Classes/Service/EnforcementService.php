@@ -55,7 +55,7 @@ final class EnforcementService
             );
         }
 
-        $groups = $this->fetchGroups($groupUids);
+        $groups = $this->fetchGroups(\array_values($groupUids));
 
         $effectiveLevel = EnforcementLevel::Off;
         $effectiveGraceDays = 0;
