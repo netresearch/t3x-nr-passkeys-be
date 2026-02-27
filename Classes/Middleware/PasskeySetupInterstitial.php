@@ -179,7 +179,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
         $canSkip = $status->canSkip();
         $escapedBackendPath = \htmlspecialchars($backendPath, ENT_QUOTES, 'UTF-8');
 
-        $graceMessage = $remainingDays > 0
+        $graceMessage = $remainingDays > 0 && $canSkip
             ? 'You have ' . \htmlspecialchars((string) $remainingDays, ENT_QUOTES, 'UTF-8') . ' days remaining to set up your passkey.'
             : 'Passkey setup is now required.';
 
