@@ -920,6 +920,75 @@ final class ManagementControllerTest extends TestCase
     }
 
     #[Test]
+    public function enforcementStatusActionReturnsTrueRequiresBannerWhenActiveNudge(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = [
+            'uid' => 42,
+            'username' => 'editor',
+            'realName' => 'Editor',
+            'passkey_nudge_until' => \time() + 86_400, // nudge active for 1 more day
+        ];
+        $backendUser->method('isAdmin')->willReturn(false);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = $this->createJsonRequest([]);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Off,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+
+        $this->enforcementService
+            ->method('getStatus')
+            ->willReturn($status);
+
+        $response = $this->subject->enforcementStatusAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('off', $body['level']);
+        // Even though enforcement is Off, the active nudge should trigger the banner
+        self::assertTrue($body['requiresBanner']);
+    }
+
+    #[Test]
+    public function enforcementStatusActionReturnsFalseRequiresBannerWhenNudgeExpired(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = [
+            'uid' => 42,
+            'username' => 'editor',
+            'realName' => 'Editor',
+            'passkey_nudge_until' => \time() - 86_400, // nudge expired yesterday
+        ];
+        $backendUser->method('isAdmin')->willReturn(false);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = $this->createJsonRequest([]);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Off,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+
+        $this->enforcementService
+            ->method('getStatus')
+            ->willReturn($status);
+
+        $response = $this->subject->enforcementStatusAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        // Nudge expired and enforcement is Off, so no banner
+        self::assertFalse($body['requiresBanner']);
+    }
+
+    #[Test]
     public function enforcementStatusActionNotAuthenticated(): void
     {
         unset($GLOBALS['BE_USER']);

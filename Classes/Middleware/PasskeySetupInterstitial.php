@@ -241,9 +241,22 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
 HTML;
         }
 
+        $htmlLang = 'en';
+        $lang = $GLOBALS['LANG'] ?? null;
+        if ($lang instanceof LanguageService) {
+            $locale = $lang->getLocale();
+            if ($locale !== null) {
+                $langCode = $locale->getLanguageCode();
+                if ($langCode !== '') {
+                    $htmlLang = $langCode;
+                }
+            }
+        }
+        $escapedHtmlLang = \htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8');
+
         $html = <<<HTML
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{$escapedHtmlLang}">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

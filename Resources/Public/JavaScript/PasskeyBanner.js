@@ -47,6 +47,8 @@ class PasskeyBanner {
   showBanner(data) {
     const banner = document.createElement('div');
     banner.className = 'callout callout-info passkey-setup-banner';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
 
     const body = document.createElement('div');
     body.className = 'callout-body';
