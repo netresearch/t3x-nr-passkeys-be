@@ -150,11 +150,6 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
     }
 
     /**
-     * Render the interstitial HTML page prompting passkey setup.
-     *
-     * Uses inline PHP-rendered HTML for cross-version compatibility (v12/v13/v14).
-     */
-    /**
      * Determine the backend base path from the normalized request parameters.
      *
      * Falls back to '/typo3/' when normalized params are unavailable.
@@ -172,6 +167,11 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
         return '/typo3/';
     }
 
+    /**
+     * Render the interstitial HTML page prompting passkey setup.
+     *
+     * Uses inline PHP-rendered HTML for cross-version compatibility (v12/v13/v14).
+     */
     private function renderInterstitial(EnforcementStatus $status, string $backendPath = '/typo3/'): HtmlResponse
     {
         $remainingDays = $status->gracePeriodRemainingDays();

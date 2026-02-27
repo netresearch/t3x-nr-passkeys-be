@@ -605,6 +605,46 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
+    public function passesThroughWhenPasskeyAuthenticated(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
+        $backendUser->method('getSessionData')
+            ->with('tx_nrpasskeysbe')
+            ->willReturn(['passkey_authenticated' => true]);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        // No enforcement mock needed — exits before checking enforcement
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+
+        $handler->expects(self::once())->method('handle')->with($request);
+
+        $this->subject->process($request, $handler);
+    }
+
+    #[Test]
+    public function passesThroughForExemptInstallRoute(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: \time(),
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $request = $this->createMockRequest('install_something');
+        $handler = $this->createMockHandler();
+
+        $handler->expects(self::once())->method('handle')->with($request);
+
+        $this->subject->process($request, $handler);
+    }
+
+    #[Test]
     public function interstitialEscapesXssInOutput(): void
     {
         $this->setUpBackendUser(1);

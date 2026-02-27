@@ -170,7 +170,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
             // Mark session as passkey-authenticated so the interstitial middleware
             // knows to skip — users who logged in via passkey should never see it.
-            $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', ['passkey_authenticated' => true]);
+            $sessionData = $this->pObj->getSessionData('tx_nrpasskeysbe');
+            $merged = \is_array($sessionData) ? $sessionData : [];
+            $merged['passkey_authenticated'] = true;
+            $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', $merged);
 
             // Return 200 = authenticated, stop further auth processing
             return 200;

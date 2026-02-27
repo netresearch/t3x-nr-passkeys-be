@@ -37,6 +37,8 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 {
     private PasskeyAuthenticationService $subject;
 
+    private \TYPO3\CMS\Core\Authentication\BackendUserAuthentication&MockObject $pObj;
+
     private WebAuthnService&MockObject $webAuthnService;
 
     private ExtensionConfigurationService&MockObject $configService;
@@ -86,8 +88,9 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $this->injectLogger($this->subject, $this->logger);
 
         // Set pObj (parent auth object) for session data access in passkey auth success path
-        $pObj = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
-        $this->subject->pObj = $pObj;
+        $this->pObj = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $this->pObj->method('getSessionData')->willReturn(null);
+        $this->subject->pObj = $this->pObj;
     }
 
     protected function tearDown(): void
@@ -145,6 +148,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->expects(self::once())
             ->method('recordSuccess')
             ->with('admin', self::anything());
+
+        $this->pObj
+            ->expects(self::once())
+            ->method('setAndSaveSessionData')
+            ->with('tx_nrpasskeysbe', ['passkey_authenticated' => true]);
 
         $user = ['uid' => 42, 'username' => 'admin'];
 

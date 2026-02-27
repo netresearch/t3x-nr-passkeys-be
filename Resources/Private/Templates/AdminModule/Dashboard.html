@@ -2,31 +2,31 @@
       data-namespace-typo3-fluid="true">
 <f:layout name="Module" />
 <f:section name="Content">
-    <h1>Passkey Adoption Dashboard</h1>
+    <h1><f:translate key="dashboard.title" extensionName="NrPasskeysBe" /></h1>
 
     <div class="dashboard-stats" id="passkey-dashboard">
         <!-- Adoption Progress -->
         <div class="panel panel-default">
             <div class="panel-heading">
-                <h3 class="panel-title">Overall Adoption</h3>
+                <h3 class="panel-title"><f:translate key="dashboard.adoption.title" extensionName="NrPasskeysBe" /></h3>
             </div>
             <div class="panel-body">
                 <div class="row">
                     <div class="col-sm-4">
                         <dl>
-                            <dt>Total Active Users</dt>
+                            <dt><f:translate key="dashboard.totalUsers" extensionName="NrPasskeysBe" /></dt>
                             <dd>{totalUsers}</dd>
                         </dl>
                     </div>
                     <div class="col-sm-4">
                         <dl>
-                            <dt>Users with Passkeys</dt>
+                            <dt><f:translate key="dashboard.usersWithPasskeys" extensionName="NrPasskeysBe" /></dt>
                             <dd>{usersWithPasskeys}</dd>
                         </dl>
                     </div>
                     <div class="col-sm-4">
                         <dl>
-                            <dt>Adoption Rate</dt>
+                            <dt><f:translate key="dashboard.adoptionRate" extensionName="NrPasskeysBe" /></dt>
                             <dd><f:format.number decimals="1">{adoptionPercentage}</f:format.number>%</dd>
                         </dl>
                     </div>
@@ -37,7 +37,7 @@
                          aria-valuenow="{adoptionPercentage}"
                          aria-valuemin="0"
                          aria-valuemax="100"
-                         style="width: {adoptionPercentage}%; min-width: 2em;">
+                         style="width: {adoptionPercentage}%;">
                         <f:format.number decimals="1">{adoptionPercentage}</f:format.number>%
                     </div>
                 </div>
@@ -48,7 +48,7 @@
         <f:if condition="{groups}">
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title">Group Enforcement</h3>
+                    <h3 class="panel-title"><f:translate key="dashboard.groups.title" extensionName="NrPasskeysBe" /></h3>
                 </div>
                 <div class="table-fit">
                     <table class="table table-striped table-hover" id="passkey-groups-table">
@@ -85,7 +85,7 @@
                                         <div class="progress" style="margin: 0; min-width: 60px;">
                                             <div class="progress-bar progress-bar-info"
                                                  role="progressbar"
-                                                 style="width: {group.adoptionPercentage}%; min-width: 2em;">
+                                                 style="width: {group.adoptionPercentage}%;">
                                                 <f:format.number decimals="1">{group.adoptionPercentage}</f:format.number>%
                                             </div>
                                         </div>
@@ -102,7 +102,7 @@
         <f:if condition="{usersWithoutPasskeys}">
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title">Users Without Passkeys</h3>
+                    <h3 class="panel-title"><f:translate key="dashboard.usersWithout.title" extensionName="NrPasskeysBe" /></h3>
                 </div>
                 <div class="table-fit">
                     <table class="table table-striped table-hover" id="passkey-users-table">
@@ -110,7 +110,7 @@
                             <tr>
                                 <th>Username</th>
                                 <th>Name</th>
-                                <th>Groups</th>
+                                <th><f:translate key="dashboard.usersWithout.groups" extensionName="NrPasskeysBe" /></th>
                                 <th>Grace Period Remaining</th>
                                 <th>Actions</th>
                             </tr>
@@ -119,7 +119,7 @@
                             <f:for each="{usersWithoutPasskeys}" as="user">
                                 <tr>
                                     <td>
-                                        <a href="{user.editUrl}" title="Edit user record">
+                                        <a href="{user.editUrl}" title="{f:translate(key: 'dashboard.usersWithout.editUser', extensionName: 'NrPasskeysBe')}">
                                             {user.username}
                                         </a>
                                     </td>
@@ -133,10 +133,10 @@
                                             <f:else>
                                                 <f:if condition="{user.gracePeriodStart} > 0">
                                                     <f:then>
-                                                        <span class="label label-danger">Expired</span>
+                                                        <span class="label label-danger"><f:translate key="dashboard.usersWithout.expired" extensionName="NrPasskeysBe" /></span>
                                                     </f:then>
                                                     <f:else>
-                                                        <span class="label label-default">Not started</span>
+                                                        <span class="label label-default"><f:translate key="dashboard.usersWithout.notStarted" extensionName="NrPasskeysBe" /></span>
                                                     </f:else>
                                                 </f:if>
                                             </f:else>
@@ -147,13 +147,13 @@
                                                 class="btn btn-sm btn-default passkey-send-reminder"
                                                 data-user-uid="{user.uid}"
                                                 data-username="{user.username}">
-                                            Send Reminder
+                                            <f:translate key="dashboard.usersWithout.sendReminder" extensionName="NrPasskeysBe" />
                                         </button>
                                         <button type="button"
                                                 class="btn btn-sm btn-warning passkey-unlock-user"
                                                 data-user-uid="{user.uid}"
                                                 data-username="{user.username}">
-                                            Unlock
+                                            <f:translate key="dashboard.usersWithout.unlock" extensionName="NrPasskeysBe" />
                                         </button>
                                     </td>
                                 </tr>
@@ -167,7 +167,7 @@
         <f:if condition="!{groups} && !{usersWithoutPasskeys}">
             <div class="callout callout-success">
                 <div class="callout-body">
-                    All active users have registered passkeys. No enforcement groups configured.
+                    <f:translate key="dashboard.allAdopted" extensionName="NrPasskeysBe" />
                 </div>
             </div>
         </f:if>

@@ -151,7 +151,8 @@ The dashboard tab shows:
   directly from the dropdown in the table.
 - **Users without passkeys** -- A list of users who have not yet registered a
   passkey, showing their username, real name, grace period start date, and
-  remaining days. A :guilabel:`Send reminder` action is available per user.
+  remaining days. :guilabel:`Send reminder` and :guilabel:`Unlock` actions are
+  available per user.
 
 Help tab
 --------
@@ -178,6 +179,7 @@ Use the dashboard's adoption statistics to track rollout progress:
 3. Review the per-group table to identify groups with low adoption.
 4. Use the :guilabel:`Send reminder` action for individual users who have not
    yet registered.
+5. Use the :guilabel:`Unlock` action to reset rate-limiting for locked-out users.
 
 ..  tip::
 
