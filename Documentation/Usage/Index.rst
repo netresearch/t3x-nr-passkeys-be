@@ -112,3 +112,38 @@ still log in with their regular TYPO3 password.
 
 This fallback can be disabled with the
 :confval:`disablePasswordLogin` setting.
+
+When passkey setup is required
+==============================
+
+Your administrator may configure passkey enforcement for your user group.
+When this happens, you will see an interstitial page after logging in that
+prompts you to register a passkey.
+
+The interstitial page explains the benefits of passkeys and offers two options:
+
+- :guilabel:`Set up now` -- Takes you directly to
+  :guilabel:`User Settings > Passkeys` where you can register a passkey
+  (see :ref:`usage` above).
+- :guilabel:`Skip for now` -- Dismisses the prompt for the current session.
+  This option is only available during the grace period.
+
+..  note::
+
+    The grace period is a window (e.g. 14 days) set by your administrator.
+    During this time, you can skip the setup prompt and continue working.
+    A countdown shows how many days remain: *"You have N days remaining to
+    set up your passkey."*
+
+Once the grace period expires, the :guilabel:`Skip for now` option disappears
+and you must register a passkey before you can access the TYPO3 backend.
+
+..  tip::
+
+    Register your passkey early, even during the grace period. Passkeys
+    provide stronger security than passwords and make logging in faster --
+    a single touch or glance replaces typing a password.
+
+If your group's enforcement level is set to **Enforced**, there is no grace
+period at all. The setup prompt appears immediately after login and cannot be
+skipped.
