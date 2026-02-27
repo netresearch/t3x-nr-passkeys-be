@@ -43,6 +43,9 @@ services:
   Netresearch\NrPasskeysBe\Service\CredentialRepository:
     public: true
 
+  Netresearch\NrPasskeysBe\Service\EnforcementService:
+    public: true
+
   Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService:
     public: true
 
