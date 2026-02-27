@@ -110,6 +110,7 @@
                             <tr>
                                 <th>Username</th>
                                 <th>Name</th>
+                                <th>Groups</th>
                                 <th>Grace Period Remaining</th>
                                 <th>Actions</th>
                             </tr>
@@ -117,8 +118,13 @@
                         <tbody>
                             <f:for each="{usersWithoutPasskeys}" as="user">
                                 <tr>
-                                    <td>{user.username}</td>
+                                    <td>
+                                        <a href="{user.editUrl}" title="Edit user record">
+                                            {user.username}
+                                        </a>
+                                    </td>
                                     <td>{user.realName}</td>
+                                    <td>{user.groups}</td>
                                     <td>
                                         <f:if condition="{user.gracePeriodRemainingDays} > 0">
                                             <f:then>
@@ -142,6 +148,12 @@
                                                 data-user-uid="{user.uid}"
                                                 data-username="{user.username}">
                                             Send Reminder
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-sm btn-warning passkey-unlock-user"
+                                                data-user-uid="{user.uid}"
+                                                data-username="{user.username}">
+                                            Unlock
                                         </button>
                                     </td>
                                 </tr>

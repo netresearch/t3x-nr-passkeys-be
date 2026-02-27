@@ -7,6 +7,7 @@ declare(strict_types=1);
 $tempColumns = [
     'passkeys' => [
         'label' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.label',
+        'description' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.description',
         'config' => [
             'type' => 'none',
             'renderType' => 'passkeyInfo',

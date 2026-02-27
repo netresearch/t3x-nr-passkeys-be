@@ -92,7 +92,7 @@ final class AdoptionStatsService
     }
 
     /**
-     * Get enforcement and adoption statistics for each active group with enforcement != 'off'.
+     * Get enforcement and adoption statistics for all active (non-deleted) groups.
      *
      * @return list<GroupEnforcementInfo>
      */
@@ -106,10 +106,6 @@ final class AdoptionStatsService
             ->from(self::TABLE_GROUPS)
             ->where(
                 $groupQueryBuilder->expr()->eq('deleted', 0),
-                $groupQueryBuilder->expr()->neq(
-                    'passkey_enforcement',
-                    $groupQueryBuilder->createNamedParameter('off'),
-                ),
             )
             ->executeQuery()
             ->fetchAllAssociative();
@@ -238,6 +234,7 @@ final class AdoptionStatsService
             ->executeQuery()
             ->fetchAllAssociative();
 
+        $groupTitleMap = $this->buildGroupTitleMap();
         $result = [];
 
         foreach ($rows as $row) {
@@ -263,17 +260,79 @@ final class AdoptionStatsService
             ];
 
             $status = $this->enforcementService->getStatus($userRow);
+            $groupTitles = $this->resolveGroupTitles($usergroup, $groupTitleMap);
 
             $result[] = new UserPasskeyStatus(
                 uid: $uid,
                 username: $username,
                 realName: $realName,
-                groups: $usergroup,
+                groups: $groupTitles,
                 gracePeriodStart: $graceStart,
                 gracePeriodRemainingDays: $status->gracePeriodRemainingDays(),
             );
         }
 
         return $result;
+    }
+
+    /**
+     * Build a map of group UID to title for all active groups.
+     *
+     * @return array<int, string>
+     */
+    private function buildGroupTitleMap(): array
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_GROUPS);
+        $queryBuilder->getRestrictions()->removeAll();
+
+        $rows = $queryBuilder
+            ->select('uid', 'title')
+            ->from(self::TABLE_GROUPS)
+            ->where(
+                $queryBuilder->expr()->eq('deleted', 0),
+            )
+            ->executeQuery()
+            ->fetchAllAssociative();
+
+        $map = [];
+
+        foreach ($rows as $row) {
+            $uidValue = $row['uid'] ?? 0;
+            $uid = \is_numeric($uidValue) ? (int) $uidValue : 0;
+
+            $titleValue = $row['title'] ?? '';
+            $title = \is_string($titleValue) ? $titleValue : '';
+
+            if ($uid > 0) {
+                $map[$uid] = $title;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Resolve a comma-separated string of group UIDs to a comma-separated string of group titles.
+     *
+     * @param array<int, string> $groupTitleMap
+     */
+    private function resolveGroupTitles(string $uidList, array $groupTitleMap): string
+    {
+        if ($uidList === '') {
+            return '';
+        }
+
+        $uids = \array_filter(\array_map('trim', \explode(',', $uidList)));
+        $titles = [];
+
+        foreach ($uids as $uid) {
+            $intUid = \is_numeric($uid) ? (int) $uid : 0;
+
+            if ($intUid > 0 && isset($groupTitleMap[$intUid])) {
+                $titles[] = $groupTitleMap[$intUid];
+            }
+        }
+
+        return \implode(', ', $titles);
     }
 }

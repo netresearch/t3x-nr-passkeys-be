@@ -86,6 +86,12 @@ page:
 
     A clear error message tells you the passkey was not accepted.
 
+..  note::
+
+    Passkeys work alongside TYPO3's built-in multi-factor authentication
+    (MFA). If MFA is enabled, you will complete MFA verification after
+    passkey authentication.
+
 Managing your passkeys
 ======================
 

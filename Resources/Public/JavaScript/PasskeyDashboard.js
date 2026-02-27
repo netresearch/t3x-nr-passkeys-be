@@ -19,6 +19,7 @@ class PasskeyDashboard {
   initialize() {
     this.bindEnforcementSelects();
     this.bindReminderButtons();
+    this.bindUnlockButtons();
   }
 
   bindEnforcementSelects() {
@@ -65,6 +66,47 @@ class PasskeyDashboard {
       Notification.error('Update failed', message);
     } finally {
       select.disabled = false;
+    }
+  }
+
+  bindUnlockButtons() {
+    const buttons = document.querySelectorAll('.passkey-unlock-user');
+    buttons.forEach((button) => {
+      button.addEventListener('click', (event) => this.handleUnlockUser(event));
+    });
+  }
+
+  async handleUnlockUser(event) {
+    const button = event.currentTarget;
+    const beUserUid = parseInt(button.dataset.userUid, 10);
+    const username = button.dataset.username;
+
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = 'Unlocking...';
+
+    try {
+      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_unlock).post({
+        beUserUid: beUserUid,
+        username: username,
+      });
+      const data = await response.resolve();
+
+      if (data.status === 'ok') {
+        button.textContent = 'Unlocked';
+        Notification.success('Account unlocked', 'Rate limiter reset for "' + username + '".');
+      } else {
+        button.textContent = originalText;
+        button.disabled = false;
+        Notification.error('Unlock failed', data.error || 'Unknown error.');
+      }
+    } catch (error) {
+      button.textContent = originalText;
+      button.disabled = false;
+      const message = error.response
+        ? 'Server returned an error. Please try again.'
+        : 'Network error. Please check your connection.';
+      Notification.error('Unlock failed', message);
     }
   }
 

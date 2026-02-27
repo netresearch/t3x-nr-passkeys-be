@@ -56,6 +56,9 @@
             <trans-unit id="manage.label.actions" resname="manage.label.actions">
                 <source>Actions</source>
             </trans-unit>
+            <trans-unit id="manage.label.name.help" resname="manage.label.name.help">
+                <source>A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").</source>
+            </trans-unit>
             <trans-unit id="manage.rename" resname="manage.rename">
                 <source>Rename</source>
             </trans-unit>
@@ -106,6 +109,9 @@
             </trans-unit>
             <trans-unit id="admin.passkeys.label" resname="admin.passkeys.label">
                 <source>Passkeys</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.description" resname="admin.passkeys.description">
+                <source>WebAuthn/FIDO2 passkeys registered for this user. Admins can revoke individual passkeys or unlock rate-limited accounts.</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.enabled" resname="admin.passkeys.enabled">
                 <source>Enabled</source>
@@ -199,6 +205,15 @@
             </trans-unit>
             <trans-unit id="dashboard.usersWithout.notStarted" resname="dashboard.usersWithout.notStarted">
                 <source>Not started</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.groups" resname="dashboard.usersWithout.groups">
+                <source>Groups</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.unlock" resname="dashboard.usersWithout.unlock">
+                <source>Unlock</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.editUser" resname="dashboard.usersWithout.editUser">
+                <source>Edit user record</source>
             </trans-unit>
             <trans-unit id="dashboard.allAdopted" resname="dashboard.allAdopted">
                 <source>All active users have registered passkeys. No enforcement groups configured.</source>

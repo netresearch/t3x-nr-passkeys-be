@@ -106,6 +106,7 @@ final class PasskeySettingsPanel
         $actionsLabel = $this->translate($lang, 'manage.label.actions', 'Actions');
         $singleKeyWarning = $this->translate($lang, 'manage.warning.singleKey', 'You only have one passkey registered. Consider adding a backup passkey.');
         $noPasskeys = $this->translate($lang, 'manage.noPasskeys', 'No passkeys registered yet.');
+        $nameHelp = $this->translate($lang, 'manage.label.name.help', 'A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").');
 
         $countBadgeClass = match (true) {
             $passkeyCount === 0 => 'badge-warning',
@@ -128,6 +129,7 @@ final class PasskeySettingsPanel
         $actionsLabel = \htmlspecialchars($actionsLabel, ENT_QUOTES, 'UTF-8');
         $singleKeyWarning = \htmlspecialchars($singleKeyWarning, ENT_QUOTES, 'UTF-8');
         $noPasskeys = \htmlspecialchars($noPasskeys, ENT_QUOTES, 'UTF-8');
+        $nameHelp = \htmlspecialchars($nameHelp, ENT_QUOTES, 'UTF-8');
         $infoText = \htmlspecialchars($infoText, ENT_QUOTES, 'UTF-8');
 
         return <<<HTML
@@ -142,9 +144,12 @@ final class PasskeySettingsPanel
     <h4>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h4>
     <p class="text-body-secondary">{$description}</p>
     <div id="passkey-single-warning" class="alert alert-warning d-none">{$singleKeyWarning}</div>
-    <div class="mb-3 d-flex align-items-center gap-2">
-        <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" />
-        <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
+    <div class="mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" aria-describedby="passkey-name-help" />
+            <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
+        </div>
+        <small id="passkey-name-help" class="form-text text-body-secondary">{$nameHelp}</small>
     </div>
     <div id="passkey-empty" class="alert alert-info d-none">{$noPasskeys}</div>
     <table class="table table-hover" id="passkey-list-table">

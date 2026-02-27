@@ -79,6 +79,10 @@ final class AdoptionStatsServiceTest extends TestCase
                     ]),
                     // 7th call: getUsersWithoutPasskeys subquery (tx_nrpasskeysbe_credential)
                     $callIndex === 7 => $this->createSubQueryBuilder(),
+                    // 8th call: buildGroupTitleMap (be_groups)
+                    $callIndex === 8 => $this->createGroupFetchQueryBuilder([
+                        ['uid' => 1, 'title' => 'Editors'],
+                    ]),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -119,12 +123,14 @@ final class AdoptionStatsServiceTest extends TestCase
                     $callIndex === 1 => $this->createCountQueryBuilder(0),
                     // countUsersWithPasskeys
                     $callIndex === 2 => $this->createSelectLiteralQueryBuilder(0),
-                    // getGroupStats - no groups with enforcement
+                    // getGroupStats - no groups
                     $callIndex === 3 => $this->createGroupFetchQueryBuilder([]),
                     // getUsersWithoutPasskeys - no users
                     $callIndex === 4 => $this->createFetchQueryBuilder([]),
                     // subquery builder
                     $callIndex === 5 => $this->createSubQueryBuilder(),
+                    // buildGroupTitleMap - no groups
+                    $callIndex === 6 => $this->createGroupFetchQueryBuilder([]),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -168,6 +174,11 @@ final class AdoptionStatsServiceTest extends TestCase
                     // getUsersWithoutPasskeys
                     $callIndex === 8 => $this->createFetchQueryBuilder([]),
                     $callIndex === 9 => $this->createSubQueryBuilder(),
+                    // buildGroupTitleMap
+                    $callIndex === 10 => $this->createGroupFetchQueryBuilder([
+                        ['uid' => 1, 'title' => 'Editors'],
+                        ['uid' => 2, 'title' => 'Admins'],
+                    ]),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -213,6 +224,12 @@ final class AdoptionStatsServiceTest extends TestCase
                         ['uid' => 20, 'username' => 'bob', 'realName' => 'Bob Jones', 'usergroup' => '3', 'passkey_grace_period_start' => 0],
                     ]),
                     $callIndex === 5 => $this->createSubQueryBuilder(),
+                    // buildGroupTitleMap
+                    $callIndex === 6 => $this->createGroupFetchQueryBuilder([
+                        ['uid' => 1, 'title' => 'Editors'],
+                        ['uid' => 2, 'title' => 'Admins'],
+                        ['uid' => 3, 'title' => 'Authors'],
+                    ]),
                     default => $this->createCountQueryBuilder(0),
                 };
             });
@@ -246,10 +263,11 @@ final class AdoptionStatsServiceTest extends TestCase
         self::assertSame(10, $stats->usersWithoutPasskeys[0]->uid);
         self::assertSame('alice', $stats->usersWithoutPasskeys[0]->username);
         self::assertSame('Alice Smith', $stats->usersWithoutPasskeys[0]->realName);
-        self::assertSame('1,2', $stats->usersWithoutPasskeys[0]->groups);
+        self::assertSame('Editors, Admins', $stats->usersWithoutPasskeys[0]->groups);
 
         self::assertSame(20, $stats->usersWithoutPasskeys[1]->uid);
         self::assertSame('bob', $stats->usersWithoutPasskeys[1]->username);
+        self::assertSame('Authors', $stats->usersWithoutPasskeys[1]->groups);
         self::assertSame(30, $stats->usersWithoutPasskeys[1]->gracePeriodRemainingDays);
     }
 

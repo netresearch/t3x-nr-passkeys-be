@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Service\AdoptionStatsService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
@@ -27,6 +28,7 @@ final class AdminModuleController
         private readonly ModuleTemplateFactory $moduleTemplateFactory,
         private readonly AdoptionStatsService $adoptionStatsService,
         private readonly PageRenderer $pageRenderer,
+        private readonly UriBuilder $uriBuilder,
     ) {}
 
     /**
@@ -54,12 +56,18 @@ final class AdminModuleController
 
         $userData = [];
         foreach ($stats->usersWithoutPasskeys as $user) {
+            $editUrl = (string) $this->uriBuilder->buildUriFromRoute('record_edit', [
+                'edit[be_users][' . $user->uid . ']' => 'edit',
+            ]);
+
             $userData[] = [
                 'uid' => $user->uid,
                 'username' => $user->username,
                 'realName' => $user->realName,
+                'groups' => $user->groups,
                 'gracePeriodStart' => $user->gracePeriodStart,
                 'gracePeriodRemainingDays' => $user->gracePeriodRemainingDays,
+                'editUrl' => $editUrl,
             ];
         }
 
@@ -73,7 +81,7 @@ final class AdminModuleController
         ]);
 
         $this->pageRenderer->loadJavaScriptModule(
-            '@netresearch/nr-passkeys-be/PasskeyDashboard.js'
+            '@netresearch/nr-passkeys-be/PasskeyDashboard.js',
         );
 
         return $moduleTemplate->renderResponse('AdminModule/Dashboard');

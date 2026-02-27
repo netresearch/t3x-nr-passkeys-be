@@ -21,3 +21,9 @@ ExtensionManagementUtility::addFieldsToUserSettings(
     'passkeys',
     'after:mfaProviders',
 );
+
+// Register CSH (Context-Sensitive Help) for the passkeys field in be_users records
+ExtensionManagementUtility::addLLrefForTCAdescr(
+    'be_users',
+    'EXT:nr_passkeys_be/Resources/Private/Language/locallang_csh_be_users.xlf',
+);

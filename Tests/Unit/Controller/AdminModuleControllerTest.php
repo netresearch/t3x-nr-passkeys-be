@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Http\HtmlResponse;
@@ -35,6 +36,8 @@ final class AdminModuleControllerTest extends TestCase
 
     private PageRenderer&MockObject $pageRenderer;
 
+    private UriBuilder&MockObject $uriBuilder;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -42,11 +45,14 @@ final class AdminModuleControllerTest extends TestCase
         $this->moduleTemplateFactory = $this->createMock(ModuleTemplateFactory::class);
         $this->adoptionStatsService = $this->createMock(AdoptionStatsService::class);
         $this->pageRenderer = $this->createMock(PageRenderer::class);
+        $this->uriBuilder = $this->createMock(UriBuilder::class);
+        $this->uriBuilder->method('buildUriFromRoute')->willReturn('/typo3/record/edit?mocked=1');
 
         $this->subject = new AdminModuleController(
             $this->moduleTemplateFactory,
             $this->adoptionStatsService,
             $this->pageRenderer,
+            $this->uriBuilder,
         );
     }
 
@@ -174,8 +180,11 @@ final class AdminModuleControllerTest extends TestCase
         self::assertSame(42, $userData['uid']);
         self::assertSame('editor', $userData['username']);
         self::assertSame('Test Editor', $userData['realName']);
+        self::assertSame('5', $userData['groups']);
         self::assertSame(1700000000, $userData['gracePeriodStart']);
         self::assertSame(7, $userData['gracePeriodRemainingDays']);
+        self::assertArrayHasKey('editUrl', $userData);
+        self::assertIsString($userData['editUrl']);
     }
 
     #[Test]
