@@ -179,10 +179,16 @@ final class ManagementController
         /** @var array<string, mixed> $userRow */
         $status = $this->enforcementService->getStatus($userRow);
 
+        // Check if an admin-sent nudge is active (passkey_nudge_until in the future)
+        $nudgeUntil = $userRow['passkey_nudge_until'] ?? 0;
+        $hasActiveNudge = \is_numeric($nudgeUntil) && (int) $nudgeUntil > \time();
+
+        $requiresBanner = ($status->level->requiresBanner() && !$status->hasPasskeys) || $hasActiveNudge;
+
         return new JsonResponse([
             'level' => $status->level->value,
             'hasPasskeys' => $status->hasPasskeys,
-            'requiresBanner' => $status->level->requiresBanner() && !$status->hasPasskeys,
+            'requiresBanner' => $requiresBanner,
             'gracePeriodRemainingDays' => $status->gracePeriodRemainingDays(),
         ]);
     }

@@ -240,6 +240,7 @@ final class AdoptionStatsService
                 $queryBuilder->expr()->eq('disable', 0),
                 $queryBuilder->quoteIdentifier('uid') . ' NOT IN (' . $subQuery . ')',
             )
+            ->setMaxResults(500)
             ->executeQuery()
             ->fetchAllAssociative();
 

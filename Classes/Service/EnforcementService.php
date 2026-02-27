@@ -82,6 +82,11 @@ final class EnforcementService
             }
         }
 
+        // Enforced level has no grace period — the interstitial is always mandatory
+        if ($effectiveLevel === EnforcementLevel::Enforced) {
+            $effectiveGraceDays = 0;
+        }
+
         return new EnforcementStatus(
             level: $effectiveLevel,
             gracePeriodDays: $effectiveGraceDays,

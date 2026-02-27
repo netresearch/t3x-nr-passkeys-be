@@ -35,4 +35,23 @@ final class InjectPasskeyBannerTest extends TestCase
         $subject = new InjectPasskeyBanner($pageRenderer);
         $subject($event);
     }
+
+    #[Test]
+    public function invokeAddsInlineLanguageLabelFile(): void
+    {
+        $pageRenderer = $this->createMock(PageRenderer::class);
+        $pageRenderer
+            ->expects(self::once())
+            ->method('addInlineLanguageLabelFile')
+            ->with(
+                'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+                'js.',
+            );
+
+        $view = $this->createMock(ViewInterface::class);
+        $event = new AfterBackendPageRenderEvent('<html></html>', $view);
+
+        $subject = new InjectPasskeyBanner($pageRenderer);
+        $subject($event);
+    }
 }

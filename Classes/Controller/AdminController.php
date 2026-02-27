@@ -21,9 +21,17 @@ use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
 
+/**
+ * Admin API controller for passkey management operations.
+ *
+ * Provides AJAX endpoints for listing, revoking, and unlocking passkeys,
+ * updating group enforcement levels, and sending setup reminders.
+ */
 final class AdminController
 {
     use JsonBodyTrait;
+
+    private const NUDGE_DURATION_DAYS = 14;
 
     public function __construct(
         private readonly CredentialRepository $credentialRepository,
@@ -298,8 +306,8 @@ final class AdminController
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
-        // Set passkey_nudge_until to 14 days from now
-        $nudgeUntil = time() + (14 * 86_400);
+        // Set passkey_nudge_until to a future timestamp so the banner picks up the nudge
+        $nudgeUntil = time() + (self::NUDGE_DURATION_DAYS * 86_400);
 
         $connection = $this->connectionPool->getConnectionForTable('be_users');
         $connection->update(
@@ -352,5 +360,4 @@ final class AdminController
             isAdmin: true,
         );
     }
-
 }

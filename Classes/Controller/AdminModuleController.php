@@ -15,6 +15,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
+use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
 /**
@@ -80,6 +81,10 @@ final class AdminModuleController
             'enforcementLevels' => $this->getEnforcementLevelOptions(),
         ]);
 
+        $this->pageRenderer->addInlineLanguageLabelFile(
+            'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+            'js.',
+        );
         $this->pageRenderer->loadJavaScriptModule(
             '@netresearch/nr-passkeys-be/PasskeyDashboard.js',
         );
@@ -101,20 +106,39 @@ final class AdminModuleController
     /**
      * Build an associative array of enforcement-level values to display labels.
      *
+     * Uses LanguageService for i18n when available, falls back to English.
+     *
      * @return array<string, string>
      */
     private function getEnforcementLevelOptions(): array
     {
         $options = [];
         foreach (EnforcementLevel::cases() as $level) {
-            $options[$level->value] = match ($level) {
+            $fallback = match ($level) {
                 EnforcementLevel::Off => 'Off',
                 EnforcementLevel::Encourage => 'Encourage',
                 EnforcementLevel::Required => 'Required',
                 EnforcementLevel::Enforced => 'Enforced',
             };
+            $options[$level->value] = $this->translate('enforcement.level.' . $level->value, $fallback);
         }
 
         return $options;
+    }
+
+    /**
+     * Translate a key from the extension's locallang file with a fallback.
+     */
+    private function translate(string $key, string $fallback): string
+    {
+        $lang = $GLOBALS['LANG'] ?? null;
+        if ($lang instanceof LanguageService) {
+            $translated = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:' . $key);
+            if ($translated !== '') {
+                return $translated;
+            }
+        }
+
+        return $fallback;
     }
 }

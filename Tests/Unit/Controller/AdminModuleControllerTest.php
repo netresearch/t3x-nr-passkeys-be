@@ -104,6 +104,13 @@ final class AdminModuleControllerTest extends TestCase
 
         $this->pageRenderer
             ->expects(self::once())
+            ->method('addInlineLanguageLabelFile')
+            ->with(
+                'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+                'js.',
+            );
+        $this->pageRenderer
+            ->expects(self::once())
             ->method('loadJavaScriptModule')
             ->with('@netresearch/nr-passkeys-be/PasskeyDashboard.js');
 

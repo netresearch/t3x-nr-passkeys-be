@@ -248,6 +248,102 @@
             <trans-unit id="dashboard.usersWithout.actions" resname="dashboard.usersWithout.actions">
                 <source>Actions</source>
             </trans-unit>
+            <trans-unit id="dashboard.usersWithout.days" resname="dashboard.usersWithout.days">
+                <source>days</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.off" resname="enforcement.level.off">
+                <source>Off</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.encourage" resname="enforcement.level.encourage">
+                <source>Encourage</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.required" resname="enforcement.level.required">
+                <source>Required</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.enforced" resname="enforcement.level.enforced">
+                <source>Enforced</source>
+            </trans-unit>
+            <trans-unit id="interstitial.title" resname="interstitial.title">
+                <source>Set up your passkey</source>
+            </trans-unit>
+            <trans-unit id="interstitial.description" resname="interstitial.description">
+                <source>Passkeys provide a more secure and convenient way to sign in without passwords. They use your device's built-in biometric sensors or security keys to verify your identity, making your account resistant to phishing attacks.</source>
+            </trans-unit>
+            <trans-unit id="interstitial.grace.remaining" resname="interstitial.grace.remaining">
+                <source>You have %d days remaining to set up your passkey.</source>
+            </trans-unit>
+            <trans-unit id="interstitial.grace.required" resname="interstitial.grace.required">
+                <source>Passkey setup is now required.</source>
+            </trans-unit>
+            <trans-unit id="interstitial.button.setup" resname="interstitial.button.setup">
+                <source>Set up now</source>
+            </trans-unit>
+            <trans-unit id="interstitial.button.skip" resname="interstitial.button.skip">
+                <source>Skip for now</source>
+            </trans-unit>
+            <trans-unit id="interstitial.button.skipRemaining" resname="interstitial.button.skipRemaining">
+                <source>Skip for now (%d days remaining)</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.updated" resname="js.enforcement.updated">
+                <source>Enforcement updated</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.setTo" resname="js.enforcement.setTo">
+                <source>Group enforcement set to "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.failed" resname="js.enforcement.failed">
+                <source>Update failed</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.progress" resname="js.unlock.progress">
+                <source>Unlocking...</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.done" resname="js.unlock.done">
+                <source>Unlocked</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.success" resname="js.unlock.success">
+                <source>Account unlocked</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.message" resname="js.unlock.message">
+                <source>Rate limiter reset for "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.failed" resname="js.unlock.failed">
+                <source>Unlock failed</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.progress" resname="js.reminder.progress">
+                <source>Sending...</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.done" resname="js.reminder.done">
+                <source>Sent</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.success" resname="js.reminder.success">
+                <source>Reminder sent</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.message" resname="js.reminder.message">
+                <source>Passkey setup reminder sent to "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.failed" resname="js.reminder.failed">
+                <source>Reminder failed</source>
+            </trans-unit>
+            <trans-unit id="js.error.server" resname="js.error.server">
+                <source>Server returned an error. Please try again.</source>
+            </trans-unit>
+            <trans-unit id="js.error.network" resname="js.error.network">
+                <source>Network error. Please check your connection.</source>
+            </trans-unit>
+            <trans-unit id="js.error.unknown" resname="js.error.unknown">
+                <source>Unknown error.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.remaining" resname="js.banner.remaining">
+                <source>Passkeys are available for your account. You have %d days to set up passwordless login.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.available" resname="js.banner.available">
+                <source>Passkeys are now available for your account. Set up passwordless login for faster, more secure access.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.setup" resname="js.banner.setup">
+                <source>Set up now</source>
+            </trans-unit>
+            <trans-unit id="js.banner.dismiss" resname="js.banner.dismiss">
+                <source>Dismiss</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

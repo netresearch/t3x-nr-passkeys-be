@@ -19,6 +19,7 @@ use TYPO3\CMS\Backend\Routing\Route;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
+use TYPO3\CMS\Core\Localization\LanguageService;
 
 /**
  * Intercepts backend requests to enforce passkey setup when required.
@@ -80,14 +81,24 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             return $handler->handle($request);
         }
 
-        // Handle skip POST before any other checks
+        // Handle skip POST with CSRF nonce validation
         if ($request->getMethod() === 'POST') {
             $parsedBody = $request->getParsedBody();
             if (\is_array($parsedBody) && ($parsedBody['passkey_setup_skip'] ?? '') === '1') {
-                $sessionArray['setup_skipped'] = true;
-                $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
+                $submittedNonce = $parsedBody['passkey_setup_nonce'] ?? '';
+                $storedNonce = $sessionArray['skip_nonce'] ?? '';
 
-                return new RedirectResponse($this->resolveBackendPath($request), 303);
+                if (\is_string($submittedNonce) && \is_string($storedNonce)
+                    && $storedNonce !== '' && \hash_equals($storedNonce, $submittedNonce)
+                ) {
+                    $sessionArray['setup_skipped'] = true;
+                    unset($sessionArray['skip_nonce']);
+                    $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
+
+                    return new RedirectResponse($this->resolveBackendPath($request), 303);
+                }
+
+                // Invalid nonce — fall through to re-render the interstitial
             }
         }
 
@@ -114,9 +125,14 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             return $handler->handle($request);
         }
 
+        // Generate CSRF nonce for the skip form and store it in session
+        $nonce = \bin2hex(\random_bytes(16));
+        $sessionArray['skip_nonce'] = $nonce;
+        $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
+
         $backendPath = $this->resolveBackendPath($request);
 
-        return $this->renderInterstitial($status, $backendPath);
+        return $this->renderInterstitial($status, $backendPath, $nonce);
     }
 
     /**
@@ -172,26 +188,45 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
      * Render the interstitial HTML page prompting passkey setup.
      *
      * Uses inline PHP-rendered HTML for cross-version compatibility (v12/v13/v14).
+     * All user-facing strings use LanguageService for i18n when available.
      */
-    private function renderInterstitial(EnforcementStatus $status, string $backendPath = '/typo3/'): HtmlResponse
+    private function renderInterstitial(EnforcementStatus $status, string $backendPath, string $nonce): HtmlResponse
     {
         $remainingDays = $status->gracePeriodRemainingDays();
         $canSkip = $status->canSkip();
         $escapedBackendPath = \htmlspecialchars($backendPath, ENT_QUOTES, 'UTF-8');
+        $escapedNonce = \htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8');
 
-        $graceMessage = $remainingDays > 0 && $canSkip
-            ? 'You have ' . \htmlspecialchars((string) $remainingDays, ENT_QUOTES, 'UTF-8') . ' days remaining to set up your passkey.'
-            : 'Passkey setup is now required.';
+        $title = $this->translate('interstitial.title', 'Set up your passkey');
+        $description = $this->translate('interstitial.description', 'Passkeys provide a more secure and convenient way to sign in without passwords. They use your device\'s built-in biometric sensors or security keys to verify your identity, making your account resistant to phishing attacks.');
+        $setupLabel = $this->translate('interstitial.button.setup', 'Set up now');
+
+        if ($remainingDays > 0 && $canSkip) {
+            $graceTemplate = $this->translate('interstitial.grace.remaining', 'You have %d days remaining to set up your passkey.');
+            $graceMessage = \sprintf($graceTemplate, $remainingDays);
+        } else {
+            $graceMessage = $this->translate('interstitial.grace.required', 'Passkey setup is now required.');
+        }
+
+        $escapedTitle = \htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+        $escapedDescription = \htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
+        $escapedSetupLabel = \htmlspecialchars($setupLabel, ENT_QUOTES, 'UTF-8');
+        $escapedGraceMessage = \htmlspecialchars($graceMessage, ENT_QUOTES, 'UTF-8');
 
         $skipButton = '';
         if ($canSkip) {
-            $skipLabel = $remainingDays > 0
-                ? 'Skip for now (' . \htmlspecialchars((string) $remainingDays, ENT_QUOTES, 'UTF-8') . ' days remaining)'
-                : 'Skip for now';
+            if ($remainingDays > 0) {
+                $skipTemplate = $this->translate('interstitial.button.skipRemaining', 'Skip for now (%d days remaining)');
+                $skipLabel = \sprintf($skipTemplate, $remainingDays);
+            } else {
+                $skipLabel = $this->translate('interstitial.button.skip', 'Skip for now');
+            }
+            $escapedSkipLabel = \htmlspecialchars($skipLabel, ENT_QUOTES, 'UTF-8');
 
             $skipButton = <<<HTML
                         <form method="post" style="display:inline">
                             <input type="hidden" name="passkey_setup_skip" value="1" />
+                            <input type="hidden" name="passkey_setup_nonce" value="{$escapedNonce}" />
                             <button type="submit" style="
                                 padding: 10px 24px;
                                 background: transparent;
@@ -201,7 +236,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
                                 font-size: 14px;
                                 cursor: pointer;
                                 text-decoration: none;
-                            ">{$skipLabel}</button>
+                            ">{$escapedSkipLabel}</button>
                         </form>
 HTML;
         }
@@ -212,7 +247,7 @@ HTML;
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Set up your passkey</title>
+    <title>{$escapedTitle}</title>
     <style>
         body {
             margin: 0;
@@ -274,23 +309,38 @@ HTML;
     </style>
 </head>
 <body>
-    <div class="interstitial-container">
-        <h1>Set up your passkey</h1>
-        <p class="description">
-            Passkeys provide a more secure and convenient way to sign in without passwords.
-            They use your device&#039;s built-in biometric sensors or security keys to verify your identity,
-            making your account resistant to phishing attacks.
-        </p>
-        <div class="grace-period">{$graceMessage}</div>
+    <main class="interstitial-container" role="main">
+        <h1>{$escapedTitle}</h1>
+        <p class="description">{$escapedDescription}</p>
+        <div class="grace-period">{$escapedGraceMessage}</div>
         <div class="actions">
-            <a href="{$escapedBackendPath}setup/" class="btn-setup">Set up now</a>
+            <a href="{$escapedBackendPath}setup/" class="btn-setup" autofocus>{$escapedSetupLabel}</a>
             {$skipButton}
         </div>
-    </div>
+    </main>
 </body>
 </html>
 HTML;
 
         return new HtmlResponse($html);
+    }
+
+    /**
+     * Translate a key from the extension's locallang file with a fallback.
+     *
+     * Uses $GLOBALS['LANG'] (LanguageService) which is available after the
+     * authentication middleware has run.
+     */
+    private function translate(string $key, string $fallback): string
+    {
+        $lang = $GLOBALS['LANG'] ?? null;
+        if ($lang instanceof LanguageService) {
+            $translated = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:' . $key);
+            if ($translated !== '') {
+                return $translated;
+            }
+        }
+
+        return $fallback;
     }
 }

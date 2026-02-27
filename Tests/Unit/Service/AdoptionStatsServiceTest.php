@@ -374,6 +374,7 @@ final class AdoptionStatsServiceTest extends TestCase
         $queryBuilder->method('select')->willReturnSelf();
         $queryBuilder->method('from')->willReturnSelf();
         $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('setMaxResults')->willReturnSelf();
         $queryBuilder->method('expr')->willReturn($expressionBuilder);
         $queryBuilder->method('createNamedParameter')->willReturn("'mocked'");
         $queryBuilder->method('quoteIdentifier')->willReturnCallback(

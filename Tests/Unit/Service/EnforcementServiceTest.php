@@ -144,7 +144,8 @@ final class EnforcementServiceTest extends TestCase
         $status = $this->subject->getStatus($userRow);
 
         self::assertSame(EnforcementLevel::Enforced, $status->level);
-        self::assertSame(7, $status->gracePeriodDays);
+        // Enforced level always has grace period zeroed
+        self::assertSame(0, $status->gracePeriodDays);
     }
 
     #[Test]

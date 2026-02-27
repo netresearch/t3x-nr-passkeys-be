@@ -29,6 +29,10 @@ final readonly class InjectPasskeyBanner
 
     public function __invoke(AfterBackendPageRenderEvent $event): void
     {
+        $this->pageRenderer->addInlineLanguageLabelFile(
+            'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+            'js.',
+        );
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyBanner.js');
     }
 }

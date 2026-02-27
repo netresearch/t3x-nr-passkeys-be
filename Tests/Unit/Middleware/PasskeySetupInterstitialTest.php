@@ -327,6 +327,7 @@ final class PasskeySetupInterstitialTest extends TestCase
 
         $body = (string) $response->getBody();
         self::assertStringContainsString('passkey_setup_skip', $body);
+        self::assertStringContainsString('passkey_setup_nonce', $body);
         self::assertStringContainsString('Skip for now', $body);
     }
 
@@ -491,17 +492,22 @@ final class PasskeySetupInterstitialTest extends TestCase
     #[Test]
     public function handleSkipPostStoresSessionAndReturnsRedirect(): void
     {
+        $nonce = 'test-nonce-abc123';
+
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
         $backendUser->method('getSessionData')
             ->with('tx_nrpasskeysbe')
-            ->willReturn(null);
+            ->willReturn(['skip_nonce' => $nonce]);
         $backendUser->expects(self::once())
             ->method('setAndSaveSessionData')
             ->with('tx_nrpasskeysbe', ['setup_skipped' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
 
-        $request = $this->createMockRequest('main', 'POST', ['passkey_setup_skip' => '1']);
+        $request = $this->createMockRequest('main', 'POST', [
+            'passkey_setup_skip' => '1',
+            'passkey_setup_nonce' => $nonce,
+        ]);
         $handler = $this->createMockHandler();
 
         $handler->expects(self::never())->method('handle');
@@ -511,6 +517,38 @@ final class PasskeySetupInterstitialTest extends TestCase
         self::assertInstanceOf(RedirectResponse::class, $response);
         self::assertSame(303, $response->getStatusCode());
         self::assertSame('/typo3/', $response->getHeaderLine('Location'));
+    }
+
+    #[Test]
+    public function handleSkipPostWithInvalidNonceFallsThroughToInterstitial(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
+        $backendUser->method('getSessionData')
+            ->with('tx_nrpasskeysbe')
+            ->willReturn(['skip_nonce' => 'correct-nonce']);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: \time(),
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $request = $this->createMockRequest('main', 'POST', [
+            'passkey_setup_skip' => '1',
+            'passkey_setup_nonce' => 'wrong-nonce',
+        ]);
+        $handler = $this->createMockHandler();
+
+        $handler->expects(self::never())->method('handle');
+
+        $response = $this->subject->process($request, $handler);
+
+        // Invalid nonce falls through to render interstitial
+        self::assertInstanceOf(HtmlResponse::class, $response);
     }
 
     #[Test]

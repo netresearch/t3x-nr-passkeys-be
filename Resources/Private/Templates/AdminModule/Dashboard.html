@@ -85,6 +85,9 @@
                                         <div class="progress" style="margin: 0; min-width: 60px;">
                                             <div class="progress-bar progress-bar-info"
                                                  role="progressbar"
+                                                 aria-valuenow="{group.adoptionPercentage}"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100"
                                                  style="width: {group.adoptionPercentage}%;">
                                                 <f:format.number decimals="1">{group.adoptionPercentage}</f:format.number>%
                                             </div>
@@ -128,7 +131,7 @@
                                     <td>
                                         <f:if condition="{user.gracePeriodRemainingDays} > 0">
                                             <f:then>
-                                                <span class="label label-warning">{user.gracePeriodRemainingDays} days</span>
+                                                <span class="label label-warning">{user.gracePeriodRemainingDays} <f:translate key="dashboard.usersWithout.days" extensionName="NrPasskeysBe" /></span>
                                             </f:then>
                                             <f:else>
                                                 <f:if condition="{user.gracePeriodStart} > 0">

@@ -22,6 +22,17 @@ class PasskeyDashboard {
     this.bindUnlockButtons();
   }
 
+  /**
+   * Translate a key from the TYPO3 inline language labels with a fallback.
+   *
+   * @param {string} key
+   * @param {string} fallback
+   * @returns {string}
+   */
+  translate(key, fallback) {
+    return (TYPO3.lang && TYPO3.lang[key]) || fallback;
+  }
+
   bindEnforcementSelects() {
     const selects = document.querySelectorAll('.passkey-enforcement-select');
     selects.forEach((select) => {
@@ -53,17 +64,23 @@ class PasskeyDashboard {
 
       if (data.status === 'ok') {
         select.dataset.originalValue = enforcement;
-        Notification.success('Enforcement updated', 'Group enforcement set to "' + enforcement + '".');
+        Notification.success(
+          this.translate('js.enforcement.updated', 'Enforcement updated'),
+          this.translate('js.enforcement.setTo', 'Group enforcement set to "%s".').replace('%s', enforcement),
+        );
       } else {
         select.value = originalValue;
-        Notification.error('Update failed', data.error || 'Unknown error.');
+        Notification.error(
+          this.translate('js.enforcement.failed', 'Update failed'),
+          data.error || this.translate('js.error.unknown', 'Unknown error.'),
+        );
       }
     } catch (error) {
       select.value = originalValue;
       const message = error.response
-        ? 'Server returned an error. Please try again.'
-        : 'Network error. Please check your connection.';
-      Notification.error('Update failed', message);
+        ? this.translate('js.error.server', 'Server returned an error. Please try again.')
+        : this.translate('js.error.network', 'Network error. Please check your connection.');
+      Notification.error(this.translate('js.enforcement.failed', 'Update failed'), message);
     } finally {
       select.disabled = false;
     }
@@ -83,7 +100,7 @@ class PasskeyDashboard {
 
     button.disabled = true;
     const originalText = button.textContent;
-    button.textContent = 'Unlocking...';
+    button.textContent = this.translate('js.unlock.progress', 'Unlocking...');
 
     try {
       const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_unlock).post({
@@ -93,20 +110,26 @@ class PasskeyDashboard {
       const data = await response.resolve();
 
       if (data.status === 'ok') {
-        button.textContent = 'Unlocked';
-        Notification.success('Account unlocked', 'Rate limiter reset for "' + username + '".');
+        button.textContent = this.translate('js.unlock.done', 'Unlocked');
+        Notification.success(
+          this.translate('js.unlock.success', 'Account unlocked'),
+          this.translate('js.unlock.message', 'Rate limiter reset for "%s".').replace('%s', username),
+        );
       } else {
         button.textContent = originalText;
         button.disabled = false;
-        Notification.error('Unlock failed', data.error || 'Unknown error.');
+        Notification.error(
+          this.translate('js.unlock.failed', 'Unlock failed'),
+          data.error || this.translate('js.error.unknown', 'Unknown error.'),
+        );
       }
     } catch (error) {
       button.textContent = originalText;
       button.disabled = false;
       const message = error.response
-        ? 'Server returned an error. Please try again.'
-        : 'Network error. Please check your connection.';
-      Notification.error('Unlock failed', message);
+        ? this.translate('js.error.server', 'Server returned an error. Please try again.')
+        : this.translate('js.error.network', 'Network error. Please check your connection.');
+      Notification.error(this.translate('js.unlock.failed', 'Unlock failed'), message);
     }
   }
 
@@ -117,7 +140,7 @@ class PasskeyDashboard {
 
     button.disabled = true;
     const originalText = button.textContent;
-    button.textContent = 'Sending...';
+    button.textContent = this.translate('js.reminder.progress', 'Sending...');
 
     try {
       const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_send_reminder).post({
@@ -126,20 +149,26 @@ class PasskeyDashboard {
       const data = await response.resolve();
 
       if (data.status === 'ok') {
-        button.textContent = 'Sent';
-        Notification.success('Reminder sent', 'Passkey setup reminder sent to "' + username + '".');
+        button.textContent = this.translate('js.reminder.done', 'Sent');
+        Notification.success(
+          this.translate('js.reminder.success', 'Reminder sent'),
+          this.translate('js.reminder.message', 'Passkey setup reminder sent to "%s".').replace('%s', username),
+        );
       } else {
         button.textContent = originalText;
         button.disabled = false;
-        Notification.error('Reminder failed', data.error || 'Unknown error.');
+        Notification.error(
+          this.translate('js.reminder.failed', 'Reminder failed'),
+          data.error || this.translate('js.error.unknown', 'Unknown error.'),
+        );
       }
     } catch (error) {
       button.textContent = originalText;
       button.disabled = false;
       const message = error.response
-        ? 'Server returned an error. Please try again.'
-        : 'Network error. Please check your connection.';
-      Notification.error('Reminder failed', message);
+        ? this.translate('js.error.server', 'Server returned an error. Please try again.')
+        : this.translate('js.error.network', 'Network error. Please check your connection.');
+      Notification.error(this.translate('js.reminder.failed', 'Reminder failed'), message);
     }
   }
 }

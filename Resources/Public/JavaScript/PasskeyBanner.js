@@ -16,6 +16,17 @@ class PasskeyBanner {
     DocumentService.ready().then(() => this.initialize());
   }
 
+  /**
+   * Translate a key from the TYPO3 inline language labels with a fallback.
+   *
+   * @param {string} key
+   * @param {string} fallback
+   * @returns {string}
+   */
+  translate(key, fallback) {
+    return (TYPO3.lang && TYPO3.lang[key]) || fallback;
+  }
+
   async initialize() {
     if (sessionStorage.getItem('nr-passkeys-banner-dismissed')) {
       return;
@@ -43,8 +54,8 @@ class PasskeyBanner {
 
     const message = document.createElement('span');
     message.textContent = data.gracePeriodRemainingDays > 0
-      ? 'Passkeys are available for your account. You have ' + data.gracePeriodRemainingDays + ' days to set up passwordless login.'
-      : 'Passkeys are now available for your account. Set up passwordless login for faster, more secure access.';
+      ? this.translate('js.banner.remaining', 'Passkeys are available for your account. You have %d days to set up passwordless login.').replace('%d', data.gracePeriodRemainingDays)
+      : this.translate('js.banner.available', 'Passkeys are now available for your account. Set up passwordless login for faster, more secure access.');
 
     const actions = document.createElement('span');
     actions.style.cssText = 'white-space: nowrap;';
@@ -54,13 +65,13 @@ class PasskeyBanner {
       ? TYPO3.settings.FormEngine.moduleUrl
       : '/typo3/setup/';
     setupLink.className = 'btn btn-sm btn-primary';
-    setupLink.textContent = 'Set up now';
+    setupLink.textContent = this.translate('js.banner.setup', 'Set up now');
     setupLink.style.marginRight = '0.5rem';
 
     const dismissBtn = document.createElement('button');
     dismissBtn.type = 'button';
     dismissBtn.className = 'btn btn-sm btn-default';
-    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.textContent = this.translate('js.banner.dismiss', 'Dismiss');
     dismissBtn.addEventListener('click', () => {
       banner.remove();
       sessionStorage.setItem('nr-passkeys-banner-dismissed', '1');
