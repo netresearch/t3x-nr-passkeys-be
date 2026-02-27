@@ -105,6 +105,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
         // Start grace period on first intercept
         if ($status->gracePeriodStart === 0) {
             $this->enforcementService->startGracePeriod($uid);
+            $userRow['passkey_grace_period_start'] = \time();
             $status = $this->enforcementService->getStatus($userRow);
         }
 

@@ -131,6 +131,14 @@ settings, the extension resolves the effective level using two rules:
 
 Users with no group assignments default to enforcement level **Off**.
 
+..  note::
+
+    Enforcement considers only the groups **directly assigned** to a user
+    (the ``be_users.usergroup`` field). TYPO3 subgroups (configured via
+    ``be_groups.subgroup``) are **not** resolved for enforcement evaluation.
+    If you configure enforcement on a subgroup, assign that group directly to
+    the affected users or configure enforcement on the parent group instead.
+
 
 Admin dashboard
 ===============

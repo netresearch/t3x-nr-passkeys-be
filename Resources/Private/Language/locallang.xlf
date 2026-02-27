@@ -218,6 +218,36 @@
             <trans-unit id="dashboard.allAdopted" resname="dashboard.allAdopted">
                 <source>All active users have registered passkeys. No enforcement groups configured.</source>
             </trans-unit>
+            <trans-unit id="dashboard.groups.group" resname="dashboard.groups.group">
+                <source>Group</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.enforcement" resname="dashboard.groups.enforcement">
+                <source>Enforcement</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.gracePeriod" resname="dashboard.groups.gracePeriod">
+                <source>Grace Period (days)</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.users" resname="dashboard.groups.users">
+                <source>Users</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.withPasskeys" resname="dashboard.groups.withPasskeys">
+                <source>With Passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.adoption" resname="dashboard.groups.adoption">
+                <source>Adoption</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.username" resname="dashboard.usersWithout.username">
+                <source>Username</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.name" resname="dashboard.usersWithout.name">
+                <source>Name</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.gracePeriodRemaining" resname="dashboard.usersWithout.gracePeriodRemaining">
+                <source>Grace Period Remaining</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.actions" resname="dashboard.usersWithout.actions">
+                <source>Actions</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>
