@@ -63,9 +63,7 @@ class PasskeyBanner {
     actions.style.cssText = 'white-space: nowrap;';
 
     const setupLink = document.createElement('a');
-    setupLink.href = (TYPO3.settings.FormEngine && TYPO3.settings.FormEngine.moduleUrl)
-      ? TYPO3.settings.FormEngine.moduleUrl
-      : '/typo3/setup/';
+    setupLink.href = '/typo3/setup/';
     setupLink.className = 'btn btn-sm btn-primary';
     setupLink.textContent = this.translate('js.banner.setup', 'Set up now');
     setupLink.style.marginRight = '0.5rem';

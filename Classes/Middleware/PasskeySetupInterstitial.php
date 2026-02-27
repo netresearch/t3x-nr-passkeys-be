@@ -81,6 +81,11 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             return $handler->handle($request);
         }
 
+        // Check if request is exempt before any interstitial logic
+        if ($this->isExemptRequest($request)) {
+            return $handler->handle($request);
+        }
+
         // Handle skip POST with CSRF nonce validation
         if ($request->getMethod() === 'POST') {
             $parsedBody = $request->getParsedBody();
@@ -100,11 +105,6 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
 
                 // Invalid nonce — fall through to re-render the interstitial
             }
-        }
-
-        // Check if request is exempt
-        if ($this->isExemptRequest($request)) {
-            return $handler->handle($request);
         }
 
         $status = $this->enforcementService->getStatus($userRow);
