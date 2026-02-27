@@ -63,6 +63,7 @@ final class PasskeySettingsPanelTest extends TestCase
             ->method('sL')
             ->willReturnCallback(static function (string $key): string {
                 $map = [
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.info.passkeys' => 'Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup.',
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.title' => 'Passkeys',
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.description' => 'Manage your registered passkeys for passwordless login.',
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.add' => 'Add Passkey',
@@ -369,6 +370,97 @@ final class PasskeySettingsPanelTest extends TestCase
 
         self::assertStringContainsString('passkey-management-container', $result);
         self::assertStringNotContainsString('alert alert-danger', $result);
+    }
+
+    #[Test]
+    public function renderIncludesInfoBoxAboveManagementContainer(): void
+    {
+        $this->setUpBackendUser(1);
+        $this->registerDependencies();
+
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(0);
+
+        $result = $this->subject->render([]);
+
+        self::assertStringContainsString('class="alert alert-info"', $result);
+        self::assertStringContainsString('biometric or device-based authentication', $result);
+        self::assertStringContainsString('at least two passkeys', $result);
+
+        // Info box must appear BEFORE the management container
+        $infoBoxPos = \strpos($result, 'class="alert alert-info"');
+        $containerPos = \strpos($result, 'id="passkey-management-container"');
+        self::assertNotFalse($infoBoxPos);
+        self::assertNotFalse($containerPos);
+        self::assertLessThan($containerPos, $infoBoxPos);
+    }
+
+    #[Test]
+    public function renderInfoBoxUsesTranslatedText(): void
+    {
+        $this->setUpBackendUser(1);
+        $this->registerDependencies();
+
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(0);
+
+        $result = $this->subject->render([]);
+
+        // The mock returns the text from the map for manage.info.passkeys
+        self::assertStringContainsString('We recommend registering at least two passkeys for backup', $result);
+    }
+
+    #[Test]
+    public function renderInfoBoxEscapesHtmlInTranslation(): void
+    {
+        $this->setUpBackendUser(1);
+        $this->registerDependencies();
+
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(0);
+
+        $languageService = $this->createMock(LanguageService::class);
+        $languageService
+            ->method('sL')
+            ->willReturnCallback(static function (string $key): string {
+                if (\str_contains($key, 'manage.info.passkeys')) {
+                    return '<img src=x onerror=alert(1)>';
+                }
+
+                return 'safe';
+            });
+        $GLOBALS['LANG'] = $languageService;
+
+        $result = $this->subject->render([]);
+
+        self::assertStringNotContainsString('<img src=x', $result);
+        self::assertStringContainsString('&lt;img src=x', $result);
+    }
+
+    #[Test]
+    public function renderInfoBoxUsesFallbackWhenTranslationEmpty(): void
+    {
+        $this->setUpBackendUser(1);
+        $this->registerDependencies();
+
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(0);
+
+        $languageService = $this->createMock(LanguageService::class);
+        $languageService
+            ->method('sL')
+            ->willReturn('');
+        $GLOBALS['LANG'] = $languageService;
+
+        $result = $this->subject->render([]);
+
+        // Fallback text should be used
+        self::assertStringContainsString('Passkeys replace your password', $result);
+        self::assertStringContainsString('at least two passkeys for backup', $result);
     }
 
     private function setUpBackendUser(int $uid): void

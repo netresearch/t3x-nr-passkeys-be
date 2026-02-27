@@ -91,6 +91,12 @@ final class PasskeySettingsPanel
     {
         $lang = $this->getLanguageService();
 
+        $infoText = $this->translate(
+            $lang,
+            'manage.info.passkeys',
+            'Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup — for example, your laptop and your phone.',
+        );
+
         $title = $this->translate($lang, 'manage.title', 'Passkeys');
         $description = $this->translate($lang, 'manage.description', 'Manage your registered passkeys for passwordless login.');
         $addLabel = $this->translate($lang, 'manage.add', 'Add Passkey');
@@ -122,9 +128,11 @@ final class PasskeySettingsPanel
         $actionsLabel = \htmlspecialchars($actionsLabel, ENT_QUOTES, 'UTF-8');
         $singleKeyWarning = \htmlspecialchars($singleKeyWarning, ENT_QUOTES, 'UTF-8');
         $noPasskeys = \htmlspecialchars($noPasskeys, ENT_QUOTES, 'UTF-8');
+        $infoText = \htmlspecialchars($infoText, ENT_QUOTES, 'UTF-8');
 
         return <<<HTML
 <style>.passkey-name-input{max-width:200px}</style>
+<div class="alert alert-info">{$infoText}</div>
 <div id="passkey-management-container"
      data-list-url="{$listUrl}"
      data-register-options-url="{$registerOptionsUrl}"
