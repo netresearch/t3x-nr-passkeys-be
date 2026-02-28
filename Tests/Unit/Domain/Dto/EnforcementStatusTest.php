@@ -110,6 +110,42 @@ final class EnforcementStatusTest extends TestCase
         self::assertSame(0, $status->gracePeriodRemainingDays());
     }
 
+    #[Test]
+    public function gracePeriodRemainingDaysUsesFloorForPartialDays(): void
+    {
+        $now = 1_700_000_000;
+        // 5.5 days ago — floor(5.5)=5, ceil(5.5)=6, round(5.5)=6
+        $fiveAndHalfDaysAgo = $now - (5 * 86_400 + 43_200);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: $fiveAndHalfDaysAgo,
+            hasPasskeys: false,
+        );
+
+        // floor gives 5 elapsed → 14-5=9; ceil/round would give 6 → 14-6=8
+        self::assertSame(9, $status->gracePeriodRemainingDays($now));
+    }
+
+    #[Test]
+    public function gracePeriodRemainingDaysUsesExactSecondsPerDay(): void
+    {
+        $now = 1_700_000_000;
+        // Exactly 86399 seconds ago (1 second less than a full day)
+        $justUnderOneDay = $now - 86_399;
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 1,
+            gracePeriodStart: $justUnderOneDay,
+            hasPasskeys: false,
+        );
+
+        // floor(86399/86400)=0 → remaining=1; with 86399 divisor would give 1 → remaining=0
+        self::assertSame(1, $status->gracePeriodRemainingDays($now));
+    }
+
     // --- isGracePeriodExpired() ---
 
     #[Test]
@@ -155,6 +191,21 @@ final class EnforcementStatusTest extends TestCase
         );
 
         self::assertTrue($status->isGracePeriodExpired($now));
+    }
+
+    #[Test]
+    public function isGracePeriodExpiredReturnsFalseWhenNotStartedEvenWithZeroGraceDays(): void
+    {
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Enforced,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+
+        // gracePeriodStart=0 guard must return false, even though
+        // gracePeriodRemainingDays() would return 0 if the guard were bypassed
+        self::assertFalse($status->isGracePeriodExpired());
     }
 
     #[Test]
