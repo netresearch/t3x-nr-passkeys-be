@@ -1,4 +1,5 @@
 <html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
       data-namespace-typo3-fluid="true">
 <!--
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
@@ -47,13 +48,13 @@
 
             <h3>Step 3 &mdash; Set groups to <em>Encourage</em></h3>
             <p>
-                On the <f:link.action action="dashboard">Dashboard</f:link.action> tab,
+                On the <a href="{dashboardUrl}">Dashboard</a> tab,
                 change a group's enforcement level to <strong>Encourage</strong>.
                 Users in that group will see a non-blocking banner on every backend
                 login reminding them to register a passkey. They can dismiss the
                 banner and continue working normally.
             </p>
-            <f:be.infobox title="Tip" state="-1">
+            <f:be.infobox title="Tip" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::INFO')}">
                 Start with a pilot group (e.g., your admin team) to validate the
                 workflow before widening the rollout.
             </f:be.infobox>
@@ -81,7 +82,7 @@
 
             <h3>Step 6 &mdash; Monitor adoption</h3>
             <p>
-                Use the <f:link.action action="dashboard">Dashboard</f:link.action>
+                Use the <a href="{dashboardUrl}">Dashboard</a>
                 tab to track overall adoption rates, per-group progress, and identify
                 users who have not yet registered passkeys.
             </p>
@@ -145,7 +146,7 @@
                     re-register a passkey.
                 </li>
             </ul>
-            <f:be.infobox title="Important" state="1">
+            <f:be.infobox title="Important" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING')}">
                 Remember to restore the group's enforcement level after the user
                 has re-registered a passkey. Leaving enforcement lowered
                 indefinitely weakens your security posture.
@@ -212,7 +213,7 @@
                     <strong>Backend rendering</strong> &mdash; normal backend access.
                 </li>
             </ol>
-            <f:be.infobox title="Note" state="-2">
+            <f:be.infobox title="Note" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::NOTICE')}">
                 Users who log in with a passkey skip step 3 entirely because they
                 have already proven they own a registered credential.
             </f:be.infobox>
@@ -314,7 +315,7 @@
                          aria-labelledby="faqHeading4" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                The <f:link.action action="dashboard">Dashboard</f:link.action>
+                                The <a href="{dashboardUrl}">Dashboard</a>
                                 tab shows the overall adoption rate, per-group
                                 statistics, and a list of users who have not yet
                                 registered a passkey. Use these numbers to plan your

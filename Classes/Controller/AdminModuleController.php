@@ -87,9 +87,6 @@ final class AdminModuleController
             'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
             'js.',
         );
-        $this->pageRenderer->loadJavaScriptModule(
-            '@netresearch/nr-passkeys-be/PasskeyDashboard.js',
-        );
 
         return $moduleTemplate->renderResponse('AdminModule/Dashboard');
     }
@@ -102,6 +99,10 @@ final class AdminModuleController
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
         $moduleTemplate->setTitle($this->translate('module.title', 'Passkey Management') . ' – ' . $this->translate('module.help', 'Help'));
         $this->buildDocHeaderMenu($moduleTemplate, 'help');
+
+        $moduleTemplate->assignMultiple([
+            'dashboardUrl' => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys'),
+        ]);
 
         return $moduleTemplate->renderResponse('AdminModule/Help');
     }

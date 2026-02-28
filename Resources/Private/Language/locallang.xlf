@@ -179,6 +179,9 @@
             <trans-unit id="dashboard.title" resname="dashboard.title">
                 <source>Passkey Adoption Dashboard</source>
             </trans-unit>
+            <trans-unit id="dashboard.description" resname="dashboard.description">
+                <source>Overview of passkey adoption across backend user groups.</source>
+            </trans-unit>
             <trans-unit id="dashboard.adoption.title" resname="dashboard.adoption.title">
                 <source>Overall Adoption</source>
             </trans-unit>
@@ -215,8 +218,11 @@
             <trans-unit id="dashboard.usersWithout.editUser" resname="dashboard.usersWithout.editUser">
                 <source>Edit user record</source>
             </trans-unit>
-            <trans-unit id="dashboard.allAdopted" resname="dashboard.allAdopted">
-                <source>All active users have registered passkeys. No enforcement groups configured.</source>
+            <trans-unit id="dashboard.allAdopted.title" resname="dashboard.allAdopted.title">
+                <source>Full Adoption</source>
+            </trans-unit>
+            <trans-unit id="dashboard.allAdopted.body" resname="dashboard.allAdopted.body">
+                <source>All active backend users have registered passkeys.</source>
             </trans-unit>
             <trans-unit id="dashboard.groups.group" resname="dashboard.groups.group">
                 <source>Group</source>

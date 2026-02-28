@@ -146,11 +146,6 @@ final class AdminModuleControllerTest extends TestCase
                 'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
                 'js.',
             );
-        $this->pageRenderer
-            ->expects(self::once())
-            ->method('loadJavaScriptModule')
-            ->with('@netresearch/nr-passkeys-be/PasskeyDashboard.js');
-
         $request = $this->createMock(ServerRequestInterface::class);
         $response = $this->subject->dashboardAction($request);
 
@@ -238,6 +233,11 @@ final class AdminModuleControllerTest extends TestCase
         $moduleTemplate->expects(self::once())
             ->method('setTitle')
             ->with('Passkey Management – Help');
+
+        $moduleTemplate->expects(self::once())
+            ->method('assignMultiple')
+            ->with(self::callback(static fn(array $vars): bool => \array_key_exists('dashboardUrl', $vars)))
+            ->willReturnSelf();
 
         $expectedResponse = new HtmlResponse('<html></html>');
         $moduleTemplate->expects(self::once())
