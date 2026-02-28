@@ -63,10 +63,14 @@ class PasskeyBanner {
     actions.style.cssText = 'white-space: nowrap;';
 
     const setupLink = document.createElement('a');
-    setupLink.href = '/typo3/setup/';
+    setupLink.href = '#';
     setupLink.className = 'btn btn-sm btn-primary';
     setupLink.textContent = this.translate('js.banner.setup', 'Set up now');
     setupLink.style.marginRight = '0.5rem';
+    setupLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      top.TYPO3.ModuleMenu.App.showModule('user_setup');
+    });
 
     const dismissBtn = document.createElement('button');
     dismissBtn.type = 'button';
@@ -83,9 +87,9 @@ class PasskeyBanner {
     body.appendChild(actions);
     banner.appendChild(body);
 
-    const scaffold = document.querySelector('.scaffold-content') || document.querySelector('.module');
-    if (scaffold) {
-      scaffold.prepend(banner);
+    const container = document.querySelector('.scaffold-content-module') || document.querySelector('.module');
+    if (container) {
+      container.prepend(banner);
     }
   }
 }

@@ -224,7 +224,7 @@ final class AdoptionStatsService
                 $queryBuilder->expr()->eq('c.deleted', 0),
                 $queryBuilder->expr()->eq('c.revoked_at', 0),
             )
-            ->groupBy(self::TABLE_USERS . '.uid')
+            ->groupBy(self::TABLE_USERS . '.uid', self::TABLE_USERS . '.usergroup')
             ->executeQuery()
             ->fetchAllAssociative();
 
