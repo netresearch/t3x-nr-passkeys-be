@@ -37,16 +37,15 @@ final readonly class EnforcementStatus
      *
      * Returns the full grace-period length if not yet started (start = 0).
      * Never returns negative values.
-     *
-     * @param int|null $currentTime Unix timestamp to use as "now" (defaults to \time())
      */
-    public function gracePeriodRemainingDays(?int $currentTime = null): int
+    public function gracePeriodRemainingDays(int $currentTime = 0): int
     {
         if ($this->gracePeriodStart === 0) {
             return $this->gracePeriodDays;
         }
 
-        $elapsedSeconds = ($currentTime ?? \time()) - $this->gracePeriodStart;
+        $now = $currentTime > 0 ? $currentTime : \time();
+        $elapsedSeconds = $now - $this->gracePeriodStart;
         $elapsedDays = (int) \floor($elapsedSeconds / 86_400);
         $remaining = $this->gracePeriodDays - $elapsedDays;
 
@@ -57,10 +56,8 @@ final readonly class EnforcementStatus
      * Whether the grace period has expired.
      *
      * Always false if the grace period has not been started (start = 0).
-     *
-     * @param int|null $currentTime Unix timestamp to use as "now" (defaults to \time())
      */
-    public function isGracePeriodExpired(?int $currentTime = null): bool
+    public function isGracePeriodExpired(int $currentTime = 0): bool
     {
         if ($this->gracePeriodStart === 0) {
             return false;
@@ -89,10 +86,8 @@ final readonly class EnforcementStatus
      * - Enforced: never skippable
      * - Required with expired grace period: not skippable
      * - Everything else: skippable
-     *
-     * @param int|null $currentTime Unix timestamp to use as "now" (defaults to \time())
      */
-    public function canSkip(?int $currentTime = null): bool
+    public function canSkip(int $currentTime = 0): bool
     {
         if ($this->level === EnforcementLevel::Enforced) {
             return false;
