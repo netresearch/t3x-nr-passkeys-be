@@ -25,10 +25,16 @@ final readonly class UserPasskeyStatus implements JsonSerializable
         public string $groups,
         public int $gracePeriodStart,
         public int $gracePeriodRemainingDays,
+        public int $nudgeUntil = 0,
     ) {}
 
+    public function hasActiveNudge(): bool
+    {
+        return $this->nudgeUntil > \time();
+    }
+
     /**
-     * @return array{uid: int, username: string, realName: string, groups: string, gracePeriodStart: int, gracePeriodRemainingDays: int}
+     * @return array{uid: int, username: string, realName: string, groups: string, gracePeriodStart: int, gracePeriodRemainingDays: int, nudgeUntil: int, hasActiveNudge: bool}
      */
     public function jsonSerialize(): array
     {
@@ -39,6 +45,8 @@ final readonly class UserPasskeyStatus implements JsonSerializable
             'groups' => $this->groups,
             'gracePeriodStart' => $this->gracePeriodStart,
             'gracePeriodRemainingDays' => $this->gracePeriodRemainingDays,
+            'nudgeUntil' => $this->nudgeUntil,
+            'hasActiveNudge' => $this->hasActiveNudge(),
         ];
     }
 }

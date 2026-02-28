@@ -84,4 +84,11 @@ return [
         'target' => AdminController::class . '::sendReminderAction',
         'methods' => ['POST'],
     ],
+
+    // Admin dashboard -- clear an active passkey setup nudge
+    'passkeys_admin_clear_nudge' => [
+        'path' => '/passkeys/admin/clear-nudge',
+        'target' => AdminController::class . '::clearNudgeAction',
+        'methods' => ['POST'],
+    ],
 ];

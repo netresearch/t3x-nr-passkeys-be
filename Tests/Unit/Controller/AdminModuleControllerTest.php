@@ -141,6 +141,11 @@ final class AdminModuleControllerTest extends TestCase
 
         $this->pageRenderer
             ->expects(self::once())
+            ->method('loadJavaScriptModule')
+            ->with('@netresearch/nr-passkeys-be/PasskeyDashboard.js');
+
+        $this->pageRenderer
+            ->expects(self::once())
             ->method('addInlineLanguageLabelFile')
             ->with(
                 'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
@@ -222,6 +227,8 @@ final class AdminModuleControllerTest extends TestCase
         self::assertSame('5', $userData['groups']);
         self::assertSame(1700000000, $userData['gracePeriodStart']);
         self::assertSame(7, $userData['gracePeriodRemainingDays']);
+        self::assertSame(0, $userData['nudgeUntil']);
+        self::assertFalse($userData['hasActiveNudge']);
         self::assertArrayHasKey('editUrl', $userData);
         self::assertIsString($userData['editUrl']);
     }

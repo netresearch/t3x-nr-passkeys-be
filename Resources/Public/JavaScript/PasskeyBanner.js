@@ -28,17 +28,23 @@ class PasskeyBanner {
   }
 
   async initialize() {
-    if (sessionStorage.getItem('nr-passkeys-banner-dismissed')) {
-      return;
-    }
-
     try {
       const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_enforcement_status).get();
       const data = await response.resolve();
 
-      if (data.requiresBanner) {
-        this.showBanner(data);
+      if (!data.requiresBanner) {
+        return;
       }
+
+      // Tie dismissal to the specific nudge/enforcement state so a new nudge
+      // re-shows the banner even if the user dismissed a previous one.
+      const dismissKey = 'nr-passkeys-banner-dismissed';
+      const dismissed = sessionStorage.getItem(dismissKey);
+      if (dismissed && dismissed === String(data.nudgeUntil || 0)) {
+        return;
+      }
+
+      this.showBanner(data);
     } catch {
       // Silently fail - banner is non-critical
     }
@@ -78,7 +84,7 @@ class PasskeyBanner {
     dismissBtn.textContent = this.translate('js.banner.dismiss', 'Dismiss');
     dismissBtn.addEventListener('click', () => {
       banner.remove();
-      sessionStorage.setItem('nr-passkeys-banner-dismissed', '1');
+      sessionStorage.setItem('nr-passkeys-banner-dismissed', String(data.nudgeUntil || 0));
     });
 
     actions.appendChild(setupLink);

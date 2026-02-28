@@ -20,6 +20,7 @@ class PasskeyDashboard {
     this.bindEnforcementSelects();
     this.bindReminderButtons();
     this.bindUnlockButtons();
+    this.bindClearNudgeButtons();
   }
 
   /**
@@ -151,6 +152,50 @@ class PasskeyDashboard {
       button.disabled = false;
       const message = await this.extractErrorMessage(error);
       Notification.error(this.translate('js.unlock.failed', 'Unlock failed'), message);
+    }
+  }
+
+  bindClearNudgeButtons() {
+    const buttons = document.querySelectorAll('.passkey-clear-nudge');
+    buttons.forEach((button) => {
+      button.addEventListener('click', (event) => this.handleClearNudge(event));
+    });
+  }
+
+  async handleClearNudge(event) {
+    const button = event.currentTarget;
+    const beUserUid = parseInt(button.dataset.userUid, 10);
+    const username = button.dataset.username;
+
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = this.translate('js.clearNudge.progress', 'Clearing...');
+
+    try {
+      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_clear_nudge).post({
+        beUserUid: beUserUid,
+      });
+      const data = await response.resolve();
+
+      if (data.status === 'ok') {
+        button.textContent = this.translate('js.clearNudge.done', 'Cleared');
+        Notification.success(
+          this.translate('js.clearNudge.success', 'Nudge cleared'),
+          this.translate('js.clearNudge.message', 'Passkey nudge cleared for "%s".').replace('%s', username),
+        );
+      } else {
+        button.textContent = originalText;
+        button.disabled = false;
+        Notification.error(
+          this.translate('js.clearNudge.failed', 'Clear failed'),
+          data.error || this.translate('js.error.unknown', 'Unknown error.'),
+        );
+      }
+    } catch (error) {
+      button.textContent = originalText;
+      button.disabled = false;
+      const message = await this.extractErrorMessage(error);
+      Notification.error(this.translate('js.clearNudge.failed', 'Clear failed'), message);
     }
   }
 

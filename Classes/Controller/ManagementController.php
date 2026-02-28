@@ -194,6 +194,7 @@ final class ManagementController
             'hasPasskeys' => $status->hasPasskeys,
             'requiresBanner' => $requiresBanner,
             'gracePeriodRemainingDays' => $status->gracePeriodRemainingDays(),
+            'nudgeUntil' => $hasActiveNudge ? (int) $nudgeUntil : 0,
         ]);
     }
 

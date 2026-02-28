@@ -285,6 +285,7 @@ final class AdoptionStatsService
                 self::TABLE_USERS . '.realName',
                 self::TABLE_USERS . '.usergroup',
                 self::TABLE_USERS . '.passkey_grace_period_start',
+                self::TABLE_USERS . '.passkey_nudge_until',
             )
             ->from(self::TABLE_USERS)
             ->leftJoin(
@@ -336,6 +337,9 @@ final class AdoptionStatsService
             $status = $this->enforcementService->getStatus($userRow);
             $groupTitles = $this->resolveGroupTitles($usergroup, $groupTitleMap);
 
+            $nudgeUntilValue = $row['passkey_nudge_until'] ?? 0;
+            $nudgeUntil = \is_numeric($nudgeUntilValue) ? (int) $nudgeUntilValue : 0;
+
             $result[] = new UserPasskeyStatus(
                 uid: $uid,
                 username: $username,
@@ -343,6 +347,7 @@ final class AdoptionStatsService
                 groups: $groupTitles,
                 gracePeriodStart: $graceStart,
                 gracePeriodRemainingDays: $status->gracePeriodRemainingDays(),
+                nudgeUntil: $nudgeUntil,
             );
         }
 

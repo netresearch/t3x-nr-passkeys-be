@@ -251,6 +251,15 @@
             <trans-unit id="dashboard.usersWithout.gracePeriodRemaining" resname="dashboard.usersWithout.gracePeriodRemaining">
                 <source>Grace Period Remaining</source>
             </trans-unit>
+            <trans-unit id="dashboard.usersWithout.nudge" resname="dashboard.usersWithout.nudge">
+                <source>Nudge</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.nudgeActive" resname="dashboard.usersWithout.nudgeActive">
+                <source>Active</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.clearNudge" resname="dashboard.usersWithout.clearNudge">
+                <source>Clear Nudge</source>
+            </trans-unit>
             <trans-unit id="dashboard.usersWithout.actions" resname="dashboard.usersWithout.actions">
                 <source>Actions</source>
             </trans-unit>
@@ -328,6 +337,21 @@
             </trans-unit>
             <trans-unit id="js.reminder.failed" resname="js.reminder.failed">
                 <source>Reminder failed</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.progress" resname="js.clearNudge.progress">
+                <source>Clearing...</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.done" resname="js.clearNudge.done">
+                <source>Cleared</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.success" resname="js.clearNudge.success">
+                <source>Nudge cleared</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.message" resname="js.clearNudge.message">
+                <source>Passkey nudge cleared for "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.failed" resname="js.clearNudge.failed">
+                <source>Clear failed</source>
             </trans-unit>
             <trans-unit id="js.error.server" resname="js.error.server">
                 <source>Server returned an error. Please try again.</source>

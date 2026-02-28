@@ -1002,6 +1002,110 @@ final class AdminControllerTest extends TestCase
         self::assertSame('Unauthorized', $body['error']);
     }
 
+    // ── clearNudgeAction ─────────────────────────────────────
+
+    #[Test]
+    public function clearNudgeActionSuccess(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
+
+        $connection = $this->createMock(\TYPO3\CMS\Core\Database\Connection::class);
+        $connection->expects(self::once())
+            ->method('update')
+            ->with(
+                'be_users',
+                ['passkey_nudge_until' => 0],
+                ['uid' => 42],
+            );
+
+        $this->connectionPool
+            ->method('getConnectionForTable')
+            ->with('be_users')
+            ->willReturn($connection);
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $this->logger
+            ->expects(self::once())
+            ->method('info')
+            ->with('Admin cleared passkey nudge', self::callback(static function (array $context): bool {
+                return $context['admin_uid'] === 1
+                    && $context['be_user_uid'] === 42
+                    && $context['username'] === 'editor';
+            }));
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('ok', $body['status']);
+    }
+
+    #[Test]
+    public function clearNudgeActionAsNonAdmin(): void
+    {
+        $this->setUpNonAdminUser(42, 'editor');
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
+    #[Test]
+    public function clearNudgeActionWithMissingBeUserUid(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([]);
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function clearNudgeActionUserNotFound(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpFindActiveBeUserByUid(999, null);
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 999,
+        ]);
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(404, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('User not found', $body['error']);
+    }
+
+    #[Test]
+    public function clearNudgeActionWithoutBeUser(): void
+    {
+        // Do NOT set $GLOBALS['BE_USER']
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
     /**
      * Set up the ConnectionPool mock to simulate a group lookup by UID.
      *

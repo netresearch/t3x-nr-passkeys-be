@@ -70,6 +70,8 @@ final class AdminModuleController
                 'groups' => $user->groups,
                 'gracePeriodStart' => $user->gracePeriodStart,
                 'gracePeriodRemainingDays' => $user->gracePeriodRemainingDays,
+                'nudgeUntil' => $user->nudgeUntil,
+                'hasActiveNudge' => $user->hasActiveNudge(),
                 'editUrl' => $editUrl,
             ];
         }
@@ -83,6 +85,9 @@ final class AdminModuleController
             'enforcementLevels' => $this->getEnforcementLevelOptions(),
         ]);
 
+        $this->pageRenderer->loadJavaScriptModule(
+            '@netresearch/nr-passkeys-be/PasskeyDashboard.js',
+        );
         $this->pageRenderer->addInlineLanguageLabelFile(
             'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
             'js.',

@@ -3,10 +3,6 @@
       data-namespace-typo3-fluid="true">
 <f:layout name="Module" />
 
-<f:section name="Before">
-    <f:asset.module identifier="@netresearch/nr-passkeys-be/PasskeyDashboard.js" />
-</f:section>
-
 <f:section name="Content">
     <h1><f:translate key="dashboard.title" extensionName="NrPasskeysBe" /></h1>
     <p class="text-body-secondary mb-4">
@@ -121,6 +117,7 @@
                                 <th scope="col"><f:translate key="dashboard.usersWithout.name" extensionName="NrPasskeysBe" /></th>
                                 <th scope="col"><f:translate key="dashboard.usersWithout.groups" extensionName="NrPasskeysBe" /></th>
                                 <th scope="col"><f:translate key="dashboard.usersWithout.gracePeriodRemaining" extensionName="NrPasskeysBe" /></th>
+                                <th scope="col"><f:translate key="dashboard.usersWithout.nudge" extensionName="NrPasskeysBe">Nudge</f:translate></th>
                                 <th scope="col" class="col-control"><span class="visually-hidden"><f:translate key="dashboard.usersWithout.actions" extensionName="NrPasskeysBe" /></span></th>
                             </tr>
                         </thead>
@@ -156,6 +153,16 @@
                                             </f:else>
                                         </f:if>
                                     </td>
+                                    <td>
+                                        <f:if condition="{user.hasActiveNudge}">
+                                            <f:then>
+                                                <span class="badge text-bg-info"><f:translate key="dashboard.usersWithout.nudgeActive" extensionName="NrPasskeysBe">Active</f:translate></span>
+                                            </f:then>
+                                            <f:else>
+                                                <span class="text-body-secondary">-</span>
+                                            </f:else>
+                                        </f:if>
+                                    </td>
                                     <td class="col-control nowrap">
                                         <div class="btn-group" role="group" aria-label="{f:translate(key: 'dashboard.usersWithout.actions', extensionName: 'NrPasskeysBe')}">
                                             <button type="button"
@@ -166,6 +173,16 @@
                                                 <core:icon identifier="actions-envelope" size="small" />
                                                 <f:translate key="dashboard.usersWithout.sendReminder" extensionName="NrPasskeysBe" />
                                             </button>
+                                            <f:if condition="{user.hasActiveNudge}">
+                                                <button type="button"
+                                                        class="btn btn-default btn-sm passkey-clear-nudge"
+                                                        data-user-uid="{user.uid}"
+                                                        data-username="{user.username}"
+                                                        title="{f:translate(key: 'dashboard.usersWithout.clearNudge', extensionName: 'NrPasskeysBe')}">
+                                                    <core:icon identifier="actions-ban" size="small" />
+                                                    <f:translate key="dashboard.usersWithout.clearNudge" extensionName="NrPasskeysBe">Clear Nudge</f:translate>
+                                                </button>
+                                            </f:if>
                                             <button type="button"
                                                     class="btn btn-default btn-sm passkey-unlock-user"
                                                     data-user-uid="{user.uid}"

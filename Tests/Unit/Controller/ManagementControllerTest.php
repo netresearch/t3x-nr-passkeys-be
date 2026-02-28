@@ -952,6 +952,7 @@ final class ManagementControllerTest extends TestCase
         self::assertSame('off', $body['level']);
         // Even though enforcement is Off, the active nudge should trigger the banner
         self::assertTrue($body['requiresBanner']);
+        self::assertGreaterThan(0, $body['nudgeUntil']);
     }
 
     #[Test]
@@ -986,6 +987,7 @@ final class ManagementControllerTest extends TestCase
         $body = $this->decodeResponse($response);
         // Nudge is active but user already has passkeys — banner is pointless
         self::assertFalse($body['requiresBanner']);
+        self::assertSame(0, $body['nudgeUntil']);
     }
 
     #[Test]
@@ -1020,6 +1022,7 @@ final class ManagementControllerTest extends TestCase
         $body = $this->decodeResponse($response);
         // Nudge expired and enforcement is Off, so no banner
         self::assertFalse($body['requiresBanner']);
+        self::assertSame(0, $body['nudgeUntil']);
     }
 
     #[Test]

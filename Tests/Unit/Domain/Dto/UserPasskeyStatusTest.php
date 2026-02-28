@@ -35,6 +35,8 @@ final class UserPasskeyStatusTest extends TestCase
         self::assertSame('1,3,5', $status->groups);
         self::assertSame(1_700_000_000, $status->gracePeriodStart);
         self::assertSame(7, $status->gracePeriodRemainingDays);
+        self::assertSame(0, $status->nudgeUntil);
+        self::assertFalse($status->hasActiveNudge());
     }
 
     #[Test]
@@ -49,16 +51,16 @@ final class UserPasskeyStatusTest extends TestCase
             gracePeriodRemainingDays: 3,
         );
 
-        $expected = [
-            'uid' => 99,
-            'username' => 'admin',
-            'realName' => 'Admin User',
-            'groups' => '2,4',
-            'gracePeriodStart' => 1_700_000_000,
-            'gracePeriodRemainingDays' => 3,
-        ];
+        $serialized = $status->jsonSerialize();
 
-        self::assertSame($expected, $status->jsonSerialize());
+        self::assertSame(99, $serialized['uid']);
+        self::assertSame('admin', $serialized['username']);
+        self::assertSame('Admin User', $serialized['realName']);
+        self::assertSame('2,4', $serialized['groups']);
+        self::assertSame(1_700_000_000, $serialized['gracePeriodStart']);
+        self::assertSame(3, $serialized['gracePeriodRemainingDays']);
+        self::assertSame(0, $serialized['nudgeUntil']);
+        self::assertFalse($serialized['hasActiveNudge']);
     }
 
     #[Test]
@@ -78,6 +80,41 @@ final class UserPasskeyStatusTest extends TestCase
         self::assertSame('', $serialized['groups']);
         self::assertSame(0, $serialized['gracePeriodStart']);
         self::assertSame(0, $serialized['gracePeriodRemainingDays']);
+    }
+
+    #[Test]
+    public function hasActiveNudgeReturnsTrueWhenNudgeInFuture(): void
+    {
+        $status = new UserPasskeyStatus(
+            uid: 42,
+            username: 'editor',
+            realName: 'Editor',
+            groups: '1',
+            gracePeriodStart: 0,
+            gracePeriodRemainingDays: 0,
+            nudgeUntil: \time() + 86_400,
+        );
+
+        self::assertTrue($status->hasActiveNudge());
+        self::assertTrue($status->jsonSerialize()['hasActiveNudge']);
+        self::assertGreaterThan(0, $status->jsonSerialize()['nudgeUntil']);
+    }
+
+    #[Test]
+    public function hasActiveNudgeReturnsFalseWhenNudgeExpired(): void
+    {
+        $status = new UserPasskeyStatus(
+            uid: 42,
+            username: 'editor',
+            realName: 'Editor',
+            groups: '1',
+            gracePeriodStart: 0,
+            gracePeriodRemainingDays: 0,
+            nudgeUntil: \time() - 86_400,
+        );
+
+        self::assertFalse($status->hasActiveNudge());
+        self::assertFalse($status->jsonSerialize()['hasActiveNudge']);
     }
 
     #[Test]
