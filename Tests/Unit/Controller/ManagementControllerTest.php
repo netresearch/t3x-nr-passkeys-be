@@ -955,6 +955,40 @@ final class ManagementControllerTest extends TestCase
     }
 
     #[Test]
+    public function enforcementStatusActionReturnsFalseRequiresBannerWhenNudgeActiveButUserHasPasskeys(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = [
+            'uid' => 42,
+            'username' => 'editor',
+            'realName' => 'Editor',
+            'passkey_nudge_until' => \time() + 86_400, // nudge active for 1 more day
+        ];
+        $backendUser->method('isAdmin')->willReturn(false);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = $this->createJsonRequest([]);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Off,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: true, // user already registered a passkey
+        );
+
+        $this->enforcementService
+            ->method('getStatus')
+            ->willReturn($status);
+
+        $response = $this->subject->enforcementStatusAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        // Nudge is active but user already has passkeys — banner is pointless
+        self::assertFalse($body['requiresBanner']);
+    }
+
+    #[Test]
     public function enforcementStatusActionReturnsFalseRequiresBannerWhenNudgeExpired(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);

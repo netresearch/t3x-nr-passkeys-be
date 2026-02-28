@@ -179,9 +179,13 @@ final class ManagementController
         /** @var array<string, mixed> $userRow */
         $status = $this->enforcementService->getStatus($userRow);
 
-        // Check if an admin-sent nudge is active (passkey_nudge_until in the future)
+        // Check if an admin-sent nudge is active (passkey_nudge_until in the future).
+        // A nudge only triggers the banner if the user has no passkeys yet —
+        // once they register a passkey, the nudge becomes irrelevant.
         $nudgeUntil = $userRow['passkey_nudge_until'] ?? 0;
-        $hasActiveNudge = \is_numeric($nudgeUntil) && (int) $nudgeUntil > \time();
+        $hasActiveNudge = !$status->hasPasskeys
+            && \is_numeric($nudgeUntil)
+            && (int) $nudgeUntil > \time();
 
         $requiresBanner = ($status->level->requiresBanner() && !$status->hasPasskeys) || $hasActiveNudge;
 
