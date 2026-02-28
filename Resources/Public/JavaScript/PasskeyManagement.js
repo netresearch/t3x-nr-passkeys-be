@@ -313,26 +313,27 @@ class PasskeyManagement {
           text: 'Remove',
           btnClass: 'btn-danger',
           name: 'remove',
-          trigger: async () => {
-            try {
-              const response = await new AjaxRequest(this.removeUrl)
-                .addMiddleware(sudoModeInterceptor)
-                .post({ uid: uid });
-              const data = await response.resolve();
-              if (data.status === 'ok') {
-                Notification.success('Passkey removed', 'Passkey removed successfully.');
-                this.loadPasskeys();
-              } else {
-                Notification.error('Remove failed', data.error || 'Failed to remove passkey.');
-              }
-            } catch (error) {
-              Notification.error('Remove failed', error.message || 'Failed to remove passkey.');
-            }
-          },
         },
       ],
     );
-    modal.addEventListener('button.clicked', () => {
+    modal.addEventListener('button.clicked', async (event) => {
+      const name = event.target.getAttribute('name');
+      if (name === 'remove') {
+        try {
+          const response = await new AjaxRequest(this.removeUrl)
+            .addMiddleware(sudoModeInterceptor)
+            .post({ uid: uid });
+          const data = await response.resolve();
+          if (data.status === 'ok') {
+            Notification.success('Passkey removed', 'Passkey removed successfully.');
+            this.loadPasskeys();
+          } else {
+            Notification.error('Remove failed', data.error || 'Failed to remove passkey.');
+          }
+        } catch (error) {
+          Notification.error('Remove failed', error.message || 'Failed to remove passkey.');
+        }
+      }
       modal.hideModal();
     });
   }

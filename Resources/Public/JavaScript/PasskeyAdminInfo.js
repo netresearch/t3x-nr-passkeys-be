@@ -71,13 +71,13 @@ class PasskeyAdminInfo {
           text: button.dataset.confirmationRevokeText || 'Revoke',
           btnClass: 'btn-warning',
           name: 'revoke',
-          trigger: () => {
-            this.sendRevokeRequest(credentialUid);
-          },
         },
       ],
     );
-    modal.addEventListener('button.clicked', () => {
+    modal.addEventListener('button.clicked', (event) => {
+      if (event.target.getAttribute('name') === 'revoke') {
+        this.sendRevokeRequest(credentialUid);
+      }
       modal.hideModal();
     });
   }
@@ -98,21 +98,21 @@ class PasskeyAdminInfo {
           text: button.dataset.confirmationRevokeText || 'Revoke all passkeys',
           btnClass: 'btn-danger',
           name: 'revokeAll',
-          trigger: () => {
-            this.sendRevokeAllRequest();
-          },
         },
       ],
     );
-    modal.addEventListener('button.clicked', () => {
+    modal.addEventListener('button.clicked', (event) => {
+      if (event.target.getAttribute('name') === 'revokeAll') {
+        this.sendRevokeAllRequest();
+      }
       modal.hideModal();
     });
   }
 
   confirmAndUnlock(button) {
     const modal = Modal.show(
-      button.dataset.confirmationTitle || 'Unlock account',
-      button.dataset.confirmationContent || 'Reset the rate limiter for this user?',
+      button.dataset.confirmationTitle || 'Reset login lock',
+      button.dataset.confirmationContent || 'Reset the failed login attempt counter for this user?',
       SeverityEnum.info,
       [
         {
@@ -122,16 +122,16 @@ class PasskeyAdminInfo {
           name: 'cancel',
         },
         {
-          text: button.dataset.confirmationUnlockText || 'Unlock account',
+          text: button.dataset.confirmationUnlockText || 'Reset login lock',
           btnClass: 'btn-warning',
           name: 'unlock',
-          trigger: () => {
-            this.sendUnlockRequest();
-          },
         },
       ],
     );
-    modal.addEventListener('button.clicked', () => {
+    modal.addEventListener('button.clicked', (event) => {
+      if (event.target.getAttribute('name') === 'unlock') {
+        this.sendUnlockRequest();
+      }
       modal.hideModal();
     });
   }
@@ -205,9 +205,9 @@ class PasskeyAdminInfo {
       .then(async (response) => {
         const data = await response.resolve();
         if (data.status === 'ok') {
-          Notification.success('Account unlocked');
+          Notification.success('Login lock reset');
         } else {
-          Notification.error('Failed to unlock account', data.error || '');
+          Notification.error('Failed to reset login lock', data.error || '');
         }
       })
       .catch(() => {

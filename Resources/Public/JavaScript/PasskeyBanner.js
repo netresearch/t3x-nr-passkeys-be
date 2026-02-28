@@ -93,7 +93,12 @@ class PasskeyBanner {
     body.appendChild(actions);
     banner.appendChild(body);
 
-    const container = document.querySelector('.scaffold-content-module') || document.querySelector('.module');
+    // Insert into the module body area, not the scaffold wrapper (which would
+    // create a "third pane" next to the page tree).  The selectors are tried
+    // in order of specificity so we land inside the current module's content.
+    const container = document.querySelector('.module-body')
+      || document.querySelector('.scaffold-content-module-body')
+      || document.querySelector('.module');
     if (container) {
       container.prepend(banner);
     }

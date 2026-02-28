@@ -111,7 +111,7 @@
                 <source>Passkeys</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.description" resname="admin.passkeys.description">
-                <source>WebAuthn/FIDO2 passkeys registered for this user. Admins can revoke individual passkeys or unlock rate-limited accounts.</source>
+                <source>WebAuthn/FIDO2 passkeys registered for this user. Admins can revoke individual passkeys or reset login locks for rate-limited accounts.</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.enabled" resname="admin.passkeys.enabled">
                 <source>Enabled</source>
@@ -138,13 +138,13 @@
                 <source>Are you sure you want to revoke this passkey?</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.unlock" resname="admin.passkeys.unlock">
-                <source>Unlock account</source>
+                <source>Reset login lock</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.unlock.confirm.title" resname="admin.passkeys.unlock.confirm.title">
-                <source>Unlock account</source>
+                <source>Reset login lock</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.unlock.confirm.text" resname="admin.passkeys.unlock.confirm.text">
-                <source>Reset the rate limiter for this user?</source>
+                <source>Reset the failed login attempt counter for this user? This clears any rate-limiting or temporary lockout.</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.status.active" resname="admin.passkeys.status.active">
                 <source>Active</source>
@@ -213,7 +213,7 @@
                 <source>Groups</source>
             </trans-unit>
             <trans-unit id="dashboard.usersWithout.unlock" resname="dashboard.usersWithout.unlock">
-                <source>Unlock</source>
+                <source>Reset Lock</source>
             </trans-unit>
             <trans-unit id="dashboard.usersWithout.editUser" resname="dashboard.usersWithout.editUser">
                 <source>Edit user record</source>
@@ -309,19 +309,19 @@
                 <source>Update failed</source>
             </trans-unit>
             <trans-unit id="js.unlock.progress" resname="js.unlock.progress">
-                <source>Unlocking...</source>
+                <source>Resetting...</source>
             </trans-unit>
             <trans-unit id="js.unlock.done" resname="js.unlock.done">
-                <source>Unlocked</source>
+                <source>Reset</source>
             </trans-unit>
             <trans-unit id="js.unlock.success" resname="js.unlock.success">
-                <source>Account unlocked</source>
+                <source>Login lock reset</source>
             </trans-unit>
             <trans-unit id="js.unlock.message" resname="js.unlock.message">
-                <source>Rate limiter reset for "%s".</source>
+                <source>Failed login attempt counter reset for "%s".</source>
             </trans-unit>
             <trans-unit id="js.unlock.failed" resname="js.unlock.failed">
-                <source>Unlock failed</source>
+                <source>Reset failed</source>
             </trans-unit>
             <trans-unit id="js.reminder.progress" resname="js.reminder.progress">
                 <source>Sending...</source>

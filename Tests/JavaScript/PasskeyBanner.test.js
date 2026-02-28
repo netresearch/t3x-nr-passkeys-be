@@ -52,7 +52,7 @@ function showBanner(data) {
   dismissBtn.textContent = translate('js.banner.dismiss', 'Dismiss');
   dismissBtn.addEventListener('click', () => {
     banner.remove();
-    sessionStorage.setItem('nr-passkeys-banner-dismissed', '1');
+    sessionStorage.setItem('nr-passkeys-banner-dismissed', String(data.nudgeUntil || 0));
   });
 
   actions.appendChild(setupLink);
@@ -61,7 +61,9 @@ function showBanner(data) {
   body.appendChild(actions);
   banner.appendChild(body);
 
-  const container = document.querySelector('.scaffold-content-module') || document.querySelector('.module');
+  const container = document.querySelector('.module-body')
+    || document.querySelector('.scaffold-content-module-body')
+    || document.querySelector('.module');
   if (container) {
     container.prepend(banner);
   }
@@ -107,7 +109,7 @@ describe('showBanner DOM rendering', () => {
   beforeEach(() => {
     document.body.textContent = '';
     container = document.createElement('div');
-    container.className = 'scaffold-content-module';
+    container.className = 'module-body';
     document.body.appendChild(container);
     delete globalThis.TYPO3;
     sessionStorage.clear();
@@ -124,15 +126,22 @@ describe('showBanner DOM rendering', () => {
     expect(banner.getAttribute('aria-live')).toBe('polite');
   });
 
-  it('should prepend banner to .scaffold-content-module container', () => {
+  it('should prepend banner to .module-body container', () => {
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
     const found = container.querySelector('.passkey-setup-banner');
     expect(found).not.toBeNull();
     expect(container.firstChild).toBe(found);
   });
 
-  it('should fall back to .module container when .scaffold-content-module is absent', () => {
+  it('should fall back to .module container when .module-body is absent', () => {
     container.className = 'module';
+    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    const found = container.querySelector('.passkey-setup-banner');
+    expect(found).not.toBeNull();
+  });
+
+  it('should fall back to .scaffold-content-module-body when .module-body is absent', () => {
+    container.className = 'scaffold-content-module-body';
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
     const found = container.querySelector('.passkey-setup-banner');
     expect(found).not.toBeNull();
@@ -187,7 +196,7 @@ describe('banner dismiss behavior', () => {
   beforeEach(() => {
     document.body.textContent = '';
     container = document.createElement('div');
-    container.className = 'scaffold-content-module';
+    container.className = 'module-body';
     document.body.appendChild(container);
     delete globalThis.TYPO3;
     sessionStorage.clear();
@@ -200,11 +209,18 @@ describe('banner dismiss behavior', () => {
     expect(container.querySelector('.passkey-setup-banner')).toBeNull();
   });
 
-  it('should set sessionStorage flag on dismiss', () => {
+  it('should set sessionStorage flag on dismiss keyed to nudgeUntil', () => {
+    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0, nudgeUntil: 1700000000 });
+    const dismissBtn = container.querySelector('.btn-default');
+    dismissBtn.click();
+    expect(sessionStorage.getItem('nr-passkeys-banner-dismissed')).toBe('1700000000');
+  });
+
+  it('should set sessionStorage flag to 0 when no nudgeUntil', () => {
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
     const dismissBtn = container.querySelector('.btn-default');
     dismissBtn.click();
-    expect(sessionStorage.getItem('nr-passkeys-banner-dismissed')).toBe('1');
+    expect(sessionStorage.getItem('nr-passkeys-banner-dismissed')).toBe('0');
   });
 });
 
@@ -214,7 +230,7 @@ describe('banner "Set up now" navigation', () => {
   beforeEach(() => {
     document.body.textContent = '';
     container = document.createElement('div');
-    container.className = 'scaffold-content-module';
+    container.className = 'module-body';
     document.body.appendChild(container);
     delete globalThis.TYPO3;
     sessionStorage.clear();
@@ -256,18 +272,18 @@ describe('banner placement specificity', () => {
     sessionStorage.clear();
   });
 
-  it('should prefer .scaffold-content-module over .module', () => {
+  it('should prefer .module-body over .module', () => {
     const moduleDiv = document.createElement('div');
     moduleDiv.className = 'module';
     document.body.appendChild(moduleDiv);
 
-    const scaffoldDiv = document.createElement('div');
-    scaffoldDiv.className = 'scaffold-content-module';
-    document.body.appendChild(scaffoldDiv);
+    const moduleBodyDiv = document.createElement('div');
+    moduleBodyDiv.className = 'module-body';
+    document.body.appendChild(moduleBodyDiv);
 
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
 
-    expect(scaffoldDiv.querySelector('.passkey-setup-banner')).not.toBeNull();
+    expect(moduleBodyDiv.querySelector('.passkey-setup-banner')).not.toBeNull();
     expect(moduleDiv.querySelector('.passkey-setup-banner')).toBeNull();
   });
 
@@ -280,6 +296,16 @@ describe('banner placement specificity', () => {
 
     expect(scaffoldContent.querySelector('.passkey-setup-banner')).toBeNull();
   });
+
+  it('should NOT place banner in .scaffold-content-module (outer wrapper)', () => {
+    const scaffoldModule = document.createElement('div');
+    scaffoldModule.className = 'scaffold-content-module';
+    document.body.appendChild(scaffoldModule);
+
+    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+
+    expect(scaffoldModule.querySelector('.passkey-setup-banner')).toBeNull();
+  });
 });
 
 describe('banner with TYPO3 language labels', () => {
@@ -288,7 +314,7 @@ describe('banner with TYPO3 language labels', () => {
   beforeEach(() => {
     document.body.textContent = '';
     container = document.createElement('div');
-    container.className = 'scaffold-content-module';
+    container.className = 'module-body';
     document.body.appendChild(container);
     sessionStorage.clear();
   });

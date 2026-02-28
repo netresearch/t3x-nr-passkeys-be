@@ -124,7 +124,7 @@ class PasskeyDashboard {
 
     button.disabled = true;
     const originalText = button.textContent;
-    button.textContent = this.translate('js.unlock.progress', 'Unlocking...');
+    button.textContent = this.translate('js.unlock.progress', 'Resetting...');
 
     try {
       const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_unlock).post({
@@ -134,16 +134,16 @@ class PasskeyDashboard {
       const data = await response.resolve();
 
       if (data.status === 'ok') {
-        button.textContent = this.translate('js.unlock.done', 'Unlocked');
+        button.textContent = this.translate('js.unlock.done', 'Reset');
         Notification.success(
-          this.translate('js.unlock.success', 'Account unlocked'),
-          this.translate('js.unlock.message', 'Rate limiter reset for "%s".').replace('%s', username),
+          this.translate('js.unlock.success', 'Login lock reset'),
+          this.translate('js.unlock.message', 'Failed login attempt counter reset for "%s".').replace('%s', username),
         );
       } else {
         button.textContent = originalText;
         button.disabled = false;
         Notification.error(
-          this.translate('js.unlock.failed', 'Unlock failed'),
+          this.translate('js.unlock.failed', 'Reset failed'),
           data.error || this.translate('js.error.unknown', 'Unknown error.'),
         );
       }
@@ -151,7 +151,7 @@ class PasskeyDashboard {
       button.textContent = originalText;
       button.disabled = false;
       const message = await this.extractErrorMessage(error);
-      Notification.error(this.translate('js.unlock.failed', 'Unlock failed'), message);
+      Notification.error(this.translate('js.unlock.failed', 'Reset failed'), message);
     }
   }
 
@@ -171,8 +171,19 @@ class PasskeyDashboard {
     const originalText = button.textContent;
     button.textContent = this.translate('js.clearNudge.progress', 'Clearing...');
 
+    const url = TYPO3.settings.ajaxUrls.passkeys_admin_clear_nudge;
+    if (!url) {
+      button.textContent = originalText;
+      button.disabled = false;
+      Notification.error(
+        this.translate('js.clearNudge.failed', 'Clear failed'),
+        'AJAX route not available. Please flush all TYPO3 caches and reload.',
+      );
+      return;
+    }
+
     try {
-      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_clear_nudge).post({
+      const response = await new AjaxRequest(url).post({
         beUserUid: beUserUid,
       });
       const data = await response.resolve();
