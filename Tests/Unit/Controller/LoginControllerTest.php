@@ -279,6 +279,53 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
+    public function optionsActionDiscoverableLoginRateLimited(): void
+    {
+        $request = $this->createJsonRequest(['username' => '']);
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+
+        $this->rateLimiterService
+            ->method('checkRateLimit')
+            ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
+
+        $response = $this->subject->optionsAction($request);
+
+        self::assertSame(429, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Too many requests', $body['error']);
+        self::assertSame('60', $response->getHeaderLine('Retry-After'));
+    }
+
+    #[Test]
+    public function optionsActionDiscoverableLoginInternalError(): void
+    {
+        $request = $this->createJsonRequest(['username' => '']);
+
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('createDiscoverableAssertionOptions')
+            ->willThrowException(new Error('Unexpected internal failure'));
+
+        $this->logger
+            ->expects(self::once())
+            ->method('error')
+            ->with('Failed to generate discoverable assertion options', self::anything());
+
+        $response = $this->subject->optionsAction($request);
+
+        self::assertSame(500, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Internal error', $body['error']);
+    }
+
+    #[Test]
     public function optionsActionInternalError(): void
     {
         $request = $this->createJsonRequest(['username' => 'admin']);

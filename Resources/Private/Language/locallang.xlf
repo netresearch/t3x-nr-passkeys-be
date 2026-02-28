@@ -167,6 +167,15 @@
             <trans-unit id="manage.info.passkeys" resname="manage.info.passkeys">
                 <source>Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup — for example, your laptop and your phone.</source>
             </trans-unit>
+            <trans-unit id="module.title" resname="module.title">
+                <source>Passkey Management</source>
+            </trans-unit>
+            <trans-unit id="module.dashboard" resname="module.dashboard">
+                <source>Dashboard</source>
+            </trans-unit>
+            <trans-unit id="module.help" resname="module.help">
+                <source>Help</source>
+            </trans-unit>
             <trans-unit id="dashboard.title" resname="dashboard.title">
                 <source>Passkey Adoption Dashboard</source>
             </trans-unit>

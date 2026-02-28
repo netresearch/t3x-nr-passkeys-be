@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\UserSettings;
 
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
+use RuntimeException;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageService;
@@ -177,7 +178,9 @@ HTML;
     private function getLanguageService(): LanguageService
     {
         $lang = $GLOBALS['LANG'] ?? null;
-        \assert($lang instanceof LanguageService);
+        if (!$lang instanceof LanguageService) {
+            throw new RuntimeException('LanguageService not available', 1740000001);
+        }
 
         return $lang;
     }

@@ -69,6 +69,31 @@ final class PasskeyInfoElementTest extends TestCase
     }
 
     #[Test]
+    public function renderReturnsEmptyWhenDatabaseRowIsNull(): void
+    {
+        $subject = $this->createSubject([
+            'tableName' => 'be_users',
+            'databaseRow' => null,
+        ]);
+
+        $result = $subject->render();
+
+        self::assertEmpty($result['html'] ?? '');
+    }
+
+    #[Test]
+    public function renderReturnsEmptyWhenDatabaseRowIsMissing(): void
+    {
+        $subject = $this->createSubject([
+            'tableName' => 'be_users',
+        ]);
+
+        $result = $subject->render();
+
+        self::assertEmpty($result['html'] ?? '');
+    }
+
+    #[Test]
     public function renderShowsDisabledBadgeWhenNoCredentials(): void
     {
         $this->setUpAdminUser(1);

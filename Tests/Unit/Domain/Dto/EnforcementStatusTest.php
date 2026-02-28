@@ -52,7 +52,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function gracePeriodRemainingDaysCalculatesDaysLeft(): void
     {
-        $now = \time();
+        $now = 1_700_000_000;
         $fiveDaysAgo = $now - (5 * 86_400);
 
         $status = new EnforcementStatus(
@@ -62,13 +62,13 @@ final class EnforcementStatusTest extends TestCase
             hasPasskeys: false,
         );
 
-        self::assertSame(9, $status->gracePeriodRemainingDays());
+        self::assertSame(9, $status->gracePeriodRemainingDays($now));
     }
 
     #[Test]
     public function gracePeriodRemainingDaysReturnsZeroWhenExpired(): void
     {
-        $now = \time();
+        $now = 1_700_000_000;
         $twentyDaysAgo = $now - (20 * 86_400);
 
         $status = new EnforcementStatus(
@@ -78,13 +78,13 @@ final class EnforcementStatusTest extends TestCase
             hasPasskeys: false,
         );
 
-        self::assertSame(0, $status->gracePeriodRemainingDays());
+        self::assertSame(0, $status->gracePeriodRemainingDays($now));
     }
 
     #[Test]
     public function gracePeriodRemainingDaysReturnsZeroWhenExactlyExpired(): void
     {
-        $now = \time();
+        $now = 1_700_000_000;
         $fourteenDaysAgo = $now - (14 * 86_400);
 
         $status = new EnforcementStatus(
@@ -94,7 +94,7 @@ final class EnforcementStatusTest extends TestCase
             hasPasskeys: false,
         );
 
-        self::assertSame(0, $status->gracePeriodRemainingDays());
+        self::assertSame(0, $status->gracePeriodRemainingDays($now));
     }
 
     #[Test]
@@ -128,7 +128,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredReturnsTrueWhenFullyExpired(): void
     {
-        $now = \time();
+        $now = 1_700_000_000;
         $twentyDaysAgo = $now - (20 * 86_400);
 
         $status = new EnforcementStatus(
@@ -138,13 +138,13 @@ final class EnforcementStatusTest extends TestCase
             hasPasskeys: false,
         );
 
-        self::assertTrue($status->isGracePeriodExpired());
+        self::assertTrue($status->isGracePeriodExpired($now));
     }
 
     #[Test]
     public function isGracePeriodExpiredReturnsTrueWhenExactlyExpired(): void
     {
-        $now = \time();
+        $now = 1_700_000_000;
         $fourteenDaysAgo = $now - (14 * 86_400);
 
         $status = new EnforcementStatus(
@@ -154,13 +154,13 @@ final class EnforcementStatusTest extends TestCase
             hasPasskeys: false,
         );
 
-        self::assertTrue($status->isGracePeriodExpired());
+        self::assertTrue($status->isGracePeriodExpired($now));
     }
 
     #[Test]
     public function isGracePeriodExpiredReturnsFalseWhenStillActive(): void
     {
-        $now = \time();
+        $now = 1_700_000_000;
         $fiveDaysAgo = $now - (5 * 86_400);
 
         $status = new EnforcementStatus(
@@ -170,7 +170,7 @@ final class EnforcementStatusTest extends TestCase
             hasPasskeys: false,
         );
 
-        self::assertFalse($status->isGracePeriodExpired());
+        self::assertFalse($status->isGracePeriodExpired($now));
     }
 
     // --- requiresInterstitial() ---
@@ -258,7 +258,7 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function canSkipReturnsFalseForRequiredWithExpiredGracePeriod(): void
     {
-        $now = \time();
+        $now = 1_700_000_000;
         $twentyDaysAgo = $now - (20 * 86_400);
 
         $status = new EnforcementStatus(
@@ -268,13 +268,13 @@ final class EnforcementStatusTest extends TestCase
             hasPasskeys: false,
         );
 
-        self::assertFalse($status->canSkip());
+        self::assertFalse($status->canSkip($now));
     }
 
     #[Test]
     public function canSkipReturnsTrueForRequiredWithActiveGracePeriod(): void
     {
-        $now = \time();
+        $now = 1_700_000_000;
         $fiveDaysAgo = $now - (5 * 86_400);
 
         $status = new EnforcementStatus(
@@ -284,7 +284,7 @@ final class EnforcementStatusTest extends TestCase
             hasPasskeys: false,
         );
 
-        self::assertTrue($status->canSkip());
+        self::assertTrue($status->canSkip($now));
     }
 
     #[Test]

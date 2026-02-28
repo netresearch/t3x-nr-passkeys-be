@@ -37,14 +37,16 @@ final readonly class EnforcementStatus
      *
      * Returns the full grace-period length if not yet started (start = 0).
      * Never returns negative values.
+     *
+     * @param int|null $currentTime Unix timestamp to use as "now" (defaults to \time())
      */
-    public function gracePeriodRemainingDays(): int
+    public function gracePeriodRemainingDays(?int $currentTime = null): int
     {
         if ($this->gracePeriodStart === 0) {
             return $this->gracePeriodDays;
         }
 
-        $elapsedSeconds = \time() - $this->gracePeriodStart;
+        $elapsedSeconds = ($currentTime ?? \time()) - $this->gracePeriodStart;
         $elapsedDays = (int) \floor($elapsedSeconds / 86_400);
         $remaining = $this->gracePeriodDays - $elapsedDays;
 
@@ -55,14 +57,16 @@ final readonly class EnforcementStatus
      * Whether the grace period has expired.
      *
      * Always false if the grace period has not been started (start = 0).
+     *
+     * @param int|null $currentTime Unix timestamp to use as "now" (defaults to \time())
      */
-    public function isGracePeriodExpired(): bool
+    public function isGracePeriodExpired(?int $currentTime = null): bool
     {
         if ($this->gracePeriodStart === 0) {
             return false;
         }
 
-        return $this->gracePeriodRemainingDays() === 0;
+        return $this->gracePeriodRemainingDays($currentTime) === 0;
     }
 
     /**
@@ -85,14 +89,16 @@ final readonly class EnforcementStatus
      * - Enforced: never skippable
      * - Required with expired grace period: not skippable
      * - Everything else: skippable
+     *
+     * @param int|null $currentTime Unix timestamp to use as "now" (defaults to \time())
      */
-    public function canSkip(): bool
+    public function canSkip(?int $currentTime = null): bool
     {
         if ($this->level === EnforcementLevel::Enforced) {
             return false;
         }
 
-        if ($this->level === EnforcementLevel::Required && $this->isGracePeriodExpired()) {
+        if ($this->level === EnforcementLevel::Required && $this->isGracePeriodExpired($currentTime)) {
             return false;
         }
 

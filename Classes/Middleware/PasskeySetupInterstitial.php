@@ -218,7 +218,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             $escapedSkipLabel = \htmlspecialchars($skipLabel, ENT_QUOTES, 'UTF-8');
 
             $skipButton = <<<HTML
-                        <form method="post" style="display:inline">
+                        <form method="post" action="{$escapedBackendPath}" style="display:inline">
                             <input type="hidden" name="passkey_setup_skip" value="1" />
                             <input type="hidden" name="passkey_setup_nonce" value="{$escapedNonce}" />
                             <button type="submit" style="

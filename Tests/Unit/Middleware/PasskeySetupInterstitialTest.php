@@ -23,6 +23,8 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Core\Http\Response;
+use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Localization\Locale;
 
 #[CoversClass(PasskeySetupInterstitial::class)]
 final class PasskeySetupInterstitialTest extends TestCase
@@ -40,7 +42,7 @@ final class PasskeySetupInterstitialTest extends TestCase
 
     protected function tearDown(): void
     {
-        unset($GLOBALS['BE_USER']);
+        unset($GLOBALS['BE_USER'], $GLOBALS['LANG']);
         parent::tearDown();
     }
 
@@ -704,6 +706,218 @@ final class PasskeySetupInterstitialTest extends TestCase
         // Ensure no unescaped dynamic values — the response should be well-formed HTML
         self::assertStringContainsString('<!DOCTYPE html>', $body);
         self::assertStringContainsString('</html>', $body);
+    }
+
+    #[Test]
+    public function passesThroughWhenUserRowIsNull(): void
+    {
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = null;
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $request = $this->createMockRequest();
+        $handler = $this->createMockHandler();
+
+        $handler->expects(self::once())->method('handle')->with($request);
+
+        $this->subject->process($request, $handler);
+    }
+
+    #[Test]
+    public function passesThroughWhenRouteIdentifierIsNotString(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: \time(),
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $route = $this->createMock(\TYPO3\CMS\Backend\Routing\Route::class);
+        $route->method('getOption')
+            ->willReturnCallback(static function (string $option): mixed {
+                if ($option === '_identifier') {
+                    return null;
+                }
+
+                return null;
+            });
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->method('getAttribute')
+            ->willReturnCallback(static function (string $name) use ($route): mixed {
+                if ($name === 'route') {
+                    return $route;
+                }
+
+                return null;
+            });
+        $request->method('getMethod')->willReturn('GET');
+        $request->method('getParsedBody')->willReturn(null);
+
+        $handler = $this->createMockHandler();
+
+        $handler->expects(self::once())->method('handle')->with($request);
+
+        $this->subject->process($request, $handler);
+    }
+
+    #[Test]
+    public function interstitialUsesNormalizedParamsSitePath(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: \time(),
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $normalizedParams = new class {
+            public function getSitePath(): string
+            {
+                return '/subdir/';
+            }
+        };
+
+        $route = $this->createMock(\TYPO3\CMS\Backend\Routing\Route::class);
+        $route->method('getOption')
+            ->willReturnCallback(static function (string $option): mixed {
+                if ($option === '_identifier') {
+                    return 'main';
+                }
+
+                return null;
+            });
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->method('getAttribute')
+            ->willReturnCallback(static function (string $name) use ($route, $normalizedParams): mixed {
+                if ($name === 'route') {
+                    return $route;
+                }
+
+                if ($name === 'normalizedParams') {
+                    return $normalizedParams;
+                }
+
+                return null;
+            });
+        $request->method('getMethod')->willReturn('GET');
+        $request->method('getParsedBody')->willReturn(null);
+
+        $handler = $this->createMockHandler();
+
+        $response = $this->subject->process($request, $handler);
+
+        $body = (string) $response->getBody();
+        self::assertStringContainsString('/subdir/typo3/setup/', $body);
+    }
+
+    #[Test]
+    public function interstitialShowsSkipButtonWithoutRemainingDaysWhenEncourage(): void
+    {
+        $this->setUpBackendUser(42);
+
+        // First call: gracePeriodStart=0 triggers startGracePeriod in middleware
+        $initialStatus = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+        // Second call after startGracePeriod: keep gracePeriodStart=0 so canSkip remains true
+        // with remainingDays=0 (gracePeriodDays=0 and start=0 returns gracePeriodDays)
+        $updatedStatus = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+
+        $this->enforcementService
+            ->expects(self::exactly(2))
+            ->method('getStatus')
+            ->willReturnOnConsecutiveCalls($initialStatus, $updatedStatus);
+
+        $this->enforcementService
+            ->expects(self::once())
+            ->method('startGracePeriod')
+            ->with(42);
+
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+
+        $response = $this->subject->process($request, $handler);
+
+        $body = (string) $response->getBody();
+        self::assertStringContainsString('Skip for now', $body);
+        self::assertStringNotContainsString('days remaining', $body);
+    }
+
+    #[Test]
+    public function interstitialUsesLocaleFromLanguageService(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: \time(),
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $locale = $this->createMock(Locale::class);
+        $locale->method('getLanguageCode')->willReturn('de');
+
+        $languageService = $this->createMock(LanguageService::class);
+        $languageService->method('getLocale')->willReturn($locale);
+        $languageService->method('sL')->willReturn('');
+        $GLOBALS['LANG'] = $languageService;
+
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+
+        $response = $this->subject->process($request, $handler);
+
+        $body = (string) $response->getBody();
+        self::assertStringContainsString('<html lang="de"', $body);
+    }
+
+    #[Test]
+    public function interstitialUsesTranslationsWhenLanguageServiceAvailable(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: \time(),
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $locale = $this->createMock(Locale::class);
+        $locale->method('getLanguageCode')->willReturn('de');
+
+        $languageService = $this->createMock(LanguageService::class);
+        $languageService->method('getLocale')->willReturn($locale);
+        $languageService->method('sL')->willReturn('Übersetzt');
+        $GLOBALS['LANG'] = $languageService;
+
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+
+        $response = $this->subject->process($request, $handler);
+
+        $body = (string) $response->getBody();
+        self::assertStringContainsString('Übersetzt', $body);
     }
 
     private function setUpBackendUser(int $uid): void

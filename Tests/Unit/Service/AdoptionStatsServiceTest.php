@@ -267,6 +267,66 @@ final class AdoptionStatsServiceTest extends TestCase
         self::assertSame(30, $stats->usersWithoutPasskeys[1]->gracePeriodRemainingDays);
     }
 
+    #[Test]
+    public function getStatsSkipsUsersWithEmptyUsergroupInGroupCounts(): void
+    {
+        $callIndex = 0;
+        $this->connectionPool
+            ->method('getQueryBuilderForTable')
+            ->willReturnCallback(function () use (&$callIndex): QueryBuilder {
+                $callIndex++;
+
+                return match (true) {
+                    // countTotalActiveUsers
+                    $callIndex === 1 => $this->createCountQueryBuilder(5),
+                    // countUsersWithPasskeys
+                    $callIndex === 2 => $this->createSelectLiteralQueryBuilder(2),
+                    // getGroupStats — 1 group
+                    $callIndex === 3 => $this->createFetchAllQueryBuilder([
+                        ['uid' => 1, 'title' => 'Editors', 'passkey_enforcement' => 'off', 'passkey_grace_period_days' => 0],
+                    ]),
+                    // countUsersPerGroup — mix of users: some with groups, some with empty usergroup
+                    $callIndex === 4 => $this->createFetchAllQueryBuilder([
+                        ['usergroup' => '1'],
+                        ['usergroup' => ''],
+                        ['usergroup' => '1'],
+                        ['usergroup' => ''],
+                    ]),
+                    // countUsersWithPasskeysPerGroup
+                    $callIndex === 5 => $this->createFetchAllQueryBuilder([
+                        ['usergroup' => '1'],
+                        ['usergroup' => ''],
+                    ]),
+                    // getUsersWithoutPasskeys — user with empty usergroup
+                    $callIndex === 6 => $this->createFetchAllQueryBuilder([
+                        ['uid' => 10, 'username' => 'nogroup', 'realName' => 'No Group', 'usergroup' => '', 'passkey_grace_period_start' => 0],
+                    ]),
+                    default => $this->createCountQueryBuilder(0),
+                };
+            });
+
+        $this->enforcementService
+            ->method('getStatus')
+            ->willReturn(new EnforcementStatus(
+                level: EnforcementLevel::Off,
+                gracePeriodDays: 0,
+                gracePeriodStart: 0,
+                hasPasskeys: false,
+            ));
+
+        $stats = $this->subject->getStats();
+
+        // Group 1 should count only users with matching usergroup (empty strings skipped)
+        self::assertCount(1, $stats->groups);
+        self::assertSame(2, $stats->groups[0]->totalUsers);
+        self::assertSame(1, $stats->groups[0]->usersWithPasskeys);
+
+        // User with empty usergroup should have empty groups string
+        self::assertCount(1, $stats->usersWithoutPasskeys);
+        self::assertSame('nogroup', $stats->usersWithoutPasskeys[0]->username);
+        self::assertSame('', $stats->usersWithoutPasskeys[0]->groups);
+    }
+
     /**
      * Create a QueryBuilder mock that returns a count result.
      */

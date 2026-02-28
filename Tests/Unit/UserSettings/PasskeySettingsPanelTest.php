@@ -14,6 +14,7 @@ use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanel;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use stdClass;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -461,6 +462,22 @@ final class PasskeySettingsPanelTest extends TestCase
         // Fallback text should be used
         self::assertStringContainsString('Passkeys replace your password', $result);
         self::assertStringContainsString('at least two passkeys for backup', $result);
+    }
+
+    #[Test]
+    public function renderThrowsRuntimeExceptionWhenLanguageServiceNotAvailable(): void
+    {
+        $this->setUpBackendUser(1);
+
+        // Use a short encryptionKey to trigger getLanguageService() in the validation path
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short';
+        unset($GLOBALS['LANG']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1740000001);
+        $this->expectExceptionMessage('LanguageService not available');
+
+        $this->subject->render([]);
     }
 
     private function setUpBackendUser(int $uid): void

@@ -20,9 +20,14 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
+use TYPO3\CMS\Backend\Template\Components\DocHeaderComponent;
+use TYPO3\CMS\Backend\Template\Components\Menu\Menu;
+use TYPO3\CMS\Backend\Template\Components\Menu\MenuItem;
+use TYPO3\CMS\Backend\Template\Components\MenuRegistry;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Http\HtmlResponse;
+use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
 #[CoversClass(AdminModuleController::class)]
@@ -56,6 +61,38 @@ final class AdminModuleControllerTest extends TestCase
         );
     }
 
+    /**
+     * Create a ModuleTemplate mock with DocHeader menu chain set up.
+     */
+    private function createModuleTemplateMock(): ModuleTemplate&MockObject
+    {
+        $menuItem = $this->createMock(MenuItem::class);
+        $menuItem->method('setTitle')->willReturnSelf();
+        $menuItem->method('setHref')->willReturnSelf();
+        $menuItem->method('setActive')->willReturnSelf();
+
+        $menu = $this->createMock(Menu::class);
+        $menu->method('setIdentifier')->willReturnSelf();
+        $menu->method('makeMenuItem')->willReturn($menuItem);
+
+        $menuRegistry = $this->createMock(MenuRegistry::class);
+        $menuRegistry->method('makeMenu')->willReturn($menu);
+
+        $docHeader = $this->createMock(DocHeaderComponent::class);
+        $docHeader->method('getMenuRegistry')->willReturn($menuRegistry);
+
+        $moduleTemplate = $this->createMock(ModuleTemplate::class);
+        $moduleTemplate->method('getDocHeaderComponent')->willReturn($docHeader);
+
+        return $moduleTemplate;
+    }
+
+    protected function tearDown(): void
+    {
+        unset($GLOBALS['LANG']);
+        parent::tearDown();
+    }
+
     #[Test]
     public function dashboardActionPassesStatsToView(): void
     {
@@ -71,7 +108,7 @@ final class AdminModuleControllerTest extends TestCase
             ->method('getStats')
             ->willReturn($stats);
 
-        $moduleTemplate = $this->createMock(ModuleTemplate::class);
+        $moduleTemplate = $this->createModuleTemplateMock();
         $moduleTemplate->expects(self::once())
             ->method('setTitle')
             ->with('Passkey Management');
@@ -153,7 +190,7 @@ final class AdminModuleControllerTest extends TestCase
             ->willReturn($stats);
 
         $capturedVariables = [];
-        $moduleTemplate = $this->createMock(ModuleTemplate::class);
+        $moduleTemplate = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
         $moduleTemplate->method('assignMultiple')
             ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
@@ -197,7 +234,7 @@ final class AdminModuleControllerTest extends TestCase
     #[Test]
     public function helpActionRendersHelpTemplate(): void
     {
-        $moduleTemplate = $this->createMock(ModuleTemplate::class);
+        $moduleTemplate = $this->createModuleTemplateMock();
         $moduleTemplate->expects(self::once())
             ->method('setTitle')
             ->with('Passkey Management – Help');
@@ -234,7 +271,7 @@ final class AdminModuleControllerTest extends TestCase
             ->willReturn($stats);
 
         $capturedVariables = [];
-        $moduleTemplate = $this->createMock(ModuleTemplate::class);
+        $moduleTemplate = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
         $moduleTemplate->method('assignMultiple')
             ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
@@ -258,6 +295,62 @@ final class AdminModuleControllerTest extends TestCase
             'encourage' => 'Encourage',
             'required' => 'Required',
             'enforced' => 'Enforced',
+        ], $levels);
+    }
+
+    #[Test]
+    public function dashboardActionUsesTranslatedEnforcementLevels(): void
+    {
+        $languageService = $this->createMock(LanguageService::class);
+        $languageService->method('sL')->willReturnCallback(
+            static function (string $key): string {
+                $map = [
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.off' => 'Aus',
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.encourage' => 'Empfehlen',
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.required' => 'Erforderlich',
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.enforced' => 'Erzwungen',
+                ];
+                return $map[$key] ?? '';
+            },
+        );
+        $GLOBALS['LANG'] = $languageService;
+
+        $stats = new AdoptionStats(
+            totalUsers: 0,
+            usersWithPasskeys: 0,
+            groups: [],
+            usersWithoutPasskeys: [],
+        );
+
+        $this->adoptionStatsService
+            ->method('getStats')
+            ->willReturn($stats);
+
+        $capturedVariables = [];
+        $moduleTemplate = $this->createModuleTemplateMock();
+        $moduleTemplate->method('setTitle');
+        $moduleTemplate->method('assignMultiple')
+            ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
+                $capturedVariables = $vars;
+                return $moduleTemplate;
+            });
+        $moduleTemplate->method('renderResponse')
+            ->willReturn(new HtmlResponse('<html></html>'));
+
+        $this->moduleTemplateFactory
+            ->method('create')
+            ->willReturn($moduleTemplate);
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $this->subject->dashboardAction($request);
+
+        self::assertArrayHasKey('enforcementLevels', $capturedVariables);
+        $levels = $capturedVariables['enforcementLevels'];
+        self::assertSame([
+            'off' => 'Aus',
+            'encourage' => 'Empfehlen',
+            'required' => 'Erforderlich',
+            'enforced' => 'Erzwungen',
         ], $levels);
     }
 }

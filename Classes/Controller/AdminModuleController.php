@@ -14,6 +14,7 @@ use Netresearch\NrPasskeysBe\Service\AdoptionStatsService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
+use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
@@ -38,7 +39,8 @@ final class AdminModuleController
     public function dashboardAction(ServerRequestInterface $request): ResponseInterface
     {
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
-        $moduleTemplate->setTitle('Passkey Management');
+        $moduleTemplate->setTitle($this->translate('module.title', 'Passkey Management'));
+        $this->buildDocHeaderMenu($moduleTemplate, 'dashboard');
 
         $stats = $this->adoptionStatsService->getStats();
 
@@ -98,9 +100,38 @@ final class AdminModuleController
     public function helpAction(ServerRequestInterface $request): ResponseInterface
     {
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
-        $moduleTemplate->setTitle('Passkey Management – Help');
+        $moduleTemplate->setTitle($this->translate('module.title', 'Passkey Management') . ' – ' . $this->translate('module.help', 'Help'));
+        $this->buildDocHeaderMenu($moduleTemplate, 'help');
 
         return $moduleTemplate->renderResponse('AdminModule/Help');
+    }
+
+    /**
+     * Set up the docheader tab menu for Dashboard/Help navigation.
+     */
+    private function buildDocHeaderMenu(ModuleTemplate $moduleTemplate, string $activeTab): void
+    {
+        $menuRegistry = $moduleTemplate->getDocHeaderComponent()->getMenuRegistry();
+        $menu = $menuRegistry->makeMenu();
+        $menu->setIdentifier('PasskeyManagementMenu');
+
+        $dashboardItem = $menu->makeMenuItem()
+            ->setTitle($this->translate('module.dashboard', 'Dashboard'))
+            ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys'));
+        if ($activeTab === 'dashboard') {
+            $dashboardItem->setActive(true);
+        }
+        $menu->addMenuItem($dashboardItem);
+
+        $helpItem = $menu->makeMenuItem()
+            ->setTitle($this->translate('module.help', 'Help'))
+            ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'));
+        if ($activeTab === 'help') {
+            $helpItem->setActive(true);
+        }
+        $menu->addMenuItem($helpItem);
+
+        $menuRegistry->addMenu($menu);
     }
 
     /**

@@ -33,6 +33,31 @@ class PasskeyDashboard {
     return (TYPO3.lang && TYPO3.lang[key]) || fallback;
   }
 
+  /**
+   * Extract an error message from a failed AjaxResponse.
+   *
+   * @param {*} error
+   * @returns {string}
+   */
+  async extractErrorMessage(error) {
+    try {
+      if (error && typeof error.resolve === 'function') {
+        const data = await error.resolve();
+        if (data && data.error) {
+          return data.error;
+        }
+      }
+    } catch {
+      // Response body could not be parsed; fall through to default message
+    }
+
+    if (error && error.response) {
+      return this.translate('js.error.server', 'Server returned an error (status ' + error.response.status + '). Please try again.');
+    }
+
+    return this.translate('js.error.network', 'Network error. Please check your connection.');
+  }
+
   bindEnforcementSelects() {
     const selects = document.querySelectorAll('.passkey-enforcement-select');
     selects.forEach((select) => {
@@ -77,9 +102,7 @@ class PasskeyDashboard {
       }
     } catch (error) {
       select.value = originalValue;
-      const message = error.response
-        ? this.translate('js.error.server', 'Server returned an error. Please try again.')
-        : this.translate('js.error.network', 'Network error. Please check your connection.');
+      const message = await this.extractErrorMessage(error);
       Notification.error(this.translate('js.enforcement.failed', 'Update failed'), message);
     } finally {
       select.disabled = false;
@@ -126,9 +149,7 @@ class PasskeyDashboard {
     } catch (error) {
       button.textContent = originalText;
       button.disabled = false;
-      const message = error.response
-        ? this.translate('js.error.server', 'Server returned an error. Please try again.')
-        : this.translate('js.error.network', 'Network error. Please check your connection.');
+      const message = await this.extractErrorMessage(error);
       Notification.error(this.translate('js.unlock.failed', 'Unlock failed'), message);
     }
   }
@@ -165,9 +186,7 @@ class PasskeyDashboard {
     } catch (error) {
       button.textContent = originalText;
       button.disabled = false;
-      const message = error.response
-        ? this.translate('js.error.server', 'Server returned an error. Please try again.')
-        : this.translate('js.error.network', 'Network error. Please check your connection.');
+      const message = await this.extractErrorMessage(error);
       Notification.error(this.translate('js.reminder.failed', 'Reminder failed'), message);
     }
   }
