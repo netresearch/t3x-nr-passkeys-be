@@ -44,6 +44,7 @@ jobs:
             echo "version=${INPUT_VERSION}" >> "$GITHUB_ENV"
           else
             TAG="${GITHUB_REF#refs/tags/}"
+            TAG="${TAG#v}"
             echo "version=${TAG}" >> "$GITHUB_ENV"
           fi
 
