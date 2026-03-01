@@ -21,18 +21,56 @@ function showBanner(data) {
   banner.className = 'callout callout-info passkey-setup-banner';
   banner.setAttribute('role', 'status');
   banner.setAttribute('aria-live', 'polite');
+  banner.style.cssText = [
+    'flex: 0 0 auto',
+    'width: 100%',
+    'margin: 0',
+    'border-radius: 0',
+    'background: #cce5ff',
+    'border-left: 4px solid #004085',
+    'border-bottom: 1px solid #b8daff',
+    'color: #004085',
+    'font-size: 0.85rem',
+  ].join(';');
 
   const body = document.createElement('div');
   body.className = 'callout-body';
-  body.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem;';
+  body.style.cssText = 'display: flex; align-items: flex-start; justify-content: space-between; padding: 0.5rem 1rem; gap: 1rem;';
 
-  const message = document.createElement('span');
-  message.textContent = data.gracePeriodRemainingDays > 0
-    ? translate('js.banner.remaining', 'Passkeys are available for your account. You have %d days to set up passwordless login.').replace('%d', data.gracePeriodRemainingDays)
-    : translate('js.banner.available', 'Passkeys are now available for your account. Set up passwordless login for faster, more secure access.');
+  const textWrapper = document.createElement('div');
+  textWrapper.style.cssText = 'flex: 1 1 auto; min-width: 0;';
+
+  const title = document.createElement('strong');
+  title.textContent = data.gracePeriodRemainingDays > 0
+    ? translate('js.banner.title.remaining', 'Passkey setup \u2014 %d days remaining').replace('%d', data.gracePeriodRemainingDays)
+    : translate('js.banner.title.available', 'Passkeys available for your account');
+
+  const description = document.createElement('div');
+  description.className = 'passkey-banner-description';
+  description.style.cssText = 'margin-top: 0.15rem;';
+  description.textContent = translate('js.banner.description',
+    'Passkeys replace your password with fingerprint, face, or security key authentication \u2014 faster to use and resistant to phishing attacks.');
+
+  const learnMore = document.createElement('a');
+  learnMore.href = 'https://docs.typo3.org/p/netresearch/nr-passkeys-be/main/en-us/';
+  learnMore.target = '_blank';
+  learnMore.rel = 'noopener noreferrer';
+  learnMore.textContent = translate('js.banner.learnMore', 'Learn more');
+  learnMore.style.cssText = 'margin-left: 0.5rem; color: #004085; text-decoration: underline;';
+  description.appendChild(document.createTextNode(' '));
+  description.appendChild(learnMore);
+
+  const help = document.createElement('div');
+  help.className = 'passkey-banner-help';
+  help.style.cssText = 'margin-top: 0.15rem; font-size: 0.8rem; opacity: 0.85;';
+  help.textContent = translate('js.banner.help', 'Need help? Contact your administrator.');
+
+  textWrapper.appendChild(title);
+  textWrapper.appendChild(description);
+  textWrapper.appendChild(help);
 
   const actions = document.createElement('span');
-  actions.style.cssText = 'white-space: nowrap;';
+  actions.style.cssText = 'white-space: nowrap; padding-top: 0.15rem;';
 
   const setupLink = document.createElement('a');
   setupLink.href = '#';
@@ -50,22 +88,31 @@ function showBanner(data) {
   dismissBtn.type = 'button';
   dismissBtn.className = 'btn btn-sm btn-default';
   dismissBtn.textContent = translate('js.banner.dismiss', 'Dismiss');
-  dismissBtn.addEventListener('click', () => {
-    banner.remove();
-    sessionStorage.setItem('nr-passkeys-banner-dismissed', String(data.nudgeUntil || 0));
-  });
 
   actions.appendChild(setupLink);
   actions.appendChild(dismissBtn);
-  body.appendChild(message);
+  body.appendChild(textWrapper);
   body.appendChild(actions);
   banner.appendChild(body);
 
-  const container = document.querySelector('.module-body')
-    || document.querySelector('.scaffold-content-module-body')
-    || document.querySelector('.module');
+  const container = document.querySelector('.scaffold-content-module')
+    || document.querySelector('.t3js-scaffold-content-module')
+    || document.querySelector('typo3-backend-module-router')?.parentElement;
   if (container) {
+    container.style.flexDirection = 'column';
     container.prepend(banner);
+
+    const router = container.querySelector('typo3-backend-module-router');
+    if (router) {
+      router.style.flex = '1 1 auto';
+      router.style.minHeight = '0';
+    }
+
+    dismissBtn.addEventListener('click', () => {
+      banner.remove();
+      container.style.flexDirection = '';
+      sessionStorage.setItem('nr-passkeys-banner-dismissed', String(data.nudgeUntil || 0));
+    });
   }
 
   return banner;
@@ -109,7 +156,7 @@ describe('showBanner DOM rendering', () => {
   beforeEach(() => {
     document.body.textContent = '';
     container = document.createElement('div');
-    container.className = 'module-body';
+    container.className = 'scaffold-content-module';
     document.body.appendChild(container);
     delete globalThis.TYPO3;
     sessionStorage.clear();
@@ -126,22 +173,15 @@ describe('showBanner DOM rendering', () => {
     expect(banner.getAttribute('aria-live')).toBe('polite');
   });
 
-  it('should prepend banner to .module-body container', () => {
+  it('should prepend banner to .scaffold-content-module container', () => {
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
     const found = container.querySelector('.passkey-setup-banner');
     expect(found).not.toBeNull();
     expect(container.firstChild).toBe(found);
   });
 
-  it('should fall back to .module container when .module-body is absent', () => {
-    container.className = 'module';
-    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
-    const found = container.querySelector('.passkey-setup-banner');
-    expect(found).not.toBeNull();
-  });
-
-  it('should fall back to .scaffold-content-module-body when .module-body is absent', () => {
-    container.className = 'scaffold-content-module-body';
+  it('should fall back to .t3js-scaffold-content-module when .scaffold-content-module is absent', () => {
+    container.className = 't3js-scaffold-content-module';
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
     const found = container.querySelector('.passkey-setup-banner');
     expect(found).not.toBeNull();
@@ -152,24 +192,46 @@ describe('showBanner DOM rendering', () => {
     expect(() => showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 })).not.toThrow();
   });
 
-  it('should show generic message when no grace period', () => {
+  it('should show title when no grace period', () => {
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
-    const span = container.querySelector('.passkey-setup-banner span');
-    expect(span.textContent).toContain('Passkeys are now available');
-    expect(span.textContent).toContain('passwordless login');
+    const title = container.querySelector('.passkey-setup-banner strong');
+    expect(title.textContent).toBe('Passkeys available for your account');
   });
 
-  it('should show countdown message when grace period is active', () => {
+  it('should show description with passkey explanation', () => {
+    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    const desc = container.querySelector('.passkey-banner-description');
+    expect(desc.textContent).toContain('fingerprint, face, or security key');
+    expect(desc.textContent).toContain('phishing');
+  });
+
+  it('should show help text with administrator contact', () => {
+    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    const help = container.querySelector('.passkey-banner-help');
+    expect(help.textContent).toBe('Need help? Contact your administrator.');
+  });
+
+  it('should show "Learn more" link to docs.typo3.org', () => {
+    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    const link = container.querySelector('.passkey-banner-description a');
+    expect(link).not.toBeNull();
+    expect(link.textContent).toBe('Learn more');
+    expect(link.href).toContain('docs.typo3.org/p/netresearch/nr-passkeys-be');
+    expect(link.target).toBe('_blank');
+    expect(link.rel).toBe('noopener noreferrer');
+  });
+
+  it('should show countdown title when grace period is active', () => {
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 7 });
-    const span = container.querySelector('.passkey-setup-banner span');
-    expect(span.textContent).toContain('7 days');
+    const title = container.querySelector('.passkey-setup-banner strong');
+    expect(title.textContent).toContain('7 days remaining');
   });
 
-  it('should replace %d placeholder with actual days', () => {
+  it('should replace %d placeholder with actual days in title', () => {
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 14 });
-    const span = container.querySelector('.passkey-setup-banner span');
-    expect(span.textContent).toContain('14 days');
-    expect(span.textContent).not.toContain('%d');
+    const title = container.querySelector('.passkey-setup-banner strong');
+    expect(title.textContent).toContain('14 days');
+    expect(title.textContent).not.toContain('%d');
   });
 
   it('should render "Set up now" button as primary', () => {
@@ -196,7 +258,7 @@ describe('banner dismiss behavior', () => {
   beforeEach(() => {
     document.body.textContent = '';
     container = document.createElement('div');
-    container.className = 'module-body';
+    container.className = 'scaffold-content-module';
     document.body.appendChild(container);
     delete globalThis.TYPO3;
     sessionStorage.clear();
@@ -230,7 +292,7 @@ describe('banner "Set up now" navigation', () => {
   beforeEach(() => {
     document.body.textContent = '';
     container = document.createElement('div');
-    container.className = 'module-body';
+    container.className = 'scaffold-content-module';
     document.body.appendChild(container);
     delete globalThis.TYPO3;
     sessionStorage.clear();
@@ -272,19 +334,31 @@ describe('banner placement specificity', () => {
     sessionStorage.clear();
   });
 
-  it('should prefer .module-body over .module', () => {
-    const moduleDiv = document.createElement('div');
-    moduleDiv.className = 'module';
-    document.body.appendChild(moduleDiv);
+  it('should prefer .scaffold-content-module over .t3js-scaffold-content-module', () => {
+    const t3jsDiv = document.createElement('div');
+    t3jsDiv.className = 't3js-scaffold-content-module';
+    document.body.appendChild(t3jsDiv);
 
-    const moduleBodyDiv = document.createElement('div');
-    moduleBodyDiv.className = 'module-body';
-    document.body.appendChild(moduleBodyDiv);
+    const scaffoldModuleDiv = document.createElement('div');
+    scaffoldModuleDiv.className = 'scaffold-content-module';
+    document.body.appendChild(scaffoldModuleDiv);
 
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
 
-    expect(moduleBodyDiv.querySelector('.passkey-setup-banner')).not.toBeNull();
-    expect(moduleDiv.querySelector('.passkey-setup-banner')).toBeNull();
+    expect(scaffoldModuleDiv.querySelector('.passkey-setup-banner')).not.toBeNull();
+    expect(t3jsDiv.querySelector('.passkey-setup-banner')).toBeNull();
+  });
+
+  it('should fall back to typo3-backend-module-router parent (v14)', () => {
+    const parentDiv = document.createElement('div');
+    document.body.appendChild(parentDiv);
+
+    const router = document.createElement('typo3-backend-module-router');
+    parentDiv.appendChild(router);
+
+    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+
+    expect(parentDiv.querySelector('.passkey-setup-banner')).not.toBeNull();
   });
 
   it('should NOT place banner in .scaffold-content (flex-row parent)', () => {
@@ -297,14 +371,14 @@ describe('banner placement specificity', () => {
     expect(scaffoldContent.querySelector('.passkey-setup-banner')).toBeNull();
   });
 
-  it('should NOT place banner in .scaffold-content-module (outer wrapper)', () => {
-    const scaffoldModule = document.createElement('div');
-    scaffoldModule.className = 'scaffold-content-module';
-    document.body.appendChild(scaffoldModule);
+  it('should NOT place banner in .module-body (only exists in iframe)', () => {
+    const moduleBody = document.createElement('div');
+    moduleBody.className = 'module-body';
+    document.body.appendChild(moduleBody);
 
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
 
-    expect(scaffoldModule.querySelector('.passkey-setup-banner')).toBeNull();
+    expect(moduleBody.querySelector('.passkey-setup-banner')).toBeNull();
   });
 });
 
@@ -314,7 +388,7 @@ describe('banner with TYPO3 language labels', () => {
   beforeEach(() => {
     document.body.textContent = '';
     container = document.createElement('div');
-    container.className = 'module-body';
+    container.className = 'scaffold-content-module';
     document.body.appendChild(container);
     sessionStorage.clear();
   });
@@ -322,7 +396,10 @@ describe('banner with TYPO3 language labels', () => {
   it('should use translated labels when available', () => {
     globalThis.TYPO3 = {
       lang: {
-        'js.banner.available': 'Passkeys sind jetzt verfuegbar.',
+        'js.banner.title.available': 'Passkeys verfuegbar',
+        'js.banner.description': 'Schneller und sicherer anmelden.',
+        'js.banner.help': 'Hilfe? Fragen Sie Ihren Administrator.',
+        'js.banner.learnMore': 'Mehr erfahren',
         'js.banner.setup': 'Jetzt einrichten',
         'js.banner.dismiss': 'Schliessen',
       },
@@ -330,8 +407,17 @@ describe('banner with TYPO3 language labels', () => {
 
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
 
-    const span = container.querySelector('.passkey-setup-banner span');
-    expect(span.textContent).toBe('Passkeys sind jetzt verfuegbar.');
+    const title = container.querySelector('.passkey-setup-banner strong');
+    expect(title.textContent).toBe('Passkeys verfuegbar');
+
+    const desc = container.querySelector('.passkey-banner-description');
+    expect(desc.textContent).toContain('Schneller und sicherer anmelden.');
+
+    const help = container.querySelector('.passkey-banner-help');
+    expect(help.textContent).toBe('Hilfe? Fragen Sie Ihren Administrator.');
+
+    const learnMoreLink = container.querySelector('.passkey-banner-description a');
+    expect(learnMoreLink.textContent).toBe('Mehr erfahren');
 
     const setupBtn = container.querySelector('.btn-primary');
     expect(setupBtn.textContent).toBe('Jetzt einrichten');
@@ -340,16 +426,16 @@ describe('banner with TYPO3 language labels', () => {
     expect(dismissBtn.textContent).toBe('Schliessen');
   });
 
-  it('should use translated remaining-days label with replacement', () => {
+  it('should use translated remaining-days title with replacement', () => {
     globalThis.TYPO3 = {
       lang: {
-        'js.banner.remaining': 'Sie haben noch %d Tage.',
+        'js.banner.title.remaining': 'Passkey-Einrichtung — noch %d Tage',
       },
     };
 
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 5 });
 
-    const span = container.querySelector('.passkey-setup-banner span');
-    expect(span.textContent).toBe('Sie haben noch 5 Tage.');
+    const title = container.querySelector('.passkey-setup-banner strong');
+    expect(title.textContent).toBe('Passkey-Einrichtung — noch 5 Tage');
   });
 });

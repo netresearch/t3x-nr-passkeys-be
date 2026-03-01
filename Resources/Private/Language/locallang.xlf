@@ -362,11 +362,26 @@
             <trans-unit id="js.error.unknown" resname="js.error.unknown">
                 <source>Unknown error.</source>
             </trans-unit>
+            <trans-unit id="js.banner.title.available" resname="js.banner.title.available">
+                <source>Passkeys available for your account</source>
+            </trans-unit>
+            <trans-unit id="js.banner.title.remaining" resname="js.banner.title.remaining">
+                <source>Passkey setup — %d days remaining</source>
+            </trans-unit>
             <trans-unit id="js.banner.remaining" resname="js.banner.remaining">
                 <source>Passkeys are available for your account. You have %d days to set up passwordless login.</source>
             </trans-unit>
             <trans-unit id="js.banner.available" resname="js.banner.available">
                 <source>Passkeys are now available for your account. Set up passwordless login for faster, more secure access.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.description" resname="js.banner.description">
+                <source>Passkeys replace your password with fingerprint, face, or security key authentication — faster to use and resistant to phishing attacks.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.help" resname="js.banner.help">
+                <source>Need help? Contact your administrator.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.learnMore" resname="js.banner.learnMore">
+                <source>Learn more</source>
             </trans-unit>
             <trans-unit id="js.banner.setup" resname="js.banner.setup">
                 <source>Set up now</source>
