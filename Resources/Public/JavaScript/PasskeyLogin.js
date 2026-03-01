@@ -293,6 +293,34 @@
     formGroup.appendChild(grid);
     container.appendChild(formGroup);
 
+    // "What are passkeys?" help toggle
+    var helpContent = document.createElement('div');
+    helpContent.id = 'passkey-help-content';
+    helpContent.className = 'alert alert-light small d-none mb-2';
+    helpContent.textContent = 'Passkeys are a modern replacement for passwords. They use your device\u2019s biometric sensors (fingerprint, face) or security keys to verify your identity. They\u2019re faster and more secure than passwords because they can\u2019t be phished or stolen.';
+
+    var learnMore = document.createElement('a');
+    learnMore.href = 'https://passkeys.dev';
+    learnMore.target = '_blank';
+    learnMore.rel = 'noopener noreferrer';
+    learnMore.className = 'small d-block mt-1';
+    learnMore.textContent = 'Learn more about passkeys';
+    helpContent.appendChild(document.createElement('br'));
+    helpContent.appendChild(learnMore);
+
+    var helpLink = document.createElement('a');
+    helpLink.href = '#';
+    helpLink.id = 'passkey-help-link';
+    helpLink.className = 'passkey-help-link small text-muted d-block text-center mb-2';
+    helpLink.textContent = 'What are passkeys?';
+    helpLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      helpContent.classList.toggle('d-none');
+    });
+
+    container.appendChild(helpLink);
+    container.appendChild(helpContent);
+
     var errorDiv = document.createElement('div');
     errorDiv.id = 'passkey-error';
     errorDiv.className = 'alert alert-danger d-none mb-2';

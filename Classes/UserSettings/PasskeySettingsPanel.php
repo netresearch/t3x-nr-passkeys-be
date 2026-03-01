@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\UserSettings;
 
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
+use RuntimeException;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageService;
@@ -91,6 +92,12 @@ final class PasskeySettingsPanel
     {
         $lang = $this->getLanguageService();
 
+        $infoText = $this->translate(
+            $lang,
+            'manage.info.passkeys',
+            'Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup — for example, your laptop and your phone.',
+        );
+
         $title = $this->translate($lang, 'manage.title', 'Passkeys');
         $description = $this->translate($lang, 'manage.description', 'Manage your registered passkeys for passwordless login.');
         $addLabel = $this->translate($lang, 'manage.add', 'Add Passkey');
@@ -100,6 +107,7 @@ final class PasskeySettingsPanel
         $actionsLabel = $this->translate($lang, 'manage.label.actions', 'Actions');
         $singleKeyWarning = $this->translate($lang, 'manage.warning.singleKey', 'You only have one passkey registered. Consider adding a backup passkey.');
         $noPasskeys = $this->translate($lang, 'manage.noPasskeys', 'No passkeys registered yet.');
+        $nameHelp = $this->translate($lang, 'manage.label.name.help', 'A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").');
 
         $countBadgeClass = match (true) {
             $passkeyCount === 0 => 'badge-warning',
@@ -122,9 +130,12 @@ final class PasskeySettingsPanel
         $actionsLabel = \htmlspecialchars($actionsLabel, ENT_QUOTES, 'UTF-8');
         $singleKeyWarning = \htmlspecialchars($singleKeyWarning, ENT_QUOTES, 'UTF-8');
         $noPasskeys = \htmlspecialchars($noPasskeys, ENT_QUOTES, 'UTF-8');
+        $nameHelp = \htmlspecialchars($nameHelp, ENT_QUOTES, 'UTF-8');
+        $infoText = \htmlspecialchars($infoText, ENT_QUOTES, 'UTF-8');
 
         return <<<HTML
 <style>.passkey-name-input{max-width:200px}</style>
+<div class="alert alert-info">{$infoText}</div>
 <div id="passkey-management-container"
      data-list-url="{$listUrl}"
      data-register-options-url="{$registerOptionsUrl}"
@@ -134,9 +145,12 @@ final class PasskeySettingsPanel
     <h4>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h4>
     <p class="text-body-secondary">{$description}</p>
     <div id="passkey-single-warning" class="alert alert-warning d-none">{$singleKeyWarning}</div>
-    <div class="mb-3 d-flex align-items-center gap-2">
-        <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" />
-        <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
+    <div class="mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" aria-describedby="passkey-name-help" />
+            <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
+        </div>
+        <small id="passkey-name-help" class="form-text text-body-secondary">{$nameHelp}</small>
     </div>
     <div id="passkey-empty" class="alert alert-info d-none">{$noPasskeys}</div>
     <table class="table table-hover" id="passkey-list-table">
@@ -164,7 +178,9 @@ HTML;
     private function getLanguageService(): LanguageService
     {
         $lang = $GLOBALS['LANG'] ?? null;
-        \assert($lang instanceof LanguageService);
+        if (!$lang instanceof LanguageService) {
+            throw new RuntimeException('LanguageService not available', 1740000001);
+        }
 
         return $lang;
     }

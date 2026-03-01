@@ -11,11 +11,12 @@ namespace Netresearch\NrPasskeysBe\Authentication;
 
 use Doctrine\DBAL\ParameterType;
 use JsonException;
+use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
+use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use Psr\Log\NullLogger;
-use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -42,6 +43,8 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     private ?ExtensionConfigurationService $configService = null;
 
     private ?RateLimiterService $rateLimiterService = null;
+
+    private ?EnforcementService $enforcementService = null;
 
     /**
      * Decoded passkey payload from uident, cached per request.
@@ -115,6 +118,27 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 }
             }
 
+            // Per-group enforcement: block password login when the user's group demands passkeys
+            /** @var array<string, mixed> $user TYPO3 backend user record from AbstractAuthenticationService */
+            $status = $this->getEnforcementService()->getStatus($user);
+            if ($status->hasPasskeys) {
+                if ($status->level === EnforcementLevel::Enforced) {
+                    $this->getLogger()->warning('Password login blocked by group enforcement', [
+                        'username' => $user['username'] ?? '',
+                    ]);
+
+                    return 0;
+                }
+
+                if ($status->level === EnforcementLevel::Required && $status->isGracePeriodExpired()) {
+                    $this->getLogger()->warning('Password login blocked: grace period expired', [
+                        'username' => $user['username'] ?? '',
+                    ]);
+
+                    return 0;
+                }
+            }
+
             return 100;
         }
 
@@ -143,9 +167,16 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 'credential_uid' => $result->credential->getUid(),
             ]);
 
+            // Mark session as passkey-authenticated so the interstitial middleware
+            // knows to skip — users who logged in via passkey should never see it.
+            $sessionData = $this->pObj->getSessionData('tx_nrpasskeysbe');
+            $merged = \is_array($sessionData) ? $sessionData : [];
+            $merged['passkey_authenticated'] = true;
+            $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', $merged);
+
             // Return 200 = authenticated, stop further auth processing
             return 200;
-        } catch (RuntimeException $e) {
+        } catch (Throwable $e) {
             $this->getRateLimiterService()->recordFailure($username, $ip);
 
             $this->getLogger()->warning('Passkey authentication failed', [
@@ -264,6 +295,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             ->fetchOne();
 
         return \is_numeric($count) && (int) $count > 0;
+    }
+
+    private function getEnforcementService(): EnforcementService
+    {
+        return $this->enforcementService ??= GeneralUtility::makeInstance(EnforcementService::class);
     }
 
     private function getWebAuthnService(): WebAuthnService

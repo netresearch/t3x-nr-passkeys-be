@@ -1,0 +1,51 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+<!--
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Fluid template for the passkey setup interstitial page.
+ * Note: The middleware currently uses inline PHP-rendered HTML for cross-version
+ * compatibility (v12/v13/v14). This template is provided for future use when
+ * Fluid rendering is unified across TYPO3 versions.
+-->
+<f:layout name="Interstitial" />
+<f:section name="Content">
+    <div class="interstitial-container">
+        <h1>{f:translate(key: 'interstitial.heading', default: 'Set up your passkey')}</h1>
+        <p class="description">
+            {f:translate(key: 'interstitial.description', default: 'Passkeys provide a more secure and convenient way to sign in without passwords. They use your device\'s built-in biometric sensors or security keys to verify your identity, making your account resistant to phishing attacks.')}
+        </p>
+        <div class="grace-period">
+            <f:if condition="{remainingDays} > 0">
+                <f:then>
+                    {f:translate(key: 'interstitial.gracePeriod.remaining', arguments: '{0: remainingDays}', default: 'You have {0} days remaining to set up your passkey.')}
+                </f:then>
+                <f:else>
+                    {f:translate(key: 'interstitial.gracePeriod.required', default: 'Passkey setup is now required.')}
+                </f:else>
+            </f:if>
+        </div>
+        <div class="actions">
+            <a href="/typo3/setup/" class="btn-setup">
+                {f:translate(key: 'interstitial.setupNow', default: 'Set up now')}
+            </a>
+            <f:if condition="{canSkip}">
+                <form method="post" style="display:inline">
+                    <input type="hidden" name="passkey_setup_skip" value="1" />
+                    <button type="submit" class="btn-skip">
+                        <f:if condition="{remainingDays} > 0">
+                            <f:then>
+                                {f:translate(key: 'interstitial.skip.withDays', arguments: '{0: remainingDays}', default: 'Skip for now ({0} days remaining)')}
+                            </f:then>
+                            <f:else>
+                                {f:translate(key: 'interstitial.skip', default: 'Skip for now')}
+                            </f:else>
+                        </f:if>
+                    </button>
+                </form>
+            </f:if>
+        </div>
+    </div>
+</f:section>
+</html>

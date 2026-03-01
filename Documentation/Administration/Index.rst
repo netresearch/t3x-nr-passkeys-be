@@ -9,6 +9,21 @@ Administration
 This chapter covers administrator-specific functionality for managing passkeys
 across all backend users.
 
+..  toctree::
+    :maxdepth: 1
+    :hidden:
+
+    Enforcement
+
+Passkey enforcement
+===================
+
+The extension supports per-group enforcement of passkeys with configurable
+grace periods. Administrators can gradually roll out passkeys from gentle
+encouragement to mandatory adoption. See :ref:`enforcement` for the complete
+guide covering enforcement levels, grace periods, the admin dashboard, and
+recovery procedures.
+
 Admin API endpoints
 ===================
 

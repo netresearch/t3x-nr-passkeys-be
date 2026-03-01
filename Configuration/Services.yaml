@@ -9,13 +9,19 @@ services:
     exclude:
       - '../Classes/Domain/Model/*'
 
-  # Event listener tag for TYPO3 v12 (does not support #[AsEventListener] attribute).
-  # v13+ ignores this tag when the attribute is present.
+  # Event listener tags for TYPO3 v12 (does not support #[AsEventListener] attribute).
+  # v13+ ignores these tags when the attribute is present.
   Netresearch\NrPasskeysBe\EventListener\InjectPasskeyLoginFields:
     tags:
       - name: event.listener
         identifier: 'nr-passkeys-be/inject-passkey-login-fields'
         event: TYPO3\CMS\Backend\LoginProvider\Event\ModifyPageLayoutOnLoginProviderSelectionEvent
+
+  Netresearch\NrPasskeysBe\EventListener\InjectPasskeyBanner:
+    tags:
+      - name: event.listener
+        identifier: 'nr-passkeys-be/inject-passkey-banner'
+        event: TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent
 
   cache.nr_passkeys_be_nonce:
     class: TYPO3\CMS\Core\Cache\Frontend\FrontendInterface
@@ -43,6 +49,12 @@ services:
   Netresearch\NrPasskeysBe\Service\CredentialRepository:
     public: true
 
+  Netresearch\NrPasskeysBe\Service\EnforcementService:
+    public: true
+
+  Netresearch\NrPasskeysBe\Service\AdoptionStatsService:
+    public: true
+
   Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService:
     public: true
 
@@ -53,6 +65,9 @@ services:
     public: true
 
   Netresearch\NrPasskeysBe\Controller\AdminController:
+    public: true
+
+  Netresearch\NrPasskeysBe\Controller\AdminModuleController:
     public: true
 
   # FormEngine element must be public for GeneralUtility::makeInstance() DI resolution.

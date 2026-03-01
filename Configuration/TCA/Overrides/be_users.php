@@ -1,5 +1,10 @@
 <?php
 
+/*
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 declare(strict_types=1);
 
 \defined('TYPO3') or die();
@@ -7,6 +12,7 @@ declare(strict_types=1);
 $tempColumns = [
     'passkeys' => [
         'label' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.label',
+        'description' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.description',
         'config' => [
             'type' => 'none',
             'renderType' => 'passkeyInfo',

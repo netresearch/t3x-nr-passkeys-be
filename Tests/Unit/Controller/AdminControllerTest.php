@@ -754,6 +754,420 @@ final class AdminControllerTest extends TestCase
         self::assertSame('Unauthorized', $body['error']);
     }
 
+    #[Test]
+    public function updateEnforcementActionSuccess(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpGroupLookup(5, ['uid' => 5]);
+
+        $connection = $this->createMock(\TYPO3\CMS\Core\Database\Connection::class);
+        $connection->expects(self::once())
+            ->method('update')
+            ->with('be_groups', ['passkey_enforcement' => 'encourage'], ['uid' => 5]);
+
+        $this->connectionPool
+            ->method('getConnectionForTable')
+            ->with('be_groups')
+            ->willReturn($connection);
+
+        $request = $this->createJsonRequest([
+            'groupUid' => 5,
+            'enforcement' => 'encourage',
+        ]);
+
+        $this->logger
+            ->expects(self::once())
+            ->method('info')
+            ->with('Admin updated group enforcement', self::callback(static function (array $context): bool {
+                return $context['admin_uid'] === 1
+                    && $context['group_uid'] === 5
+                    && $context['enforcement'] === 'encourage';
+            }));
+
+        $response = $this->subject->updateEnforcementAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('ok', $body['status']);
+        self::assertSame('encourage', $body['enforcement']);
+    }
+
+    #[Test]
+    public function updateEnforcementActionAsNonAdmin(): void
+    {
+        $this->setUpNonAdminUser(42, 'editor');
+
+        $request = $this->createJsonRequest([
+            'groupUid' => 5,
+            'enforcement' => 'encourage',
+        ]);
+
+        $response = $this->subject->updateEnforcementAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
+    #[Test]
+    public function updateEnforcementActionWithMissingGroupUid(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([
+            'enforcement' => 'encourage',
+        ]);
+
+        $response = $this->subject->updateEnforcementAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function updateEnforcementActionWithMissingEnforcement(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([
+            'groupUid' => 5,
+        ]);
+
+        $response = $this->subject->updateEnforcementAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function updateEnforcementActionWithInvalidLevel(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([
+            'groupUid' => 5,
+            'enforcement' => 'invalid_level',
+        ]);
+
+        $response = $this->subject->updateEnforcementAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Invalid enforcement level', $body['error']);
+    }
+
+    #[Test]
+    public function updateEnforcementActionGroupNotFound(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpGroupLookup(999, null);
+
+        $request = $this->createJsonRequest([
+            'groupUid' => 999,
+            'enforcement' => 'encourage',
+        ]);
+
+        $response = $this->subject->updateEnforcementAction($request);
+
+        self::assertSame(404, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Group not found', $body['error']);
+    }
+
+    #[Test]
+    public function updateEnforcementActionWithoutBeUser(): void
+    {
+        // Do NOT set $GLOBALS['BE_USER']
+        $request = $this->createJsonRequest([
+            'groupUid' => 5,
+            'enforcement' => 'encourage',
+        ]);
+
+        $response = $this->subject->updateEnforcementAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
+    #[Test]
+    public function sendReminderActionSuccess(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
+
+        $connection = $this->createMock(\TYPO3\CMS\Core\Database\Connection::class);
+        $connection->expects(self::once())
+            ->method('update')
+            ->with(
+                'be_users',
+                self::callback(static function (array $data): bool {
+                    return isset($data['passkey_nudge_until'])
+                        && \is_int($data['passkey_nudge_until'])
+                        && $data['passkey_nudge_until'] > \time();
+                }),
+                ['uid' => 42],
+            );
+
+        $this->connectionPool
+            ->method('getConnectionForTable')
+            ->with('be_users')
+            ->willReturn($connection);
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $this->logger
+            ->expects(self::once())
+            ->method('info')
+            ->with('Admin sent passkey reminder', self::callback(static function (array $context): bool {
+                return $context['admin_uid'] === 1
+                    && $context['be_user_uid'] === 42
+                    && $context['username'] === 'editor'
+                    && \is_int($context['nudge_until'])
+                    && $context['nudge_until'] > \time();
+            }));
+
+        $response = $this->subject->sendReminderAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('ok', $body['status']);
+        self::assertArrayHasKey('nudgeUntil', $body);
+        self::assertGreaterThan(\time(), $body['nudgeUntil']);
+    }
+
+    #[Test]
+    public function sendReminderActionAsNonAdmin(): void
+    {
+        $this->setUpNonAdminUser(42, 'editor');
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $response = $this->subject->sendReminderAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
+    #[Test]
+    public function sendReminderActionWithMissingBeUserUid(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([]);
+
+        $response = $this->subject->sendReminderAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function sendReminderActionUserNotFound(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpFindActiveBeUserByUid(999, null);
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 999,
+        ]);
+
+        $response = $this->subject->sendReminderAction($request);
+
+        self::assertSame(404, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('User not found', $body['error']);
+    }
+
+    #[Test]
+    public function sendReminderActionWithoutBeUser(): void
+    {
+        // Do NOT set $GLOBALS['BE_USER']
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $response = $this->subject->sendReminderAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
+    // ── clearNudgeAction ─────────────────────────────────────
+
+    #[Test]
+    public function clearNudgeActionSuccess(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
+
+        $connection = $this->createMock(\TYPO3\CMS\Core\Database\Connection::class);
+        $connection->expects(self::once())
+            ->method('update')
+            ->with(
+                'be_users',
+                ['passkey_nudge_until' => 0],
+                ['uid' => 42],
+            );
+
+        $this->connectionPool
+            ->method('getConnectionForTable')
+            ->with('be_users')
+            ->willReturn($connection);
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $this->logger
+            ->expects(self::once())
+            ->method('info')
+            ->with('Admin cleared passkey nudge', self::callback(static function (array $context): bool {
+                return $context['admin_uid'] === 1
+                    && $context['be_user_uid'] === 42
+                    && $context['username'] === 'editor';
+            }));
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('ok', $body['status']);
+    }
+
+    #[Test]
+    public function clearNudgeActionAsNonAdmin(): void
+    {
+        $this->setUpNonAdminUser(42, 'editor');
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
+    #[Test]
+    public function clearNudgeActionWithMissingBeUserUid(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+
+        $request = $this->createJsonRequest([]);
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    public function clearNudgeActionUserNotFound(): void
+    {
+        $this->setUpAdminUser(1, 'superadmin');
+        $this->setUpFindActiveBeUserByUid(999, null);
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 999,
+        ]);
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(404, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('User not found', $body['error']);
+    }
+
+    #[Test]
+    public function clearNudgeActionWithoutBeUser(): void
+    {
+        // Do NOT set $GLOBALS['BE_USER']
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+        ]);
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('Unauthorized', $body['error']);
+    }
+
+    /**
+     * Set up the ConnectionPool mock to simulate a group lookup by UID.
+     *
+     * @param array<string, mixed>|null $groupRow
+     */
+    private function setUpGroupLookup(int $uid, ?array $groupRow): void
+    {
+        $restrictions = $this->createMock(\TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface::class);
+
+        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder->method('eq')->willReturn('1=1');
+
+        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result->method('fetchAssociative')->willReturn($groupRow ?? false);
+
+        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder->method('select')->willReturnSelf();
+        $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('expr')->willReturn($expressionBuilder);
+        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
+        $queryBuilder->method('executeQuery')->willReturn($result);
+        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
+
+        $this->connectionPool
+            ->method('getQueryBuilderForTable')
+            ->with('be_groups')
+            ->willReturn($queryBuilder);
+    }
+
+    /**
+     * Set up the ConnectionPool mock to simulate finding an active BE user by UID.
+     *
+     * Uses removeAll() on restrictions (unlike setUpFindBeUserByUid which does not).
+     *
+     * @param array<string, mixed>|null $userRow
+     */
+    private function setUpFindActiveBeUserByUid(int $uid, ?array $userRow): void
+    {
+        $restrictions = $this->createMock(\TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface::class);
+
+        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder->method('eq')->willReturn('1=1');
+
+        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result->method('fetchAssociative')->willReturn($userRow ?? false);
+
+        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder->method('select')->willReturnSelf();
+        $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('expr')->willReturn($expressionBuilder);
+        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
+        $queryBuilder->method('executeQuery')->willReturn($result);
+        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
+
+        $this->connectionPool
+            ->method('getQueryBuilderForTable')
+            ->with('be_users')
+            ->willReturn($queryBuilder);
+    }
+
     /**
      * Decode a PSR-7 response body as JSON.
      *

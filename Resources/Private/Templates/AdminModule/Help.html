@@ -1,0 +1,357 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+<!--
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Help tab for the Passkey Management admin module.
+ * Provides rollout guidance, recovery procedures, MFA coexistence info, and FAQ.
+-->
+<f:layout name="Module" />
+<f:section name="Content">
+    <h1>Passkey Management Help</h1>
+    <p class="lead">
+        This guide explains how to roll out passkeys to your backend users,
+        handle recovery scenarios, and understand how passkeys interact with
+        TYPO3's multi-factor authentication (MFA).
+    </p>
+
+    <!-- ================================================================== -->
+    <!-- Section 1: Rolling out passkeys                                     -->
+    <!-- ================================================================== -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Rolling out passkeys</h2>
+        </div>
+        <div class="card-body">
+            <p>
+                A phased rollout lets you introduce passkeys gradually, giving users
+                time to register their devices before enforcement becomes mandatory.
+            </p>
+
+            <h3>Step 1 &mdash; Install the extension</h3>
+            <p>
+                Install <code>netresearch/nr-passkeys-be</code> via Composer and
+                activate it in the Extension Manager. No database schema changes are
+                required beyond the automatic table creation for
+                <code>tx_nrpasskeysbe_credential</code>.
+            </p>
+
+            <h3>Step 2 &mdash; Configure extension settings</h3>
+            <p>
+                In <strong>Admin Tools &gt; Settings &gt; Extension Configuration</strong>,
+                review the settings for <code>nr_passkeys_be</code>.
+                Key options include the Relying Party name (displayed during WebAuthn
+                ceremonies) and whether discoverable (usernameless) login is enabled.
+            </p>
+
+            <h3>Step 3 &mdash; Set groups to <em>Encourage</em></h3>
+            <p>
+                On the <a href="{dashboardUrl}">Dashboard</a> tab,
+                change a group's enforcement level to <strong>Encourage</strong>.
+                Users in that group will see a non-blocking banner on every backend
+                login reminding them to register a passkey. They can dismiss the
+                banner and continue working normally.
+            </p>
+            <f:be.infobox title="Tip" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::INFO')}">
+                Start with a pilot group (e.g., your admin team) to validate the
+                workflow before widening the rollout.
+            </f:be.infobox>
+
+            <h3>Step 4 &mdash; Set groups to <em>Required</em></h3>
+            <p>
+                When you are confident the process works, change the group to
+                <strong>Required</strong>. Users who have not yet registered a
+                passkey will see a full-screen interstitial after password login.
+                The interstitial guides them through passkey registration and shows
+                how many grace-period days remain.
+            </p>
+            <p>
+                During the grace period users can skip the interstitial and
+                continue to the backend, but they will see it on every login until
+                they register a passkey or the grace period expires.
+            </p>
+
+            <h3>Step 5 &mdash; After the grace period expires</h3>
+            <p>
+                Once the grace period ends, enforcement becomes strict: users
+                <strong>must</strong> register a passkey before they can access the
+                backend. The interstitial can no longer be skipped.
+            </p>
+
+            <h3>Step 6 &mdash; Monitor adoption</h3>
+            <p>
+                Use the <a href="{dashboardUrl}">Dashboard</a>
+                tab to track overall adoption rates, per-group progress, and identify
+                users who have not yet registered passkeys.
+            </p>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- Section 2: Recovery procedures                                      -->
+    <!-- ================================================================== -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Recovery procedures</h2>
+        </div>
+        <div class="card-body">
+            <p>
+                When a user loses access to their authenticator device (phone lost,
+                security key broken, laptop replaced), follow these steps:
+            </p>
+
+            <h3>1. User reports lost device</h3>
+            <p>
+                The user contacts an administrator and reports which device or
+                authenticator is no longer available.
+            </p>
+
+            <h3>2. Admin revokes affected passkey(s)</h3>
+            <p>
+                Open the user's <code>be_users</code> record in
+                <strong>System &gt; Backend Users</strong>. In the
+                <em>Passkeys</em> section, locate the affected credential(s) and
+                delete them. If the device name is not clear, the user can identify
+                the credential by its registration date or the authenticator type.
+            </p>
+
+            <h3>3. User has zero passkeys and group enforcement is active</h3>
+            <p>
+                If the user's group is set to <strong>Required</strong> or
+                <strong>Enforced</strong> and the user now has zero registered
+                passkeys, the next password-based login will trigger the mandatory
+                setup interstitial. The user is guided through registering a new
+                passkey on their replacement device before they can continue.
+            </p>
+
+            <h3>4. User cannot log in at all</h3>
+            <p>
+                If the user has no working authenticator and cannot complete the
+                password-based login flow (e.g., the only registered passkey was
+                their sole credential), the administrator can:
+            </p>
+            <ul>
+                <li>
+                    <strong>Temporarily lower group enforcement</strong> &mdash;
+                    switch the group from <em>Enforced</em>/<em>Required</em> to
+                    <em>Encourage</em> or <em>Off</em> so the user can log in with
+                    a password.
+                </li>
+                <li>
+                    <strong>Reset the user's password</strong> &mdash; if the
+                    password has also been forgotten, reset it in the
+                    <code>be_users</code> record so the user can log in and
+                    re-register a passkey.
+                </li>
+            </ul>
+            <f:be.infobox title="Important" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::WARNING')}">
+                Remember to restore the group's enforcement level after the user
+                has re-registered a passkey. Leaving enforcement lowered
+                indefinitely weakens your security posture.
+            </f:be.infobox>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- Section 3: MFA coexistence                                          -->
+    <!-- ================================================================== -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title mb-0">MFA coexistence</h2>
+        </div>
+        <div class="card-body">
+            <p>
+                Passkeys and TYPO3's built-in multi-factor authentication (MFA) serve
+                different purposes and can be used together.
+            </p>
+
+            <h3>Passkeys replace passwords, not MFA</h3>
+            <p>
+                A passkey is a <strong>password replacement</strong>. It proves the
+                user's identity through a cryptographic challenge verified by their
+                device's biometric sensor or security key. It does
+                <strong>not</strong> replace the MFA step.
+            </p>
+
+            <h3>MFA adds an independent second factor</h3>
+            <p>
+                TYPO3's MFA (TOTP, recovery codes, etc.) adds a separate
+                verification layer. If MFA is required for a user or group, it
+                will still be prompted <em>in addition</em> to the passkey login.
+            </p>
+
+            <h3>Both can be active simultaneously</h3>
+            <p>
+                A user can have both a registered passkey and an active MFA provider.
+                This provides defence in depth: the passkey protects against
+                credential theft and phishing, while MFA protects against
+                authenticator compromise.
+            </p>
+
+            <h3>Middleware processing order</h3>
+            <p>
+                When both passkeys and MFA are in play, the backend login pipeline
+                processes requests in this order:
+            </p>
+            <ol>
+                <li>
+                    <strong>Authentication</strong> &mdash; the user authenticates
+                    with their passkey (or falls back to password).
+                </li>
+                <li>
+                    <strong>MFA challenge</strong> &mdash; if MFA is required, the
+                    user completes the TOTP or recovery-code challenge.
+                </li>
+                <li>
+                    <strong>Passkey interstitial</strong> &mdash; if the user
+                    authenticated with a password and their group requires passkeys,
+                    the setup interstitial is displayed.
+                </li>
+                <li>
+                    <strong>Backend rendering</strong> &mdash; normal backend access.
+                </li>
+            </ol>
+            <f:be.infobox title="Note" state="{f:constant(name: 'TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::NOTICE')}">
+                Users who log in with a passkey skip step 3 entirely because they
+                have already proven they own a registered credential.
+            </f:be.infobox>
+        </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- Section 4: FAQ                                                      -->
+    <!-- ================================================================== -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h2 class="card-title mb-0">Frequently asked questions</h2>
+        </div>
+        <div class="card-body">
+            <div class="accordion" id="faqAccordion">
+
+                <!-- FAQ 1 -->
+                <div class="accordion-item">
+                    <h3 class="accordion-header" id="faqHeading1">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#faqCollapse1"
+                                aria-expanded="false" aria-controls="faqCollapse1">
+                            What happens if I set enforcement to "Required" and users have not set up passkeys?
+                        </button>
+                    </h3>
+                    <div id="faqCollapse1" class="accordion-collapse collapse"
+                         aria-labelledby="faqHeading1" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>
+                                A grace period begins. Users who log in with a password
+                                will see a full-screen interstitial that explains
+                                passkey registration and shows the number of days
+                                remaining. During the grace period they can skip the
+                                interstitial and continue working. Once the grace
+                                period expires, the interstitial becomes mandatory and
+                                cannot be skipped.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 2 -->
+                <div class="accordion-item">
+                    <h3 class="accordion-header" id="faqHeading2">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#faqCollapse2"
+                                aria-expanded="false" aria-controls="faqCollapse2">
+                            Can I enforce passkeys for some groups but not others?
+                        </button>
+                    </h3>
+                    <div id="faqCollapse2" class="accordion-collapse collapse"
+                         aria-labelledby="faqHeading2" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>
+                                Yes. Enforcement is configured per backend user group.
+                                You can set different levels for different groups: for
+                                example, <em>Enforced</em> for administrators,
+                                <em>Required</em> for editors, and <em>Off</em> for
+                                service accounts that do not support interactive login.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="accordion-item">
+                    <h3 class="accordion-header" id="faqHeading3">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#faqCollapse3"
+                                aria-expanded="false" aria-controls="faqCollapse3">
+                            What if a user belongs to multiple groups with different enforcement levels?
+                        </button>
+                    </h3>
+                    <div id="faqCollapse3" class="accordion-collapse collapse"
+                         aria-labelledby="faqHeading3" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>
+                                The <strong>strictest level wins</strong>. If a user
+                                belongs to one group with <em>Encourage</em> and
+                                another with <em>Required</em>, the effective
+                                enforcement level is <em>Required</em>. This ensures
+                                that security policies cannot be bypassed by group
+                                membership overlap.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 4 -->
+                <div class="accordion-item">
+                    <h3 class="accordion-header" id="faqHeading4">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#faqCollapse4"
+                                aria-expanded="false" aria-controls="faqCollapse4">
+                            How do I know how many users have adopted passkeys?
+                        </button>
+                    </h3>
+                    <div id="faqCollapse4" class="accordion-collapse collapse"
+                         aria-labelledby="faqHeading4" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>
+                                The <a href="{dashboardUrl}">Dashboard</a>
+                                tab shows the overall adoption rate, per-group
+                                statistics, and a list of users who have not yet
+                                registered a passkey. Use these numbers to plan your
+                                enforcement timeline.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ 5 -->
+                <div class="accordion-item">
+                    <h3 class="accordion-header" id="faqHeading5">
+                        <button class="accordion-button collapsed" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#faqCollapse5"
+                                aria-expanded="false" aria-controls="faqCollapse5">
+                            Can users still use passwords during the grace period?
+                        </button>
+                    </h3>
+                    <div id="faqCollapse5" class="accordion-collapse collapse"
+                         aria-labelledby="faqHeading5" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            <p>
+                                Yes. During the grace period, password login remains
+                                fully functional. After each password login, users see
+                                the setup interstitial but can skip it. Once the grace
+                                period expires, the interstitial becomes blocking and
+                                they must register a passkey before continuing to the
+                                backend.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /accordion -->
+        </div>
+    </div>
+
+</f:section>
+</html>

@@ -39,6 +39,10 @@ parameters:
             identifier: attribute.notFound
             path: ../Classes/EventListener/InjectPasskeyLoginFields.php
             reportUnmatched: false
+        -
+            identifier: attribute.notFound
+            path: ../Classes/EventListener/InjectPasskeyBanner.php
+            reportUnmatched: false
         # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
             message: '#no value type specified in iterable type array#'

@@ -1,5 +1,10 @@
 <?php
 
+/*
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 declare(strict_types=1);
 
 use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanel;
@@ -21,3 +26,12 @@ ExtensionManagementUtility::addFieldsToUserSettings(
     'passkeys',
     'after:mfaProviders',
 );
+
+// Register CSH (Context-Sensitive Help) for the passkeys field in be_users records.
+// addLLrefForTCAdescr() was removed in TYPO3 v13 — only call it on v12.
+if (\method_exists(ExtensionManagementUtility::class, 'addLLrefForTCAdescr')) {
+    ExtensionManagementUtility::addLLrefForTCAdescr(
+        'be_users',
+        'EXT:nr_passkeys_be/Resources/Private/Language/locallang_csh_be_users.xlf',
+    );
+}

@@ -56,6 +56,9 @@
             <trans-unit id="manage.label.actions" resname="manage.label.actions">
                 <source>Actions</source>
             </trans-unit>
+            <trans-unit id="manage.label.name.help" resname="manage.label.name.help">
+                <source>A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").</source>
+            </trans-unit>
             <trans-unit id="manage.rename" resname="manage.rename">
                 <source>Rename</source>
             </trans-unit>
@@ -107,6 +110,9 @@
             <trans-unit id="admin.passkeys.label" resname="admin.passkeys.label">
                 <source>Passkeys</source>
             </trans-unit>
+            <trans-unit id="admin.passkeys.description" resname="admin.passkeys.description">
+                <source>WebAuthn/FIDO2 passkeys registered for this user. Admins can revoke individual passkeys or reset login locks for rate-limited accounts.</source>
+            </trans-unit>
             <trans-unit id="admin.passkeys.enabled" resname="admin.passkeys.enabled">
                 <source>Enabled</source>
             </trans-unit>
@@ -132,13 +138,13 @@
                 <source>Are you sure you want to revoke this passkey?</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.unlock" resname="admin.passkeys.unlock">
-                <source>Unlock account</source>
+                <source>Reset login lock</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.unlock.confirm.title" resname="admin.passkeys.unlock.confirm.title">
-                <source>Unlock account</source>
+                <source>Reset login lock</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.unlock.confirm.text" resname="admin.passkeys.unlock.confirm.text">
-                <source>Reset the rate limiter for this user?</source>
+                <source>Reset the failed login attempt counter for this user? This clears any rate-limiting or temporary lockout.</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.status.active" resname="admin.passkeys.status.active">
                 <source>Active</source>
@@ -157,6 +163,231 @@
             </trans-unit>
             <trans-unit id="admin.cancel" resname="admin.cancel">
                 <source>Cancel</source>
+            </trans-unit>
+            <trans-unit id="manage.info.passkeys" resname="manage.info.passkeys">
+                <source>Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup — for example, your laptop and your phone.</source>
+            </trans-unit>
+            <trans-unit id="module.title" resname="module.title">
+                <source>Passkey Management</source>
+            </trans-unit>
+            <trans-unit id="module.dashboard" resname="module.dashboard">
+                <source>Dashboard</source>
+            </trans-unit>
+            <trans-unit id="module.help" resname="module.help">
+                <source>Help</source>
+            </trans-unit>
+            <trans-unit id="dashboard.title" resname="dashboard.title">
+                <source>Passkey Adoption Dashboard</source>
+            </trans-unit>
+            <trans-unit id="dashboard.description" resname="dashboard.description">
+                <source>Overview of passkey adoption across backend user groups.</source>
+            </trans-unit>
+            <trans-unit id="dashboard.adoption.title" resname="dashboard.adoption.title">
+                <source>Overall Adoption</source>
+            </trans-unit>
+            <trans-unit id="dashboard.totalUsers" resname="dashboard.totalUsers">
+                <source>Total Active Users</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithPasskeys" resname="dashboard.usersWithPasskeys">
+                <source>Users with Passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.adoptionRate" resname="dashboard.adoptionRate">
+                <source>Adoption Rate</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.title" resname="dashboard.groups.title">
+                <source>Group Enforcement</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.title" resname="dashboard.usersWithout.title">
+                <source>Users Without Passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.sendReminder" resname="dashboard.usersWithout.sendReminder">
+                <source>Send Reminder</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.expired" resname="dashboard.usersWithout.expired">
+                <source>Expired</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.notStarted" resname="dashboard.usersWithout.notStarted">
+                <source>Not started</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.groups" resname="dashboard.usersWithout.groups">
+                <source>Groups</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.unlock" resname="dashboard.usersWithout.unlock">
+                <source>Reset Lock</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.editUser" resname="dashboard.usersWithout.editUser">
+                <source>Edit user record</source>
+            </trans-unit>
+            <trans-unit id="dashboard.allAdopted.title" resname="dashboard.allAdopted.title">
+                <source>Full Adoption</source>
+            </trans-unit>
+            <trans-unit id="dashboard.allAdopted.body" resname="dashboard.allAdopted.body">
+                <source>All active backend users have registered passkeys.</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.group" resname="dashboard.groups.group">
+                <source>Group</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.enforcement" resname="dashboard.groups.enforcement">
+                <source>Enforcement</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.gracePeriod" resname="dashboard.groups.gracePeriod">
+                <source>Grace Period (days)</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.users" resname="dashboard.groups.users">
+                <source>Users</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.withPasskeys" resname="dashboard.groups.withPasskeys">
+                <source>With Passkeys</source>
+            </trans-unit>
+            <trans-unit id="dashboard.groups.adoption" resname="dashboard.groups.adoption">
+                <source>Adoption</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.username" resname="dashboard.usersWithout.username">
+                <source>Username</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.name" resname="dashboard.usersWithout.name">
+                <source>Name</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.gracePeriodRemaining" resname="dashboard.usersWithout.gracePeriodRemaining">
+                <source>Grace Period Remaining</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.nudge" resname="dashboard.usersWithout.nudge">
+                <source>Nudge</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.nudgeActive" resname="dashboard.usersWithout.nudgeActive">
+                <source>Active</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.clearNudge" resname="dashboard.usersWithout.clearNudge">
+                <source>Clear Nudge</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.actions" resname="dashboard.usersWithout.actions">
+                <source>Actions</source>
+            </trans-unit>
+            <trans-unit id="dashboard.usersWithout.days" resname="dashboard.usersWithout.days">
+                <source>days</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.off" resname="enforcement.level.off">
+                <source>Off</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.encourage" resname="enforcement.level.encourage">
+                <source>Encourage</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.required" resname="enforcement.level.required">
+                <source>Required</source>
+            </trans-unit>
+            <trans-unit id="enforcement.level.enforced" resname="enforcement.level.enforced">
+                <source>Enforced</source>
+            </trans-unit>
+            <trans-unit id="interstitial.title" resname="interstitial.title">
+                <source>Set up your passkey</source>
+            </trans-unit>
+            <trans-unit id="interstitial.description" resname="interstitial.description">
+                <source>Passkeys provide a more secure and convenient way to sign in without passwords. They use your device's built-in biometric sensors or security keys to verify your identity, making your account resistant to phishing attacks.</source>
+            </trans-unit>
+            <trans-unit id="interstitial.grace.remaining" resname="interstitial.grace.remaining">
+                <source>You have %d days remaining to set up your passkey.</source>
+            </trans-unit>
+            <trans-unit id="interstitial.grace.required" resname="interstitial.grace.required">
+                <source>Passkey setup is now required.</source>
+            </trans-unit>
+            <trans-unit id="interstitial.button.setup" resname="interstitial.button.setup">
+                <source>Set up now</source>
+            </trans-unit>
+            <trans-unit id="interstitial.button.skip" resname="interstitial.button.skip">
+                <source>Skip for now</source>
+            </trans-unit>
+            <trans-unit id="interstitial.button.skipRemaining" resname="interstitial.button.skipRemaining">
+                <source>Skip for now (%d days remaining)</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.updated" resname="js.enforcement.updated">
+                <source>Enforcement updated</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.setTo" resname="js.enforcement.setTo">
+                <source>Group enforcement set to "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.failed" resname="js.enforcement.failed">
+                <source>Update failed</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.progress" resname="js.unlock.progress">
+                <source>Resetting...</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.done" resname="js.unlock.done">
+                <source>Reset</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.success" resname="js.unlock.success">
+                <source>Login lock reset</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.message" resname="js.unlock.message">
+                <source>Failed login attempt counter reset for "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.unlock.failed" resname="js.unlock.failed">
+                <source>Reset failed</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.progress" resname="js.reminder.progress">
+                <source>Sending...</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.done" resname="js.reminder.done">
+                <source>Sent</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.success" resname="js.reminder.success">
+                <source>Reminder sent</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.message" resname="js.reminder.message">
+                <source>Passkey setup reminder sent to "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.reminder.failed" resname="js.reminder.failed">
+                <source>Reminder failed</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.progress" resname="js.clearNudge.progress">
+                <source>Clearing...</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.done" resname="js.clearNudge.done">
+                <source>Cleared</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.success" resname="js.clearNudge.success">
+                <source>Nudge cleared</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.message" resname="js.clearNudge.message">
+                <source>Passkey nudge cleared for "%s".</source>
+            </trans-unit>
+            <trans-unit id="js.clearNudge.failed" resname="js.clearNudge.failed">
+                <source>Clear failed</source>
+            </trans-unit>
+            <trans-unit id="js.error.server" resname="js.error.server">
+                <source>Server returned an error. Please try again.</source>
+            </trans-unit>
+            <trans-unit id="js.error.network" resname="js.error.network">
+                <source>Network error. Please check your connection.</source>
+            </trans-unit>
+            <trans-unit id="js.error.unknown" resname="js.error.unknown">
+                <source>Unknown error.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.title.available" resname="js.banner.title.available">
+                <source>Passkeys available for your account</source>
+            </trans-unit>
+            <trans-unit id="js.banner.title.remaining" resname="js.banner.title.remaining">
+                <source>Passkey setup — %d days remaining</source>
+            </trans-unit>
+            <trans-unit id="js.banner.remaining" resname="js.banner.remaining">
+                <source>Passkeys are available for your account. You have %d days to set up passwordless login.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.available" resname="js.banner.available">
+                <source>Passkeys are now available for your account. Set up passwordless login for faster, more secure access.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.description" resname="js.banner.description">
+                <source>Passkeys replace your password with fingerprint, face, or security key authentication — faster to use and resistant to phishing attacks.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.help" resname="js.banner.help">
+                <source>Need help? Contact your administrator.</source>
+            </trans-unit>
+            <trans-unit id="js.banner.learnMore" resname="js.banner.learnMore">
+                <source>Learn more</source>
+            </trans-unit>
+            <trans-unit id="js.banner.setup" resname="js.banner.setup">
+                <source>Set up now</source>
+            </trans-unit>
+            <trans-unit id="js.banner.dismiss" resname="js.banner.dismiss">
+                <source>Dismiss</source>
             </trans-unit>
         </body>
     </file>

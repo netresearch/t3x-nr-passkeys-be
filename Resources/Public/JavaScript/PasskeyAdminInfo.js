@@ -56,7 +56,7 @@ class PasskeyAdminInfo {
 
   confirmAndRevoke(button) {
     const credentialUid = parseInt(button.dataset.credentialUid, 10);
-    const modal = Modal.show(
+    Modal.show(
       button.dataset.confirmationTitle || 'Revoke passkey',
       button.dataset.confirmationContent || 'Are you sure you want to revoke this passkey?',
       SeverityEnum.warning,
@@ -66,24 +66,25 @@ class PasskeyAdminInfo {
           active: true,
           btnClass: 'btn-default',
           name: 'cancel',
+          trigger: (event, modal) => {
+            modal.hideModal();
+          },
         },
         {
           text: button.dataset.confirmationRevokeText || 'Revoke',
           btnClass: 'btn-warning',
           name: 'revoke',
-          trigger: () => {
+          trigger: (event, modal) => {
             this.sendRevokeRequest(credentialUid);
+            modal.hideModal();
           },
         },
       ],
     );
-    modal.addEventListener('button.clicked', () => {
-      modal.hideModal();
-    });
   }
 
   confirmAndRevokeAll(button) {
-    const modal = Modal.show(
+    Modal.show(
       button.dataset.confirmationTitle || 'Revoke all passkeys',
       button.dataset.confirmationContent || 'Are you sure?',
       SeverityEnum.warning,
@@ -93,26 +94,27 @@ class PasskeyAdminInfo {
           active: true,
           btnClass: 'btn-default',
           name: 'cancel',
+          trigger: (event, modal) => {
+            modal.hideModal();
+          },
         },
         {
           text: button.dataset.confirmationRevokeText || 'Revoke all passkeys',
           btnClass: 'btn-danger',
           name: 'revokeAll',
-          trigger: () => {
+          trigger: (event, modal) => {
             this.sendRevokeAllRequest();
+            modal.hideModal();
           },
         },
       ],
     );
-    modal.addEventListener('button.clicked', () => {
-      modal.hideModal();
-    });
   }
 
   confirmAndUnlock(button) {
-    const modal = Modal.show(
-      button.dataset.confirmationTitle || 'Unlock account',
-      button.dataset.confirmationContent || 'Reset the rate limiter for this user?',
+    Modal.show(
+      button.dataset.confirmationTitle || 'Reset login lock',
+      button.dataset.confirmationContent || 'Reset the failed login attempt counter for this user?',
       SeverityEnum.info,
       [
         {
@@ -120,20 +122,21 @@ class PasskeyAdminInfo {
           active: true,
           btnClass: 'btn-default',
           name: 'cancel',
+          trigger: (event, modal) => {
+            modal.hideModal();
+          },
         },
         {
-          text: button.dataset.confirmationUnlockText || 'Unlock account',
+          text: button.dataset.confirmationUnlockText || 'Reset login lock',
           btnClass: 'btn-warning',
           name: 'unlock',
-          trigger: () => {
+          trigger: (event, modal) => {
             this.sendUnlockRequest();
+            modal.hideModal();
           },
         },
       ],
     );
-    modal.addEventListener('button.clicked', () => {
-      modal.hideModal();
-    });
   }
 
   sendRevokeRequest(credentialUid) {
@@ -205,9 +208,9 @@ class PasskeyAdminInfo {
       .then(async (response) => {
         const data = await response.resolve();
         if (data.status === 'ok') {
-          Notification.success('Account unlocked');
+          Notification.success('Login lock reset');
         } else {
-          Notification.error('Failed to unlock account', data.error || '');
+          Notification.error('Failed to reset login lock', data.error || '');
         }
       })
       .catch(() => {

@@ -29,6 +29,33 @@
             <trans-unit id="tx_nrpasskeysbe_credential.revoked_by" resname="tx_nrpasskeysbe_credential.revoked_by">
                 <source>Revoked By</source>
             </trans-unit>
+            <trans-unit id="be_groups.tab.passkeys" resname="be_groups.tab.passkeys">
+                <source>Passkeys</source>
+            </trans-unit>
+            <trans-unit id="be_groups.passkey_enforcement" resname="be_groups.passkey_enforcement">
+                <source>Passkey Enforcement</source>
+            </trans-unit>
+            <trans-unit id="be_groups.passkey_enforcement.description" resname="be_groups.passkey_enforcement.description">
+                <source>Controls whether users in this group are required to set up passkeys.</source>
+            </trans-unit>
+            <trans-unit id="be_groups.passkey_enforcement.off" resname="be_groups.passkey_enforcement.off">
+                <source>Off — Passkeys optional</source>
+            </trans-unit>
+            <trans-unit id="be_groups.passkey_enforcement.encourage" resname="be_groups.passkey_enforcement.encourage">
+                <source>Encourage — Show banner to users without passkeys</source>
+            </trans-unit>
+            <trans-unit id="be_groups.passkey_enforcement.required" resname="be_groups.passkey_enforcement.required">
+                <source>Required — Interstitial with grace period</source>
+            </trans-unit>
+            <trans-unit id="be_groups.passkey_enforcement.enforced" resname="be_groups.passkey_enforcement.enforced">
+                <source>Enforced — Password login disabled</source>
+            </trans-unit>
+            <trans-unit id="be_groups.passkey_grace_period_days" resname="be_groups.passkey_grace_period_days">
+                <source>Grace Period (days)</source>
+            </trans-unit>
+            <trans-unit id="be_groups.passkey_grace_period_days.description" resname="be_groups.passkey_grace_period_days.description">
+                <source>Number of days users have to set up a passkey after enforcement is set to "Required".</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

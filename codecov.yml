@@ -20,6 +20,37 @@ flags:
     paths:
       - Classes/
     carryforward: true
+  fuzz:
+    paths:
+      - Classes/
+    carryforward: true
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+  individual_components:
+    - component_id: service
+      name: Service Layer
+      paths:
+        - Classes/Service/
+    - component_id: middleware
+      name: Middleware
+      paths:
+        - Classes/Middleware/
+    - component_id: domain
+      name: Domain
+      paths:
+        - Classes/Domain/
+    - component_id: controller
+      name: Controllers
+      paths:
+        - Classes/Controller/
+    - component_id: auth
+      name: Authentication
+      paths:
+        - Classes/Authentication/
 
 ignore:
   - .Build/

@@ -298,7 +298,7 @@ class PasskeyManagement {
 
   handleRemove(uid, label) {
     const safeLabel = this.escapeHtml(label || 'Unnamed');
-    const modal = Modal.show(
+    Modal.show(
       'Remove passkey',
       'Are you sure you want to remove the passkey "' + safeLabel + '"?',
       SeverityEnum.warning,
@@ -308,12 +308,15 @@ class PasskeyManagement {
           active: true,
           btnClass: 'btn-default',
           name: 'cancel',
+          trigger: (event, modal) => {
+            modal.hideModal();
+          },
         },
         {
           text: 'Remove',
           btnClass: 'btn-danger',
           name: 'remove',
-          trigger: async () => {
+          trigger: async (event, modal) => {
             try {
               const response = await new AjaxRequest(this.removeUrl)
                 .addMiddleware(sudoModeInterceptor)
@@ -328,13 +331,11 @@ class PasskeyManagement {
             } catch (error) {
               Notification.error('Remove failed', error.message || 'Failed to remove passkey.');
             }
+            modal.hideModal();
           },
         },
       ],
     );
-    modal.addEventListener('button.clicked', () => {
-      modal.hideModal();
-    });
   }
 
   setAddLoading(loading) {

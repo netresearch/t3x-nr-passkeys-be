@@ -9,4 +9,8 @@ return [
         'provider' => SvgIconProvider::class,
         'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/Extension.svg',
     ],
+    'passkeys-be-module' => [
+        'provider' => SvgIconProvider::class,
+        'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/Extension.svg',
+    ],
 ];

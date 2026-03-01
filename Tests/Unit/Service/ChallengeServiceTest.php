@@ -410,6 +410,19 @@ final class ChallengeServiceTest extends TestCase
     }
 
     #[Test]
+    public function createChallengeTokenThrowsWhenGlobalsNotArray(): void
+    {
+        unset($GLOBALS['TYPO3_CONF_VARS']);
+        $challenge = \random_bytes(32);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000050);
+        $this->expectExceptionMessage('encryptionKey is missing or too short');
+
+        $this->subject->createChallengeToken($challenge);
+    }
+
+    #[Test]
     public function createChallengeTokenProducesDifferentTokensForSameChallenge(): void
     {
         $challenge = \random_bytes(32);

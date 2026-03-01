@@ -6,6 +6,8 @@
             "../Classes/Authentication",
             "../Classes/Controller",
             "../Classes/Domain/Model",
+            "../Classes/Domain/Dto",
+            "../Classes/Domain/Enum",
             "../Classes/Configuration",
             "../Classes/EventListener",
             "../Classes/Middleware",
@@ -28,6 +30,11 @@
         "CastString": {
             "ignore": [
                 "Netresearch\\NrPasskeysBe\\Controller\\*"
+            ]
+        },
+        "GreaterThanOrEqualTo": {
+            "ignoreSourceCodeByRegex": [
+                ".*\\$a->severity\\(\\).*\\$b->severity\\(\\).*"
             ]
         }
     },

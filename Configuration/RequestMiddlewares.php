@@ -1,5 +1,10 @@
 <?php
 
+/*
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 declare(strict_types=1);
 
 return [
@@ -11,6 +16,15 @@ return [
             ],
             'before' => [
                 'typo3/cms-backend/authentication',
+            ],
+        ],
+        'netresearch/nr-passkeys-be/passkey-setup-interstitial' => [
+            'target' => \Netresearch\NrPasskeysBe\Middleware\PasskeySetupInterstitial::class,
+            'after' => [
+                'typo3/cms-backend/authentication',
+            ],
+            'before' => [
+                'typo3/cms-backend/site-resolver',
             ],
         ],
     ],

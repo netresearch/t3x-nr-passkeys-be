@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--
+ - Copyright (c) 2025-2026 Netresearch DTT GmbH
+ - SPDX-License-Identifier: GPL-2.0-or-later
+-->
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="EXT:nr_passkeys_be/Resources/Private/Language/locallang_csh_be_users.xlf">
+        <body>
+            <trans-unit id="passkeys.alttitle" resname="passkeys.alttitle">
+                <source>Passkeys (WebAuthn/FIDO2)</source>
+            </trans-unit>
+            <trans-unit id="passkeys.description" resname="passkeys.description">
+                <source>Shows the WebAuthn/FIDO2 passkeys registered for this backend user. Administrators can revoke individual passkeys or unlock rate-limited accounts.</source>
+            </trans-unit>
+            <trans-unit id="passkeys.details" resname="passkeys.details">
+                <source>Passkeys provide passwordless authentication using biometric sensors (fingerprint, face recognition) or hardware security keys. Each passkey is bound to a specific device and cannot be phished or reused across sites. Administrators can revoke compromised passkeys without resetting the user's password.</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

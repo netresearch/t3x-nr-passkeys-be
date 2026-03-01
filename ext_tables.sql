@@ -15,3 +15,13 @@ CREATE TABLE tx_nrpasskeysbe_credential (
     UNIQUE KEY credential_id (credential_id),
     KEY be_user (be_user)
 );
+
+CREATE TABLE be_groups (
+    passkey_enforcement varchar(10) NOT NULL DEFAULT 'off',
+    passkey_grace_period_days int(11) NOT NULL DEFAULT 14
+);
+
+CREATE TABLE be_users (
+    passkey_grace_period_start int(11) unsigned NOT NULL DEFAULT 0,
+    passkey_nudge_until int(11) unsigned NOT NULL DEFAULT 0
+);
