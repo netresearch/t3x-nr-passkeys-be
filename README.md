@@ -51,9 +51,12 @@
 
 - **Primary authentication** -- Passkeys replace passwords, not just augment them
 - **Discoverable login** -- Optional username-less login via resident credentials
-- **Admin management** -- Admins can list, revoke passkeys and unlock locked accounts
-- **Self-service** -- Users register, rename, and remove their own passkeys
-- **Per-user enforcement** -- Gradually migrate to passkey-only: block passwords only for users with passkeys
+- **Per-group enforcement** -- 4 levels (Off, Encourage, Required, Enforced) with configurable grace periods for gradual rollout
+- **Onboarding banner** -- Dismissible banner with passkey explanation, docs link, and administrator contact for encouraged users
+- **Setup interstitial** -- PSR-15 middleware prompts users to register passkeys after login (skippable during grace period)
+- **Admin dashboard** -- Backend module with adoption stats, per-group enforcement controls, user list, and bulk actions
+- **Admin management** -- Admins can list, revoke passkeys, send reminders, and unlock locked accounts
+- **Self-service** -- Users register, rename, and remove their own passkeys in User Settings
 - **Rate limiting** -- Per-endpoint and per-account lockout protection
 - **Replay protection** -- HMAC-signed challenge tokens with single-use nonces
 
@@ -83,11 +86,17 @@ Extension settings are available in **Admin Tools > Settings > Extension Configu
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `challengeTtl` | `120` | Challenge token lifetime in seconds |
-| `maxFailedAttempts` | `5` | Failed login attempts before account lockout |
-| `lockoutDuration` | `900` | Lockout duration in seconds (15 min) |
-| `disablePasswordLogin` | `false` | Block password login for users with registered passkeys |
+| `challengeTtlSeconds` | `120` | Challenge token lifetime in seconds |
 | `discoverableLoginEnabled` | `true` | Allow username-less login via resident credentials |
+| `disablePasswordLogin` | `false` | Block password login for users with registered passkeys |
+| `rateLimitMaxAttempts` | `10` | Requests per IP per endpoint before rate limiting |
+| `rateLimitWindowSeconds` | `300` | Rate limit window duration in seconds |
+| `lockoutThreshold` | `5` | Failed login attempts before account lockout |
+| `lockoutDurationSeconds` | `900` | Lockout duration in seconds (15 min) |
+| `userVerification` | `required` | WebAuthn user verification requirement |
+| `allowedAlgorithms` | `ES256` | Comma-separated signing algorithms |
+
+See [Configuration documentation](Documentation/Configuration/Index.rst) for all settings including `rpId`, `rpName`, and `origin`.
 
 ## How It Works
 
@@ -109,7 +118,14 @@ The extension registers a TYPO3 authentication service at priority 80 (above `Sa
 **Admin** (admin-only, AJAX routes):
 - `GET /ajax/passkeys/admin/list?beUserUid=N` -- List any user's passkeys
 - `POST /ajax/passkeys/admin/remove` -- Revoke a user's passkey *
+- `POST /ajax/passkeys/admin/revoke-all` -- Revoke all passkeys for a user *
 - `POST /ajax/passkeys/admin/unlock` -- Unlock a locked-out user *
+- `POST /ajax/passkeys/admin/update-enforcement` -- Update group enforcement level *
+- `POST /ajax/passkeys/admin/send-reminder` -- Send passkey setup reminder *
+- `POST /ajax/passkeys/admin/clear-nudge` -- Clear active nudge for a user *
+
+**Enforcement** (authenticated, AJAX route):
+- `GET /ajax/passkeys/enforcement/status` -- Get enforcement status for banner
 
 \* Protected by TYPO3 **Sudo Mode** -- write operations require password re-verification (15 min grant lifetime).
 

@@ -96,6 +96,11 @@ Password login control
    When this setting is active, users cannot remove their last passkey to
    prevent locking themselves out.
 
+   ..  seealso::
+
+      For more granular per-group enforcement with grace periods, see
+      :ref:`enforcement`.
+
 Rate limiting
 =============
 
