@@ -20,11 +20,15 @@ The extension consists of these core components:
     Classes/
       Authentication/     Auth service (TYPO3 auth chain)
       Configuration/      Extension configuration value object
-      Controller/         REST API controllers (Login, Manage, Admin)
+      Controller/         REST API + backend module controllers
+      Domain/Dto/         DTOs and value objects
+      Domain/Enum/        EnforcementLevel enum
       Domain/Model/       Credential entity
-      EventListener/      PSR-14 listener (login form injection)
-      Middleware/          PSR-15 middleware (public route resolver)
+      EventListener/      PSR-14 listeners (login form, banner)
+      Form/Element/       PasskeyInfoElement (FormEngine)
+      Middleware/          PSR-15 middleware (routes, interstitial)
       Service/            Business logic services
+      UserSettings/       PasskeySettingsPanel (User Settings)
 
 Login form injection
 ====================
@@ -48,6 +52,31 @@ The passkey management panel in User Settings also uses
 ES module, which imports TYPO3 native APIs (``AjaxRequest``,
 ``Notification``, ``Modal``, ``sudoModeInterceptor``,
 ``DocumentService``).
+
+Banner injection
+================
+
+The ``InjectPasskeyBanner`` PSR-14 event listener listens to
+``AfterBackendPageRenderEvent`` and loads :file:`PasskeyBanner.js` on
+every backend page. The JavaScript fetches enforcement status via AJAX,
+checks ``sessionStorage`` for prior dismissal, and renders a rich banner
+with title, passkey explanation, documentation link, and administrator
+contact help text. The banner supports TYPO3 v12/v13 (via
+``.scaffold-content-module``) and v14 (via ``typo3-backend-module-router``
+parent fallback).
+
+Interstitial middleware
+=======================
+
+``PasskeySetupInterstitial`` is a PSR-15 middleware that intercepts
+backend requests for users whose effective enforcement level is
+**Required** or **Enforced**. If the user has no registered passkeys, it
+renders a full-page interstitial prompting them to register.
+
+The middleware exempts login, logout, AJAX, MFA, and passkey API routes.
+During the grace period the user can skip the interstitial (protected by
+a CSRF nonce). Once the grace period expires or the level is **Enforced**,
+skipping is disabled.
 
 Authentication data flow
 ========================
@@ -114,7 +143,7 @@ The extension registers backend routes for three controller groups.
 All controllers use the ``JsonBodyTrait`` for parsing JSON request
 bodies. Login routes use ``Routes.php`` (public access). Management
 and admin routes use ``AjaxRoutes.php`` (AJAX, with Sudo Mode on
-write operations).
+write operations). All paths below are relative to ``/typo3/``.
 
 ..  card-grid::
     :columns: 1
@@ -150,7 +179,23 @@ write operations).
 
         - ``GET /ajax/passkeys/admin/list``
         - ``POST /ajax/passkeys/admin/remove`` *
+        - ``POST /ajax/passkeys/admin/revoke-all`` *
         - ``POST /ajax/passkeys/admin/unlock`` *
+        - ``POST /ajax/passkeys/admin/update-enforcement`` *
+        - ``POST /ajax/passkeys/admin/send-reminder`` *
+        - ``POST /ajax/passkeys/admin/clear-nudge`` *
+
+    ..  card:: AdminModuleController (Backend module)
+
+        Renders the Admin Tools > Passkey Management
+        backend module with Dashboard and Help tabs
+        (via ``Modules.php``).
+
+    ..  card:: Enforcement status (AJAX)
+
+        Provides enforcement status for the banner.
+
+        - ``GET /ajax/passkeys/enforcement/status``
 
 Routes marked with ``*`` are protected by TYPO3's Sudo Mode. When
 accessed without a recent password verification, they return HTTP 422
@@ -194,6 +239,18 @@ Service classes
         Reads extension configuration and computes effective values
         for ``rpId`` and ``origin`` (auto-detection from request).
 
+    ..  card:: EnforcementService
+
+        Determines the effective enforcement level for a user by
+        resolving their group memberships (strictest level wins,
+        shortest grace period wins).
+
+    ..  card:: AdoptionStatsService
+
+        Provides adoption statistics for the admin dashboard:
+        overall counts, per-group breakdowns, users without
+        passkeys, and grace period status.
+
 Domain model
 ============
 
@@ -215,23 +272,34 @@ Running tests
 ..  code-block:: bash
     :caption: Available test commands
 
-    # Unit tests (301 tests, 1060 assertions)
+    # Unit tests
     composer ci:test:php:unit
 
-    # Fuzz tests (122 tests, 1608 assertions)
+    # Fuzz tests
     composer ci:test:php:fuzz
 
-    # Functional tests (24 tests, requires MySQL)
+    # Functional tests (requires MySQL)
     composer ci:test:php:functional
 
     # Static analysis (PHPStan level 10)
-    composer ci:stan
+    composer ci:test:php:phpstan
 
     # Code style (PER-CS3.0)
-    composer ci:lint:php
+    composer ci:test:php:cgl
 
-    # JavaScript unit tests (33 tests, Vitest)
-    npm run test:js
+    # JavaScript unit tests (Vitest)
+    npx vitest run
 
-    # Mutation testing (Infection, MSI >= 80%)
+    # E2E tests (Playwright, requires DDEV)
+    npx playwright test
+
+    # Mutation testing (Infection, min-MSI 60%, covered-MSI 75%)
     composer ci:mutation
+
+JavaScript modules:
+
+- :file:`PasskeyLogin.js` -- Login form passkey button and WebAuthn flow
+- :file:`PasskeyManagement.js` -- User Settings passkey management panel
+- :file:`PasskeyBanner.js` -- Encourage-stage onboarding banner
+- :file:`PasskeyDashboard.js` -- Admin dashboard enforcement controls
+- :file:`PasskeyAdminInfo.js` -- Admin passkey info in user records

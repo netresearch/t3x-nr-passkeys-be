@@ -6,6 +6,8 @@
 Passkey Enforcement
 ======================
 
+..  versionadded:: 0.6.0
+
 The extension supports per-group enforcement of passkey registration with
 configurable grace periods. This allows administrators to gradually roll out
 passkeys across their organisation -- from gentle encouragement to mandatory
@@ -34,7 +36,9 @@ passkey.
     *   - **Encourage**
         - 1
         - A dismissible banner is shown to users who have not registered a
-          passkey. Users can dismiss the banner and continue working.
+          passkey. The banner explains what passkeys are, why to set them up,
+          links to the extension documentation, and provides administrator
+          contact guidance. Users can dismiss the banner and continue working.
 
     *   - **Required**
         - 2
@@ -159,8 +163,8 @@ The dashboard tab shows:
   directly from the dropdown in the table.
 - **Users without passkeys** -- A list of users who have not yet registered a
   passkey, showing their username, real name, grace period start date, and
-  remaining days. :guilabel:`Send reminder` and :guilabel:`Unlock` actions are
-  available per user.
+  remaining days. :guilabel:`Send reminder`, :guilabel:`Clear nudge`, and
+  :guilabel:`Unlock` actions are available per user.
 
 Help tab
 --------

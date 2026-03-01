@@ -6,6 +6,32 @@
 Changelog
 =========
 
+0.6.0
+=====
+
+Features
+--------
+
+- Per-group passkey enforcement with 4 levels: Off, Encourage, Required,
+  Enforced
+- Configurable grace periods for Required enforcement (1--365 days)
+- PSR-15 interstitial middleware prompting users to register passkeys
+  (skippable during grace period, mandatory after expiry)
+- Encourage-stage dismissible banner with passkey explanation, docs link,
+  and administrator contact guidance (supports TYPO3 v12/v13/v14)
+- Admin dashboard backend module (Admin Tools > Passkey Management) with
+  adoption statistics, per-group enforcement controls, and user list
+- Admin actions: Send Reminder (nudge), Clear Nudge, Revoke All
+- ``EnforcementLevel`` enum, ``EnforcementStatus`` DTO,
+  ``EnforcementService``, ``AdoptionStatsService``
+- ``PasskeyBanner.js``, ``PasskeyDashboard.js`` JavaScript modules
+- TCA fields ``passkey_enforcement`` and ``passkey_grace_period_days``
+  on ``be_groups``
+- 5 new admin AJAX endpoints for enforcement and nudge management
+- 153 i18n translation units across 4 XLF files
+- Context-sensitive help tab in admin module with rollout guide, recovery
+  procedures, MFA coexistence, and FAQ
+
 0.5.0
 =====
 

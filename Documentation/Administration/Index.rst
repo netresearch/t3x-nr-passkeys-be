@@ -83,6 +83,73 @@ wait for the lockout to expire automatically.
 
 This endpoint requires Sudo Mode verification (HTTP 422 if not verified).
 
+Revoke all credentials
+----------------------
+
+..  code-block:: text
+
+   POST /typo3/ajax/passkeys/admin/revoke-all
+   Content-Type: application/json
+
+   {"beUserUid": 123}
+
+Revokes all passkeys for a backend user at once. Useful for device loss or
+account recovery scenarios.
+
+This endpoint requires Sudo Mode verification (HTTP 422 if not verified).
+
+..  versionadded:: 0.6.0
+
+Update group enforcement
+------------------------
+
+..  code-block:: text
+
+   POST /typo3/ajax/passkeys/admin/update-enforcement
+   Content-Type: application/json
+
+   {"groupUid": 1, "enforcement": "encourage"}
+
+Changes the passkey enforcement level for a backend user group. Valid levels:
+``off``, ``encourage``, ``required``, ``enforced``.
+
+This endpoint requires Sudo Mode verification (HTTP 422 if not verified).
+
+..  versionadded:: 0.6.0
+
+Send passkey setup reminder
+----------------------------
+
+..  code-block:: text
+
+   POST /typo3/ajax/passkeys/admin/send-reminder
+   Content-Type: application/json
+
+   {"beUserUid": 123}
+
+Sets a nudge flag for a user, causing the encourage-stage banner to reappear
+even if previously dismissed.
+
+This endpoint requires Sudo Mode verification (HTTP 422 if not verified).
+
+..  versionadded:: 0.6.0
+
+Clear nudge
+-----------
+
+..  code-block:: text
+
+   POST /typo3/ajax/passkeys/admin/clear-nudge
+   Content-Type: application/json
+
+   {"beUserUid": 123}
+
+Removes the active nudge flag for a user.
+
+This endpoint requires Sudo Mode verification (HTTP 422 if not verified).
+
+..  versionadded:: 0.6.0
+
 Credential lifecycle
 ====================
 
