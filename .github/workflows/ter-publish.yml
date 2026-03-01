@@ -42,15 +42,17 @@ jobs:
               exit 1
             fi
             echo "version=${INPUT_VERSION}" >> "$GITHUB_ENV"
+            echo "checkout_ref=${INPUT_VERSION}" >> "$GITHUB_ENV"
           else
             TAG="${GITHUB_REF#refs/tags/}"
-            echo "version=${TAG}" >> "$GITHUB_ENV"
+            echo "checkout_ref=${TAG}" >> "$GITHUB_ENV"
+            echo "version=${TAG#v}" >> "$GITHUB_ENV"
           fi
 
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: ${{ env.version }}
+          ref: ${{ env.checkout_ref }}
 
       - name: Validate ext_emconf.php version
         env:
