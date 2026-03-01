@@ -164,7 +164,7 @@ The dashboard tab shows:
 - **Users without passkeys** -- A list of users who have not yet registered a
   passkey, showing their username, real name, grace period start date, and
   remaining days. :guilabel:`Send reminder`, :guilabel:`Clear nudge`, and
-  :guilabel:`Reset lock` actions are available per user.
+  :guilabel:`Unlock` actions are available per user.
 
 Help tab
 --------

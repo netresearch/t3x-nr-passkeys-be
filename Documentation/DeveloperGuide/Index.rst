@@ -143,7 +143,7 @@ The extension registers backend routes for three controller groups.
 All controllers use the ``JsonBodyTrait`` for parsing JSON request
 bodies. Login routes use ``Routes.php`` (public access). Management
 and admin routes use ``AjaxRoutes.php`` (AJAX, with Sudo Mode on
-write operations).
+write operations). All paths below are relative to ``/typo3/``.
 
 ..  card-grid::
     :columns: 1
@@ -282,10 +282,10 @@ Running tests
     composer ci:test:php:functional
 
     # Static analysis (PHPStan level 10)
-    composer ci:stan
+    composer ci:test:php:phpstan
 
     # Code style (PER-CS3.0)
-    composer ci:lint:php
+    composer ci:test:php:cgl
 
     # JavaScript unit tests (Vitest)
     npx vitest run
@@ -293,7 +293,7 @@ Running tests
     # E2E tests (Playwright, requires DDEV)
     npx playwright test
 
-    # Mutation testing (Infection, MSI >= 80%)
+    # Mutation testing (Infection, min-MSI 60%, covered-MSI 75%)
     composer ci:mutation
 
 JavaScript modules:

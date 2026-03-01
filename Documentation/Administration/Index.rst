@@ -108,7 +108,7 @@ Update group enforcement
    POST /typo3/ajax/passkeys/admin/update-enforcement
    Content-Type: application/json
 
-   {"groupUid": 1, "level": "encourage"}
+   {"groupUid": 1, "enforcement": "encourage"}
 
 Changes the passkey enforcement level for a backend user group. Valid levels:
 ``off``, ``encourage``, ``required``, ``enforced``.
