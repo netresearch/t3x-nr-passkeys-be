@@ -1,5 +1,5 @@
 <!-- FOR AI AGENTS - Scoped to Documentation/ -->
-<!-- Last updated: 2026-02-09 -->
+<!-- Last updated: 2026-03-02 -->
 
 # Documentation AGENTS.md
 
@@ -9,16 +9,17 @@
 
 ```
 Documentation/
-  Index.rst                 -> Main entry point (toctree)
-  guides.xml                -> Render configuration (project metadata, interlinking)
-  Introduction/Index.rst    -> What the extension does, features, support matrix
-  Installation/Index.rst    -> Composer install, activation, system requirements
-  Configuration/Index.rst   -> Extension settings, TypoScript (if any)
-  Usage/Index.rst           -> End-user guide: registering/using passkeys
-  Administration/Index.rst  -> Admin guide: managing users, lockouts, revocation
-  DeveloperGuide/Index.rst  -> Architecture, API endpoints, extending
-  Security/Index.rst        -> Security model, threat mitigation, audit results
-  Changelog/Index.rst       -> Version history
+  Index.rst                          -> Main entry point (toctree)
+  guides.xml                         -> Render configuration (version must match ext_emconf.php)
+  Introduction/Index.rst             -> What the extension does, features, support matrix
+  Installation/Index.rst             -> Composer install, activation, system requirements
+  Configuration/Index.rst            -> Extension settings (12 confvals)
+  Usage/Index.rst                    -> End-user guide: registering/using passkeys
+  Administration/Index.rst           -> Admin guide: API endpoints, lockouts, revocation
+  Administration/Enforcement.rst     -> Enforcement levels, grace periods, dashboard
+  DeveloperGuide/Index.rst           -> Architecture, API endpoints, JS modules, extending
+  Security/Index.rst                 -> Security model, threat mitigation, audit results
+  Changelog/Index.rst                -> Version history
 ```
 
 ## Standards
@@ -53,7 +54,11 @@ Output goes to `Documentation-GENERATED-temp/` (gitignored).
 
 ## Rules
 
-- Do NOT edit `guides.xml` project version (managed by release process)
+- Update `guides.xml` version + `ext_emconf.php` version together at release time
 - Keep RST compatible with TYPO3 render-guides (phpDocumentor-based)
 - Screenshots go in `Images/` subdirectories as PNG with `:alt:` text
 - Every directory must have an `Index.rst`
+- Use `.. versionadded::` for new features, `.. deprecated::` for removed ones
+- Keep README.md and Documentation/ in sync (config names, feature list, API endpoints)
+- Use `.. confval::` for configuration settings, `:guilabel:` for UI elements
+- Route paths in docs are relative to `/typo3/` (see DeveloperGuide note)

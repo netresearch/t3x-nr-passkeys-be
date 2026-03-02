@@ -1,6 +1,6 @@
 <!-- FOR AI AGENTS - Human readability is a side effect, not a goal -->
 <!-- Managed by agent: keep sections and order; edit content, not structure -->
-<!-- Last updated: 2026-02-09 | Last verified: 2026-02-09 -->
+<!-- Last updated: 2026-03-02 | Last verified: 2026-03-02 -->
 
 # AGENTS.md
 
@@ -10,6 +10,8 @@
 
 **nr_passkeys_be** -- TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passkeys.
 Supports TouchID, FaceID, YubiKey, Windows Hello for one-click TYPO3 backend login.
+Includes per-group enforcement with gradual rollout (Off → Encourage → Required → Enforced),
+admin dashboard with adoption stats, and onboarding UX (banner, interstitial, reminders).
 
 | Key | Value |
 |-----|-------|
@@ -38,8 +40,11 @@ Supports TouchID, FaceID, YubiKey, Windows Hello for one-click TYPO3 backend log
 | CGL (fix) | `composer ci:cgl` | 5s |
 | Static analysis | `composer ci:test:php:phpstan` | 10s |
 | Unit tests | `composer ci:test:php:unit` | 5s |
+| Fuzz tests | `composer ci:test:php:fuzz` | 5s |
 | Functional tests | `composer ci:test:php:functional` | 30s |
-| All tests | `composer ci:test:php:all` | 35s |
+| Unit + functional | `composer ci:test:php:all` | 35s |
+| JS tests | `npx vitest run` | 2s |
+| E2E tests | `npx playwright test` | 30s |
 | Mutation testing | `composer ci:mutation` | 60s |
 | Local CI (no DB) | `make ci` | 25s |
 | DDEV full setup | `make up` | 5m |
@@ -49,26 +54,27 @@ Supports TouchID, FaceID, YubiKey, Windows Hello for one-click TYPO3 backend log
 Classes/                  -> PHP source (PSR-4: Netresearch\NrPasskeysBe\)
   Authentication/         -> PasskeyAuthenticationService (TYPO3 auth chain, priority 80)
   Configuration/          -> ExtensionConfiguration value object
-  Controller/             -> Login, Management, Admin controllers + JsonBodyTrait
+  Controller/             -> Login, Management, Admin, AdminModule controllers + JsonBodyTrait
+  Domain/Dto/             -> 10 typed DTOs (RegistrationOptions, EnforcementStatus, AdoptionStats, etc.)
+  Domain/Enum/            -> EnforcementLevel enum (Off, Encourage, Required, Enforced)
   Domain/Model/           -> Credential entity (plain PHP, not Extbase)
-  EventListener/          -> InjectPasskeyLoginFields (PSR-14 event listener for login form)
-  Service/                -> WebAuthn, Challenge, Credential, RateLimiter, Config services
-  UserSettings/           -> User settings module integration
+  EventListener/          -> InjectPasskeyLoginFields, InjectPasskeyBanner (PSR-14)
+  Form/Element/           -> PasskeyInfoElement (FormEngine)
+  Middleware/             -> PasskeySetupInterstitial, PublicRouteResolver (PSR-15)
+  Service/                -> WebAuthn, Challenge, Credential, RateLimiter, Enforcement, AdoptionStats
+  UserSettings/           -> PasskeySettingsPanel (user settings module)
 Build/                    -> Tooling configuration (NOT .Build/ which is composer output)
-  .php-cs-fixer.php       -> Code style rules (PER-CS3.0)
-  phpstan.neon            -> Static analysis config (level 10)
-  infection.json5         -> Mutation testing config
-  phpunit.xml             -> PHPUnit config for unit + fuzz tests
-  phpunit.functional.xml  -> PHPUnit config for functional tests
-Configuration/            -> TYPO3 config (TCA, Backend Routes, Services.yaml)
+Configuration/            -> TYPO3 config (TCA, Backend Routes, AjaxRoutes, Services.yaml)
 Documentation/            -> TYPO3 RST documentation (docs.typo3.org format)
-Resources/Private/        -> Fluid templates, XLIFF translations
-Resources/Public/         -> JavaScript, Icons
-Tests/Unit/               -> Unit tests (PHPUnit, 250 tests)
-Tests/Functional/         -> Functional tests (require MySQL, CI only)
-Tests/Fuzz/               -> Fuzz tests (ChallengeToken, CredentialId, RequestPayload)
+Resources/Private/        -> Fluid templates (AdminModule, Interstitial, UserSettings), 4 XLIFF files
+Resources/Public/         -> 5 JS modules (Login, Management, Banner, Dashboard, AdminInfo), Icons
+Tests/Unit/               -> Unit tests (PHPUnit, ~491 tests)
+Tests/Functional/         -> Functional tests (require MySQL, CI only, ~24 tests)
+Tests/Fuzz/               -> Fuzz tests (~131 tests)
+Tests/JavaScript/         -> JS unit tests (Vitest, ~63 tests)
+Tests/E2E/                -> E2E tests (Playwright, 9 spec files, targets DDEV v13)
 Makefile                  -> make up, make ci, make help (wraps composer + ddev)
-.github/workflows/ci.yml  -> CI pipeline (lint, stan, unit, fuzz, functional, mutation)
+.github/workflows/        -> CI, TER Publish, PR Quality Gates, CodeQL, OpenSSF Scorecard
 ```
 
 ## Golden Samples
@@ -76,7 +82,13 @@ Makefile                  -> make up, make ci, make help (wraps composer + ddev)
 |-----|-----------|-------------|
 | Service class | `Classes/Service/ChallengeService.php` | DI, strict types, HMAC security |
 | Controller | `Classes/Controller/LoginController.php` | JsonBodyTrait, PSR-7 responses |
+| Admin module | `Classes/Controller/AdminModuleController.php` | Backend module, Fluid views |
+| DTO | `Classes/Domain/Dto/EnforcementStatus.php` | Readonly, typed, JsonSerializable |
+| Enum | `Classes/Domain/Enum/EnforcementLevel.php` | Backed enum with Valid() pattern |
+| Middleware | `Classes/Middleware/PasskeySetupInterstitial.php` | PSR-15, enforcement checks |
 | Unit test | `Tests/Unit/Service/ChallengeServiceTest.php` | Mocking final classes, data providers |
+| JS module | `Resources/Public/JavaScript/PasskeyBanner.js` | Banner injection, v12-v14 compat |
+| JS test | `Tests/JavaScript/PasskeyBanner.test.js` | Vitest, DOM testing |
 | Auth service | `Classes/Authentication/PasskeyAuthenticationService.php` | GeneralUtility::makeInstance() pattern |
 
 ## Heuristics
@@ -86,9 +98,13 @@ Makefile                  -> make up, make ci, make help (wraps composer + ddev)
 | Auth service deps | Use `GeneralUtility::makeInstance()` (no DI available) |
 | Controller returns JSON | Use `JsonBodyTrait` |
 | Database access | Use QueryBuilder, never raw SQL |
-| Testing final classes | Create test doubles (webauthn-lib classes are `final`) |
+| Testing final classes | Use `dg/bypass-finals` + create test doubles |
 | Functional test needs DB | Only run in CI (MySQL required) |
 | Fuzz test flakes | Re-run -- `random_bytes()` can produce edge cases |
+| Adding enforcement feature | Use `EnforcementLevel` enum, add DTO in `Domain/Dto/` |
+| V14 DOM differences | Use fallback chain for container detection (see PasskeyBanner.js) |
+| Releasing a version | Bump `ext_emconf.php` BEFORE tagging; `guides.xml` version too |
+| Adding admin API endpoint | Add to `AjaxRoutes.php`, document in Administration/Index.rst |
 
 ## Boundaries
 
@@ -115,12 +131,15 @@ Makefile                  -> make up, make ci, make help (wraps composer + ddev)
 - Commit `composer.lock`
 
 ## Codebase State
-- Extension is fully functional with all CI checks passing
+- Extension is fully functional at v0.6.0 with all CI checks passing
 - Passkeys are primary credentials (NOT MFA) -- registered at auth priority 80
-- `web-auth/webauthn-lib` v5.x classes are `final` -- cannot mock, must use test doubles
+- Per-group enforcement with 4 levels, admin dashboard, onboarding UX (banner, interstitial)
+- `web-auth/webauthn-lib` v5.x classes are `final` -- use `dg/bypass-finals` for mocking
 - `saschaegerer/phpstan-typo3` v2 only supports TYPO3 v13 (removed for v12 and v14 CI jobs)
 - Functional tests require MySQL (CI only, not local)
 - Discoverable login behind `discoverableLoginEnabled` feature flag
+- V14 uses web components (`typo3-backend-module-router`) instead of `.scaffold-content-module`
+- TER publish workflow requires `v` prefix stripping for version validation
 
 ## Terminology
 | Term | Means |
@@ -131,6 +150,10 @@ Makefile                  -> make up, make ci, make help (wraps composer + ddev)
 | Challenge token | HMAC-signed, time-limited, single-use token for WebAuthn ceremonies |
 | Lockout | Account lock after N failed auth attempts |
 | Discoverable login | Login without entering username first (resident key) |
+| Enforcement level | Per-group setting: Off, Encourage, Required, Enforced |
+| Grace period | Days before Required enforcement becomes mandatory |
+| Interstitial | Full-page setup prompt blocking navigation until passkey registered |
+| Nudge | Admin-triggered reminder flag on a user's record |
 
 ## Index of Scoped AGENTS.md
 - `./Classes/AGENTS.md` -- PHP source code patterns and TYPO3 conventions

@@ -1,4 +1,4 @@
-<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-02-09 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-03-02 -->
 
 # AGENTS.md -- Classes
 
@@ -12,15 +12,28 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 | `Configuration/ExtensionConfiguration.php` | Typed value object for extension settings |
 | `Controller/LoginController.php` | Public endpoints: `/passkeys/login/options`, `/passkeys/login/verify` |
 | `Controller/ManagementController.php` | Authenticated: register, list, rename, remove own passkeys |
-| `Controller/AdminController.php` | Admin-only: list/revoke any user's passkeys, unlock accounts |
+| `Controller/AdminController.php` | Admin-only JSON API: list/revoke passkeys, update enforcement, send reminders |
+| `Controller/AdminModuleController.php` | Backend module: admin dashboard with adoption stats and enforcement controls |
 | `Controller/JsonBodyTrait.php` | Shared JSON request body parsing for all controllers |
+| `Domain/Dto/EnforcementStatus.php` | User's enforcement status, grace period, passkey ownership |
+| `Domain/Dto/AdoptionStats.php` | Passkey adoption statistics per group |
+| `Domain/Dto/GroupEnforcementInfo.php` | User group's enforcement configuration |
+| `Domain/Dto/UserPasskeyStatus.php` | Backend user's passkey registration status |
+| `Domain/Enum/EnforcementLevel.php` | Off, Encourage, Required, Enforced (backed string enum) |
 | `Domain/Model/Credential.php` | Plain PHP entity with `fromArray()`/`toArray()`, soft delete + revocation |
-| `EventListener/InjectPasskeyLoginFields.php` | PSR-14 event listener injecting passkey into standard login form |
+| `EventListener/InjectPasskeyLoginFields.php` | PSR-14: injects passkey fields into standard login form |
+| `EventListener/InjectPasskeyBanner.php` | PSR-14: injects adoption banner for Encourage enforcement |
+| `Form/Element/PasskeyInfoElement.php` | FormEngine element showing passkey info in user records |
+| `Middleware/PasskeySetupInterstitial.php` | PSR-15: blocks navigation until passkey registered (Required level) |
+| `Middleware/PublicRouteResolver.php` | PSR-15: resolves public (unauthenticated) routes |
 | `Service/WebAuthnService.php` | Core WebAuthn ceremony logic (attestation + assertion) |
 | `Service/ChallengeService.php` | HMAC-signed challenge tokens with nonce replay protection |
 | `Service/CredentialRepository.php` | Database CRUD via TYPO3 QueryBuilder |
 | `Service/RateLimiterService.php` | Per-endpoint rate limiting + account lockout |
+| `Service/EnforcementService.php` | Evaluates enforcement level and grace period for a user |
+| `Service/AdoptionStatsService.php` | Calculates adoption metrics for dashboard |
 | `Service/ExtensionConfigurationService.php` | Reads extension configuration from TYPO3 |
+| `UserSettings/PasskeySettingsPanel.php` | User settings panel (uses `callUserFunction`, no DI) |
 
 ## Golden Samples (follow these patterns)
 | Pattern | Reference |

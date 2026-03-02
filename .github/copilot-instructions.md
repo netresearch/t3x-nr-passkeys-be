@@ -15,17 +15,26 @@ TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passk
 - `RateLimiterService`: Per-endpoint rate limiting + account lockout
 - `Credential`: Plain PHP entity (not Extbase), soft delete + revocation
 - Controllers use `JsonBodyTrait` for JSON request body parsing
+- Per-group enforcement: `EnforcementLevel` enum (Off, Encourage, Required, Enforced)
+- `EnforcementService` + `AdoptionStatsService` for enforcement logic and dashboard metrics
+- `PasskeySetupInterstitial` middleware: blocks navigation until passkey registered
+- `InjectPasskeyBanner` event listener: encourage-stage banner with v12-v14 compat
+- 10 typed DTOs in `Domain/Dto/`, all readonly; API-facing ones implement `JsonSerializable`
 
 ## Commands
 - `composer ci:test:php:cgl` -- code style check
 - `composer ci:test:php:phpstan` -- PHPStan level 10
-- `composer ci:test:php:unit` -- unit tests
+- `composer ci:test:php:unit` -- unit tests (~491)
 - `composer ci:test:php:functional` -- functional tests (MySQL required)
-- `composer ci:mutation` -- mutation testing (MSI >= 80%)
+- `npx vitest run` -- JS tests (~63)
+- `npx playwright test` -- E2E tests (requires DDEV)
+- `composer ci:mutation` -- mutation testing (min-MSI 60%, covered-MSI 75%)
 
 ## Conventions
-- Use constructor DI via Services.yaml (except auth service)
+- Use constructor DI via Services.yaml (except auth service and userFunc classes)
 - Use QueryBuilder for database access, never raw SQL
 - User enumeration prevention: dummy responses with randomized timing
-- Test doubles for `web-auth/webauthn-lib` (classes are `final`)
+- Test doubles for `web-auth/webauthn-lib` (classes are `final`, use `dg/bypass-finals`)
 - Conventional Commits: `type(scope): subject`
+- All non-extending classes are `final` (enforced by phpat rules)
+- Prefer typed DTOs over untyped arrays for public API responses
