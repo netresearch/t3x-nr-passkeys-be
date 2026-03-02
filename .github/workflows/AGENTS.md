@@ -1,14 +1,20 @@
-<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-02-09 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-03-02 -->
 
 # AGENTS.md -- .github/workflows
 
 ## Overview
-Single CI workflow (`ci.yml`) with 6 job types across a PHP/TYPO3 version matrix.
+Multiple workflows: CI pipeline, TER publish, PR quality gates, CodeQL, OpenSSF Scorecard.
 
 ## Key Files
 | File | Purpose |
 |------|---------|
 | `ci.yml` | Main CI pipeline: lint, stan, unit, fuzz, functional, mutation |
+| `ter-publish.yml` | Publish to TYPO3 TER on release (strips `v` prefix for version) |
+| `pr-quality-gates.yml` | Auto-approve for solo maintainer, Copilot review coordination |
+| `codeql.yml` | CodeQL security analysis (javascript-typescript, actions -- NOT PHP) |
+| `scorecard.yml` | OpenSSF Scorecard security assessment |
+| `auto-merge.yml` | Auto-merge dependency PRs (Dependabot/Renovate) |
+| `dependency-review.yml` | Dependency review on PRs |
 
 ## CI Jobs
 | Job | Matrix | Purpose |
@@ -37,3 +43,9 @@ Single CI workflow (`ci.yml`) with 6 job types across a PHP/TYPO3 version matrix
 - Verify action SHA + version match with `gh api repos/OWNER/REPO/tags`
 - Keep matrix balanced -- every PHP version should be tested with every supported TYPO3 version
 - Mutation testing runs on single PHP version (8.4) to save CI minutes
+
+## TER Publish Gotchas
+- `GITHUB_REF#refs/tags/` gives `v0.6.0` but ext_emconf.php has `0.6.0` (no `v`)
+- Workflow uses separate `checkout_ref` (raw tag) and `version` (v-stripped) env vars
+- Always bump `ext_emconf.php` version BEFORE creating the tag
+- `guides.xml` version should also be updated to match
