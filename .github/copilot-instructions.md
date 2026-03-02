@@ -19,7 +19,7 @@ TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passk
 - `EnforcementService` + `AdoptionStatsService` for enforcement logic and dashboard metrics
 - `PasskeySetupInterstitial` middleware: blocks navigation until passkey registered
 - `InjectPasskeyBanner` event listener: encourage-stage banner with v12-v14 compat
-- 10 typed DTOs in `Domain/Dto/`, all readonly and JsonSerializable
+- 10 typed DTOs in `Domain/Dto/`, all readonly; API-facing ones implement `JsonSerializable`
 
 ## Commands
 - `composer ci:test:php:cgl` -- code style check
@@ -37,4 +37,4 @@ TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passk
 - Test doubles for `web-auth/webauthn-lib` (classes are `final`, use `dg/bypass-finals`)
 - Conventional Commits: `type(scope): subject`
 - All non-extending classes are `final` (enforced by phpat rules)
-- No array returns from services/controllers -- use typed DTOs
+- Prefer typed DTOs over untyped arrays for public API responses

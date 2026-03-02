@@ -10,10 +10,10 @@ Multiple workflows: CI pipeline, TER publish, PR quality gates, CodeQL, OpenSSF 
 |------|---------|
 | `ci.yml` | Main CI pipeline: lint, stan, unit, fuzz, functional, mutation |
 | `ter-publish.yml` | Publish to TYPO3 TER on release (strips `v` prefix for version) |
-| `pr-quality-gates.yml` | Auto-approve for solo maintainer, Copilot review coordination |
+| `pr-quality.yml` | Auto-approve for solo maintainer, Copilot review coordination |
 | `codeql.yml` | CodeQL security analysis (javascript-typescript, actions -- NOT PHP) |
 | `scorecard.yml` | OpenSSF Scorecard security assessment |
-| `auto-merge.yml` | Auto-merge dependency PRs (Dependabot/Renovate) |
+| `auto-merge-deps.yml` | Auto-merge dependency PRs (Dependabot/Renovate) |
 | `dependency-review.yml` | Dependency review on PRs |
 
 ## CI Jobs

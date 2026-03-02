@@ -41,7 +41,7 @@ Tests/
 | Unit tests | `composer ci:test:php:unit` | Fast, no DB needed |
 | Fuzz tests | `composer ci:test:php:fuzz` | May flake due to random data |
 | Functional tests | `composer ci:test:php:functional` | MySQL required (CI only) |
-| All PHP tests | `composer ci:test:php:all` | Unit + functional |
+| Unit + functional | `composer ci:test:php:all` | No fuzz tests included |
 | JS tests | `npx vitest run` | Fast, DOM testing with jsdom |
 | E2E tests | `npx playwright test` | Requires DDEV running (targets v13) |
 | Mutation testing | `composer ci:mutation` | min-MSI 60%, covered-MSI 75% |

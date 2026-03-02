@@ -42,7 +42,7 @@ admin dashboard with adoption stats, and onboarding UX (banner, interstitial, re
 | Unit tests | `composer ci:test:php:unit` | 5s |
 | Fuzz tests | `composer ci:test:php:fuzz` | 5s |
 | Functional tests | `composer ci:test:php:functional` | 30s |
-| All PHP tests | `composer ci:test:php:all` | 35s |
+| Unit + functional | `composer ci:test:php:all` | 35s |
 | JS tests | `npx vitest run` | 2s |
 | E2E tests | `npx playwright test` | 30s |
 | Mutation testing | `composer ci:mutation` | 60s |
@@ -60,7 +60,7 @@ Classes/                  -> PHP source (PSR-4: Netresearch\NrPasskeysBe\)
   Domain/Model/           -> Credential entity (plain PHP, not Extbase)
   EventListener/          -> InjectPasskeyLoginFields, InjectPasskeyBanner (PSR-14)
   Form/Element/           -> PasskeyInfoElement (FormEngine)
-  Middleware/              -> PasskeySetupInterstitial, PublicRouteResolver (PSR-15)
+  Middleware/             -> PasskeySetupInterstitial, PublicRouteResolver (PSR-15)
   Service/                -> WebAuthn, Challenge, Credential, RateLimiter, Enforcement, AdoptionStats
   UserSettings/           -> PasskeySettingsPanel (user settings module)
 Build/                    -> Tooling configuration (NOT .Build/ which is composer output)
