@@ -1,12 +1,63 @@
+# PHPStan Configuration
+#
+# Note: typo3-ci-workflows shared config is NOT included directly because
+# it requires phpstan-typo3 which needs TYPO3 ^13.4+. For v12 compat,
+# all settings are inlined. phpstan/extension-installer auto-registers
+# phpstan-strict-rules, phpstan-deprecation-rules, phpstan-phpunit, phpat.
+
 parameters:
     level: 10
     paths:
-        - ../Classes
-        - ../Tests/Architecture
-    tmpDir: ../.Build/var/phpstan
+        - %currentWorkingDirectory%/Classes
+        - %currentWorkingDirectory%/Tests/Architecture
+    tmpDir: %currentWorkingDirectory%/.Build/var/phpstan
     treatPhpDocTypesAsCertain: false
-    reportUnmatchedIgnoredErrors: true
+    inferPrivatePropertyTypeFromConstructor: true
+    checkMissingCallableSignature: true
+    checkUninitializedProperties: true
+    reportUnmatchedIgnoredErrors: false
+
+    excludePaths:
+        - %currentWorkingDirectory%/.Build/*
+        - %currentWorkingDirectory%/ext_emconf.php
+
     ignoreErrors:
+        # --- Shared ignoreErrors (from typo3-ci-workflows) ---
+        - identifier: offsetAccess.nonOffsetAccessible
+          path: %currentWorkingDirectory%/Tests/Unit/*
+          reportUnmatched: false
+        - identifier: argument.type
+          path: %currentWorkingDirectory%/Tests/Unit/*
+          message: '#Parameter \#2 \$array of static method PHPUnit\\Framework\\Assert::#'
+          reportUnmatched: false
+        - identifier: cast.int
+          path: %currentWorkingDirectory%/Tests/Functional/*
+          reportUnmatched: false
+        - identifier: argument.type
+          path: %currentWorkingDirectory%/Tests/Functional/*
+          message: '#mixed#'
+          reportUnmatched: false
+        - identifier: assign.propertyType
+          path: %currentWorkingDirectory%/Tests/Functional/*
+          message: '#mixed#'
+          reportUnmatched: false
+        - identifier: method.nonObject
+          path: %currentWorkingDirectory%/Tests/Functional/*
+          message: '#mixed#'
+          reportUnmatched: false
+        - identifier: attribute.deprecated
+          path: %currentWorkingDirectory%/Classes/Updates/*
+          reportUnmatched: false
+        - identifier: class.implementsDeprecatedInterface
+          path: %currentWorkingDirectory%/Classes/Updates/*
+          reportUnmatched: false
+        - identifier: classConstant.deprecatedClass
+          path: %currentWorkingDirectory%/Classes/Updates/*
+          reportUnmatched: false
+        - identifier: classConstant.deprecatedClass
+          path: %currentWorkingDirectory%/Tests/Unit/Updates/*
+          reportUnmatched: false
+        # --- Extension-specific ignoreErrors ---
         # ergebnis rules that are too strict for TYPO3 extensions
         -
             identifier: ergebnis.noNamedArgument
@@ -37,16 +88,35 @@ parameters:
         # AsEventListener attribute does not exist in TYPO3 v12 (introduced in v13)
         -
             identifier: attribute.notFound
-            path: ../Classes/EventListener/InjectPasskeyLoginFields.php
+            path: %currentWorkingDirectory%/Classes/EventListener/InjectPasskeyLoginFields.php
             reportUnmatched: false
         -
             identifier: attribute.notFound
-            path: ../Classes/EventListener/InjectPasskeyBanner.php
+            path: %currentWorkingDirectory%/Classes/EventListener/InjectPasskeyBanner.php
+            reportUnmatched: false
+        # phpstan-strict-rules (from typo3-ci-workflows shared config)
+        -
+            message: '#Construct empty\(\) is not allowed#'
+            reportUnmatched: false
+        -
+            message: '#Short ternary operator is not allowed#'
+            reportUnmatched: false
+        -
+            message: '#Call to function array_filter\(\) requires parameter \#2 to be passed#'
+            reportUnmatched: false
+        # Parameter contravariance with TYPO3 core interfaces
+        -
+            message: '#should be contravariant with parameter#'
+            reportUnmatched: false
+        # TYPO3 v14 deprecations (makeMenu/makeMenuItem) - will be addressed in v15 migration
+        -
+            message: '#Call to deprecated method#'
+            path: %currentWorkingDirectory%/Classes/Controller/AdminModuleController.php
             reportUnmatched: false
         # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
             message: '#no value type specified in iterable type array#'
-            path: ../Classes/Authentication/PasskeyAuthenticationService.php
+            path: %currentWorkingDirectory%/Classes/Authentication/PasskeyAuthenticationService.php
 
 services:
     -
