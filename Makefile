@@ -1,3 +1,5 @@
+-include .Build/vendor/netresearch/typo3-ci-workflows/Makefile.include
+
 .DEFAULT_GOAL := help
 
 .PHONY: help

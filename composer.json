@@ -32,17 +32,8 @@
         "web-auth/webauthn-lib": "^5.2"
     },
     "require-dev": {
-        "captainhook/captainhook": "^5.28",
-        "captainhook/hook-installer": "^1.0",
+        "netresearch/typo3-ci-workflows": "^1.2",
         "ergebnis/phpstan-rules": "^2.6",
-        "friendsofphp/php-cs-fixer": "^3.68",
-        "infection/infection": "^0.32",
-        "phpstan/extension-installer": "^1.4",
-        "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^11.5",
-        "saschaegerer/phpstan-typo3": "^3.0",
-        "typo3/testing-framework": "^8.2 || ^9.0",
-        "phpat/phpat": "^0.12.2",
         "dg/bypass-finals": "^1.9"
     },
     "autoload": {
@@ -59,9 +50,10 @@
         "allow-plugins": {
             "typo3/class-alias-loader": true,
             "typo3/cms-composer-installers": true,
+            "a9f/fractor-extension-installer": true,
+            "captainhook/hook-installer": true,
             "infection/extension-installer": true,
-            "phpstan/extension-installer": true,
-            "captainhook/hook-installer": true
+            "phpstan/extension-installer": true
         },
         "bin-dir": ".Build/bin",
         "vendor-dir": ".Build/vendor"
