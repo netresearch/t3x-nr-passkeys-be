@@ -1,6 +1,7 @@
 name: CI
 on:
   push:
+    branches: [main]
   pull_request:
   merge_group:
 permissions: {}
@@ -17,6 +18,7 @@ jobs:
       run-rector: false
       run-functional-tests: true
       functional-test-db: mysql
+      upload-coverage: false
       # typo3-ci-workflows requires phpstan-typo3 ^2||^3 which needs TYPO3 ^13.4+
       # Remove it for v12 builds; individual deps in composer.json cover v12
       remove-dev-deps: '[{"dep":"netresearch/typo3-ci-workflows","only-for":"^13.4|^14.1"}]'
