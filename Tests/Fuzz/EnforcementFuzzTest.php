@@ -41,7 +41,7 @@ final class EnforcementFuzzTest extends TestCase
 
             $result = EnforcementLevel::tryFrom($input);
 
-            $this->assertTrue(
+            self::assertTrue(
                 $result instanceof EnforcementLevel || $result === null,
                 \sprintf('tryFrom() returned unexpected type for input of length %d', $length),
             );
@@ -56,7 +56,7 @@ final class EnforcementFuzzTest extends TestCase
 
             $result = EnforcementLevel::tryFrom($level->value);
 
-            $this->assertSame(
+            self::assertSame(
                 $level,
                 $result,
                 \sprintf('tryFrom("%s") did not return expected level', $level->value),
@@ -82,7 +82,7 @@ final class EnforcementFuzzTest extends TestCase
 
             $remaining = $status->gracePeriodRemainingDays($currentTime);
 
-            $this->assertGreaterThanOrEqual(
+            self::assertGreaterThanOrEqual(
                 0,
                 $remaining,
                 'gracePeriodRemainingDays() returned a negative value',
@@ -92,7 +92,7 @@ final class EnforcementFuzzTest extends TestCase
             // When currentTime < gracePeriodStart (future start), remaining can exceed
             // gracePeriodDays because elapsed is negative — this is expected behavior.
             if ($gracePeriodStart > 0 && $currentTime >= $gracePeriodStart) {
-                $this->assertLessThanOrEqual(
+                self::assertLessThanOrEqual(
                     $gracePeriodDays,
                     $remaining,
                     'gracePeriodRemainingDays() exceeded gracePeriodDays when current >= start',
@@ -120,7 +120,7 @@ final class EnforcementFuzzTest extends TestCase
             $expired = $status->isGracePeriodExpired($currentTime);
             $remaining = $status->gracePeriodRemainingDays($currentTime);
 
-            $this->assertSame(
+            self::assertSame(
                 $remaining === 0,
                 $expired,
                 \sprintf(
@@ -150,7 +150,7 @@ final class EnforcementFuzzTest extends TestCase
                 hasPasskeys: (bool) \random_int(0, 1),
             );
 
-            $this->assertFalse(
+            self::assertFalse(
                 $status->isGracePeriodExpired($currentTime),
                 'isGracePeriodExpired() should be false when gracePeriodStart is 0',
             );
@@ -175,11 +175,11 @@ final class EnforcementFuzzTest extends TestCase
             );
 
             $canSkip = $status->canSkip($currentTime);
-            $this->assertIsBool($canSkip);
+            self::assertIsBool($canSkip);
 
             // Enforced level should never be skippable
             if ($level === EnforcementLevel::Enforced) {
-                $this->assertFalse(
+                self::assertFalse(
                     $canSkip,
                     'canSkip() should be false for Enforced level',
                 );
@@ -187,7 +187,7 @@ final class EnforcementFuzzTest extends TestCase
 
             // Required with expired grace period should not be skippable
             if ($level === EnforcementLevel::Required && $status->isGracePeriodExpired($currentTime)) {
-                $this->assertFalse(
+                self::assertFalse(
                     $canSkip,
                     'canSkip() should be false for Required level with expired grace period',
                 );
@@ -195,7 +195,7 @@ final class EnforcementFuzzTest extends TestCase
 
             // Off or Encourage should always be skippable
             if ($level === EnforcementLevel::Off || $level === EnforcementLevel::Encourage) {
-                $this->assertTrue(
+                self::assertTrue(
                     $canSkip,
                     \sprintf('canSkip() should be true for %s level', $level->value),
                 );
@@ -212,26 +212,26 @@ final class EnforcementFuzzTest extends TestCase
 
             $strictest = EnforcementLevel::strictest($a, $b);
 
-            $this->assertGreaterThanOrEqual(
+            self::assertGreaterThanOrEqual(
                 $a->severity(),
                 $strictest->severity(),
                 'strictest() returned a level with lower severity than input $a',
             );
-            $this->assertGreaterThanOrEqual(
+            self::assertGreaterThanOrEqual(
                 $b->severity(),
                 $strictest->severity(),
                 'strictest() returned a level with lower severity than input $b',
             );
 
             // strictest should be one of the two inputs
-            $this->assertTrue(
+            self::assertTrue(
                 $strictest === $a || $strictest === $b,
                 'strictest() returned a level that is neither input',
             );
 
             // Commutative: strictest(a, b) should have same severity as strictest(b, a)
             $reversed = EnforcementLevel::strictest($b, $a);
-            $this->assertSame(
+            self::assertSame(
                 $strictest->severity(),
                 $reversed->severity(),
                 'strictest() is not commutative in severity',
@@ -255,20 +255,20 @@ final class EnforcementFuzzTest extends TestCase
 
             $percentage = $stats->adoptionPercentage();
 
-            $this->assertIsFloat($percentage);
-            $this->assertGreaterThanOrEqual(
+            self::assertIsFloat($percentage);
+            self::assertGreaterThanOrEqual(
                 0.0,
                 $percentage,
                 'adoptionPercentage() returned a negative value',
             );
-            $this->assertLessThanOrEqual(
+            self::assertLessThanOrEqual(
                 100.0,
                 $percentage,
                 'adoptionPercentage() exceeded 100.0',
             );
 
             if ($totalUsers === 0) {
-                $this->assertSame(
+                self::assertSame(
                     0.0,
                     $percentage,
                     'adoptionPercentage() should be 0.0 when totalUsers is 0',
@@ -296,20 +296,20 @@ final class EnforcementFuzzTest extends TestCase
 
             $percentage = $info->adoptionPercentage();
 
-            $this->assertIsFloat($percentage);
-            $this->assertGreaterThanOrEqual(
+            self::assertIsFloat($percentage);
+            self::assertGreaterThanOrEqual(
                 0.0,
                 $percentage,
                 'GroupEnforcementInfo::adoptionPercentage() returned a negative value',
             );
-            $this->assertLessThanOrEqual(
+            self::assertLessThanOrEqual(
                 100.0,
                 $percentage,
                 'GroupEnforcementInfo::adoptionPercentage() exceeded 100.0',
             );
 
             if ($totalUsers === 0) {
-                $this->assertSame(
+                self::assertSame(
                     0.0,
                     $percentage,
                     'GroupEnforcementInfo::adoptionPercentage() should be 0.0 when totalUsers is 0',
@@ -318,9 +318,9 @@ final class EnforcementFuzzTest extends TestCase
 
             // Verify JSON serialization does not throw
             $json = $info->jsonSerialize();
-            $this->assertIsArray($json);
-            $this->assertArrayHasKey('adoptionPercentage', $json);
-            $this->assertSame($percentage, $json['adoptionPercentage']);
+            self::assertIsArray($json);
+            self::assertArrayHasKey('adoptionPercentage', $json);
+            self::assertSame($percentage, $json['adoptionPercentage']);
         }
     }
 }

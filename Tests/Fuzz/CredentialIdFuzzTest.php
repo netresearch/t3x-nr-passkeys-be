@@ -54,11 +54,11 @@ final class CredentialIdFuzzTest extends TestCase
         // Should not throw - just create a Credential with coerced values
         $credential = Credential::fromArray($data);
 
-        $this->assertInstanceOf(Credential::class, $credential);
-        $this->assertIsInt($credential->getUid());
-        $this->assertIsInt($credential->getBeUser());
-        $this->assertIsString($credential->getCredentialId());
-        $this->assertIsString($credential->getLabel());
+        self::assertInstanceOf(Credential::class, $credential);
+        self::assertIsInt($credential->getUid());
+        self::assertIsInt($credential->getBeUser());
+        self::assertIsString($credential->getCredentialId());
+        self::assertIsString($credential->getLabel());
     }
 
     #[Test]
@@ -68,15 +68,15 @@ final class CredentialIdFuzzTest extends TestCase
         $credential = Credential::fromArray($data);
         $array = $credential->toArray();
 
-        $this->assertIsArray($array);
-        $this->assertArrayHasKey('uid', $array);
-        $this->assertArrayHasKey('be_user', $array);
-        $this->assertArrayHasKey('credential_id', $array);
+        self::assertIsArray($array);
+        self::assertArrayHasKey('uid', $array);
+        self::assertArrayHasKey('be_user', $array);
+        self::assertArrayHasKey('credential_id', $array);
 
         // Round-trip
         $credential2 = Credential::fromArray($array);
-        $this->assertSame($credential->getUid(), $credential2->getUid());
-        $this->assertSame($credential->getCredentialId(), $credential2->getCredentialId());
+        self::assertSame($credential->getUid(), $credential2->getUid());
+        self::assertSame($credential->getCredentialId(), $credential2->getCredentialId());
     }
 
     #[Test]
@@ -97,7 +97,7 @@ final class CredentialIdFuzzTest extends TestCase
             $result = $credential->getTransportsArray();
 
             // Should return an array (possibly empty) without throwing
-            $this->assertIsArray($result);
+            self::assertIsArray($result);
         }
     }
 
@@ -121,21 +121,21 @@ final class CredentialIdFuzzTest extends TestCase
         $serialized = $info->jsonSerialize();
 
         // Must NOT contain sensitive fields
-        $this->assertArrayNotHasKey('credentialId', $serialized);
-        $this->assertArrayNotHasKey('credential_id', $serialized);
-        $this->assertArrayNotHasKey('publicKeyCose', $serialized);
-        $this->assertArrayNotHasKey('public_key_cose', $serialized);
-        $this->assertArrayNotHasKey('userHandle', $serialized);
-        $this->assertArrayNotHasKey('user_handle', $serialized);
-        $this->assertArrayNotHasKey('beUser', $serialized);
-        $this->assertArrayNotHasKey('be_user', $serialized);
-        $this->assertArrayNotHasKey('aaguid', $serialized);
+        self::assertArrayNotHasKey('credentialId', $serialized);
+        self::assertArrayNotHasKey('credential_id', $serialized);
+        self::assertArrayNotHasKey('publicKeyCose', $serialized);
+        self::assertArrayNotHasKey('public_key_cose', $serialized);
+        self::assertArrayNotHasKey('userHandle', $serialized);
+        self::assertArrayNotHasKey('user_handle', $serialized);
+        self::assertArrayNotHasKey('beUser', $serialized);
+        self::assertArrayNotHasKey('be_user', $serialized);
+        self::assertArrayNotHasKey('aaguid', $serialized);
 
         // Must contain only safe fields
-        $this->assertArrayHasKey('uid', $serialized);
-        $this->assertArrayHasKey('label', $serialized);
-        $this->assertArrayHasKey('createdAt', $serialized);
-        $this->assertArrayHasKey('lastUsedAt', $serialized);
-        $this->assertArrayHasKey('isRevoked', $serialized);
+        self::assertArrayHasKey('uid', $serialized);
+        self::assertArrayHasKey('label', $serialized);
+        self::assertArrayHasKey('createdAt', $serialized);
+        self::assertArrayHasKey('lastUsedAt', $serialized);
+        self::assertArrayHasKey('isRevoked', $serialized);
     }
 }
