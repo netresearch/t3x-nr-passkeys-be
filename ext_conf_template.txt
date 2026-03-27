@@ -25,8 +25,11 @@ rateLimitMaxAttempts = 10
 # cat=ratelimit/300/110; type=int+; label=Rate Limit Window (seconds):Time window for rate limiting.
 rateLimitWindowSeconds = 300
 
-# cat=ratelimit/300/120; type=int+; label=Lockout Threshold:Failed attempts before account lockout.
+# cat=ratelimit/300/120; type=int+; label=Lockout Threshold (per IP):Failed attempts from a single IP before account lockout.
 lockoutThreshold = 5
+
+# cat=ratelimit/300/125; type=int+; label=Lockout Threshold (per Username):Total failed attempts across all IPs before account lockout. Should be higher than the per-IP threshold.
+lockoutUserThreshold = 15
 
 # cat=ratelimit/300/130; type=int+; label=Lockout Duration (seconds):How long a locked account stays locked.
 lockoutDurationSeconds = 900

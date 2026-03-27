@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Configuration;
 
+/**
+ * Typed, immutable value object for the extension's configuration settings.
+ */
 final class ExtensionConfiguration
 {
     private const VALID_USER_VERIFICATION = ['required', 'preferred', 'discouraged'];
@@ -26,6 +29,7 @@ final class ExtensionConfiguration
         private readonly int $rateLimitMaxAttempts = 10,
         private readonly int $rateLimitWindowSeconds = 300,
         private readonly int $lockoutThreshold = 5,
+        private readonly int $lockoutUserThreshold = 15,
         private readonly int $lockoutDurationSeconds = 900,
         private readonly string $allowedAlgorithms = 'ES256',
     ) {
@@ -82,6 +86,15 @@ final class ExtensionConfiguration
     public function getLockoutThreshold(): int
     {
         return $this->lockoutThreshold;
+    }
+
+    /**
+     * Per-username lockout threshold (without IP). Higher than per-IP threshold
+     * to catch distributed attacks across multiple IPs targeting the same account.
+     */
+    public function getLockoutUserThreshold(): int
+    {
+        return $this->lockoutUserThreshold;
     }
 
     public function getLockoutDurationSeconds(): int
