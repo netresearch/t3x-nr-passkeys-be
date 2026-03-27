@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Service;
 use Doctrine\DBAL\ArrayParameterType;
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -27,6 +28,7 @@ final class EnforcementService
     public function __construct(
         private readonly ConnectionPool $connectionPool,
         private readonly CredentialRepository $credentialRepository,
+        private readonly LoggerInterface $logger,
     ) {}
 
     /**
@@ -106,6 +108,10 @@ final class EnforcementService
             ['passkey_grace_period_start' => \time()],
             ['uid' => $beUserUid],
         );
+
+        $this->logger->info('Grace period started', [
+            'beUserUid' => $beUserUid,
+        ]);
     }
 
     /**

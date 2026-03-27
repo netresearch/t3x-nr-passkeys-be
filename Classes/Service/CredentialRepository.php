@@ -11,14 +11,19 @@ namespace Netresearch\NrPasskeysBe\Service;
 
 use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
+/**
+ * Data access layer for WebAuthn passkey credentials (tx_nrpasskeysbe_credential).
+ */
 final class CredentialRepository
 {
     private const TABLE = 'tx_nrpasskeysbe_credential';
 
     public function __construct(
         private readonly ConnectionPool $connectionPool,
+        private readonly LoggerInterface $logger,
     ) {}
 
     public function findByCredentialId(string $credentialId): ?Credential
@@ -84,7 +89,14 @@ final class CredentialRepository
 
         $connection->insert(self::TABLE, $data);
 
-        return (int) $connection->lastInsertId();
+        $uid = (int) $connection->lastInsertId();
+
+        $this->logger->info('Passkey credential created', [
+            'credentialUid' => $uid,
+            'beUser' => $credential->getBeUser(),
+        ]);
+
+        return $uid;
     }
 
     public function updateLastUsed(int $uid): void
@@ -112,6 +124,11 @@ final class CredentialRepository
             ],
             ['uid' => $uid],
         );
+
+        $this->logger->debug('Credential sign count updated', [
+            'credentialUid' => $uid,
+            'newSignCount' => $newCount,
+        ]);
     }
 
     public function updateLabel(int $uid, string $label): void
@@ -138,6 +155,10 @@ final class CredentialRepository
             ],
             ['uid' => $uid],
         );
+
+        $this->logger->info('Passkey credential deleted (soft delete)', [
+            'credentialUid' => $uid,
+        ]);
     }
 
     public function revoke(int $uid, int $adminUid): void
@@ -153,6 +174,11 @@ final class CredentialRepository
             ],
             ['uid' => $uid],
         );
+
+        $this->logger->warning('Passkey credential revoked', [
+            'credentialUid' => $uid,
+            'revokedByAdminUid' => $adminUid,
+        ]);
     }
 
     public function countByBeUser(int $beUserUid): int

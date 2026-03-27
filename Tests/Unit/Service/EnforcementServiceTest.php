@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
@@ -42,6 +43,7 @@ final class EnforcementServiceTest extends TestCase
         $this->subject = new EnforcementService(
             $this->connectionPool,
             $this->credentialRepository,
+            $this->createMock(LoggerInterface::class),
         );
     }
 
