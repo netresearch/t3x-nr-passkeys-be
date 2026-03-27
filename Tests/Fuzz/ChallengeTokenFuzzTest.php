@@ -14,6 +14,7 @@ use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Locking\LockFactory;
@@ -27,7 +28,8 @@ final class ChallengeTokenFuzzTest extends TestCase
     {
         parent::setUp();
 
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'fuzz-test-encryption-key-' . \bin2hex(\random_bytes(16));
+        $encryptionKey = 'fuzz-test-encryption-key-' . \bin2hex(\random_bytes(16));
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $encryptionKey;
 
         $cache = $this->createMock(FrontendInterface::class);
         $cache->method('has')->willReturn(true);
@@ -38,6 +40,7 @@ final class ChallengeTokenFuzzTest extends TestCase
             challengeTtlSeconds: 120,
         );
         $configService->method('getConfiguration')->willReturn($config);
+        $configService->method('getEncryptionKey')->willReturn($encryptionKey);
 
         $lockFactory = $this->createMock(LockFactory::class);
         $locker = $this->createMock(LockingStrategyInterface::class);
@@ -45,7 +48,7 @@ final class ChallengeTokenFuzzTest extends TestCase
         $locker->method('release')->willReturn(true);
         $lockFactory->method('createLocker')->willReturn($locker);
 
-        $this->challengeService = new ChallengeService($cache, $configService, $lockFactory);
+        $this->challengeService = new ChallengeService($cache, $configService, $lockFactory, $this->createMock(LoggerInterface::class));
     }
 
     protected function tearDown(): void
@@ -97,10 +100,10 @@ final class ChallengeTokenFuzzTest extends TestCase
             $randomInput = \random_bytes(\random_int(1, 256));
             try {
                 $this->challengeService->verifyChallengeToken($randomInput);
-                $this->fail('Expected RuntimeException for random bytes input');
+                self::fail('Expected RuntimeException for random bytes input');
             } catch (RuntimeException) {
                 // Expected
-                $this->assertTrue(true);
+                self::assertTrue(true);
             }
         }
     }
@@ -122,7 +125,7 @@ final class ChallengeTokenFuzzTest extends TestCase
                 // If it doesn't throw, the modification was in padding - that's ok
                 // as long as the underlying data validation catches it
             } catch (RuntimeException) {
-                $this->assertTrue(true);
+                self::assertTrue(true);
             }
         }
     }
@@ -134,7 +137,7 @@ final class ChallengeTokenFuzzTest extends TestCase
         for ($i = 0; $i < 1000; $i++) {
             $challenge = $this->challengeService->generateChallenge();
             $hex = \bin2hex($challenge);
-            $this->assertArrayNotHasKey($hex, $challenges, 'Duplicate challenge detected');
+            self::assertArrayNotHasKey($hex, $challenges, 'Duplicate challenge detected');
             $challenges[$hex] = true;
         }
     }
@@ -152,8 +155,8 @@ final class ChallengeTokenFuzzTest extends TestCase
 
         foreach ($testChallenges as $challenge) {
             $token = $this->challengeService->createChallengeToken($challenge);
-            $this->assertNotEmpty($token);
-            $this->assertIsString($token);
+            self::assertNotEmpty($token);
+            self::assertIsString($token);
         }
     }
 }

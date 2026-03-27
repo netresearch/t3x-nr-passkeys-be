@@ -19,6 +19,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
@@ -37,7 +38,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         parent::setUp();
 
         $this->enforcementService = $this->createMock(EnforcementService::class);
-        $this->subject = new PasskeySetupInterstitial($this->enforcementService);
+        $this->subject = new PasskeySetupInterstitial(
+            $this->enforcementService,
+            $this->createMock(LoggerInterface::class),
+        );
     }
 
     protected function tearDown(): void
@@ -407,24 +411,19 @@ final class PasskeySetupInterstitialTest extends TestCase
     {
         $this->setUpBackendUser(42);
 
-        // First call returns gracePeriodStart=0, second call returns updated status
+        // gracePeriodStart=0 triggers startGracePeriod; middleware constructs
+        // the updated status directly instead of re-querying
         $initialStatus = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-        $updatedStatus = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
 
         $this->enforcementService
-            ->expects(self::exactly(2))
+            ->expects(self::once())
             ->method('getStatus')
-            ->willReturnOnConsecutiveCalls($initialStatus, $updatedStatus);
+            ->willReturn($initialStatus);
 
         $this->enforcementService
             ->expects(self::once())
@@ -820,20 +819,40 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
-    public function interstitialShowsSkipButtonWithoutRemainingDaysWhenEncourage(): void
+    public function interstitialShowsSkipButtonWithGracePeriodDaysRemaining(): void
     {
         $this->setUpBackendUser(42);
 
-        // First call: gracePeriodStart=0 triggers startGracePeriod in middleware
-        $initialStatus = new EnforcementStatus(
+        // Grace period just started with 7 days remaining
+        $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
+            gracePeriodDays: 7,
+            gracePeriodStart: \time(),
             hasPasskeys: false,
         );
-        // Second call after startGracePeriod: keep gracePeriodStart=0 so canSkip remains true
-        // with remainingDays=0 (gracePeriodDays=0 and start=0 returns gracePeriodDays)
-        $updatedStatus = new EnforcementStatus(
+
+        $this->enforcementService
+            ->expects(self::once())
+            ->method('getStatus')
+            ->willReturn($status);
+
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+
+        $response = $this->subject->process($request, $handler);
+
+        $body = (string) $response->getBody();
+        self::assertStringContainsString('Skip for now', $body);
+        self::assertStringContainsString('7 days remaining', $body);
+    }
+
+    #[Test]
+    public function interstitialHidesSkipButtonWhenGracePeriodExpired(): void
+    {
+        $this->setUpBackendUser(42);
+
+        // Required level with 0 grace days — once started, immediately expired
+        $initialStatus = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 0,
             gracePeriodStart: 0,
@@ -841,9 +860,9 @@ final class PasskeySetupInterstitialTest extends TestCase
         );
 
         $this->enforcementService
-            ->expects(self::exactly(2))
+            ->expects(self::once())
             ->method('getStatus')
-            ->willReturnOnConsecutiveCalls($initialStatus, $updatedStatus);
+            ->willReturn($initialStatus);
 
         $this->enforcementService
             ->expects(self::once())
@@ -856,8 +875,8 @@ final class PasskeySetupInterstitialTest extends TestCase
         $response = $this->subject->process($request, $handler);
 
         $body = (string) $response->getBody();
-        self::assertStringContainsString('Skip for now', $body);
-        self::assertStringNotContainsString('days remaining', $body);
+        self::assertStringNotContainsString('Skip for now', $body);
+        self::assertStringContainsString('Passkey setup is now required', $body);
     }
 
     #[Test]

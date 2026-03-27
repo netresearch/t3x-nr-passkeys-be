@@ -9,11 +9,11 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
-use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
+use Netresearch\NrPasskeysBe\Utility\TypeCastTrait;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
@@ -24,7 +24,9 @@ use TYPO3\CMS\Core\Http\JsonResponse;
 
 final class ManagementController
 {
+    use BackendUserTrait;
     use JsonBodyTrait;
+    use TypeCastTrait;
 
     public function __construct(
         private readonly WebAuthnService $webAuthnService,
@@ -212,7 +214,7 @@ final class ManagementController
         }
 
         $body = $this->getJsonBody($request);
-        $credentialUid = self::intFrom($body['uid'] ?? null);
+        $credentialUid = self::intVal($body['uid'] ?? null);
         $rawLabel = $body['label'] ?? null;
         $label = \is_string($rawLabel) ? $rawLabel : '';
 
@@ -221,6 +223,9 @@ final class ManagementController
         }
 
         $label = \mb_substr(\trim($label), 0, 128);
+        if ($label === '') {
+            $label = 'Passkey';
+        }
 
         // Verify ownership
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $user->uid);
@@ -253,7 +258,7 @@ final class ManagementController
         }
 
         $body = $this->getJsonBody($request);
-        $credentialUid = self::intFrom($body['uid'] ?? null);
+        $credentialUid = self::intVal($body['uid'] ?? null);
 
         if ($credentialUid === 0) {
             return new JsonResponse(['error' => 'Missing credential uid'], 400);
@@ -281,38 +286,5 @@ final class ManagementController
         ]);
 
         return new JsonResponse(['status' => 'ok']);
-    }
-
-    private function getAuthenticatedUser(): ?AuthenticatedUser
-    {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication) {
-            return null;
-        }
-
-        $userData = $backendUser->user;
-        if (!\is_array($userData)) {
-            return null;
-        }
-
-        $rawUid = $userData['uid'] ?? null;
-        if (!\is_numeric($rawUid)) {
-            return null;
-        }
-
-        $rawUsername = $userData['username'] ?? '';
-        $rawRealName = $userData['realName'] ?? '';
-
-        return new AuthenticatedUser(
-            uid: (int) $rawUid,
-            username: \is_string($rawUsername) ? $rawUsername : '',
-            realName: \is_string($rawRealName) ? $rawRealName : '',
-            isAdmin: $backendUser->isAdmin(),
-        );
-    }
-
-    private static function intFrom(mixed $value): int
-    {
-        return \is_numeric($value) ? (int) $value : 0;
     }
 }

@@ -9,11 +9,10 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\UserSettings;
 
+use Netresearch\NrPasskeysBe\Controller\TranslationTrait;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
-use RuntimeException;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
-use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -28,7 +27,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 final class PasskeySettingsPanel
 {
-    private const LLL_PREFIX = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:';
+    use TranslationTrait;
 
     /**
      * Render the passkey management panel.
@@ -57,9 +56,7 @@ final class PasskeySettingsPanel
             ? $sysConf['encryptionKey']
             : '';
         if (\strlen($encryptionKey) < 32) {
-            $lang = $this->getLanguageService();
             $warning = $this->translate(
-                $lang,
                 'manage.warning.encryptionKey',
                 'Passkey management is unavailable. The TYPO3 encryption key is missing or too short (minimum 32 characters). Configure it in Admin Tools > Settings > Configure Installation-Wide Options.',
             );
@@ -90,24 +87,21 @@ final class PasskeySettingsPanel
      */
     private function buildHtml(int $passkeyCount, array $urls): string
     {
-        $lang = $this->getLanguageService();
-
         $infoText = $this->translate(
-            $lang,
             'manage.info.passkeys',
             'Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup — for example, your laptop and your phone.',
         );
 
-        $title = $this->translate($lang, 'manage.title', 'Passkeys');
-        $description = $this->translate($lang, 'manage.description', 'Manage your registered passkeys for passwordless login.');
-        $addLabel = $this->translate($lang, 'manage.add', 'Add Passkey');
-        $nameLabel = $this->translate($lang, 'manage.label.name', 'Name');
-        $createdLabel = $this->translate($lang, 'manage.label.created', 'Created');
-        $lastUsedLabel = $this->translate($lang, 'manage.label.lastUsed', 'Last Used');
-        $actionsLabel = $this->translate($lang, 'manage.label.actions', 'Actions');
-        $singleKeyWarning = $this->translate($lang, 'manage.warning.singleKey', 'You only have one passkey registered. Consider adding a backup passkey.');
-        $noPasskeys = $this->translate($lang, 'manage.noPasskeys', 'No passkeys registered yet.');
-        $nameHelp = $this->translate($lang, 'manage.label.name.help', 'A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").');
+        $title = $this->translate('manage.title', 'Passkeys');
+        $description = $this->translate('manage.description', 'Manage your registered passkeys for passwordless login.');
+        $addLabel = $this->translate('manage.add', 'Add Passkey');
+        $nameLabel = $this->translate('manage.label.name', 'Name');
+        $createdLabel = $this->translate('manage.label.created', 'Created');
+        $lastUsedLabel = $this->translate('manage.label.lastUsed', 'Last Used');
+        $actionsLabel = $this->translate('manage.label.actions', 'Actions');
+        $singleKeyWarning = $this->translate('manage.warning.singleKey', 'You only have one passkey registered. Consider adding a backup passkey.');
+        $noPasskeys = $this->translate('manage.noPasskeys', 'No passkeys registered yet.');
+        $nameHelp = $this->translate('manage.label.name.help', 'A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").');
 
         $countBadgeClass = match (true) {
             $passkeyCount === 0 => 'badge-warning',
@@ -168,20 +162,4 @@ final class PasskeySettingsPanel
 HTML;
     }
 
-    private function translate(LanguageService $lang, string $key, string $fallback): string
-    {
-        $translated = $lang->sL(self::LLL_PREFIX . $key);
-
-        return $translated !== '' ? $translated : $fallback;
-    }
-
-    private function getLanguageService(): LanguageService
-    {
-        $lang = $GLOBALS['LANG'] ?? null;
-        if (!$lang instanceof LanguageService) {
-            throw new RuntimeException('LanguageService not available', 1740000001);
-        }
-
-        return $lang;
-    }
 }

@@ -9,14 +9,12 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
-use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
@@ -29,6 +27,7 @@ use TYPO3\CMS\Core\Http\JsonResponse;
  */
 final class AdminController
 {
+    use BackendUserTrait;
     use JsonBodyTrait;
 
     private const NUDGE_DURATION_DAYS = 14;
@@ -391,35 +390,4 @@ final class AdminController
         return new JsonResponse(['status' => 'ok']);
     }
 
-    private function requireAdmin(): ?AuthenticatedUser
-    {
-        $backendUser = $GLOBALS['BE_USER'] ?? null;
-        if (!$backendUser instanceof BackendUserAuthentication) {
-            return null;
-        }
-
-        $userData = $backendUser->user;
-        if (!\is_array($userData)) {
-            return null;
-        }
-
-        $rawUid = $userData['uid'] ?? null;
-        if (!\is_numeric($rawUid)) {
-            return null;
-        }
-
-        if (!$backendUser->isAdmin()) {
-            return null;
-        }
-
-        $rawUsername = $userData['username'] ?? '';
-        $rawRealName = $userData['realName'] ?? '';
-
-        return new AuthenticatedUser(
-            uid: (int) $rawUid,
-            username: \is_string($rawUsername) ? $rawUsername : '',
-            realName: \is_string($rawRealName) ? $rawRealName : '',
-            isAdmin: true,
-        );
-    }
 }
