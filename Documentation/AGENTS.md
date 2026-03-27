@@ -11,14 +11,23 @@
 Documentation/
   Index.rst                          -> Main entry point (toctree)
   guides.xml                         -> Render configuration (version must match ext_emconf.php)
+  Includes.rst.txt                   -> Shared substitutions and highlight directive
   Introduction/Index.rst             -> What the extension does, features, support matrix
   Installation/Index.rst             -> Composer install, activation, system requirements
-  Configuration/Index.rst            -> Extension settings (12 confvals)
+  Configuration/Index.rst            -> Extension settings (13 confvals)
+  DeploymentScenarios/Index.rst      -> Multi-env setup, DB sync, shared rpId
+  DeploymentScenarios/Onboarding.rst -> User onboarding, recovery, DDEV, containers
   Usage/Index.rst                    -> End-user guide: registering/using passkeys
   Administration/Index.rst           -> Admin guide: API endpoints, lockouts, revocation
   Administration/Enforcement.rst     -> Enforcement levels, grace periods, dashboard
-  DeveloperGuide/Index.rst           -> Architecture, API endpoints, JS modules, extending
-  Security/Index.rst                 -> Security model, threat mitigation, audit results
+  Administration/Database.rst        -> Credential lifecycle, table schema, monitoring
+  DeveloperGuide/Index.rst           -> Developer guide entry point
+  DeveloperGuide/Architecture.rst    -> Extension structure, auth flow, domain model
+  DeveloperGuide/ControllersAndServices.rst -> Routes, controllers, services, JS modules
+  DeveloperGuide/Testing.rst         -> Test commands and test suite overview
+  Security/Index.rst                 -> Security model, threat mitigation
+  Security/Deployment.rst            -> Production deployment requirements
+  Troubleshooting/Index.rst          -> Common errors, logging, debug mode
   Changelog/Index.rst                -> Version history
 ```
 

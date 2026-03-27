@@ -23,6 +23,7 @@ Installation via Composer
 This is the recommended way to install the extension:
 
 ..  code-block:: bash
+    :caption: Install via Composer
 
     composer require netresearch/nr-passkeys-be
 
@@ -38,6 +39,7 @@ After installation, activate the extension in the TYPO3 backend:
 Or use the CLI:
 
 ..  code-block:: bash
+    :caption: Activate via CLI
 
     vendor/bin/typo3 extension:activate nr_passkeys_be
 
@@ -54,6 +56,7 @@ activation, run the database schema update:
 Or use the CLI:
 
 ..  code-block:: bash
+    :caption: Update database schema via CLI
 
     vendor/bin/typo3 database:updateschema
 
@@ -67,6 +70,7 @@ After activation:
 
    ..  figure:: /Images/Login/LoginPageWithPasskey.png
        :alt: TYPO3 login form with the passkey button visible
+       :class: with-border with-shadow
        :width: 200px
        :zoom: lightbox
 
