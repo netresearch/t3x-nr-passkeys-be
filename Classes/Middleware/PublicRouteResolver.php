@@ -38,10 +38,12 @@ final class PublicRouteResolver implements MiddlewareInterface
         /** @var Route|null $route */
         $route = $request->getAttribute('route');
 
+        $identifier = $route?->getOption('_identifier');
+
         if ($route !== null
             && $route->getOption('access') === 'public'
-            && \is_string($route->getOption('_identifier'))
-            && \str_starts_with($route->getOption('_identifier'), self::PASSKEYS_ROUTE_PREFIX)
+            && \is_string($identifier)
+            && \str_starts_with($identifier, self::PASSKEYS_ROUTE_PREFIX)
         ) {
             return $this->dispatcher->dispatch($request);
         }
