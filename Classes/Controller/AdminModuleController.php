@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Controller;
 
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Service\AdoptionStatsService;
+use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;

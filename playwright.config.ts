@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
  *
  * Tests run against a TYPO3 instance. Options:
  *   - CI: uses typo3-ci-workflows reusable E2E workflow (PHP built-in server)
- *   - Local: `./Build/Scripts/runTests.sh -s e2e` or set TYPO3_BASE_URL manually
+ *   - Local: `./Build/Scripts/runTests.sh e2e` or set TYPO3_BASE_URL manually
  */
 export default defineConfig({
     testDir: './Tests/E2E',

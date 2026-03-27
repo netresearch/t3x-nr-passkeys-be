@@ -36,10 +36,11 @@ Running tests
     composer ci:mutation
 
 ..  code-block:: bash
-    :caption: JavaScript test commands
+    :caption: JavaScript and E2E test commands
 
     # JavaScript unit tests (Vitest)
     npx vitest run
 
-    # E2E tests (Playwright, requires DDEV)
-    npx playwright test
+    # E2E tests (Playwright, PHP built-in server + MySQL)
+    # Set TYPO3_BASE_URL to override the default http://localhost:8080
+    Build/Scripts/runTests.sh e2e

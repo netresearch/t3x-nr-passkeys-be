@@ -28,7 +28,7 @@ final class RateLimiterService
     ) {}
 
     /**
-     * Check if a request is rate limited and record the attempt atomically.
+     * Check if the rate limit for the given endpoint and identifier has been exceeded.
      *
      * Uses a lock to prevent TOCTOU race conditions between checking the
      * current count and incrementing it.
@@ -68,7 +68,7 @@ final class RateLimiterService
     }
 
     /**
-     * Check if a user is locked out from failed authentication attempts.
+     * Check if the lockout threshold for the given user has been exceeded.
      *
      * Checks both the per-IP+username counter and the per-username counter.
      * Either exceeding its threshold will block the attempt.
@@ -172,7 +172,7 @@ final class RateLimiterService
         $userKey = $this->buildUserLockoutKey($username);
         $this->rateLimitCache->remove($userKey);
 
-        $this->logger->info('Lockout counters reset after successful authentication', [
+        $this->logger->debug('Lockout counters reset after successful authentication', [
             'usernameHash' => \hash('sha256', $username),
         ]);
     }

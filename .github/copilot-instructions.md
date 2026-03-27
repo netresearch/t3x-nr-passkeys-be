@@ -24,11 +24,11 @@ TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passk
 ## Commands
 - `composer ci:test:php:cgl` -- code style check
 - `composer ci:test:php:phpstan` -- PHPStan level 10
-- `composer ci:test:php:unit` -- unit tests (~491)
+- `composer ci:test:php:unit` -- unit tests (~546)
 - `composer ci:test:php:functional` -- functional tests (MySQL required)
 - `npx vitest run` -- JS tests (~63)
 - `./Build/Scripts/runTests.sh e2e` -- E2E tests (PHP built-in server + MySQL)
-- `composer ci:mutation` -- mutation testing (min-MSI 60%, covered-MSI 75%)
+- `composer ci:mutation` -- mutation testing (MSI >= 80%, covered-MSI >= 80%)
 
 ## Conventions
 - Use constructor DI via Services.yaml (except auth service and userFunc classes)

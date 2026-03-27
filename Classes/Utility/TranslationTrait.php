@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace Netresearch\NrPasskeysBe\Controller;
+namespace Netresearch\NrPasskeysBe\Utility;
 
 use TYPO3\CMS\Core\Localization\LanguageService;
 

@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\UserSettings;
 
-use Netresearch\NrPasskeysBe\Controller\TranslationTrait;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
+use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Page\PageRenderer;

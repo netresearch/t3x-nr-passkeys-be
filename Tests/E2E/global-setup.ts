@@ -8,7 +8,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -36,8 +36,9 @@ export default function globalSetup(): void {
     if (!cleared) {
         // Fallback: try TYPO3 CLI cache flush
         try {
-            execSync(
-                `php ${path.join(projectRoot, '.Build/bin/typo3')} cache:flush --group=system`,
+            execFileSync(
+                'php',
+                [path.join(projectRoot, '.Build/bin/typo3'), 'cache:flush', '--group=system'],
                 { timeout: 10_000, stdio: 'pipe' },
             );
         } catch {

@@ -9,9 +9,9 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Middleware;
 
-use Netresearch\NrPasskeysBe\Controller\TranslationTrait;
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
+use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;

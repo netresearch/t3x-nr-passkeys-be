@@ -179,7 +179,7 @@ run_e2e_tests() {
     check_dependencies
 
     local TYPO3_BASE_URL="${TYPO3_BASE_URL:-http://localhost:8080}"
-    local MYSQL_PORT="${MYSQL_PORT:-3306}"
+    local MYSQL_PORT="${MYSQL_PORT:-3307}"
     local PHP_SERVER_PID=""
     local MYSQL_CONTAINER=""
     local E2E_EXIT_CODE=0
@@ -237,8 +237,8 @@ run_e2e_tests() {
             --dbname=typo3 \
             --username=root \
             --password=root \
-            --admin-username=admin \
-            --admin-password='Joh316!!' \
+            --admin-username="${TYPO3_ADMIN_USER:-admin}" \
+            --admin-password="${TYPO3_ADMIN_PASS:-Joh316!!}" \
             --admin-email=admin@example.com \
             --project-name=nr-passkeys-e2e \
             --no-interaction \

@@ -262,11 +262,13 @@ final class ExtensionConfigurationServiceTest extends TestCase
 
         $service = $this->createService();
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionCode(1700000050);
-        $this->expectExceptionMessage('encryptionKey is missing or too short');
-
-        $service->getEncryptionKey();
+        try {
+            $service->getEncryptionKey();
+            self::fail('Expected RuntimeException was not thrown');
+        } catch (RuntimeException $e) {
+            self::assertSame(1700000050, $e->getCode());
+            self::assertStringContainsString('encryptionKey is missing or too short', $e->getMessage());
+        }
     }
 
     #[Test]
