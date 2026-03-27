@@ -22,3 +22,10 @@ jobs:
       # typo3-ci-workflows requires phpstan-typo3 ^2||^3 which needs TYPO3 ^13.4+
       # Remove it for v12 builds; individual deps in composer.json cover v12
       remove-dev-deps: '[{"dep":"netresearch/typo3-ci-workflows","only-for":"^13.4|^14.1"}]'
+  e2e:
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    uses: netresearch/typo3-ci-workflows/.github/workflows/e2e.yml@main
+    with:
+      php-version: '8.4'
+      test-command: 'npm run test:e2e'
+      artifact-path: 'Tests/E2E/'

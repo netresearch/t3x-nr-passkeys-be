@@ -27,7 +27,7 @@ TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passk
 - `composer ci:test:php:unit` -- unit tests (~491)
 - `composer ci:test:php:functional` -- functional tests (MySQL required)
 - `npx vitest run` -- JS tests (~63)
-- `npx playwright test` -- E2E tests (requires DDEV)
+- `./Build/Scripts/runTests.sh e2e` -- E2E tests (PHP built-in server + MySQL)
 - `composer ci:mutation` -- mutation testing (min-MSI 60%, covered-MSI 75%)
 
 ## Conventions

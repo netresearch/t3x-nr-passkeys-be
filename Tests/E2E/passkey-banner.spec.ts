@@ -11,8 +11,7 @@ import { test, expect, Page } from '@playwright/test';
  * has correct accessibility attributes.
  *
  * Prerequisites:
- *   - DDEV running: `ddev start && ddev install-v13`
- *   - TYPO3 accessible at https://v13.nr-passkeys-be.ddev.site/typo3/
+ *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh e2e` or TYPO3_BASE_URL)
  *   - Admin user: admin / Joh316!!
  *
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
