@@ -9,11 +9,15 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
 
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
+/**
+ * Manages HMAC-signed, single-use, time-limited WebAuthn challenge tokens.
+ */
 final class ChallengeService
 {
     private const HMAC_ALGO = 'sha256';
@@ -22,6 +26,7 @@ final class ChallengeService
         private readonly FrontendInterface $nonceCache,
         private readonly ExtensionConfigurationService $configService,
         private readonly LockFactory $lockFactory,
+        private readonly LoggerInterface $logger,
     ) {}
 
     public function generateChallenge(): string
@@ -71,12 +76,21 @@ final class ChallengeService
         $expectedHmac = \hash_hmac(self::HMAC_ALGO, $payload, $this->getSigningKey());
 
         if (!\hash_equals($expectedHmac, $hmac)) {
+            $this->logger->warning('Invalid HMAC signature on challenge token (possible tampering)', [
+                'noncePrefix' => \substr($nonce, 0, 8) . '...',
+            ]);
+
             throw new RuntimeException('Challenge token signature invalid', 1700000003);
         }
 
         // Check TTL
         $expiresAt = (int) $expiresAtStr;
         if (\time() > $expiresAt) {
+            $this->logger->warning('Expired challenge token presented', [
+                'expiredAt' => $expiresAt,
+                'noncePrefix' => \substr($nonce, 0, 8) . '...',
+            ]);
+
             throw new RuntimeException('Challenge token expired', 1700000004);
         }
 
@@ -89,6 +103,10 @@ final class ChallengeService
         );
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
+            $this->logger->error('Failed to acquire nonce lock', [
+                'nonceCacheKey' => $nonceCacheKey,
+            ]);
+
             throw new RuntimeException('Failed to acquire nonce lock', 1700000007);
         }
 
@@ -100,6 +118,10 @@ final class ChallengeService
         }
 
         if (!$nonceExisted) {
+            $this->logger->warning('Challenge nonce replay attempt (nonce already consumed or expired)', [
+                'noncePrefix' => \substr($nonce, 0, 8) . '...',
+            ]);
+
             throw new RuntimeException('Challenge nonce already used or expired', 1700000005);
         }
 
@@ -113,28 +135,9 @@ final class ChallengeService
 
     private function getSigningKey(): string
     {
-        $key = $this->getEncryptionKey();
+        $key = $this->configService->getEncryptionKey();
 
         return \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_challenge');
-    }
-
-    private function getEncryptionKey(): string
-    {
-        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
-        $key = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
-            ? $sysConf['encryptionKey']
-            : '';
-
-        if (\strlen($key) < 32) {
-            throw new RuntimeException(
-                'TYPO3 encryptionKey is missing or too short (min 32 chars). '
-                . 'Configure it in Settings > Configure Installation-Wide Options.',
-                1700000050,
-            );
-        }
-
-        return $key;
     }
 
     private function getNonceCacheKey(string $nonce): string

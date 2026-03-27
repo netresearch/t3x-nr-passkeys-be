@@ -11,7 +11,8 @@
             "../Classes/Configuration",
             "../Classes/EventListener",
             "../Classes/Middleware",
-            "../Classes/UserSettings"
+            "../Classes/UserSettings",
+            "../Classes/Utility"
         ]
     },
     "timeout": 30,

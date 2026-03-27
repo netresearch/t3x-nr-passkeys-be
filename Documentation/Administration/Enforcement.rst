@@ -65,6 +65,15 @@ passkey.
 Configuring enforcement per group
 =================================
 
+..  figure:: /Images/Administration/GroupEnforcement.png
+    :alt: Backend user group record showing Passkeys tab
+        with enforcement dropdown and grace period field
+    :class: with-border with-shadow
+    :zoom: lightbox
+
+    The Passkeys tab on each backend user group record
+    controls enforcement level and grace period.
+
 Enforcement is configured on each backend user group record:
 
 1. Go to :guilabel:`System > Backend Users` and select the
@@ -125,6 +134,7 @@ settings, the extension resolves the effective level using two rules:
    group B: 14 days), the effective grace period is **14 days**.
 
 ..  code-block:: text
+    :caption: Multi-group resolution example
 
     User belongs to:
       - Editors (Encourage, 0 days)      -> severity 1
@@ -147,8 +157,18 @@ Users with no group assignments default to enforcement level **Off**.
 Admin dashboard
 ===============
 
-The :guilabel:`Admin Tools > Passkey Management` module provides a dashboard
-for monitoring and managing passkey adoption across the organisation.
+..  figure:: /Images/Administration/InterstitialPage.png
+    :alt: Full-page interstitial prompting user to set up
+        a passkey with countdown and skip option
+    :class: with-border with-shadow
+    :zoom: lightbox
+
+    The interstitial page shown to users whose group
+    requires passkey registration.
+
+The :guilabel:`Admin Tools > Passkey Management` module
+provides a dashboard for monitoring and managing passkey
+adoption across the organisation.
 
 Dashboard tab
 -------------
@@ -191,7 +211,8 @@ Use the dashboard's adoption statistics to track rollout progress:
 3. Review the per-group table to identify groups with low adoption.
 4. Use the :guilabel:`Send reminder` action for individual users who have not
    yet registered.
-5. Use the :guilabel:`Unlock` action to reset rate-limiting for locked-out users.
+5. Use the :guilabel:`Unlock` action to reset rate-limiting
+   for locked-out users.
 
 ..  tip::
 
@@ -212,15 +233,18 @@ broken YubiKey):
    the admin API to **revoke** the affected credential:
 
    ..  code-block:: text
+       :caption: Revoke a credential via admin API
 
       POST /typo3/ajax/passkeys/admin/remove
       Content-Type: application/json
 
       {"beUserUid": 123, "credentialUid": 456}
 
-3. If the user is locked out, the administrator can **unlock** the account:
+3. If the user is locked out, the administrator can
+   **unlock** the account:
 
    ..  code-block:: text
+       :caption: Unlock a locked-out account
 
       POST /typo3/ajax/passkeys/admin/unlock
       Content-Type: application/json

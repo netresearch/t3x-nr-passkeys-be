@@ -12,8 +12,7 @@ import { test, expect, Page, CDPSession } from '@playwright/test';
  * and page.evaluate only for WebAuthn browser APIs.
  *
  * Prerequisites:
- *   - DDEV running: `ddev start && ddev install-v13`
- *   - TYPO3 accessible at https://v13.nr-passkeys-be.ddev.site/typo3/
+ *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh e2e` or TYPO3_BASE_URL)
  *   - Admin user: admin / Joh316!!
  *   - Chromium-based browser (for CDP Virtual Authenticator support)
  *

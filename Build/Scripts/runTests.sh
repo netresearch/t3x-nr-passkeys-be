@@ -48,6 +48,8 @@ Commands:
     functional        Run functional tests
     fuzz              Run fuzz tests (property-based testing)
     mutation          Run mutation tests with Infection
+    e2e               Run E2E tests (PHP built-in server + MySQL)
+    js                Run JavaScript unit tests (vitest)
     phpstan           Run PHPStan static analysis
     cgl               Run PHP-CS-Fixer in dry-run mode
     cgl:fix           Run PHP-CS-Fixer and apply fixes
@@ -67,6 +69,8 @@ Examples:
     $(basename "$0") unit
     $(basename "$0") -c unit
     $(basename "$0") -e "--filter=testName" unit
+    $(basename "$0") e2e
+    $(basename "$0") js
     $(basename "$0") ci
 
 EOF
@@ -170,6 +174,127 @@ run_rector_fix() {
     success "Rector changes applied"
 }
 
+run_e2e_tests() {
+    info "Running E2E tests (PHP built-in server + MySQL)..."
+    check_dependencies
+
+    local TYPO3_BASE_URL="${TYPO3_BASE_URL:-http://localhost:8080}"
+    local MYSQL_PORT="${MYSQL_PORT:-3307}"
+    local PHP_SERVER_PID=""
+    local MYSQL_CONTAINER=""
+    local E2E_EXIT_CODE=0
+
+    cleanup_e2e() {
+        info "Cleaning up E2E environment..."
+        if [[ -n "${PHP_SERVER_PID}" ]]; then
+            kill "${PHP_SERVER_PID}" 2>/dev/null || true
+            wait "${PHP_SERVER_PID}" 2>/dev/null || true
+        fi
+        if [[ -n "${MYSQL_CONTAINER}" ]]; then
+            docker rm -f "${MYSQL_CONTAINER}" 2>/dev/null || true
+        fi
+    }
+    trap cleanup_e2e EXIT
+
+    # Start MySQL container
+    MYSQL_CONTAINER="nr-passkeys-e2e-mysql-$$"
+    info "Starting MySQL container: ${MYSQL_CONTAINER}"
+    docker run --rm -d \
+        --name "${MYSQL_CONTAINER}" \
+        -e MYSQL_ROOT_PASSWORD=root \
+        -e MYSQL_DATABASE=typo3 \
+        -p "${MYSQL_PORT}:3306" \
+        --tmpfs /var/lib/mysql:rw,noexec,nosuid \
+        mysql:8.0 >/dev/null
+
+    # Wait for MySQL to be ready
+    info "Waiting for MySQL..."
+    local COUNT=0
+    while ! docker exec "${MYSQL_CONTAINER}" mysqladmin ping -h localhost --silent 2>/dev/null; do
+        if [[ "${COUNT}" -gt 30 ]]; then
+            error "MySQL did not become ready in time."
+            exit 1
+        fi
+        sleep 1
+        COUNT=$((COUNT + 1))
+    done
+    success "MySQL is ready"
+
+    # Set up TYPO3
+    info "Setting up TYPO3..."
+    export TYPO3_DB_DRIVER=mysqli
+    export TYPO3_DB_HOST=127.0.0.1
+    export TYPO3_DB_PORT="${MYSQL_PORT}"
+    export TYPO3_DB_DBNAME=typo3
+    export TYPO3_DB_USERNAME=root
+    export TYPO3_DB_PASSWORD=root
+
+    if [[ -f "${VENDOR_BIN}/typo3" ]]; then
+        "${VENDOR_BIN}/typo3" setup \
+            --driver=mysqli \
+            --host=127.0.0.1 \
+            --port="${MYSQL_PORT}" \
+            --dbname=typo3 \
+            --username=root \
+            --password=root \
+            --admin-username="${TYPO3_ADMIN_USER:-admin}" \
+            --admin-password="${TYPO3_ADMIN_PASS:-Joh316!!}" \
+            --admin-email=admin@example.com \
+            --project-name=nr-passkeys-e2e \
+            --no-interaction \
+            --force
+    else
+        warning "typo3 CLI not found, skipping TYPO3 setup (ensure instance is configured)."
+    fi
+
+    # Start PHP built-in server
+    local DOCROOT="${ROOT_DIR}/.Build/web"
+    if [[ ! -d "${DOCROOT}" ]]; then
+        DOCROOT="${ROOT_DIR}/public"
+    fi
+    info "Starting PHP built-in server on ${TYPO3_BASE_URL} (docroot: ${DOCROOT})..."
+    php -S 0.0.0.0:8080 -t "${DOCROOT}" >/dev/null 2>&1 &
+    PHP_SERVER_PID=$!
+
+    # Wait for PHP server
+    COUNT=0
+    while ! curl -s -o /dev/null "http://localhost:8080" 2>/dev/null; do
+        if [[ "${COUNT}" -gt 15 ]]; then
+            error "PHP server did not start in time."
+            exit 1
+        fi
+        sleep 1
+        COUNT=$((COUNT + 1))
+    done
+    success "PHP server is ready"
+
+    # Install Playwright browsers if needed
+    if ! npx playwright install --dry-run chromium >/dev/null 2>&1; then
+        info "Installing Playwright browsers..."
+        npx playwright install chromium
+    fi
+
+    # Run Playwright tests
+    info "Running Playwright tests..."
+    export TYPO3_BASE_URL
+    # shellcheck disable=SC2086
+    npx playwright test ${EXTRA_TEST_OPTIONS} || E2E_EXIT_CODE=$?
+
+    if [[ "${E2E_EXIT_CODE}" -eq 0 ]]; then
+        success "E2E tests completed"
+    else
+        error "E2E tests failed (exit code: ${E2E_EXIT_CODE})"
+    fi
+    return "${E2E_EXIT_CODE}"
+}
+
+run_js_tests() {
+    info "Running JavaScript unit tests..."
+    # shellcheck disable=SC2086
+    npx vitest run ${EXTRA_TEST_OPTIONS}
+    success "JavaScript tests completed"
+}
+
 run_ci() {
     info "Running CI suite..."
     run_cgl
@@ -208,6 +333,8 @@ case "${COMMAND}" in
     functional) run_functional_tests ;;
     fuzz)       run_fuzz_tests ;;
     mutation)   run_mutation_tests ;;
+    e2e)        run_e2e_tests ;;
+    js)         run_js_tests ;;
     phpstan)    run_phpstan ;;
     cgl)        run_cgl ;;
     cgl:fix)    run_cgl_fix ;;

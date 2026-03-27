@@ -7,8 +7,7 @@ import { test, expect } from '@playwright/test';
  * a PSR-14 event listener — no separate login provider or ?loginProvider= switching.
  *
  * Prerequisites:
- *   - DDEV running: `ddev start && ddev install-v13`
- *   - TYPO3 accessible at https://v13.nr-passkeys-be.ddev.site/typo3/
+ *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh e2e` or TYPO3_BASE_URL)
  */
 
 test.describe('Passkey Login on Standard Form', () => {

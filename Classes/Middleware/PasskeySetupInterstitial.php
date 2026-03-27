@@ -11,10 +11,12 @@ namespace Netresearch\NrPasskeysBe\Middleware;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
+use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Backend\Routing\Route;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
@@ -30,6 +32,8 @@ use TYPO3\CMS\Core\Localization\LanguageService;
  */
 final class PasskeySetupInterstitial implements MiddlewareInterface
 {
+    use TranslationTrait;
+
     private const SESSION_KEY = 'tx_nrpasskeysbe';
 
     /**
@@ -51,6 +55,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
 
     public function __construct(
         private readonly EnforcementService $enforcementService,
+        private readonly LoggerInterface $logger,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -104,6 +109,15 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
                 }
 
                 // Invalid nonce — fall through to re-render the interstitial
+                $serverParams = $request->getServerParams();
+                $clientIp = \is_string($serverParams['REMOTE_ADDR'] ?? null)
+                    ? $serverParams['REMOTE_ADDR']
+                    : 'unknown';
+
+                $this->logger->warning('CSRF nonce validation failed on passkey setup skip form', [
+                    'ip' => $clientIp,
+                    'beUserUid' => $uid,
+                ]);
             }
         }
 
@@ -113,11 +127,23 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             return $handler->handle($request);
         }
 
-        // Start grace period on first intercept
+        // Start grace period on first intercept — construct updated status
+        // directly instead of re-querying the database
         if ($status->gracePeriodStart === 0) {
+            $now = \time();
             $this->enforcementService->startGracePeriod($uid);
-            $userRow['passkey_grace_period_start'] = \time();
-            $status = $this->enforcementService->getStatus($userRow);
+            $status = new EnforcementStatus(
+                level: $status->level,
+                gracePeriodDays: $status->gracePeriodDays,
+                gracePeriodStart: $now,
+                hasPasskeys: $status->hasPasskeys,
+            );
+
+            $this->logger->info('Grace period started for passkey setup', [
+                'beUserUid' => $uid,
+                'gracePeriodDays' => $status->gracePeriodDays,
+                'enforcementLevel' => $status->level->value,
+            ]);
         }
 
         // Check session skip flag
@@ -131,6 +157,12 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
         $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
 
         $backendPath = $this->resolveBackendPath($request);
+
+        $this->logger->info('Passkey setup interstitial rendered', [
+            'beUserUid' => $uid,
+            'enforcementLevel' => $status->level->value,
+            'canSkip' => $status->canSkip(),
+        ]);
 
         return $this->renderInterstitial($status, $backendPath, $nonce);
     }
@@ -332,22 +364,4 @@ HTML;
         return new HtmlResponse($html);
     }
 
-    /**
-     * Translate a key from the extension's locallang file with a fallback.
-     *
-     * Uses $GLOBALS['LANG'] (LanguageService) which is available after the
-     * authentication middleware has run.
-     */
-    private function translate(string $key, string $fallback): string
-    {
-        $lang = $GLOBALS['LANG'] ?? null;
-        if ($lang instanceof LanguageService) {
-            $translated = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:' . $key);
-            if ($translated !== '') {
-                return $translated;
-            }
-        }
-
-        return $fallback;
-    }
 }

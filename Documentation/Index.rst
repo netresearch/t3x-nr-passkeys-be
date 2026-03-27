@@ -35,6 +35,7 @@ Hello -- directly on the standard TYPO3 login form.
 
 ..  figure:: /Images/Login/LoginPageWithPasskey.png
     :alt: TYPO3 login form with Sign in with a passkey button
+    :class: with-border with-shadow
     :width: 200px
     :zoom: lightbox
 
@@ -78,6 +79,11 @@ Hello -- directly on the standard TYPO3 login form.
 
         Admin API for listing, revoking credentials and unlocking
         locked-out accounts.
+
+    ..  card:: :ref:`Enforcement <enforcement>`
+
+        Per-group passkey enforcement with grace periods,
+        admin dashboard, and gradual rollout support.
 
     ..  card:: :ref:`Developer Guide <developer-guide>`
 

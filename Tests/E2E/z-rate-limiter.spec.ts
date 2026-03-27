@@ -8,8 +8,7 @@ import { test, expect, Page } from '@playwright/test';
  * subsequent login options requests to return 429 in other test files.
  *
  * Prerequisites:
- *   - DDEV running: `ddev start && ddev install-v13`
- *   - TYPO3 accessible at https://v13.nr-passkeys-be.ddev.site/typo3/
+ *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh e2e` or TYPO3_BASE_URL)
  *
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later

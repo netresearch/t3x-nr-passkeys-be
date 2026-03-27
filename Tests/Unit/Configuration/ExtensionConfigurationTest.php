@@ -64,6 +64,7 @@ final class ExtensionConfigurationTest extends TestCase
         self::assertSame(10, $config->getRateLimitMaxAttempts());
         self::assertSame(300, $config->getRateLimitWindowSeconds());
         self::assertSame(5, $config->getLockoutThreshold());
+        self::assertSame(15, $config->getLockoutUserThreshold());
         self::assertSame(900, $config->getLockoutDurationSeconds());
         self::assertSame('ES256', $config->getAllowedAlgorithms());
     }
@@ -82,6 +83,7 @@ final class ExtensionConfigurationTest extends TestCase
             rateLimitMaxAttempts: 20,
             rateLimitWindowSeconds: 600,
             lockoutThreshold: 10,
+            lockoutUserThreshold: 30,
             lockoutDurationSeconds: 1800,
             allowedAlgorithms: 'ES256,RS256',
         );
@@ -96,6 +98,7 @@ final class ExtensionConfigurationTest extends TestCase
         self::assertSame(20, $config->getRateLimitMaxAttempts());
         self::assertSame(600, $config->getRateLimitWindowSeconds());
         self::assertSame(10, $config->getLockoutThreshold());
+        self::assertSame(30, $config->getLockoutUserThreshold());
         self::assertSame(1800, $config->getLockoutDurationSeconds());
         self::assertSame('ES256,RS256', $config->getAllowedAlgorithms());
     }

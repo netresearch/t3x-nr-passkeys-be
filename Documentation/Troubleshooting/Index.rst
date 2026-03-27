@@ -39,10 +39,11 @@ an empty or very short key.
 3.  Alternatively, set it in :file:`config/system/settings.php`:
 
     ..  code-block:: php
+        :caption: config/system/settings.php
 
         return [
             'SYS' => [
-                'encryptionKey' => 'your-random-string-at-least-64-chars...',
+                'encryptionKey' => 'your-random-string...',
             ],
         ];
 
@@ -79,23 +80,32 @@ the PSR-3 ``LoggerInterface``.
 With the default TYPO3 logging configuration, messages are written to:
 
 ..  code-block:: text
+    :caption: Default log file location
 
     var/log/typo3_<hash>.log
 
-If you have configured a custom log file via ``$GLOBALS['TYPO3_CONF_VARS']['LOG']``,
-check the path set for the ``Netresearch\NrPasskeysBe`` namespace.
+If you have configured a custom log file via
+``$GLOBALS['TYPO3_CONF_VARS']['LOG']``, check the path set
+for the ``Netresearch\NrPasskeysBe`` namespace.
 
 Example custom configuration:
 
 ..  code-block:: php
+    :caption: Custom logging configuration
 
-    $GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfiguration'] = [
-        \TYPO3\CMS\Core\Log\LogLevel::DEBUG => [
-            \TYPO3\CMS\Core\Log\Writer\FileWriter::class => [
-                'logFile' => \TYPO3\CMS\Core\Core\Environment::getVarPath() . '/log/passkey_auth.log',
+    $GLOBALS['TYPO3_CONF_VARS']['LOG']
+        ['Netresearch']['NrPasskeysBe']
+        ['writerConfiguration'] = [
+            \TYPO3\CMS\Core\Log\LogLevel::DEBUG => [
+                \TYPO3\CMS\Core\Log\Writer\FileWriter::class
+                => [
+                    'logFile' =>
+                        \TYPO3\CMS\Core\Core\Environment
+                            ::getVarPath()
+                        . '/log/passkey_auth.log',
+                ],
             ],
-        ],
-    ];
+        ];
 
 
 Enabling debug mode

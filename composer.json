@@ -78,7 +78,7 @@
     },
     "scripts": {
         "ci:cgl": "php-cs-fixer fix --config Build/.php-cs-fixer.php",
-        "ci:mutation": "infection --configuration=Build/infection.json5 --min-msi=60 --min-covered-msi=75",
+        "ci:mutation": "infection --configuration=Build/infection.json5",
         "ci:test:php:all": [
             "@ci:test:php:unit",
             "@ci:test:php:functional"

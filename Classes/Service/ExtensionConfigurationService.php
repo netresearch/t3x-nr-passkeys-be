@@ -9,11 +9,14 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
 
+use Netresearch\NrPasskeysBe\Utility\TypeCastTrait;
+use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 final class ExtensionConfigurationService
 {
+    use TypeCastTrait;
     private readonly \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration $config;
 
     public function __construct(
@@ -34,6 +37,7 @@ final class ExtensionConfigurationService
             rateLimitMaxAttempts: self::intVal($settings['rateLimitMaxAttempts'] ?? null, 10),
             rateLimitWindowSeconds: self::intVal($settings['rateLimitWindowSeconds'] ?? null, 300),
             lockoutThreshold: self::intVal($settings['lockoutThreshold'] ?? null, 5),
+            lockoutUserThreshold: self::intVal($settings['lockoutUserThreshold'] ?? null, 15),
             lockoutDurationSeconds: self::intVal($settings['lockoutDurationSeconds'] ?? null, 900),
             allowedAlgorithms: self::stringVal($settings['allowedAlgorithms'] ?? null, 'ES256'),
         );
@@ -73,13 +77,27 @@ final class ExtensionConfigurationService
         return $scheme . '://' . ($host !== '' ? $host : 'localhost');
     }
 
-    private static function intVal(mixed $value, int $default = 0): int
+    /**
+     * Retrieve the TYPO3 encryption key from $GLOBALS['TYPO3_CONF_VARS'].
+     *
+     * @throws RuntimeException if the key is missing or shorter than 32 characters
+     */
+    public function getEncryptionKey(): string
     {
-        return \is_numeric($value) ? (int) $value : $default;
-    }
+        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
+        $key = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
+            ? $sysConf['encryptionKey']
+            : '';
 
-    private static function stringVal(mixed $value, string $default = ''): string
-    {
-        return \is_string($value) ? $value : $default;
+        if (\strlen($key) < 32) {
+            throw new RuntimeException(
+                'TYPO3 encryptionKey is missing or too short (min 32 chars). '
+                . 'Configure it in Settings > Configure Installation-Wide Options.',
+                1700000050,
+            );
+        }
+
+        return $key;
     }
 }

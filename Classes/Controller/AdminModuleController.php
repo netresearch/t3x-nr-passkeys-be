@@ -11,12 +11,12 @@ namespace Netresearch\NrPasskeysBe\Controller;
 
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Service\AdoptionStatsService;
+use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
-use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
 /**
@@ -26,6 +26,7 @@ use TYPO3\CMS\Core\Page\PageRenderer;
  */
 final class AdminModuleController
 {
+    use TranslationTrait;
     public function __construct(
         private readonly ModuleTemplateFactory $moduleTemplateFactory,
         private readonly AdoptionStatsService $adoptionStatsService,
@@ -163,19 +164,4 @@ final class AdminModuleController
         return $options;
     }
 
-    /**
-     * Translate a key from the extension's locallang file with a fallback.
-     */
-    private function translate(string $key, string $fallback): string
-    {
-        $lang = $GLOBALS['LANG'] ?? null;
-        if ($lang instanceof LanguageService) {
-            $translated = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:' . $key);
-            if ($translated !== '') {
-                return $translated;
-            }
-        }
-
-        return $fallback;
-    }
 }

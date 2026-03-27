@@ -89,9 +89,9 @@ final class RequestPayloadFuzzTest extends TestCase
         $request = $this->createRequestWithBody($body);
         $response = $this->controller->optionsAction($request);
 
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        self::assertInstanceOf(ResponseInterface::class, $response);
         $statusCode = $response->getStatusCode();
-        $this->assertContains($statusCode, [400, 401, 429, 500]);
+        self::assertContains($statusCode, [400, 401, 429, 500]);
     }
 
     #[Test]
@@ -101,9 +101,9 @@ final class RequestPayloadFuzzTest extends TestCase
         $request = $this->createRequestWithBody($body);
         $response = $this->controller->verifyAction($request);
 
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        self::assertInstanceOf(ResponseInterface::class, $response);
         $statusCode = $response->getStatusCode();
-        $this->assertContains($statusCode, [400, 401, 429, 500]);
+        self::assertContains($statusCode, [400, 401, 429, 500]);
     }
 
     #[Test]
@@ -115,10 +115,10 @@ final class RequestPayloadFuzzTest extends TestCase
 
             try {
                 $response = $this->controller->optionsAction($request);
-                $this->assertInstanceOf(ResponseInterface::class, $response);
+                self::assertInstanceOf(ResponseInterface::class, $response);
             } catch (Throwable $e) {
                 // Any unhandled exception is a bug
-                $this->fail('Unhandled exception for random input: ' . $e->getMessage());
+                self::fail('Unhandled exception for random input: ' . $e->getMessage());
             }
         }
     }

@@ -91,7 +91,8 @@ Extension settings are available in **Admin Tools > Settings > Extension Configu
 | `disablePasswordLogin` | `false` | Block password login for users with registered passkeys |
 | `rateLimitMaxAttempts` | `10` | Requests per IP per endpoint before rate limiting |
 | `rateLimitWindowSeconds` | `300` | Rate limit window duration in seconds |
-| `lockoutThreshold` | `5` | Failed login attempts before account lockout |
+| `lockoutThreshold` | `5` | Failed login attempts (per IP) before account lockout |
+| `lockoutUserThreshold` | `15` | Failed login attempts (per username, all IPs) before account lockout |
 | `lockoutDurationSeconds` | `900` | Lockout duration in seconds (15 min) |
 | `userVerification` | `required` | WebAuthn user verification requirement |
 | `allowedAlgorithms` | `ES256` | Comma-separated signing algorithms |

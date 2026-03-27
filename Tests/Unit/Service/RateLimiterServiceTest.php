@@ -15,15 +15,21 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
+use TYPO3\CMS\Core\Locking\LockFactory;
+use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
 #[CoversClass(RateLimiterService::class)]
 final class RateLimiterServiceTest extends TestCase
 {
     private FrontendInterface&MockObject $rateLimitCacheMock;
     private ExtensionConfigurationService $configService;
+    private LockFactory&MockObject $lockFactoryMock;
+    private LockingStrategyInterface&MockObject $lockerMock;
+    private LoggerInterface&MockObject $loggerMock;
     private RateLimiterService $subject;
 
     protected function setUp(): void
@@ -35,12 +41,23 @@ final class RateLimiterServiceTest extends TestCase
             'rateLimitMaxAttempts' => 5,
             'rateLimitWindowSeconds' => 300,
             'lockoutThreshold' => 3,
+            'lockoutUserThreshold' => 10,
             'lockoutDurationSeconds' => 900,
         ]);
+
+        $this->lockerMock = $this->createMock(LockingStrategyInterface::class);
+        $this->lockerMock->method('acquire')->willReturn(true);
+
+        $this->lockFactoryMock = $this->createMock(LockFactory::class);
+        $this->lockFactoryMock->method('createLocker')->willReturn($this->lockerMock);
+
+        $this->loggerMock = $this->createMock(LoggerInterface::class);
 
         $this->subject = new RateLimiterService(
             $this->rateLimitCacheMock,
             $this->configService,
+            $this->lockFactoryMock,
+            $this->loggerMock,
         );
     }
 
@@ -175,7 +192,7 @@ final class RateLimiterServiceTest extends TestCase
     #[Test]
     public function checkLockoutPassesUnderThreshold(): void
     {
-        // 1 failure, threshold is 3 -- should pass
+        // 1 failure, threshold is 3 (per-IP) and 10 (per-user) -- should pass
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn('1');
@@ -197,9 +214,9 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
-    public function checkLockoutThrowsWhenLocked(): void
+    public function checkLockoutThrowsWhenPerIpLocked(): void
     {
-        // 3 failures, threshold is 3 -- should throw (>= comparison)
+        // 3 failures, per-IP threshold is 3 -- should throw (>= comparison)
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn('3');
@@ -214,7 +231,7 @@ final class RateLimiterServiceTest extends TestCase
     #[Test]
     public function checkLockoutThrowsWhenOverThreshold(): void
     {
-        // 10 failures, well above threshold of 3
+        // 10 failures, well above per-IP threshold of 3
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn('10');
@@ -228,7 +245,7 @@ final class RateLimiterServiceTest extends TestCase
     #[Test]
     public function checkLockoutPassesAtBoundary(): void
     {
-        // 2 failures (one below threshold of 3) -- should pass
+        // 2 failures (one below per-IP threshold of 3) -- should pass
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn('2');
@@ -238,21 +255,48 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
-    public function recordFailureIncrementsFailures(): void
+    public function checkLockoutThrowsWhenPerUserThresholdExceeded(): void
+    {
+        $ipKey = 'lo_' . \hash('sha256', 'admin|192.168.1.1');
+        $userKey = 'lou_' . \hash('sha256', 'admin');
+
+        // Per-IP counter is under threshold (2 < 3) but per-user counter is at threshold (10 >= 10)
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturnCallback(static function (string $key) use ($ipKey, $userKey): string|false {
+                if ($key === $ipKey) {
+                    return '2';
+                }
+                if ($key === $userKey) {
+                    return '10';
+                }
+                return false;
+            });
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000011);
+
+        $this->subject->checkLockout('admin', '192.168.1.1');
+    }
+
+    #[Test]
+    public function recordFailureIncrementsBothCounters(): void
     {
         // No previous failures -- get() returns false
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn(false);
 
+        $expectedTag = 'lockout_' . \hash('sha256', 'admin');
+
         $this->rateLimitCacheMock
-            ->expects(self::once())
+            ->expects(self::exactly(2))
             ->method('set')
             ->with(
                 self::isType('string'),
                 '1',
-                ['lockout_' . \hash('sha256', 'admin')],
-                900, // lockoutDurationSeconds
+                [$expectedTag],
+                900,
             );
 
         $this->subject->recordFailure('admin', '192.168.1.1');
@@ -267,12 +311,14 @@ final class RateLimiterServiceTest extends TestCase
             ->willReturn('2');
 
         $this->rateLimitCacheMock
-            ->expects(self::once())
+            ->expects(self::exactly(2))
             ->method('set')
             ->with(
                 self::isType('string'),
                 '3',
-                ['lockout_' . \hash('sha256', 'admin')],
+                self::callback(static function (array $tags): bool {
+                    return \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_');
+                }),
                 900,
             );
 
@@ -280,12 +326,17 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
-    public function recordSuccessClearsLockout(): void
+    public function recordSuccessClearsBothLockoutKeys(): void
     {
+        $ipKey = 'lo_' . \hash('sha256', 'admin|192.168.1.1');
+        $userKey = 'lou_' . \hash('sha256', 'admin');
+
         $this->rateLimitCacheMock
-            ->expects(self::once())
+            ->expects(self::exactly(2))
             ->method('remove')
-            ->with(self::isType('string'));
+            ->with(self::callback(static function (string $key) use ($ipKey, $userKey): bool {
+                return $key === $ipKey || $key === $userKey;
+            }));
 
         $this->subject->recordSuccess('admin', '192.168.1.1');
     }
@@ -353,20 +404,22 @@ final class RateLimiterServiceTest extends TestCase
             ->method('get')
             ->willReturn(false);
 
-        $expectedKey = 'lo_' . \hash('sha256', 'user@example.com|2001:db8::1');
+        $expectedIpKey = 'lo_' . \hash('sha256', 'user@example.com|2001:db8::1');
+        $expectedUserKey = 'lou_' . \hash('sha256', 'user@example.com');
         $expectedTag = 'lockout_' . \hash('sha256', 'user@example.com');
 
+        $setCalls = [];
         $this->rateLimitCacheMock
-            ->expects(self::once())
+            ->expects(self::exactly(2))
             ->method('set')
-            ->with(
-                $expectedKey,
-                '1',
-                [$expectedTag],
-                900,
-            );
+            ->willReturnCallback(static function (string $key) use (&$setCalls): void {
+                $setCalls[] = $key;
+            });
 
         $this->subject->recordFailure('user@example.com', '2001:db8::1');
+
+        self::assertContains($expectedIpKey, $setCalls);
+        self::assertContains($expectedUserKey, $setCalls);
     }
 
     #[Test]
@@ -386,16 +439,24 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
-    public function recordSuccessClearsCorrectKey(): void
+    public function recordSuccessClearsCorrectKeys(): void
     {
-        $expectedKey = 'lo_' . \hash('sha256', 'admin|192.168.1.1');
+        $expectedIpKey = 'lo_' . \hash('sha256', 'admin|192.168.1.1');
+        $expectedUserKey = 'lou_' . \hash('sha256', 'admin');
 
+        $removedKeys = [];
         $this->rateLimitCacheMock
-            ->expects(self::once())
+            ->expects(self::exactly(2))
             ->method('remove')
-            ->with($expectedKey);
+            ->willReturnCallback(static function (string $key) use (&$removedKeys): bool {
+                $removedKeys[] = $key;
+                return true;
+            });
 
         $this->subject->recordSuccess('admin', '192.168.1.1');
+
+        self::assertContains($expectedIpKey, $removedKeys);
+        self::assertContains($expectedUserKey, $removedKeys);
     }
 
     #[Test]
@@ -429,7 +490,7 @@ final class RateLimiterServiceTest extends TestCase
             ->willReturn('1');
 
         $this->rateLimitCacheMock
-            ->expects(self::once())
+            ->expects(self::exactly(2))
             ->method('set')
             ->with(
                 self::isType('string'),
@@ -465,5 +526,109 @@ final class RateLimiterServiceTest extends TestCase
 
         $this->subject->checkLockout('newuser', '127.0.0.1');
         self::assertTrue(true);
+    }
+
+    // --- Locking Tests ---
+
+    #[Test]
+    public function checkRateLimitAcquiresAndReleasesLock(): void
+    {
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturn('2');
+
+        $this->lockerMock
+            ->expects(self::atLeastOnce())
+            ->method('acquire')
+            ->willReturn(true);
+
+        $this->lockerMock
+            ->expects(self::atLeastOnce())
+            ->method('release');
+
+        $this->subject->checkRateLimit('register', '192.168.1.1');
+    }
+
+    #[Test]
+    public function checkRateLimitThrowsWhenLockCannotBeAcquired(): void
+    {
+        $failingLocker = $this->createMock(LockingStrategyInterface::class);
+        $failingLocker->method('acquire')->willReturn(false);
+
+        $failingLockFactory = $this->createMock(LockFactory::class);
+        $failingLockFactory->method('createLocker')->willReturn($failingLocker);
+
+        $subject = new RateLimiterService(
+            $this->rateLimitCacheMock,
+            $this->configService,
+            $failingLockFactory,
+            $this->loggerMock,
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000012);
+
+        $subject->checkRateLimit('register', '192.168.1.1');
+    }
+
+    #[Test]
+    public function recordAttemptAcquiresAndReleasesLock(): void
+    {
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturn(false);
+
+        $this->lockerMock
+            ->expects(self::atLeastOnce())
+            ->method('acquire')
+            ->willReturn(true);
+
+        $this->lockerMock
+            ->expects(self::atLeastOnce())
+            ->method('release');
+
+        $this->rateLimitCacheMock
+            ->expects(self::once())
+            ->method('set');
+
+        $this->subject->recordAttempt('register', '192.168.1.1');
+    }
+
+    #[Test]
+    public function checkLockoutAcquiresLocksForBothCounters(): void
+    {
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturn('1');
+
+        // Two locks: one for per-IP, one for per-user check
+        $this->lockFactoryMock
+            ->expects(self::exactly(2))
+            ->method('createLocker')
+            ->willReturn($this->lockerMock);
+
+        $this->subject->checkLockout('admin', '192.168.1.1');
+    }
+
+    #[Test]
+    public function recordFailureReleasesLockEvenOnException(): void
+    {
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturn(false);
+
+        $this->rateLimitCacheMock
+            ->method('set')
+            ->willThrowException(new RuntimeException('Cache write failed'));
+
+        // Lock should still be released via finally block
+        $this->lockerMock
+            ->expects(self::atLeastOnce())
+            ->method('release');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cache write failed');
+
+        $this->subject->recordFailure('admin', '192.168.1.1');
     }
 }

@@ -6,9 +6,19 @@
 Configuration
 =============
 
-All settings are managed through the TYPO3 Extension Configuration module:
+All settings are managed through the TYPO3 Extension
+Configuration module:
 
 :guilabel:`Admin Tools > Settings > Extension Configuration > nr_passkeys_be`
+
+..  figure:: /Images/Configuration/ExtensionSettings.png
+    :alt: TYPO3 Extension Configuration screen for
+        nr_passkeys_be showing all available settings
+    :class: with-border with-shadow
+    :zoom: lightbox
+
+    The extension configuration screen with all available
+    settings grouped by category.
 
 Relying Party settings
 ======================
@@ -131,6 +141,17 @@ Account lockout
 
    Number of consecutive failed authentication attempts before the account is
    temporarily locked. Applies per username/IP combination.
+
+..  confval:: lockoutUserThreshold
+
+   :type: int
+   :Default: ``15``
+
+   Total number of failed authentication attempts across all
+   IP addresses before the account is locked. This threshold
+   should be higher than :confval:`lockoutThreshold` to catch
+   distributed brute force attacks where requests come from
+   many different IP addresses.
 
 ..  confval:: lockoutDurationSeconds
 

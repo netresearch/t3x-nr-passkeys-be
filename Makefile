@@ -124,11 +124,11 @@ test-js-coverage: ## Run JavaScript unit tests with coverage
 	npm run test:js:coverage
 
 .PHONY: test-e2e
-test-e2e: ## Run E2E tests (requires DDEV running)
-	npm run test:e2e
+test-e2e: ## Run E2E tests (PHP built-in server + MySQL via Docker)
+	./Build/Scripts/runTests.sh e2e
 
 .PHONY: test-e2e-headed
-test-e2e-headed: ## Run E2E tests in headed browser
+test-e2e-headed: ## Run E2E tests in headed browser (requires running TYPO3 instance)
 	npm run test:e2e:headed
 
 .PHONY: mutation

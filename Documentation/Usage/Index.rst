@@ -26,6 +26,7 @@ one passkey:
 
 ..  figure:: /Images/UserSettings/PasskeyManagement.png
     :alt: User Settings page with Passkeys management section
+    :class: with-border with-shadow
     :zoom: lightbox
 
     Manage your passkeys in the User Settings module.
@@ -66,7 +67,9 @@ When :confval:`discoverableLoginEnabled` is set to ``false``:
 5. Upon successful verification, you are logged in.
 
 ..  figure:: /Images/Login/LoginPageUsernameFirst.png
-    :alt: Login form with username filled and passkey button ready
+    :alt: Login form with username filled and passkey button
+        ready
+    :class: with-border with-shadow
     :width: 200px
     :zoom: lightbox
 
@@ -80,7 +83,9 @@ assertion), a passkey-specific error message is shown on the login
 page:
 
 ..  figure:: /Images/Login/LoginPagePasskeyError.png
-    :alt: Login form showing passkey authentication failed error
+    :alt: Login form showing passkey authentication failed
+        error
+    :class: with-border with-shadow
     :width: 200px
     :zoom: lightbox
 

@@ -101,12 +101,6 @@
             <trans-unit id="login.link.usePassword" resname="login.link.usePassword">
                 <source>Use password instead</source>
             </trans-unit>
-            <trans-unit id="never" resname="never">
-                <source>Never</source>
-            </trans-unit>
-            <trans-unit id="userSettings.passkeys.label" resname="userSettings.passkeys.label">
-                <source>Passkeys</source>
-            </trans-unit>
             <trans-unit id="admin.passkeys.label" resname="admin.passkeys.label">
                 <source>Passkeys</source>
             </trans-unit>
@@ -205,9 +199,6 @@
             </trans-unit>
             <trans-unit id="dashboard.usersWithout.expired" resname="dashboard.usersWithout.expired">
                 <source>Expired</source>
-            </trans-unit>
-            <trans-unit id="dashboard.usersWithout.notStarted" resname="dashboard.usersWithout.notStarted">
-                <source>Not started</source>
             </trans-unit>
             <trans-unit id="dashboard.usersWithout.groups" resname="dashboard.usersWithout.groups">
                 <source>Groups</source>
@@ -367,12 +358,6 @@
             </trans-unit>
             <trans-unit id="js.banner.title.remaining" resname="js.banner.title.remaining">
                 <source>Passkey setup — %d days remaining</source>
-            </trans-unit>
-            <trans-unit id="js.banner.remaining" resname="js.banner.remaining">
-                <source>Passkeys are available for your account. You have %d days to set up passwordless login.</source>
-            </trans-unit>
-            <trans-unit id="js.banner.available" resname="js.banner.available">
-                <source>Passkeys are now available for your account. Set up passwordless login for faster, more secure access.</source>
             </trans-unit>
             <trans-unit id="js.banner.description" resname="js.banner.description">
                 <source>Passkeys replace your password with fingerprint, face, or security key authentication — faster to use and resistant to phishing attacks.</source>

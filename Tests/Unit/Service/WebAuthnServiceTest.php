@@ -49,6 +49,8 @@ final class WebAuthnServiceTest extends TestCase
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'test-encryption-key-for-user-handle-generation';
 
         $this->configServiceMock = $this->createMock(ExtensionConfigurationService::class);
+        $this->configServiceMock->method('getEncryptionKey')
+            ->willReturn('test-encryption-key-for-user-handle-generation');
         $this->challengeServiceMock = $this->createMock(ChallengeService::class);
         $this->credentialRepositoryMock = $this->createMock(CredentialRepository::class);
         $this->loggerMock = $this->createMock(LoggerInterface::class);
@@ -723,28 +725,36 @@ final class WebAuthnServiceTest extends TestCase
     public function createUserHandleUsesTypo3EncryptionKey(): void
     {
         $beUserUid = 500;
+        $challenge = \random_bytes(32);
 
-        // Change the encryption key and verify the handle changes
+        // Create a config service mock that returns different keys on consecutive calls
+        $configServiceMock = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceMock->method('getEncryptionKey')
+            ->willReturnOnConsecutiveCalls(
+                'test-encryption-key-for-user-handle-generation',
+                'a-completely-different-key-that-is-long-enough-for-validation',
+            );
         $config = new ExtensionConfiguration();
-        $this->configServiceMock->method('getConfiguration')->willReturn($config);
-        $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
-        $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
+        $configServiceMock->method('getConfiguration')->willReturn($config);
+        $configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
+        $this->challengeServiceMock->method('generateChallenge')->willReturn($challenge);
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
 
-        $result1 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
+        $subject = new WebAuthnService(
+            $configServiceMock,
+            $this->challengeServiceMock,
+            $this->credentialRepositoryMock,
+            $this->loggerMock,
+        );
+
+        $result1 = $subject->createRegistrationOptions($beUserUid, 'user', 'User');
         $handle1 = $result1->options->user->id;
 
-        // Change the encryption key (must be >= 32 chars)
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'a-completely-different-key-that-is-long-enough-for-validation';
-
-        $result2 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
+        $result2 = $subject->createRegistrationOptions($beUserUid, 'user', 'User');
         $handle2 = $result2->options->user->id;
 
         self::assertNotSame($handle1, $handle2, 'User handle must depend on encryption key');
-
-        // Restore original key for other tests
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'test-encryption-key-for-user-handle-generation';
     }
 
     #[Test]
@@ -818,17 +828,18 @@ final class WebAuthnServiceTest extends TestCase
     #[Test]
     public function createRegistrationOptionsThrowsRuntimeExceptionWhenEncryptionKeyIsEmpty(): void
     {
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = '';
-
         $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
+        $this->configServiceMock->method('getEncryptionKey')->willThrowException(
+            new RuntimeException('TYPO3 encryptionKey is missing or too short', 1700000050),
+        );
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionCode(1700000040);
+        $this->expectExceptionCode(1700000050);
         $this->expectExceptionMessage('TYPO3 encryptionKey is missing or too short');
 
         $this->subject->createRegistrationOptions(123, 'user', 'User');

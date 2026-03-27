@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -222,5 +223,168 @@ final class ExtensionConfigurationServiceTest extends TestCase
         $config2 = $service->getConfiguration();
 
         self::assertSame($config1, $config2);
+    }
+
+    // --- getEncryptionKey() tests ---
+
+    #[Test]
+    public function getEncryptionKeyReturnsValidKey(): void
+    {
+        $key = \str_repeat('a', 32);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $key;
+
+        $service = $this->createService();
+        $result = $service->getEncryptionKey();
+
+        self::assertSame($key, $result);
+
+        unset($GLOBALS['TYPO3_CONF_VARS']);
+    }
+
+    #[Test]
+    public function getEncryptionKeyReturnsLongerKeyUnchanged(): void
+    {
+        $key = \str_repeat('x', 64);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $key;
+
+        $service = $this->createService();
+        $result = $service->getEncryptionKey();
+
+        self::assertSame($key, $result);
+
+        unset($GLOBALS['TYPO3_CONF_VARS']);
+    }
+
+    #[Test]
+    public function getEncryptionKeyThrowsWhenKeyIsMissing(): void
+    {
+        unset($GLOBALS['TYPO3_CONF_VARS']);
+
+        $service = $this->createService();
+
+        try {
+            $service->getEncryptionKey();
+            self::fail('Expected RuntimeException was not thrown');
+        } catch (RuntimeException $e) {
+            self::assertSame(1700000050, $e->getCode());
+            self::assertStringContainsString('encryptionKey is missing or too short', $e->getMessage());
+        }
+    }
+
+    #[Test]
+    public function getEncryptionKeyThrowsWhenKeyIsEmpty(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = '';
+
+        $service = $this->createService();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000050);
+
+        try {
+            $service->getEncryptionKey();
+        } finally {
+            unset($GLOBALS['TYPO3_CONF_VARS']);
+        }
+    }
+
+    #[Test]
+    public function getEncryptionKeyThrowsWhenKeyIsTooShort(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short-key-under-32';
+
+        $service = $this->createService();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000050);
+
+        try {
+            $service->getEncryptionKey();
+        } finally {
+            unset($GLOBALS['TYPO3_CONF_VARS']);
+        }
+    }
+
+    #[Test]
+    public function getEncryptionKeyThrowsWhenKeyIsExactly31Chars(): void
+    {
+        // 31 chars -- one short of the minimum
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('z', 31);
+
+        $service = $this->createService();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000050);
+
+        try {
+            $service->getEncryptionKey();
+        } finally {
+            unset($GLOBALS['TYPO3_CONF_VARS']);
+        }
+    }
+
+    #[Test]
+    public function getEncryptionKeyPassesWhenKeyIsExactly32Chars(): void
+    {
+        $key = \str_repeat('k', 32);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $key;
+
+        $service = $this->createService();
+        $result = $service->getEncryptionKey();
+
+        self::assertSame($key, $result);
+
+        unset($GLOBALS['TYPO3_CONF_VARS']);
+    }
+
+    #[Test]
+    public function getEncryptionKeyThrowsWhenTypo3ConfVarsIsNotArray(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS'] = 'not-an-array';
+
+        $service = $this->createService();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000050);
+
+        try {
+            $service->getEncryptionKey();
+        } finally {
+            unset($GLOBALS['TYPO3_CONF_VARS']);
+        }
+    }
+
+    #[Test]
+    public function getEncryptionKeyThrowsWhenSysKeyIsMissing(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS'] = ['SYS' => []];
+
+        $service = $this->createService();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000050);
+
+        try {
+            $service->getEncryptionKey();
+        } finally {
+            unset($GLOBALS['TYPO3_CONF_VARS']);
+        }
+    }
+
+    #[Test]
+    public function getEncryptionKeyThrowsWhenEncryptionKeyIsNotString(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 12345;
+
+        $service = $this->createService();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000050);
+
+        try {
+            $service->getEncryptionKey();
+        } finally {
+            unset($GLOBALS['TYPO3_CONF_VARS']);
+        }
     }
 }

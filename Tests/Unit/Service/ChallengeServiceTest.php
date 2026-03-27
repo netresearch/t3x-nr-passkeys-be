@@ -15,6 +15,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
@@ -27,6 +28,7 @@ final class ChallengeServiceTest extends TestCase
     private FrontendInterface&MockObject $nonceCacheMock;
     private LockFactory&MockObject $lockFactoryMock;
     private ExtensionConfigurationService $configService;
+    private LoggerInterface&MockObject $loggerMock;
     private ChallengeService $subject;
 
     protected function setUp(): void
@@ -47,10 +49,13 @@ final class ChallengeServiceTest extends TestCase
         $lockerMock->method('release')->willReturn(true);
         $this->lockFactoryMock->method('createLocker')->willReturn($lockerMock);
 
+        $this->loggerMock = $this->createMock(LoggerInterface::class);
+
         $this->subject = new ChallengeService(
             $this->nonceCacheMock,
             $this->configService,
             $this->lockFactoryMock,
+            $this->loggerMock,
         );
     }
 
@@ -163,7 +168,7 @@ final class ChallengeServiceTest extends TestCase
     {
         // Create a service with a very short TTL so the token is already expired
         $configService = $this->createConfigService(['challengeTtlSeconds' => -1]);
-        $service = new ChallengeService($this->nonceCacheMock, $configService, $this->lockFactoryMock);
+        $service = new ChallengeService($this->nonceCacheMock, $configService, $this->lockFactoryMock, $this->loggerMock);
 
         $challenge = \random_bytes(32);
         $token = $service->createChallengeToken($challenge);
@@ -400,6 +405,7 @@ final class ChallengeServiceTest extends TestCase
             $this->nonceCacheMock,
             $this->configService,
             $failingLockFactory,
+            $this->loggerMock,
         );
 
         $this->expectException(RuntimeException::class);

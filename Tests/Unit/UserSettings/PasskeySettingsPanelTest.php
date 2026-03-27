@@ -14,7 +14,6 @@ use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanel;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 use stdClass;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -465,19 +464,19 @@ final class PasskeySettingsPanelTest extends TestCase
     }
 
     #[Test]
-    public function renderThrowsRuntimeExceptionWhenLanguageServiceNotAvailable(): void
+    public function renderFallsBackGracefullyWhenLanguageServiceNotAvailable(): void
     {
         $this->setUpBackendUser(1);
 
-        // Use a short encryptionKey to trigger getLanguageService() in the validation path
+        // Use a short encryptionKey to trigger the validation warning path
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short';
         unset($GLOBALS['LANG']);
 
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionCode(1740000001);
-        $this->expectExceptionMessage('LanguageService not available');
+        // Without LanguageService, the translate trait returns the fallback string
+        $result = $this->subject->render([]);
 
-        $this->subject->render([]);
+        self::assertStringContainsString('alert-danger', $result);
+        self::assertStringContainsString('encryption key is missing', $result);
     }
 
     private function setUpBackendUser(int $uid): void

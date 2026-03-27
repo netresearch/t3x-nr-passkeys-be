@@ -11,9 +11,14 @@ namespace Netresearch\NrPasskeysBe\Domain\Model;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\AdminCredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
+use Netresearch\NrPasskeysBe\Utility\TypeCastTrait;
 
+/**
+ * Domain model representing a WebAuthn credential stored in tx_nrpasskeysbe_credential.
+ */
 final class Credential
 {
+    use TypeCastTrait;
     public function __construct(
         private int $uid = 0,
         private int $pid = 0,
@@ -241,16 +246,6 @@ final class Credential
             revokedAt: self::intVal($data['revoked_at'] ?? null),
             revokedBy: self::intVal($data['revoked_by'] ?? null),
         );
-    }
-
-    private static function intVal(mixed $value, int $default = 0): int
-    {
-        return \is_numeric($value) ? (int) $value : $default;
-    }
-
-    private static function stringVal(mixed $value, string $default = ''): string
-    {
-        return \is_string($value) ? $value : $default;
     }
 
     public function toCredentialInfo(): CredentialInfo
