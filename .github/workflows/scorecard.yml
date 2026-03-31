@@ -7,7 +7,7 @@ on:
 permissions: {}
 jobs:
   scorecard:
-    uses: netresearch/typo3-ci-workflows/.github/workflows/scorecard.yml@main
+    uses: netresearch/.github/.github/workflows/scorecard.yml@main
     permissions:
       contents: read
       security-events: write
