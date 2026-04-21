@@ -17,6 +17,7 @@ use Netresearch\NrPasskeysBe\Domain\Dto\UserPasskeyStatus;
 use Netresearch\NrPasskeysBe\Service\AdoptionStatsService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -389,5 +390,65 @@ final class AdminModuleControllerTest extends TestCase
             'required' => 'Erforderlich',
             'enforced' => 'Erzwungen',
         ], $levels);
+    }
+
+    /**
+     * @return array<string, array{int, int, string}>
+     */
+    public static function adoptionBadgeTierProvider(): array
+    {
+        return [
+            'no users' => [0, 0, 'No users'],
+            'getting started (0%)' => [10, 0, 'Getting started'],
+            'getting started (20%)' => [10, 2, 'Getting started'],
+            'bronze (25%)' => [4, 1, 'Bronze'],
+            'bronze (49%)' => [100, 49, 'Bronze'],
+            'silver (50%)' => [10, 5, 'Silver'],
+            'silver (74%)' => [100, 74, 'Silver'],
+            'gold (75%)' => [4, 3, 'Gold'],
+            'gold (99%)' => [100, 99, 'Gold'],
+            'platinum (100%)' => [5, 5, 'Platinum'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('adoptionBadgeTierProvider')]
+    public function dashboardActionAssignsCorrectAdoptionBadge(int $totalUsers, int $withPasskeys, string $expectedLabel): void
+    {
+        $stats = new AdoptionStats(
+            totalUsers: $totalUsers,
+            usersWithPasskeys: $withPasskeys,
+            groups: [],
+            usersWithoutPasskeys: [],
+        );
+
+        $this->adoptionStatsService
+            ->method('getStats')
+            ->willReturn($stats);
+
+        $capturedVariables = [];
+        $moduleTemplate = $this->createModuleTemplateMock();
+        $moduleTemplate->method('setTitle');
+        $moduleTemplate->method('assignMultiple')
+            ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
+                $capturedVariables = $vars;
+                return $moduleTemplate;
+            });
+        $moduleTemplate->method('renderResponse')
+            ->willReturn(new HtmlResponse('<html></html>'));
+
+        $this->moduleTemplateFactory
+            ->method('create')
+            ->willReturn($moduleTemplate);
+
+        $request = $this->createMock(ServerRequestInterface::class);
+        $this->subject->dashboardAction($request);
+
+        self::assertArrayHasKey('adoptionBadge', $capturedVariables);
+        $badge = $capturedVariables['adoptionBadge'];
+        self::assertIsArray($badge);
+        self::assertSame($expectedLabel, $badge['label']);
+        self::assertArrayHasKey('class', $badge);
+        self::assertArrayHasKey('icon', $badge);
     }
 }
