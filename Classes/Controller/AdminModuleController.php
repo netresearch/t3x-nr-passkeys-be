@@ -85,14 +85,6 @@ final class AdminModuleController
         }
 
         $config = $this->configService->getConfiguration();
-        $hasEnforcement = false;
-        foreach ($groupData as $group) {
-            if ($group['enforcement'] !== EnforcementLevel::Off->value) {
-                $hasEnforcement = true;
-                break;
-            }
-        }
-
         $adoptionPercentage = $stats->adoptionPercentage();
 
         $moduleTemplate->assignMultiple([
@@ -107,8 +99,6 @@ final class AdminModuleController
             'configRpId' => $this->configService->getEffectiveRpId(),
             'configRpIdIsAutoDetected' => $config->getRpId() === '',
             'configOriginIsAutoDetected' => $config->getOrigin() === '',
-            'hasEnforcement' => $hasEnforcement,
-            'hasGroups' => $groupData !== [],
             'isNewInstallation' => $stats->usersWithPasskeys === 0,
         ]);
 
@@ -223,10 +213,10 @@ final class AdminModuleController
         }
 
         return match (true) {
-            $percentage >= 100.0 => ['label' => 'Platinum', 'class' => 'badge-info', 'icon' => 'actions-bolt'],
-            $percentage >= 75.0 => ['label' => 'Gold', 'class' => 'badge-warning', 'icon' => 'actions-star'],
+            $percentage >= 100.0 => ['label' => 'Platinum', 'class' => 'badge-success', 'icon' => 'actions-bolt'],
+            $percentage >= 75.0 => ['label' => 'Gold', 'class' => 'badge-info', 'icon' => 'actions-star'],
             $percentage >= 50.0 => ['label' => 'Silver', 'class' => 'badge-secondary', 'icon' => 'actions-check'],
-            $percentage >= 25.0 => ['label' => 'Bronze', 'class' => 'badge-success', 'icon' => 'actions-arrow-up'],
+            $percentage >= 25.0 => ['label' => 'Bronze', 'class' => 'badge-warning', 'icon' => 'actions-arrow-up'],
             default => ['label' => 'Getting started', 'class' => 'badge-danger', 'icon' => 'actions-rocket'],
         };
     }
