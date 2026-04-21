@@ -47,7 +47,7 @@
         </f:if>
 
         <!-- Configuration hints -->
-        <f:if condition="{configRpIdIsAutoDetected} && {configOriginIsAutoDetected} && {isNewInstallation} == 0">
+        <f:if condition="{configRpIdIsAutoDetected} && {configOriginIsAutoDetected} && !{isNewInstallation}">
             <f:be.infobox title="Configuration note" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_WARNING')}">
                 Both Relying Party ID and Origin are auto-detected (currently <code>{configRpId}</code>).
                 For production environments with multiple domains or reverse proxies, consider setting

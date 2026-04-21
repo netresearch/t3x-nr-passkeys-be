@@ -91,7 +91,7 @@ final class AdminModuleController
             'totalUsers' => $stats->totalUsers,
             'usersWithPasskeys' => $stats->usersWithPasskeys,
             'adoptionPercentage' => $adoptionPercentage,
-            'adoptionBadge' => self::adoptionBadge($adoptionPercentage, $stats->totalUsers),
+            'adoptionBadge' => $this->adoptionBadge($adoptionPercentage, $stats->totalUsers),
             'groups' => $groupData,
             'usersWithoutPasskeys' => $userData,
             'enforcementLevels' => $this->getEnforcementLevelOptions(),
@@ -206,18 +206,18 @@ final class AdminModuleController
      *
      * @return array{label: string, class: string, icon: string}
      */
-    private static function adoptionBadge(float $percentage, int $totalUsers): array
+    private function adoptionBadge(float $percentage, int $totalUsers): array
     {
         if ($totalUsers === 0) {
-            return ['label' => 'No users', 'class' => 'badge-secondary', 'icon' => 'actions-minus'];
+            return ['label' => $this->translate('dashboard.badge.noUsers', 'No users'), 'class' => 'badge-secondary', 'icon' => 'actions-minus'];
         }
 
         return match (true) {
-            $percentage >= 100.0 => ['label' => 'Platinum', 'class' => 'badge-success', 'icon' => 'actions-bolt'],
-            $percentage >= 75.0 => ['label' => 'Gold', 'class' => 'badge-info', 'icon' => 'actions-star'],
-            $percentage >= 50.0 => ['label' => 'Silver', 'class' => 'badge-secondary', 'icon' => 'actions-check'],
-            $percentage >= 25.0 => ['label' => 'Bronze', 'class' => 'badge-warning', 'icon' => 'actions-arrow-up'],
-            default => ['label' => 'Getting started', 'class' => 'badge-danger', 'icon' => 'actions-rocket'],
+            $percentage >= 100.0 => ['label' => $this->translate('dashboard.badge.platinum', 'Platinum'), 'class' => 'badge-success', 'icon' => 'actions-bolt'],
+            $percentage >= 75.0 => ['label' => $this->translate('dashboard.badge.gold', 'Gold'), 'class' => 'badge-info', 'icon' => 'actions-star'],
+            $percentage >= 50.0 => ['label' => $this->translate('dashboard.badge.silver', 'Silver'), 'class' => 'badge-secondary', 'icon' => 'actions-check'],
+            $percentage >= 25.0 => ['label' => $this->translate('dashboard.badge.bronze', 'Bronze'), 'class' => 'badge-warning', 'icon' => 'actions-arrow-up'],
+            default => ['label' => $this->translate('dashboard.badge.gettingStarted', 'Getting started'), 'class' => 'badge-danger', 'icon' => 'actions-rocket'],
         };
     }
 }

@@ -209,6 +209,24 @@
             <trans-unit id="dashboard.usersWithout.editUser" resname="dashboard.usersWithout.editUser">
                 <source>Edit user record</source>
             </trans-unit>
+            <trans-unit id="dashboard.badge.noUsers" resname="dashboard.badge.noUsers">
+                <source>No users</source>
+            </trans-unit>
+            <trans-unit id="dashboard.badge.gettingStarted" resname="dashboard.badge.gettingStarted">
+                <source>Getting started</source>
+            </trans-unit>
+            <trans-unit id="dashboard.badge.bronze" resname="dashboard.badge.bronze">
+                <source>Bronze</source>
+            </trans-unit>
+            <trans-unit id="dashboard.badge.silver" resname="dashboard.badge.silver">
+                <source>Silver</source>
+            </trans-unit>
+            <trans-unit id="dashboard.badge.gold" resname="dashboard.badge.gold">
+                <source>Gold</source>
+            </trans-unit>
+            <trans-unit id="dashboard.badge.platinum" resname="dashboard.badge.platinum">
+                <source>Platinum</source>
+            </trans-unit>
             <trans-unit id="dashboard.allAdopted.title" resname="dashboard.allAdopted.title">
                 <source>Full Adoption</source>
             </trans-unit>
