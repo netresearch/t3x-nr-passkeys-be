@@ -192,10 +192,7 @@ final class AdminModuleController
             ->setTitle($this->translate('module.help', 'Help'))
             ->setIcon($this->iconFactory->getIcon(
                 'actions-question-circle',
-                // v12: IconSize doesn't exist, getIcon() accepts string 'small'
-                // v13+: IconSize enum required
-                // @phpstan-ignore argument.type
-                \enum_exists(IconSize::class) ? IconSize::SMALL : 'small',
+                ...(\enum_exists(IconSize::class) ? [IconSize::SMALL] : ['small']),
             ))
             ->setShowLabelText(false);
         $buttonBar->addButton($helpButton, ButtonBar::BUTTON_POSITION_RIGHT, 1);
