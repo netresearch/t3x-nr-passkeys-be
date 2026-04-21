@@ -108,6 +108,18 @@ parameters:
         -
             message: '#should be contravariant with parameter#'
             reportUnmatched: false
+        # IconSize enum does not exist in TYPO3 v12 (introduced in v13).
+        # v12: getIcon() expects string; v13+: expects IconSize enum.
+        # The enum_exists() runtime branch resolves correctly per-version,
+        # but PHPStan sees mixed/unknown-class depending on which vendor is installed.
+        -
+            message: '#IconSize#'
+            path: %currentWorkingDirectory%/Classes/Controller/AdminModuleController.php
+            reportUnmatched: false
+        -
+            message: '#expects string, mixed given#'
+            path: %currentWorkingDirectory%/Classes/Controller/AdminModuleController.php
+            reportUnmatched: false
         # TYPO3 v14 deprecations (makeMenu/makeMenuItem) - will be addressed in v15 migration
         -
             message: '#Call to deprecated method#'
