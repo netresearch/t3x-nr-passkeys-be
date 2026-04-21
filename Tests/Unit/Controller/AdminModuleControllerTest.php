@@ -9,17 +9,21 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
+use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration as ExtensionConfigurationVO;
 use Netresearch\NrPasskeysBe\Controller\AdminModuleController;
 use Netresearch\NrPasskeysBe\Domain\Dto\AdoptionStats;
 use Netresearch\NrPasskeysBe\Domain\Dto\GroupEnforcementInfo;
 use Netresearch\NrPasskeysBe\Domain\Dto\UserPasskeyStatus;
 use Netresearch\NrPasskeysBe\Service\AdoptionStatsService;
+use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
+use TYPO3\CMS\Backend\Template\Components\ButtonBar;
+use TYPO3\CMS\Backend\Template\Components\Buttons\LinkButton;
 use TYPO3\CMS\Backend\Template\Components\DocHeaderComponent;
 use TYPO3\CMS\Backend\Template\Components\Menu\Menu;
 use TYPO3\CMS\Backend\Template\Components\Menu\MenuItem;
@@ -27,6 +31,8 @@ use TYPO3\CMS\Backend\Template\Components\MenuRegistry;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Http\HtmlResponse;
+use TYPO3\CMS\Core\Imaging\Icon;
+use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
@@ -39,6 +45,10 @@ final class AdminModuleControllerTest extends TestCase
 
     private AdoptionStatsService&MockObject $adoptionStatsService;
 
+    private ExtensionConfigurationService&MockObject $configService;
+
+    private IconFactory&MockObject $iconFactory;
+
     private PageRenderer&MockObject $pageRenderer;
 
     private UriBuilder&MockObject $uriBuilder;
@@ -49,6 +59,11 @@ final class AdminModuleControllerTest extends TestCase
 
         $this->moduleTemplateFactory = $this->createMock(ModuleTemplateFactory::class);
         $this->adoptionStatsService = $this->createMock(AdoptionStatsService::class);
+        $this->configService = $this->createMock(ExtensionConfigurationService::class);
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfigurationVO());
+        $this->configService->method('getEffectiveRpId')->willReturn('localhost');
+        $this->iconFactory = $this->createMock(IconFactory::class);
+        $this->iconFactory->method('getIcon')->willReturn($this->createMock(Icon::class));
         $this->pageRenderer = $this->createMock(PageRenderer::class);
         $this->uriBuilder = $this->createMock(UriBuilder::class);
         $this->uriBuilder->method('buildUriFromRoute')->willReturn('/typo3/record/edit?mocked=1');
@@ -56,6 +71,8 @@ final class AdminModuleControllerTest extends TestCase
         $this->subject = new AdminModuleController(
             $this->moduleTemplateFactory,
             $this->adoptionStatsService,
+            $this->configService,
+            $this->iconFactory,
             $this->pageRenderer,
             $this->uriBuilder,
         );
@@ -78,8 +95,18 @@ final class AdminModuleControllerTest extends TestCase
         $menuRegistry = $this->createMock(MenuRegistry::class);
         $menuRegistry->method('makeMenu')->willReturn($menu);
 
+        $linkButton = $this->createMock(LinkButton::class);
+        $linkButton->method('setHref')->willReturnSelf();
+        $linkButton->method('setTitle')->willReturnSelf();
+        $linkButton->method('setIcon')->willReturnSelf();
+        $linkButton->method('setShowLabelText')->willReturnSelf();
+
+        $buttonBar = $this->createMock(ButtonBar::class);
+        $buttonBar->method('makeLinkButton')->willReturn($linkButton);
+
         $docHeader = $this->createMock(DocHeaderComponent::class);
         $docHeader->method('getMenuRegistry')->willReturn($menuRegistry);
+        $docHeader->method('getButtonBar')->willReturn($buttonBar);
 
         $moduleTemplate = $this->createMock(ModuleTemplate::class);
         $moduleTemplate->method('getDocHeaderComponent')->willReturn($docHeader);
@@ -125,7 +152,10 @@ final class AdminModuleControllerTest extends TestCase
                     && isset($variables['enforcementLevels']['off'])
                     && isset($variables['enforcementLevels']['encourage'])
                     && isset($variables['enforcementLevels']['required'])
-                    && isset($variables['enforcementLevels']['enforced']);
+                    && isset($variables['enforcementLevels']['enforced'])
+                    && \array_key_exists('helpUrl', $variables)
+                    && \array_key_exists('configRpId', $variables)
+                    && \array_key_exists('isNewInstallation', $variables);
             }));
 
         $expectedResponse = new HtmlResponse('<html></html>');
