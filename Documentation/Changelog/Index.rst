@@ -6,6 +6,25 @@
 Changelog
 =========
 
+Unreleased
+==========
+
+Features
+--------
+
+- New ``skipMfaOnPasskeyAuth`` extension setting (default enabled): when
+  a user authenticates with a passkey, the TYPO3 MFA challenge is
+  skipped for that session. A passkey is already multi-factor, so
+  requiring TOTP on top is redundant. Password-based logins are
+  unaffected and still go through MFA as configured. This resolves the
+  MFA-policy dilemma where forcing MFA for password users also forced
+  passkey users through a second factor they had already provided.
+- Help tab "Passkeys & MFA" section rewritten to name the password-only
+  loophole (disabling ``requireMfa`` lets password-only logins through
+  without any second factor) and document the recommended production
+  combination of ``requireMfa`` + ``skipMfaOnPasskeyAuth`` +
+  ``disablePasswordLogin``.
+
 0.7.0
 =====
 

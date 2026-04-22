@@ -162,82 +162,118 @@
             <h2 class="card-title mb-0">Passkeys &amp; MFA (two-factor authentication)</h2>
         </div>
         <div class="card-body">
-            <f:be.infobox title="Are passkeys secure enough without additional MFA?" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_INFO')}">
+            <f:be.infobox title="A passkey already is multi-factor" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_INFO')}">
                 <p>
-                    <strong>Yes, for most use cases.</strong> Passkeys are inherently
-                    multi-factor: they combine <em>something you have</em> (your device)
-                    with <em>something you are</em> (biometric) or <em>something you
-                    know</em> (device PIN). They are also phishing-resistant by design
-                    &mdash; the credential is cryptographically bound to the origin and
-                    cannot be replayed on a different site.
-                </p>
-                <p>
-                    The FIDO Alliance and W3C consider passkeys a
-                    <strong>stronger replacement for password + OTP</strong>.
-                    For most TYPO3 backends, passkey-only login is more secure than
-                    password + TOTP. Adding MFA on top is optional defence-in-depth,
-                    not a requirement.
+                    A passkey combines <em>something you have</em> (the device or
+                    security key) with <em>something you are</em> (biometric) or
+                    <em>something you know</em> (device PIN). It is also
+                    phishing-resistant by design &mdash; cryptographically bound to
+                    the origin and cannot be replayed elsewhere. For most TYPO3
+                    backends, passkey-only login is stronger than password + TOTP.
                 </p>
             </f:be.infobox>
 
-            <h3>Passkeys replace passwords, not MFA</h3>
+            <h3>The TYPO3 MFA policy is all-or-nothing &mdash; by default</h3>
             <p>
-                Technically, a passkey is a <strong>password replacement</strong> in
-                TYPO3's authentication chain. It proves the user's identity through a
-                cryptographic challenge verified by their device's biometric sensor or
-                security key. TYPO3's MFA layer runs independently after authentication.
+                TYPO3's built-in MFA requirement (<code>$GLOBALS['TYPO3_CONF_VARS']['BE']['requireMfa']</code>)
+                applies <strong>regardless of how the user authenticated</strong>.
+                That creates an operational dilemma for teams that want passkeys
+                <em>instead of</em> TOTP:
+            </p>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>TYPO3 MFA policy</th>
+                            <th>Passkey user</th>
+                            <th>Password user</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Required (on)</strong></td>
+                            <td>MFA prompt blocks passkey-only login &mdash; user must also complete TOTP</td>
+                            <td>MFA enforced &mdash; standard TYPO3 behaviour</td>
+                        </tr>
+                        <tr class="table-warning">
+                            <td><strong>Off</strong></td>
+                            <td>Passkey-only login works</td>
+                            <td><strong>Password-only login becomes possible &mdash; no second factor at all</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p>
+                The highlighted row is the <strong>password-only loophole</strong>:
+                if you disable TYPO3's MFA requirement to let passkey users in with
+                just one step, users without a passkey can suddenly log in with
+                only a password. This is a security regression.
             </p>
 
-            <h3>Do I need both passkeys and MFA?</h3>
+            <h3>Closing the loophole</h3>
             <p>
-                For most environments, <strong>passkeys alone provide stronger security
-                than password + TOTP</strong>. Consider keeping MFA enabled only if:
+                This extension provides two settings that let you enforce
+                "passkey = MFA satisfied, password = still requires MFA" and
+                prevent the regression:
             </p>
             <ul>
-                <li>Your security policy explicitly requires defence-in-depth with independent factors</li>
-                <li>You need compliance with standards that mandate a separate MFA step (e.g., PCI-DSS)</li>
-                <li>Your threat model includes authenticator device compromise</li>
+                <li>
+                    <code>skipMfaOnPasskeyAuth</code> (default: <strong>enabled</strong>)
+                    &mdash; after a successful passkey login, the TYPO3 MFA challenge
+                    is skipped for that session. The passkey has already proven
+                    multi-factor. Password logins still go through MFA normally.
+                </li>
+                <li>
+                    <code>disablePasswordLogin</code> (default: disabled)
+                    &mdash; blocks password-based login for users who have a
+                    registered passkey, preventing fallback.
+                </li>
             </ul>
-            <p>
-                If none of the above apply, you can safely disable TYPO3's MFA requirement
-                for passkey-authenticated users without reducing your security posture.
-            </p>
 
-            <h3>Both can be active simultaneously</h3>
+            <h3>Recommended production combination</h3>
             <p>
-                A user can have both a registered passkey and an active MFA provider.
-                If MFA is required for a user or group, it will still be prompted
-                <em>in addition</em> to the passkey login. This provides maximum
-                defence-in-depth but adds friction.
+                For the strongest security posture with the least friction:
             </p>
+            <ol>
+                <li>Keep TYPO3's <code>requireMfa</code> policy <strong>enabled</strong> (protects password users).</li>
+                <li>Keep <code>skipMfaOnPasskeyAuth</code> <strong>enabled</strong> (passkey users skip the redundant TOTP prompt).</li>
+                <li>Roll out per-group passkey enforcement up to <em>Required</em> (users in critical groups must register a passkey).</li>
+                <li>Enable <code>disablePasswordLogin</code> once adoption is high enough (closes the password fallback entirely).</li>
+            </ol>
 
-            <h3>Middleware processing order</h3>
+            <h3>When to keep MFA on top of passkeys</h3>
             <p>
-                When both passkeys and MFA are in play, the backend login pipeline
-                processes requests in this order:
+                Disable <code>skipMfaOnPasskeyAuth</code> only if:
+            </p>
+            <ul>
+                <li>Your security policy explicitly mandates defence-in-depth with independent factors regardless of the primary factor's strength.</li>
+                <li>You need compliance with a standard that prescribes a separate MFA step (e.g.&nbsp;PCI-DSS in specific configurations).</li>
+                <li>Your threat model seriously considers authenticator device compromise.</li>
+            </ul>
+
+            <h3>Login pipeline order</h3>
+            <p>
+                With <code>skipMfaOnPasskeyAuth</code> enabled, the backend login
+                pipeline processes requests as follows:
             </p>
             <ol>
                 <li>
-                    <strong>Authentication</strong> &mdash; the user authenticates
-                    with their passkey (or falls back to password).
+                    <strong>Authentication</strong> &mdash; passkey (priority 80) or,
+                    if no passkey payload is present, password.
                 </li>
                 <li>
-                    <strong>MFA challenge</strong> &mdash; if MFA is required, the
-                    user completes the TOTP or recovery-code challenge.
+                    <strong>MFA challenge</strong> &mdash; skipped for passkey logins;
+                    prompted for password logins if a provider is configured and the
+                    TYPO3 policy requires it.
                 </li>
                 <li>
-                    <strong>Passkey interstitial</strong> &mdash; if the user
-                    authenticated with a password and their group requires passkeys,
-                    the setup interstitial is displayed.
+                    <strong>Passkey interstitial</strong> &mdash; only for
+                    password-authenticated users whose group requires a passkey.
                 </li>
                 <li>
-                    <strong>Backend rendering</strong> &mdash; normal backend access.
+                    <strong>Backend rendering</strong> &mdash; normal access.
                 </li>
             </ol>
-            <f:be.infobox title="Note" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_NOTICE')}">
-                Users who log in with a passkey skip step 3 entirely because they
-                have already proven they own a registered credential.
-            </f:be.infobox>
         </div>
     </div>
 

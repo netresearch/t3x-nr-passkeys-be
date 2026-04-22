@@ -111,6 +111,40 @@ Password login control
       For more granular per-group enforcement with grace periods, see
       :ref:`enforcement`.
 
+..  confval:: skipMfaOnPasskeyAuth
+
+   :type: bool
+   :Default: ``true``
+
+   ..  versionadded:: 0.8.0
+      Added to resolve the MFA-policy dilemma: TYPO3's ``requireMfa`` flag
+      applies to every authentication path, so requiring MFA for password
+      users forced passkey users through a redundant TOTP step as well.
+
+   When enabled, the TYPO3 MFA challenge is skipped after a successful
+   passkey authentication. A passkey is already multi-factor -- possession
+   of the authenticator plus biometric or PIN user verification -- so an
+   additional TOTP prompt adds friction without increasing assurance.
+
+   Password-based logins are **not** affected: they continue to go through
+   the MFA challenge exactly as TYPO3 configures it. This setting only
+   short-circuits the MFA step on the passkey branch.
+
+   Recommended production combination (see :ref:`enforcement` for details):
+
+   1. Keep TYPO3's ``$GLOBALS['TYPO3_CONF_VARS']['BE']['requireMfa']``
+      enabled so password-based logins still require a second factor.
+   2. Leave ``skipMfaOnPasskeyAuth`` enabled so passkey users are not
+      double-prompted.
+   3. Use per-group enforcement to move users onto passkeys.
+   4. Once adoption is high enough, enable :confval:`disablePasswordLogin`
+      to close the password fallback.
+
+   Disable this setting only if your security policy explicitly mandates
+   defence-in-depth with independent factors regardless of the primary
+   factor's strength, or if a compliance standard you are bound to
+   prescribes a separate MFA step.
+
 Rate limiting
 =============
 
