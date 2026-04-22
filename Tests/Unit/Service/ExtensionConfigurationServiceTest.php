@@ -64,7 +64,12 @@ final class ExtensionConfigurationServiceTest extends TestCase
         self::assertSame('required', $config->getUserVerification());
         self::assertTrue($config->isDiscoverableLoginEnabled());
         self::assertFalse($config->isDisablePasswordLogin());
-        self::assertTrue($config->isSkipMfaOnPasskeyAuth());
+        // Defensive fallback: when the settings key is absent, the service
+        // returns false so an unconfigured install never silently bypasses
+        // TYPO3 MFA. The "on-by-default" behaviour for fresh installs comes
+        // from ext_conf_template.txt, which TYPO3 merges into the stored
+        // config on activation/upgrade.
+        self::assertFalse($config->isSkipMfaOnPasskeyAuth());
         self::assertSame(10, $config->getRateLimitMaxAttempts());
         self::assertSame(300, $config->getRateLimitWindowSeconds());
         self::assertSame(5, $config->getLockoutThreshold());
