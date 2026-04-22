@@ -6,6 +6,35 @@
 Changelog
 =========
 
+0.7.0
+=====
+
+Features
+--------
+
+- Help icon button in DocHeader (question-mark icon via TYPO3 ButtonBar
+  API) so the Help tab is discoverable without the dropdown menu
+- Adoption rate gamification badges on Dashboard: Getting started,
+  Bronze (25%), Silver (50%), Gold (75%), Platinum (100%) with icons
+- Quick Start guide on Dashboard for new installations with step-by-step
+  setup instructions and auto-detected rpId display
+- MFA hint on Dashboard informing admins that passkeys are inherently
+  multi-factor and TOTP may be redundant
+- Configuration status hints when rpId and origin are both auto-detected
+- Enhanced Help page MFA section: renamed to "Passkeys & MFA", added
+  prominent infobox answering "Are passkeys secure enough without MFA?"
+- README: Quick Start section, Passkeys & MFA guidance, TER docs link,
+  rpId/rpName/origin in configuration table
+
+Fixes
+-----
+
+- Use ``InfoboxViewHelper::STATE_*`` integer constants for cross-version
+  ``f:be.infobox`` compatibility (v12/v13/v14)
+- Use ``enum_exists(IconSize::class)`` runtime check for ``getIcon()``
+  v12 compatibility (v12 uses string, v13+ uses ``IconSize`` enum)
+- Badge labels are translatable via ``TranslationTrait``
+
 0.6.0
 =====
 
