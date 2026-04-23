@@ -6,6 +6,27 @@
 Changelog
 =========
 
+0.8.1
+=====
+
+Internal
+--------
+
+- Release pipeline consolidated into a single orchestrator workflow
+  (``netresearch/typo3-ci-workflows/release-typo3-extension.yml``).
+  Tag push now runs build + TER publish + Packagist verification +
+  docs.typo3.org verification + atomic GitHub release creation in one
+  workflow run, replacing the previous split that relied on a
+  ``release: published`` chain-trigger (which broke silently under
+  workflow-created releases). New ``republish`` manual workflow allows
+  re-running any subset of {TER, docs, Packagist} verification against
+  an existing tag without mutating the release. No runtime behaviour
+  change; the extension code shipped in 0.8.1 is identical to 0.8.0.
+- E2E test triage: six pre-existing broken Playwright specs marked
+  ``.fixme()`` with root-cause TODOs. Unblocks the CI matrix after the
+  shared reusable workflow was repaired to actually execute specs
+  (netresearch/typo3-ci-workflows#60, #61, #62).
+
 0.8.0
 =====
 
