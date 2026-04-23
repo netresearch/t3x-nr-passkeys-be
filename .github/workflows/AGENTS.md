@@ -1,17 +1,17 @@
-<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-03-27 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-04-23 -->
 
 # AGENTS.md -- .github/workflows
 
 ## Overview
-Multiple workflows: CI pipeline, E2E tests, TER publish, PR quality gates, CodeQL, OpenSSF Scorecard.
+Multiple workflows: CI pipeline, E2E tests, release orchestration (TER + Packagist + docs + GitHub release in one run), manual republish, PR quality gates, CodeQL, OpenSSF Scorecard.
 
 ## Key Files
 | File | Purpose |
 |------|---------|
 | `ci.yml` | Main CI pipeline: lint, stan, unit, fuzz, functional, mutation |
 | `e2e.yml` | E2E tests via reusable workflow (PHP server + MySQL, NOT DDEV) |
-| `ter-publish.yml` | Publish to TYPO3 TER on release (strips `v` prefix for version) |
-| `release.yml` | Release automation with attestations |
+| `release.yml` | Release orchestrator — tag push triggers build + TER publish + Packagist verify + docs verify + atomic GitHub release. Thin caller of `typo3-ci-workflows/release-typo3-extension.yml@main`. |
+| `republish.yml` | `workflow_dispatch` manual re-run of TER / docs / Packagist verification for an existing tag. Never mutates the GitHub release. Thin caller of `typo3-ci-workflows/republish.yml@main`. |
 | `pr-quality.yml` | Auto-approve for solo maintainer, Copilot review coordination |
 | `codeql.yml` | CodeQL security analysis (javascript-typescript, actions -- NOT PHP) |
 | `scorecard.yml` | OpenSSF Scorecard security assessment |
@@ -55,8 +55,9 @@ E2E tests use the reusable workflow `netresearch/typo3-ci-workflows/.github/work
 - Keep matrix balanced -- every PHP version should be tested with every supported TYPO3 version
 - Mutation testing thresholds: MSI >= 80%, covered-MSI >= 80% (infection.json5)
 
-## TER Publish Gotchas
-- `GITHUB_REF#refs/tags/` gives `v0.6.0` but ext_emconf.php has `0.6.0` (no `v`)
-- Workflow uses separate `checkout_ref` (raw tag) and `version` (v-stripped) env vars
-- Always bump `ext_emconf.php` version BEFORE creating the tag
-- `guides.xml` version should also be updated to match
+## Release Gotchas
+- Always bump `ext_emconf.php` version BEFORE creating the tag; orchestrator rejects mismatches.
+- `guides.xml` version should also match (checked by metadata-check once Phase 2 lands).
+- Tag must be `v`-prefixed (e.g. `v0.8.0`); the extension version in `ext_emconf.php` is without the `v`.
+- If the orchestrator aborts mid-run (e.g. TER times out), re-run the Release workflow against the same tag — every step is idempotent. Republish is only for a completed release whose publishes later regressed.
+- The GitHub release is created LAST, atomically, with all assets. Never edit a published release; cut a new version instead. Compatible with GitHub Immutable Releases.
