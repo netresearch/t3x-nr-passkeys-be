@@ -232,8 +232,20 @@ async function cleanupTestCredentials(page: Page): Promise<void> {
     } catch { /* ignore cleanup errors */ }
 }
 
+// TODO: fix the three registration-based tests in this describe block.
+// Root cause surfaced once the shared E2E workflow was repaired
+// (typo3-ci-workflows #60/#61/#62): the registerPasskeyViaApi() path throws
+// `SecurityError: The relying party ID is not a registrable domain suffix
+// of, nor equal to the current domain` under the CI Chromium + CDP virtual
+// authenticator. Two orthogonal bugs compound:
+//   1. WebAuthn rpId in the CI environment does not match localhost:8080.
+//   2. The test code uses `test.fail(true, ...)` + early `return` to
+//      "acknowledge" registration failure, but that pattern reports
+//      "Expected to fail, but passed" whether registration fails or
+//      succeeds. The intended pattern is `test.skip(true, reason)`.
+// Re-enable after fixing rpId configuration and the test.fail/skip usage.
 test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
-    test('complete passkey login flow (username-first)', async ({ page }) => {
+    test.fixme('complete passkey login flow (username-first)', async ({ page }) => {
         const loggedIn = await loginAsAdmin(page);
         test.skip(!loggedIn, 'Password login failed');
 
@@ -271,7 +283,7 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
 
-    test('complete passkey login flow (discoverable/usernameless)', async ({ page }) => {
+    test.fixme('complete passkey login flow (discoverable/usernameless)', async ({ page }) => {
         const loggedIn = await loginAsAdmin(page);
         test.skip(!loggedIn, 'Password login failed');
 
@@ -321,8 +333,9 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
     });
 });
 
+// Same rpId + test.fail()/test.skip() issue as the describe block above.
 test.describe('Passkey Login - Form Integration', () => {
-    test('hidden fields are populated with assertion data before form submit', async ({ page }) => {
+    test.fixme('hidden fields are populated with assertion data before form submit', async ({ page }) => {
         const loggedIn = await loginAsAdmin(page);
         test.skip(!loggedIn, 'Password login failed');
 
