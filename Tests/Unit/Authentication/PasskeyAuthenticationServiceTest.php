@@ -149,16 +149,108 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->method('recordSuccess')
             ->with('admin', self::anything());
 
+        // Default config has skipMfaOnPasskeyAuth=true, so both the passkey-auth
+        // marker and the TYPO3 MFA-skip flag are written.
+        $sessionCalls = [];
         $this->pObj
-            ->expects(self::once())
+            ->expects(self::exactly(2))
             ->method('setAndSaveSessionData')
-            ->with('tx_nrpasskeysbe', ['passkey_authenticated' => true]);
+            ->willReturnCallback(static function (string $key, $value) use (&$sessionCalls): void {
+                $sessionCalls[$key] = $value;
+            });
 
         $user = ['uid' => 42, 'username' => 'admin'];
 
         $result = $this->subject->authUser($user);
 
         self::assertSame(200, $result);
+        self::assertSame(['passkey_authenticated' => true], $sessionCalls['tx_nrpasskeysbe'] ?? null);
+        self::assertTrue($sessionCalls['mfa'] ?? null);
+    }
+
+    #[Test]
+    public function authUserSkipsMfaSessionFlagWhenSkipMfaOnPasskeyAuthIsDisabled(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configService = $this->createMock(ExtensionConfigurationService::class);
+        $configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(skipMfaOnPasskeyAuth: false));
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
+        GeneralUtility::addInstance(WebAuthnService::class, $this->webAuthnService);
+        GeneralUtility::addInstance(RateLimiterService::class, $this->rateLimiterService);
+        $this->addOffEnforcementService();
+
+        $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
+
+        $this->webAuthnService
+            ->method('verifyAssertionResponse')
+            ->willReturn(new VerifiedAssertion(
+                credential: $credential,
+                source: $this->createMock(PublicKeyCredentialSource::class),
+            ));
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+
+        $pObj = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        // Only the tx_nrpasskeysbe marker — never the 'mfa' key.
+        $pObj
+            ->expects(self::once())
+            ->method('setAndSaveSessionData')
+            ->with('tx_nrpasskeysbe', ['passkey_authenticated' => true]);
+        $subject->pObj = $pObj;
+
+        $subject->login = [
+            'uname' => 'admin',
+            'uident' => self::buildPasskeyUident(['ok' => 'assertion']),
+        ];
+
+        $result = $subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertSame(200, $result);
+    }
+
+    #[Test]
+    public function authUserDoesNotSetMfaSessionFlagWhenPasskeyVerificationFails(): void
+    {
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => self::buildPasskeyUident(['bad' => 'data']),
+        ];
+
+        $this->webAuthnService
+            ->method('verifyAssertionResponse')
+            ->willThrowException(new RuntimeException('Assertion failed', 1700000035));
+
+        // On verification failure, no session writes should occur at all.
+        $this->pObj
+            ->expects(self::never())
+            ->method('setAndSaveSessionData');
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertSame(0, $result);
+    }
+
+    #[Test]
+    public function authUserDoesNotSetMfaSessionFlagForPasswordLogin(): void
+    {
+        // Password login (no passkey payload) must never touch the 'mfa' session
+        // key — MFA enforcement for password auth stays under TYPO3 core control.
+        $this->subject->login = [
+            'uname' => 'admin',
+            'uident' => 'regularPassword123',
+        ];
+
+        $this->pObj
+            ->expects(self::never())
+            ->method('setAndSaveSessionData');
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertSame(100, $result);
     }
 
     #[Test]

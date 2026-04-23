@@ -61,6 +61,7 @@ final class ExtensionConfigurationTest extends TestCase
         self::assertSame('required', $config->getUserVerification());
         self::assertTrue($config->isDiscoverableLoginEnabled());
         self::assertFalse($config->isDisablePasswordLogin());
+        self::assertTrue($config->isSkipMfaOnPasskeyAuth());
         self::assertSame(10, $config->getRateLimitMaxAttempts());
         self::assertSame(300, $config->getRateLimitWindowSeconds());
         self::assertSame(5, $config->getLockoutThreshold());
@@ -80,6 +81,7 @@ final class ExtensionConfigurationTest extends TestCase
             userVerification: 'preferred',
             discoverableLoginEnabled: true,
             disablePasswordLogin: true,
+            skipMfaOnPasskeyAuth: false,
             rateLimitMaxAttempts: 20,
             rateLimitWindowSeconds: 600,
             lockoutThreshold: 10,
@@ -95,6 +97,7 @@ final class ExtensionConfigurationTest extends TestCase
         self::assertSame('preferred', $config->getUserVerification());
         self::assertTrue($config->isDiscoverableLoginEnabled());
         self::assertTrue($config->isDisablePasswordLogin());
+        self::assertFalse($config->isSkipMfaOnPasskeyAuth());
         self::assertSame(20, $config->getRateLimitMaxAttempts());
         self::assertSame(600, $config->getRateLimitWindowSeconds());
         self::assertSame(10, $config->getLockoutThreshold());

@@ -26,6 +26,7 @@ final class ExtensionConfiguration
         string $userVerification = 'required',
         private readonly bool $discoverableLoginEnabled = true,
         private readonly bool $disablePasswordLogin = false,
+        private readonly bool $skipMfaOnPasskeyAuth = true,
         private readonly int $rateLimitMaxAttempts = 10,
         private readonly int $rateLimitWindowSeconds = 300,
         private readonly int $lockoutThreshold = 5,
@@ -71,6 +72,17 @@ final class ExtensionConfiguration
     public function isDisablePasswordLogin(): bool
     {
         return $this->disablePasswordLogin;
+    }
+
+    /**
+     * Whether the TYPO3 MFA challenge should be skipped after a successful
+     * passkey authentication. A passkey already satisfies multi-factor
+     * (possession + biometric/PIN), so an additional TOTP step is redundant.
+     * Password-based logins remain unaffected and still go through MFA.
+     */
+    public function isSkipMfaOnPasskeyAuth(): bool
+    {
+        return $this->skipMfaOnPasskeyAuth;
     }
 
     public function getRateLimitMaxAttempts(): int

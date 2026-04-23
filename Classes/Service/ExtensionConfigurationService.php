@@ -34,6 +34,7 @@ final class ExtensionConfigurationService
             userVerification: self::stringVal($settings['userVerification'] ?? null, 'required'),
             discoverableLoginEnabled: !empty($settings['discoverableLoginEnabled'] ?? true),
             disablePasswordLogin: !empty($settings['disablePasswordLogin'] ?? false),
+            skipMfaOnPasskeyAuth: !empty($settings['skipMfaOnPasskeyAuth'] ?? false),
             rateLimitMaxAttempts: self::intVal($settings['rateLimitMaxAttempts'] ?? null, 10),
             rateLimitWindowSeconds: self::intVal($settings['rateLimitWindowSeconds'] ?? null, 300),
             lockoutThreshold: self::intVal($settings['lockoutThreshold'] ?? null, 5),

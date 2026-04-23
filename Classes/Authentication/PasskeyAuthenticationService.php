@@ -174,6 +174,18 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             $merged['passkey_authenticated'] = true;
             $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', $merged);
 
+            // A passkey is already multi-factor (possession + biometric/PIN), so the
+            // additional TYPO3 MFA challenge is redundant. Setting the 'mfa' session
+            // key to true satisfies the check in AbstractUserAuthentication::evaluateMfaRequirements()
+            // and skips the MfaRequiredException path. Password logins are unaffected.
+            if ($this->getExtensionConfigService()->getConfiguration()->isSkipMfaOnPasskeyAuth()) {
+                $this->pObj->setAndSaveSessionData('mfa', true);
+                $this->getLogger()->info('Passkey auth satisfied MFA requirement (skipping TYPO3 MFA challenge)', [
+                    'be_user_uid' => $user['uid'],
+                    'username_hash' => \hash('sha256', $username),
+                ]);
+            }
+
             // Return 200 = authenticated, stop further auth processing
             return 200;
         } catch (Throwable $e) {

@@ -19,6 +19,9 @@ discoverableLoginEnabled = 1
 # cat=security/200/130; type=boolean; label=Disable Password Login:When enabled, password login is blocked for users who have registered passkeys. Users without passkeys can still log in with a password.
 disablePasswordLogin = 0
 
+# cat=security/200/140; type=boolean; label=Skip MFA after Passkey Login:When enabled, the TYPO3 MFA challenge is skipped after a successful passkey authentication. A passkey is already multi-factor (possession + biometric/PIN), so an additional TOTP prompt is redundant. Password logins still go through MFA normally.
+skipMfaOnPasskeyAuth = 1
+
 # cat=ratelimit/300/100; type=int+; label=Rate Limit Max Attempts:Maximum requests per window per IP+user.
 rateLimitMaxAttempts = 10
 
