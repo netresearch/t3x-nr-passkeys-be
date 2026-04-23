@@ -1,0 +1,42 @@
+name: Republish
+
+# Manually re-run TER / Packagist / docs verification for an existing tag.
+# Use when a prior release was created but one of the external publishes
+# regressed later (e.g. TER mirror outage, Packagist P2 lag). Never mutates
+# the GitHub release — that is immutable by policy and by GitHub setting.
+#
+# For a mid-release crash where the GitHub release never got created, re-run
+# the Release workflow against the same tag instead (every step is idempotent).
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to republish (e.g. "v0.8.0")'
+        required: true
+        type: string
+      target:
+        description: 'Which publish target(s) to re-run'
+        required: true
+        type: choice
+        options:
+          - all
+          - ter
+          - docs
+          - packagist
+        default: all
+
+permissions: {}
+
+jobs:
+  republish:
+    uses: netresearch/typo3-ci-workflows/.github/workflows/republish.yml@main
+    permissions:
+      contents: read
+    with:
+      tag: ${{ inputs.tag }}
+      target: ${{ inputs.target }}
+      extension-key: nr_passkeys_be
+      package-name: netresearch/nr-passkeys-be
+    secrets:
+      TYPO3_TER_ACCESS_TOKEN: ${{ secrets.TYPO3_TER_ACCESS_TOKEN }}
