@@ -13,7 +13,7 @@ Internal
 --------
 
 - Release pipeline consolidated into a single orchestrator workflow
-  (``netresearch/typo3-ci-workflows/release-typo3-extension.yml``).
+  (``netresearch/typo3-ci-workflows/.github/workflows/release-typo3-extension.yml``).
   Tag push now runs build + TER publish + Packagist verification +
   docs.typo3.org verification + atomic GitHub release creation in one
   workflow run, replacing the previous split that relied on a
@@ -25,7 +25,8 @@ Internal
 - E2E test triage: six pre-existing broken Playwright specs marked
   ``.fixme()`` with root-cause TODOs. Unblocks the CI matrix after the
   shared reusable workflow was repaired to actually execute specs
-  (netresearch/typo3-ci-workflows#60, #61, #62).
+  (netresearch/typo3-ci-workflows#60, netresearch/typo3-ci-workflows#61,
+  netresearch/typo3-ci-workflows#62).
 
 0.8.0
 =====
