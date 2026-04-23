@@ -6,6 +6,31 @@
 Changelog
 =========
 
+0.8.2
+=====
+
+Fixes
+-----
+
+- ``Documentation/CLAUDE.md`` converted from a symlink to a real file.
+  The TYPO3 render-guides pipeline aborts on symlinks with
+  ``League\Flysystem\SymbolicLinkEncountered``, so the v0.8.1 docs
+  render failed and no ``/0.8/en-us/`` tree was published. Other
+  symlinks in the repository are outside the render scope and are
+  untouched.
+
+Internal
+--------
+
+- Release orchestrator now verifies the docs build by polling the
+  upstream ``TYPO3-Documentation/t3docs-ci-deploy`` workflow run
+  instead of the rendered URL. Failures are reported immediately
+  (previously we would time out after 45 minutes without being able
+  to distinguish "still rendering" from "render failed").
+- Release evidence block in the GitHub release body now uses the
+  correct ``/major.minor/en-us/`` docs URL (Intercept maps tags to
+  major.minor branches).
+
 0.8.1
 =====
 
