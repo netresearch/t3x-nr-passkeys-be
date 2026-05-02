@@ -30,7 +30,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use Webauthn\PublicKeyCredentialSource;
+use Webauthn\CredentialRecord;
 
 #[CoversClass(PasskeyAuthenticationService::class)]
 final class PasskeyAuthenticationServiceTest extends TestCase
@@ -141,7 +141,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             )
             ->willReturn(new VerifiedAssertion(
                 credential: $credential,
-                source: $this->createMock(PublicKeyCredentialSource::class),
+                source: $this->createMock(CredentialRecord::class),
             ));
 
         $this->rateLimiterService
@@ -188,7 +188,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->method('verifyAssertionResponse')
             ->willReturn(new VerifiedAssertion(
                 credential: $credential,
-                source: $this->createMock(PublicKeyCredentialSource::class),
+                source: $this->createMock(CredentialRecord::class),
             ));
 
         $subject = new PasskeyAuthenticationService();
@@ -774,7 +774,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->method('verifyAssertionResponse')
             ->willReturn(new VerifiedAssertion(
                 credential: $credential,
-                source: $this->createMock(PublicKeyCredentialSource::class),
+                source: $this->createMock(CredentialRecord::class),
             ));
 
         $this->rateLimiterService
@@ -1141,7 +1141,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             )
             ->willReturn(new VerifiedAssertion(
                 credential: $credential,
-                source: $this->createMock(PublicKeyCredentialSource::class),
+                source: $this->createMock(CredentialRecord::class),
             ));
 
         // Both getUser and authUser should use the same decoded payload

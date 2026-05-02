@@ -21,7 +21,7 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration as Typo3ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
-use Webauthn\PublicKeyCredentialSource;
+use Webauthn\CredentialRecord;
 
 /**
  * Functional tests for the skipMfaOnPasskeyAuth feature.
@@ -175,7 +175,7 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         $credential = new Credential(uid: 10, beUser: 5, label: 'Functional Test Key');
         $verified = new VerifiedAssertion(
             credential: $credential,
-            source: $this->createMock(PublicKeyCredentialSource::class),
+            source: $this->createMock(CredentialRecord::class),
         );
 
         $webAuthnService = $this->createMock(WebAuthnService::class);

@@ -28,9 +28,9 @@ use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use Webauthn\CredentialRecord;
 use Webauthn\PublicKeyCredentialCreationOptions;
 use Webauthn\PublicKeyCredentialRpEntity;
-use Webauthn\PublicKeyCredentialSource;
 use Webauthn\PublicKeyCredentialUserEntity;
 
 #[CoversClass(ManagementController::class)]
@@ -143,7 +143,7 @@ final class ManagementControllerTest extends TestCase
             'label' => 'My YubiKey',
         ]);
 
-        $sourceMock = $this->createMock(PublicKeyCredentialSource::class);
+        $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->expects(self::once())
             ->method('verifyRegistrationResponse')
@@ -565,7 +565,7 @@ final class ManagementControllerTest extends TestCase
             'label' => '   ',
         ]);
 
-        $sourceMock = $this->createMock(PublicKeyCredentialSource::class);
+        $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->method('verifyRegistrationResponse')
             ->willReturn($sourceMock);
@@ -652,7 +652,7 @@ final class ManagementControllerTest extends TestCase
             'label' => 'My Key',
         ]);
 
-        $sourceMock = $this->createMock(PublicKeyCredentialSource::class);
+        $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->expects(self::once())
             ->method('verifyRegistrationResponse')
@@ -703,7 +703,7 @@ final class ManagementControllerTest extends TestCase
             // no label provided
         ]);
 
-        $sourceMock = $this->createMock(PublicKeyCredentialSource::class);
+        $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->method('verifyRegistrationResponse')
             ->willReturn($sourceMock);
@@ -732,7 +732,7 @@ final class ManagementControllerTest extends TestCase
             'label' => $longLabel,
         ]);
 
-        $sourceMock = $this->createMock(PublicKeyCredentialSource::class);
+        $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->method('verifyRegistrationResponse')
             ->willReturn($sourceMock);
