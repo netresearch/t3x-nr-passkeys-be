@@ -19,7 +19,7 @@ admin dashboard with adoption stats, and onboarding UX (banner, interstitial, re
 | Composer | `netresearch/nr-passkeys-be` |
 | Extension key | `nr_passkeys_be` |
 | Namespace | `Netresearch\NrPasskeysBe` |
-| TYPO3 | ^12.4 \|\| ^13.4 \|\| ^14.1 |
+| TYPO3 | ^12.4 \|\| ^13.4 \|\| ^14.3 |
 | PHP | ^8.2 |
 | WebAuthn lib | `web-auth/webauthn-lib` ^5.2 |
 
