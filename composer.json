@@ -29,7 +29,7 @@
         "typo3/cms-core": "^12.4 || ^13.4 || ^14.3",
         "typo3/cms-backend": "^12.4 || ^13.4 || ^14.3",
         "typo3/cms-setup": "^12.4 || ^13.4 || ^14.3",
-        "web-auth/webauthn-lib": "^5.2"
+        "web-auth/webauthn-lib": "^5.3"
     },
     "require-dev": {
         "netresearch/typo3-ci-workflows": "^1.2",
