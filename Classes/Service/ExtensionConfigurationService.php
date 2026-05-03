@@ -10,9 +10,10 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Service;
 
 use Netresearch\NrPasskeysBe\Utility\TypeCastTrait;
+use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Http\NormalizedParams;
 
 final class ExtensionConfigurationService
 {
@@ -56,8 +57,7 @@ final class ExtensionConfigurationService
             return $rpId;
         }
 
-        $rawHost = GeneralUtility::getIndpEnv('HTTP_HOST');
-        $host = \is_string($rawHost) ? $rawHost : '';
+        $host = $this->getNormalizedParams()->getHttpHost();
 
         return $host !== '' ? $host : 'localhost';
     }
@@ -69,13 +69,32 @@ final class ExtensionConfigurationService
             return $origin;
         }
 
-        $rawSsl = GeneralUtility::getIndpEnv('TYPO3_SSL');
-        $isHttps = \is_string($rawSsl) ? $rawSsl !== '' && $rawSsl !== '0' : !empty($rawSsl);
-        $scheme = $isHttps ? 'https' : 'http';
-        $rawHost = GeneralUtility::getIndpEnv('HTTP_HOST');
-        $host = \is_string($rawHost) ? $rawHost : '';
+        $params = $this->getNormalizedParams();
+        $scheme = $params->isHttps() ? 'https' : 'http';
+        $host = $params->getHttpHost();
 
         return $scheme . '://' . ($host !== '' ? $host : 'localhost');
+    }
+
+    /**
+     * Resolve NormalizedParams from the current request, with a $_SERVER fallback for CLI/tests.
+     */
+    private function getNormalizedParams(): NormalizedParams
+    {
+        $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
+        if ($request instanceof ServerRequestInterface) {
+            $params = $request->getAttribute('normalizedParams');
+            if ($params instanceof NormalizedParams) {
+                return $params;
+            }
+        }
+
+        $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS'])
+            ? $confVars['SYS']
+            : [];
+
+        return NormalizedParams::createFromServerParams($_SERVER, $sysConf);
     }
 
     /**

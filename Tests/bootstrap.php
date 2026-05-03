@@ -25,3 +25,18 @@ if (!\defined('LF')) {
 require __DIR__ . '/../.Build/vendor/autoload.php';
 
 DG\BypassFinals::enable();
+
+// NormalizedParams::createFromServerParams() reads Environment::getCurrentScript()
+// and getPublicPath(); initialize Environment so the fallback path works in tests.
+$projectPath = \dirname(__DIR__);
+\TYPO3\CMS\Core\Core\Environment::initialize(
+    new \TYPO3\CMS\Core\Core\ApplicationContext('Testing'),
+    true,
+    true,
+    $projectPath,
+    $projectPath,
+    $projectPath . '/var',
+    $projectPath . '/config',
+    $projectPath . '/bootstrap.php',
+    'UNIX',
+);
