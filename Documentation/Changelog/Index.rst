@@ -6,6 +6,45 @@
 Changelog
 =========
 
+0.9.0
+=====
+
+Features
+--------
+
+- TYPO3 14.3 LTS support. The composer constraints, CI matrix and DDEV
+  environment for v14 are now pinned to ``^14.3``. The previous blocker
+  (``phpdocumentor/reflection-docblock`` requirement conflict between
+  v14.3 and ``web-auth/webauthn-lib 5.2``) was resolved upstream in
+  webauthn-lib 5.3, see
+  `web-auth/webauthn-framework#830
+  <https://github.com/web-auth/webauthn-framework/issues/830>`__.
+
+Internal
+--------
+
+- Migrated to ``web-auth/webauthn-lib`` ^5.3 and the new
+  ``CredentialRecord`` base class. ``PublicKeyCredentialSource`` is
+  deprecated in 5.3 and removed in 6.0; the WebAuthn assertion
+  validator's ``$publicKeyCredentialSource`` keyword argument has been
+  renamed to ``$credentialRecord``. No behaviour change for stored
+  credentials -- the wire format is unchanged.
+- Replaced the deprecated ``GeneralUtility::getIndpEnv()`` (deprecated
+  in TYPO3 v14.3, removed in v15.0) with ``NormalizedParams`` from the
+  PSR-7 request across six call sites (``PasskeyAuthenticationService``,
+  ``LoginController``, ``ExtensionConfigurationService``).
+  ``NormalizedParams`` has been part of TYPO3 since v9.4, so this works
+  across the whole supported range without compatibility shims.
+
+CI / build
+----------
+
+- Reusable workflow callers now forward ``actions: read`` so the
+  upstream ``netresearch/typo3-ci-workflows`` preflight gate (which
+  skips duplicate post-merge runs) can call the GitHub Actions API.
+  Without this the CI workflow fails immediately with
+  ``startup_failure``.
+
 0.8.2
 =====
 
