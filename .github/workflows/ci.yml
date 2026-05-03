@@ -10,6 +10,7 @@ jobs:
     uses: netresearch/typo3-ci-workflows/.github/workflows/ci.yml@main
     permissions:
       contents: read
+      actions: read
     with:
       php-versions: '["8.2", "8.3", "8.4", "8.5"]'
       typo3-versions: '["^12.4", "^13.4", "^14.3"]'
@@ -27,6 +28,7 @@ jobs:
     uses: netresearch/typo3-ci-workflows/.github/workflows/e2e.yml@main
     permissions:
       contents: read
+      actions: read
     with:
       php-version: '8.4'
       test-command: 'npm run test:e2e'
