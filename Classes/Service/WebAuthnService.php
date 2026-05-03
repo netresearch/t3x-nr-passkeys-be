@@ -29,6 +29,7 @@ use Webauthn\AuthenticatorAttestationResponse;
 use Webauthn\AuthenticatorAttestationResponseValidator;
 use Webauthn\AuthenticatorSelectionCriteria;
 use Webauthn\CeremonyStep\CeremonyStepManagerFactory;
+use Webauthn\CredentialRecord;
 use Webauthn\Denormalizer\WebauthnSerializerFactory;
 use Webauthn\PublicKeyCredential;
 use Webauthn\PublicKeyCredentialCreationOptions;
@@ -36,7 +37,6 @@ use Webauthn\PublicKeyCredentialDescriptor;
 use Webauthn\PublicKeyCredentialParameters;
 use Webauthn\PublicKeyCredentialRequestOptions;
 use Webauthn\PublicKeyCredentialRpEntity;
-use Webauthn\PublicKeyCredentialSource;
 use Webauthn\PublicKeyCredentialUserEntity;
 use Webauthn\TrustPath\EmptyTrustPath;
 
@@ -128,7 +128,7 @@ final class WebAuthnService
         int $beUserUid,
         string $username,
         string $displayName,
-    ): PublicKeyCredentialSource {
+    ): CredentialRecord {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
 
         $rpId = $this->configService->getEffectiveRpId();
@@ -348,7 +348,7 @@ final class WebAuthnService
 
         try {
             $updatedSource = $validator->check(
-                publicKeyCredentialSource: $storedSource,
+                credentialRecord: $storedSource,
                 authenticatorAssertionResponse: $response,
                 publicKeyCredentialRequestOptions: $requestOptions,
                 host: $rpId,
@@ -384,7 +384,7 @@ final class WebAuthnService
      * Store a verified registration result as a Credential.
      */
     public function storeCredential(
-        PublicKeyCredentialSource $source,
+        CredentialRecord $source,
         int $beUserUid,
         string $label,
     ): Credential {
@@ -499,13 +499,13 @@ final class WebAuthnService
         return \hash_hmac('sha256', (string) $beUserUid, $derivedKey, true);
     }
 
-    private function credentialToSource(Credential $credential): PublicKeyCredentialSource
+    private function credentialToSource(Credential $credential): CredentialRecord
     {
         $aaguid = $credential->getAaguid() !== ''
             ? \Symfony\Component\Uid\Uuid::fromString($credential->getAaguid())
             : \Symfony\Component\Uid\Uuid::v4();
 
-        return PublicKeyCredentialSource::create(
+        return CredentialRecord::create(
             publicKeyCredentialId: $credential->getCredentialId(),
             type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
             transports: $credential->getTransportsArray(),

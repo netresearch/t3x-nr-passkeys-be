@@ -29,9 +29,9 @@ use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
 use Throwable;
+use Webauthn\CredentialRecord;
 use Webauthn\PublicKeyCredentialCreationOptions;
 use Webauthn\PublicKeyCredentialRequestOptions;
-use Webauthn\PublicKeyCredentialSource;
 
 #[CoversClass(WebAuthnService::class)]
 final class WebAuthnServiceTest extends TestCase
@@ -283,7 +283,7 @@ final class WebAuthnServiceTest extends TestCase
         $label = 'Work Laptop Key';
         $expectedUid = 42;
 
-        $source = PublicKeyCredentialSource::create(
+        $source = CredentialRecord::create(
             publicKeyCredentialId: 'credential-id-xyz',
             type: 'public-key',
             transports: ['usb', 'nfc'],
@@ -468,7 +468,7 @@ final class WebAuthnServiceTest extends TestCase
         $expectedUid = 55;
 
         $uuid = \Symfony\Component\Uid\Uuid::v4();
-        $source = PublicKeyCredentialSource::create(
+        $source = CredentialRecord::create(
             publicKeyCredentialId: 'test-cred-id',
             type: 'public-key',
             transports: ['usb', 'ble', 'nfc'],
@@ -696,7 +696,7 @@ final class WebAuthnServiceTest extends TestCase
         $beUserUid = 111;
         $label = 'Test Key';
 
-        $source = PublicKeyCredentialSource::create(
+        $source = CredentialRecord::create(
             publicKeyCredentialId: 'cred-id',
             type: 'public-key',
             transports: [],
@@ -897,7 +897,7 @@ final class WebAuthnServiceTest extends TestCase
         $beUserUid = 456;
         $label = 'Test';
 
-        $source = PublicKeyCredentialSource::create(
+        $source = CredentialRecord::create(
             publicKeyCredentialId: 'cred-id',
             type: 'public-key',
             transports: [],
@@ -1164,7 +1164,7 @@ final class WebAuthnServiceTest extends TestCase
         // Assert
         self::assertInstanceOf(VerifiedAssertion::class, $result);
         self::assertSame($credential, $result->credential);
-        self::assertInstanceOf(PublicKeyCredentialSource::class, $result->source);
+        self::assertInstanceOf(CredentialRecord::class, $result->source);
         self::assertSame(1, $result->source->counter);
     }
 
@@ -1505,10 +1505,10 @@ final class WebAuthnServiceTest extends TestCase
 
         $reflection = new ReflectionMethod($this->subject, 'credentialToSource');
 
-        /** @var PublicKeyCredentialSource $source */
+        /** @var CredentialRecord $source */
         $source = $reflection->invoke($this->subject, $credential);
 
-        self::assertInstanceOf(PublicKeyCredentialSource::class, $source);
+        self::assertInstanceOf(CredentialRecord::class, $source);
         self::assertSame('cred-id-123', $source->publicKeyCredentialId);
         self::assertSame('cose-public-key', $source->credentialPublicKey);
         self::assertSame('user-handle', $source->userHandle);
@@ -1542,7 +1542,7 @@ final class WebAuthnServiceTest extends TestCase
 
         $reflection = new ReflectionMethod($this->subject, 'credentialToSource');
 
-        /** @var PublicKeyCredentialSource $source */
+        /** @var CredentialRecord $source */
         $source = $reflection->invoke($this->subject, $credential);
 
         self::assertSame($fixedAaguid, $source->aaguid->toString());

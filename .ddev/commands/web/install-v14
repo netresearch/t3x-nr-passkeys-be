@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## Description: Install TYPO3 14.x with your extension
+## Description: Install TYPO3 14.3 LTS with your extension
 ## Usage: install-v14
 ## Example: ddev install-v14
 
@@ -13,18 +13,17 @@ composer config extra.typo3/cms.web-dir public -d /var/www/html/$VERSION
 composer config repositories.$EXTENSION_KEY path ../../$EXTENSION_KEY -d /var/www/html/$VERSION
 composer config --no-plugins allow-plugins.typo3/cms-composer-installers true -d /var/www/html/$VERSION
 composer config --no-plugins allow-plugins.typo3/class-alias-loader true -d /var/www/html/$VERSION
-# t3/cms has no v14 release - use typo3/minimal + additional packages
 # typo3/minimal provides: cms-core, cms-backend, cms-extbase, cms-filelist, cms-fluid, cms-frontend
 # typo3/cms-install provides: setup command, configuration:set
-composer req typo3/minimal:'^14' typo3/cms-install:'^14' typo3/cms-fluid-styled-content:'^14' typo3/cms-rte-ckeditor:'^14' $PACKAGE_NAME:'*@dev' --no-progress -n -d /var/www/html/$VERSION
-composer req typo3/cms-extensionmanager --no-progress -n -d /var/www/html/$VERSION
-composer req --dev typo3/cms-styleguide --no-progress -n -d /var/www/html/$VERSION
+composer req typo3/minimal:'^14.3' typo3/cms-install:'^14.3' typo3/cms-fluid-styled-content:'^14.3' typo3/cms-rte-ckeditor:'^14.3' $PACKAGE_NAME:'*@dev' --no-progress -n -d /var/www/html/$VERSION
+composer req typo3/cms-extensionmanager:'^14.3' --no-progress -n -d /var/www/html/$VERSION
+composer req --dev typo3/cms-styleguide:'^14.3' --no-progress -n -d /var/www/html/$VERSION
 
-# Introduction Package may not support latest TYPO3 v14 - install if available
+# Introduction Package may not support TYPO3 v14.3 LTS - install if available
 if composer req typo3/cms-introduction --no-progress -n -d /var/www/html/$VERSION 2>/dev/null; then
     INTRO_INSTALLED=true
 else
-    echo "Note: typo3/cms-introduction not available for TYPO3 v14 - skipping demo content"
+    echo "Note: typo3/cms-introduction not available for TYPO3 v14.3 - skipping demo content"
     INTRO_INSTALLED=false
 fi
 
@@ -35,7 +34,7 @@ mysql -h db -u root -p"root" -e "CREATE DATABASE ${VERSION};"
 
 vendor/bin/typo3 setup -n --dbname=$VERSION --password=$TYPO3_DB_PASSWORD --create-site="https://${VERSION}.nr-passkeys-be.ddev.site" --admin-user-password=$TYPO3_SETUP_ADMIN_PASSWORD
 
-# Write all configuration directly to additional.php (configuration:set may not exist in v14)
+# Write all configuration directly to additional.php (configuration:set may not exist in v14.3)
 mkdir -p /var/www/html/$VERSION/config/system
 cat > /var/www/html/$VERSION/config/system/additional.php << 'ADDITIONALPHP'
 <?php
@@ -59,7 +58,7 @@ fi
 
 vendor/bin/typo3 extension:setup
 
-# Configure site sets for v14 (only if Bootstrap Package is available via introduction)
+# Configure site sets for v14.3 (only if Bootstrap Package is available via introduction)
 if [ "$INTRO_INSTALLED" = "true" ] && [ -f config/sites/main/config.yaml ]; then
     if ! grep -q "^dependencies:" config/sites/main/config.yaml; then
         echo "" >> config/sites/main/config.yaml
@@ -82,7 +81,7 @@ echo "TYPO3 Styleguide is available for UI pattern reference"
 if [ "$INTRO_INSTALLED" = "true" ]; then
     echo "Introduction Package installed with demo content"
 else
-    echo "Introduction Package skipped (not yet available for TYPO3 v14)"
+    echo "Introduction Package skipped (not yet available for TYPO3 v14.3)"
 fi
 
 # Auto-configure extension if configure script exists

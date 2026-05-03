@@ -14,7 +14,7 @@ use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Webauthn\PublicKeyCredentialSource;
+use Webauthn\CredentialRecord;
 
 #[CoversClass(VerifiedAssertion::class)]
 final class VerifiedAssertionTest extends TestCase
@@ -23,7 +23,7 @@ final class VerifiedAssertionTest extends TestCase
     public function constructorSetsProperties(): void
     {
         $credential = new Credential(uid: 1, beUser: 42, label: 'Test Key');
-        $source = $this->createMock(PublicKeyCredentialSource::class);
+        $source = $this->createMock(CredentialRecord::class);
 
         $dto = new VerifiedAssertion(
             credential: $credential,

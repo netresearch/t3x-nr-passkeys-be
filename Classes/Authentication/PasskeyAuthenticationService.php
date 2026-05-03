@@ -16,10 +16,12 @@ use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\NullLogger;
 use Throwable;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -144,8 +146,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         $rawUname = $this->login['uname'] ?? '';
         $username = \is_string($rawUname) ? $rawUname : '';
-        $rawIp = GeneralUtility::getIndpEnv('REMOTE_ADDR');
-        $ip = \is_string($rawIp) ? $rawIp : '';
+        $ip = $this->getRemoteAddress();
 
         try {
             // Check lockout
@@ -354,5 +355,26 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         \assert($this->logger instanceof \Psr\Log\LoggerInterface);
 
         return $this->logger;
+    }
+
+    /**
+     * Resolve the remote address from the current request, with $_SERVER fallback.
+     */
+    private function getRemoteAddress(): string
+    {
+        $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
+        if ($request instanceof ServerRequestInterface) {
+            $params = $request->getAttribute('normalizedParams');
+            if ($params instanceof NormalizedParams) {
+                return $params->getRemoteAddress();
+            }
+        }
+
+        $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS'])
+            ? $confVars['SYS']
+            : [];
+
+        return NormalizedParams::createFromServerParams($_SERVER, $sysConf)->getRemoteAddress();
     }
 }

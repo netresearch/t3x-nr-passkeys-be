@@ -36,7 +36,7 @@ install-v13: ## Install TYPO3 13.4 LTS with extension
 	ddev install-v13
 
 .PHONY: install-v14
-install-v14: ## Install TYPO3 14.x with extension
+install-v14: ## Install TYPO3 14.3 LTS with extension
 	ddev install-v14
 
 .PHONY: install-all
@@ -68,7 +68,7 @@ urls: ## Show all access URLs
 	@echo "  Frontend: https://v13.nr-passkeys-be.ddev.site/"
 	@echo "  Backend:  https://v13.nr-passkeys-be.ddev.site/typo3/"
 	@echo ""
-	@echo "TYPO3 14.x:"
+	@echo "TYPO3 14.3 LTS:"
 	@echo "  Frontend: https://v14.nr-passkeys-be.ddev.site/"
 	@echo "  Backend:  https://v14.nr-passkeys-be.ddev.site/typo3/"
 	@echo ""

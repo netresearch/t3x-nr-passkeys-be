@@ -19,7 +19,7 @@ use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Http\NormalizedParams;
 
 final class LoginController
 {
@@ -46,8 +46,7 @@ final class LoginController
             ? (string) $body['username']
             : '';
 
-        $remoteAddr = GeneralUtility::getIndpEnv('REMOTE_ADDR');
-        $ip = \is_string($remoteAddr) ? $remoteAddr : '';
+        $ip = $this->getRemoteAddress($request);
 
         // Discoverable (usernameless) login
         if ($username === '') {
@@ -145,8 +144,7 @@ final class LoginController
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $remoteAddr = GeneralUtility::getIndpEnv('REMOTE_ADDR');
-        $ip = \is_string($remoteAddr) ? $remoteAddr : '';
+        $ip = $this->getRemoteAddress($request);
 
         try {
             $this->rateLimiterService->checkRateLimit('login_verify', $ip);
@@ -210,6 +208,24 @@ final class LoginController
         $rawUid = $row['uid'] ?? null;
 
         return \is_numeric($rawUid) ? (int) $rawUid : null;
+    }
+
+    /**
+     * Resolve the remote address from the request, with $_SERVER fallback.
+     */
+    private function getRemoteAddress(ServerRequestInterface $request): string
+    {
+        $params = $request->getAttribute('normalizedParams');
+        if ($params instanceof NormalizedParams) {
+            return $params->getRemoteAddress();
+        }
+
+        $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS'])
+            ? $confVars['SYS']
+            : [];
+
+        return NormalizedParams::createFromServerParams($_SERVER, $sysConf)->getRemoteAddress();
     }
 
 }
