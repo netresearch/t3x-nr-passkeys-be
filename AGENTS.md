@@ -1,6 +1,7 @@
 <!-- FOR AI AGENTS - Human readability is a side effect, not a goal -->
 <!-- Managed by agent: keep sections and order; edit content, not structure -->
-<!-- Last updated: 2026-03-27 | Last verified: 2026-03-27 -->
+<!-- Drift-prone fields (version numbers, test counts, dated timestamps) are intentionally absent. -->
+<!-- Verify on demand: `gh release view --json tagName,isLatest` for version; run the relevant suite from the Commands section for current test counts. -->
 
 # AGENTS.md
 
@@ -146,7 +147,6 @@ Makefile                  -> make up (dev), make ci (checks), make test-e2e, mak
 - Log plaintext usernames (use SHA-256 hash)
 
 ## Codebase State
-- Extension is fully functional at v0.6.0 with all CI checks passing
 - Passkeys are primary credentials (NOT MFA) -- registered at auth priority 80
 - Per-group enforcement with 4 levels, admin dashboard, onboarding UX (banner, interstitial)
 - `web-auth/webauthn-lib` v5.x classes are `final` -- use `dg/bypass-finals` for mocking
@@ -159,7 +159,7 @@ Makefile                  -> make up (dev), make ci (checks), make test-e2e, mak
 - RateLimiterService uses atomic locking (LockFactory) with dual counters (per-IP + per-username)
 - Encryption key access centralized in ExtensionConfigurationService::getEncryptionKey()
 - Mutation testing: MSI >= 80%, covered MSI >= 80% (infection.json5)
-- 546 unit + 131 fuzz + 63 JS + 69 functional tests = 809 total
+- Test suites: unit, fuzz, functional, JS (Vitest), E2E (Playwright), architecture (PHPat). Run the relevant suite command from the Commands section above for current counts; counts are intentionally not pinned here.
 
 ## Terminology
 | Term | Means |
