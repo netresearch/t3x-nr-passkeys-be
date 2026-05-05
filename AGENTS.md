@@ -1,7 +1,7 @@
 <!-- FOR AI AGENTS - Human readability is a side effect, not a goal -->
 <!-- Managed by agent: keep sections and order; edit content, not structure -->
 <!-- Drift-prone fields (version numbers, test counts, dated timestamps) are intentionally absent. -->
-<!-- Verify on demand: `gh release view --json tagName,isLatest` for version, `composer ci:test:php:unit` for test counts. -->
+<!-- Verify on demand: `gh release view --json tagName,isLatest` for version; run the relevant suite from the Commands section for current test counts. -->
 
 # AGENTS.md
 
@@ -159,7 +159,7 @@ Makefile                  -> make up (dev), make ci (checks), make test-e2e, mak
 - RateLimiterService uses atomic locking (LockFactory) with dual counters (per-IP + per-username)
 - Encryption key access centralized in ExtensionConfigurationService::getEncryptionKey()
 - Mutation testing: MSI >= 80%, covered MSI >= 80% (infection.json5)
-- Test suites (commands above): unit, fuzz, functional, JS (Vitest), E2E (Playwright), architecture (PHPat). Run the relevant `composer ci:test:php:*` for current counts; counts are intentionally not pinned here.
+- Test suites: unit, fuzz, functional, JS (Vitest), E2E (Playwright), architecture (PHPat). Run the relevant suite command from the Commands section above for current counts; counts are intentionally not pinned here.
 
 ## Terminology
 | Term | Means |
