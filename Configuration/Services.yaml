@@ -70,8 +70,11 @@ services:
   Netresearch\NrPasskeysBe\Controller\AdminModuleController:
     public: true
 
-  # FormEngine element must be public for GeneralUtility::makeInstance() DI resolution.
+  # FormEngine elements must be public for GeneralUtility::makeInstance() DI resolution.
   # Required by NodeFactory on TYPO3 v12 (setData path) and v13+ alike.
   Netresearch\NrPasskeysBe\Form\Element\PasskeyInfoElement:
+    public: true
+
+  Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanelElement:
     public: true
 
