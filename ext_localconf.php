@@ -47,6 +47,14 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1739000000] = [
     'class' => \Netresearch\NrPasskeysBe\Form\Element\PasskeyInfoElement::class,
 ];
 
+// Register FormEngine render type for the passkey management panel in User Settings (TYPO3 14+).
+// TYPO3 14 requires an explicit renderType on type="user" columns; userFunc alone triggers a warning.
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1748450000] = [
+    'nodeName' => 'nrPasskeySettingsPanel',
+    'priority' => 40,
+    'class' => \Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanelElement::class,
+];
+
 // Register cache for challenge nonces
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce'] ??= [];
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['backend'] ??=
