@@ -29,7 +29,7 @@ if ((new Typo3Version())->getMajorVersion() >= 14) {
         'label' => $label,
         'config' => [
             'type' => 'user',
-            'userFunc' => PasskeySettingsPanel::class . '->render',
+            'renderType' => 'nrPasskeySettingsPanel',
         ],
     ];
 } else {

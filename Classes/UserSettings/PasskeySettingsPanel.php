@@ -85,7 +85,7 @@ final class PasskeySettingsPanel
     /**
      * @param array<string, string> $urls Token-protected backend route URLs
      */
-    private function buildHtml(int $passkeyCount, array $urls): string
+    public function buildHtml(int $passkeyCount, array $urls): string
     {
         $infoText = $this->translate(
             'manage.info.passkeys',
