@@ -62,6 +62,28 @@ test.describe('User Settings - Page & JS', () => {
         await expect(page).toHaveURL(/user\/setup|setup/);
     });
 
+    test('passkey management panel renders on the setup page', async ({ page }) => {
+        // Regression guard for the v0.9.1/v0.9.2 fix: on TYPO3 14 a bare
+        // type=user column (without renderType) made SingleFieldContainer
+        // throw and the panel never rendered. The panel container, add button
+        // and list table are emitted server-side by
+        // PasskeySettingsPanel::buildHtml(); their absence means the FormEngine
+        // wiring is broken.
+        //
+        // The setup module renders inside a backend module iframe, and the
+        // passkey field lives in a non-default settings tab. So pierce the
+        // iframe and assert the panel is attached to the DOM rather than
+        // visible (asserting visibility would require driving the tab UI,
+        // which is brittle and orthogonal to "did the panel render").
+        await page.goto('/typo3/module/user/setup');
+        await page.waitForLoadState('networkidle');
+
+        const moduleFrame = page.frameLocator('iframe');
+        await expect(moduleFrame.locator('#passkey-management-container')).toBeAttached();
+        await expect(moduleFrame.locator('#passkey-add-btn')).toBeAttached();
+        await expect(moduleFrame.locator('#passkey-list-table')).toBeAttached();
+    });
+
     test('passkey management JS loads without errors', async ({ page }) => {
         const consoleErrors: string[] = [];
         page.on('console', (msg) => {
@@ -73,11 +95,12 @@ test.describe('User Settings - Page & JS', () => {
         await page.goto('/typo3/module/user/setup');
         await page.waitForTimeout(3000);
 
+        // Only infrastructure noise is filtered. Passkey-specific errors
+        // ("Too few arguments", "Load passkeys error", invalid JSON) are NOT
+        // suppressed — those are exactly the symptoms of a broken panel and
+        // must fail the test.
         const realErrors = consoleErrors.filter(
-            (e) => !e.includes('favicon') && !e.includes('404') && !e.includes('net::')
-                && !e.includes('Too few arguments')
-                && !e.includes('is not valid JSON')
-                && !e.includes('Load passkeys error'),
+            (e) => !e.includes('favicon') && !e.includes('404') && !e.includes('net::'),
         );
         expect(realErrors).toHaveLength(0);
     });
