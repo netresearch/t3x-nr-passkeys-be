@@ -6,6 +6,55 @@
 Changelog
 =========
 
+0.9.3
+=====
+
+Tests
+-----
+
+- Added regression coverage for the TYPO3 14 User Settings passkey
+  panel. A functional test asserts that the FormEngine ``NodeFactory``
+  resolves the ``nrPasskeySettingsPanel`` render type to
+  ``PasskeySettingsPanelElement`` and that the ``passkeys`` user-setting
+  column declares the render type on v14 (and uses the legacy
+  ``userFunc`` path on v12/v13). The end-to-end test now pierces the
+  backend module iframe and asserts the management panel actually
+  renders, instead of suppressing the console errors a broken panel
+  would emit.
+
+..  note::
+
+    0.9.1 and 0.9.2 were tagged but never published as complete
+    releases (their release pipelines failed before producing
+    artifacts). The fixes they introduced are listed below for
+    completeness and ship in 0.9.3.
+
+0.9.2
+=====
+
+Bugfixes
+--------
+
+- TYPO3 14 logged a warning when opening *User Settings*: the
+  ``passkeys`` panel column was registered as ``type="user"`` without a
+  specific render type, which also triggered a ``SingleFieldContainer``
+  ``TypeError``. Introduced ``PasskeySettingsPanelElement`` (a FormEngine
+  ``AbstractFormElement``) registered as render type
+  ``nrPasskeySettingsPanel`` and registered it as a public service so the
+  ``NodeFactory`` can resolve its dependencies via DI. TYPO3 12/13
+  continue to use the existing ``userFunc`` path unchanged.
+
+0.9.1
+=====
+
+Bugfixes
+--------
+
+- Registered the *User Settings* passkey panel via the TCA-based user
+  settings API on TYPO3 14+, where the column requires a ``config`` key.
+  TYPO3 12/13 keep the legacy ``$GLOBALS['TYPO3_USER_SETTINGS']``
+  registration.
+
 0.9.0
 =====
 
