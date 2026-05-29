@@ -70,15 +70,16 @@ test.describe('User Settings - Page & JS', () => {
         // PasskeySettingsPanel::buildHtml(); their absence means the FormEngine
         // wiring is broken.
         //
-        // The setup module renders inside a backend module iframe, and the
-        // passkey field lives in a non-default settings tab. So pierce the
-        // iframe and assert the panel is attached to the DOM rather than
-        // visible (asserting visibility would require driving the tab UI,
-        // which is brittle and orthogonal to "did the panel render").
+        // The setup module renders inside the backend module iframe
+        // (#typo3-contentIframe), and the passkey field lives in a non-default
+        // settings tab. So pierce the iframe and assert the panel is attached
+        // to the DOM rather than visible (asserting visibility would require
+        // driving the tab UI, which is brittle and orthogonal to "did the
+        // panel render").
         await page.goto('/typo3/module/user/setup');
         await page.waitForLoadState('networkidle');
 
-        const moduleFrame = page.frameLocator('iframe');
+        const moduleFrame = page.frameLocator('#typo3-contentIframe');
         await expect(moduleFrame.locator('#passkey-management-container')).toBeAttached();
         await expect(moduleFrame.locator('#passkey-add-btn')).toBeAttached();
         await expect(moduleFrame.locator('#passkey-list-table')).toBeAttached();
