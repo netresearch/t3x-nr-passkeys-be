@@ -6,6 +6,26 @@
 Changelog
 =========
 
+0.9.4
+=====
+
+Features
+--------
+
+- Replaced the generic Netresearch logo with the official FIDO passkey
+  mark for the backend module and login icons. The icon is
+  version-aware: TYPO3 v12/v13 use a colored tile, while v14 uses a flat
+  two-tone mark (a Netresearch turquoise key on a ``currentColor`` body)
+  that adapts to the light and dark backend. Authored with SVG
+  presentation attributes so it stays clean under a hardened backend
+  Content Security Policy.
+
+Tests
+-----
+
+- The end-to-end suite now targets the backend module iframe by id for a
+  more robust selector.
+
 0.9.3
 =====
 
