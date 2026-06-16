@@ -12,35 +12,30 @@
     <div id="passkey-dashboard">
         <!-- Quick Start Guide (shown for new installations) -->
         <f:if condition="{isNewInstallation}">
-            <f:be.infobox title="Getting started" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_INFO')}">
-                <p>No passkeys have been registered yet. Follow these steps to get started:</p>
+            <f:be.infobox title="{f:translate(key: 'dashboard.gettingStarted.title', extensionName: 'NrPasskeysBe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_INFO')}">
+                <p><f:translate key="dashboard.gettingStarted.intro" extensionName="NrPasskeysBe" /></p>
                 <ol class="mb-0">
                     <li class="mb-2">
-                        <strong>Review extension settings</strong> &mdash;
-                        Go to <em>Admin Tools &gt; Settings &gt; Extension Configuration &gt; nr_passkeys_be</em>
-                        and verify the Relying Party settings.
+                        <strong><f:translate key="dashboard.gettingStarted.step1.title" extensionName="NrPasskeysBe" /></strong> &mdash;
+                        <f:translate key="dashboard.gettingStarted.step1.bodyBefore" extensionName="NrPasskeysBe" /> <em>Admin Tools &gt; Settings &gt; Extension Configuration &gt; nr_passkeys_be</em>
+                        <f:translate key="dashboard.gettingStarted.step1.bodyAfter" extensionName="NrPasskeysBe" />
                         <f:if condition="{configRpIdIsAutoDetected}">
                             <br /><span class="text-body-secondary">
-                                Relying Party ID is currently auto-detected as <code>{configRpId}</code>.
-                                For production, consider setting it explicitly.
+                                <f:translate key="dashboard.gettingStarted.step1.autodetect" extensionName="NrPasskeysBe" arguments="{0: configRpId}" />
                             </span>
                         </f:if>
                     </li>
                     <li class="mb-2">
-                        <strong>Register your own passkey first</strong> &mdash;
-                        Go to your <em>User Settings &gt; Passkeys</em> tab and register a passkey
-                        to verify the setup works on your device.
+                        <strong><f:translate key="dashboard.gettingStarted.step2.title" extensionName="NrPasskeysBe" /></strong> &mdash;
+                        <f:translate key="dashboard.gettingStarted.step2.bodyBefore" extensionName="NrPasskeysBe" /> <em>User Settings &gt; Passkeys</em> <f:translate key="dashboard.gettingStarted.step2.bodyAfter" extensionName="NrPasskeysBe" />
                     </li>
                     <li class="mb-2">
-                        <strong>Set a pilot group to &quot;Encourage&quot;</strong> &mdash;
-                        Use the group table below to set a small group (e.g., your admin team)
-                        to <em>Encourage</em>. Users will see a dismissible banner prompting them
-                        to register a passkey.
+                        <strong><f:translate key="dashboard.gettingStarted.step3.title" extensionName="NrPasskeysBe" /></strong> &mdash;
+                        <f:translate key="dashboard.gettingStarted.step3.bodyBefore" extensionName="NrPasskeysBe" /> <em>Encourage</em><f:translate key="dashboard.gettingStarted.step3.bodyAfter" extensionName="NrPasskeysBe" />
                     </li>
                     <li>
-                        <strong>Roll out gradually</strong> &mdash;
-                        See the <a href="{helpUrl}">Help tab</a> for a full rollout guide
-                        covering all enforcement levels and recovery procedures.
+                        <strong><f:translate key="dashboard.gettingStarted.step4.title" extensionName="NrPasskeysBe" /></strong> &mdash;
+                        <f:translate key="dashboard.gettingStarted.step4.bodyBefore" extensionName="NrPasskeysBe" /> <a href="{helpUrl}"><f:translate key="dashboard.gettingStarted.step4.helpLink" extensionName="NrPasskeysBe" /></a> <f:translate key="dashboard.gettingStarted.step4.bodyAfter" extensionName="NrPasskeysBe" />
                     </li>
                 </ol>
             </f:be.infobox>
@@ -48,10 +43,8 @@
 
         <!-- Configuration hints -->
         <f:if condition="{configRpIdIsAutoDetected} && {configOriginIsAutoDetected} && !{isNewInstallation}">
-            <f:be.infobox title="Configuration note" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_WARNING')}">
-                Both Relying Party ID and Origin are auto-detected (currently <code>{configRpId}</code>).
-                For production environments with multiple domains or reverse proxies, consider setting
-                these explicitly in <em>Admin Tools &gt; Settings &gt; Extension Configuration</em>.
+            <f:be.infobox title="{f:translate(key: 'dashboard.configNote.title', extensionName: 'NrPasskeysBe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_WARNING')}">
+                <f:translate key="dashboard.configNote.bodyBefore" extensionName="NrPasskeysBe" /> <code>{configRpId}</code><f:translate key="dashboard.configNote.bodyAfter" extensionName="NrPasskeysBe" /> <em>Admin Tools &gt; Settings &gt; Extension Configuration</em>.
             </f:be.infobox>
         </f:if>
 
@@ -93,11 +86,9 @@
 
         <!-- MFA hint: suggest dropping MFA when passkeys are adopted -->
         <f:if condition="{usersWithPasskeys} > 0">
-            <f:be.infobox title="Passkeys & MFA" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_NOTICE')}">
-                Passkeys are inherently multi-factor (device + biometric/PIN) and phishing-resistant.
-                For most environments, passkeys alone are more secure than password + TOTP.
-                Consider disabling the MFA requirement for passkey-authenticated users.
-                <a href="{helpUrl}">Learn more in the Help tab.</a>
+            <f:be.infobox title="{f:translate(key: 'dashboard.mfa.title', extensionName: 'NrPasskeysBe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_NOTICE')}">
+                <f:translate key="dashboard.mfa.body" extensionName="NrPasskeysBe" />
+                <a href="{helpUrl}"><f:translate key="dashboard.mfa.helpLink" extensionName="NrPasskeysBe" /></a>
             </f:be.infobox>
         </f:if>
 

@@ -323,6 +323,72 @@
             <trans-unit id="dashboard.usersWithout.days" resname="dashboard.usersWithout.days">
                 <source>days</source>
             </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.title" resname="dashboard.gettingStarted.title">
+                <source>Getting started</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.intro" resname="dashboard.gettingStarted.intro">
+                <source>No passkeys have been registered yet. Follow these steps to get started:</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step1.title" resname="dashboard.gettingStarted.step1.title">
+                <source>Review extension settings</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step1.bodyBefore" resname="dashboard.gettingStarted.step1.bodyBefore">
+                <source>Go to</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step1.bodyAfter" resname="dashboard.gettingStarted.step1.bodyAfter">
+                <source>and verify the Relying Party settings.</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step1.autodetect" resname="dashboard.gettingStarted.step1.autodetect">
+                <source>Relying Party ID is currently auto-detected as %s. For production, consider setting it explicitly.</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step2.title" resname="dashboard.gettingStarted.step2.title">
+                <source>Register your own passkey first</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step2.bodyBefore" resname="dashboard.gettingStarted.step2.bodyBefore">
+                <source>Go to your</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step2.bodyAfter" resname="dashboard.gettingStarted.step2.bodyAfter">
+                <source>tab and register a passkey to verify the setup works on your device.</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step3.title" resname="dashboard.gettingStarted.step3.title">
+                <source>Set a pilot group to "Encourage"</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step3.bodyBefore" resname="dashboard.gettingStarted.step3.bodyBefore">
+                <source>Use the group table below to set a small group (e.g., your admin team) to</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step3.bodyAfter" resname="dashboard.gettingStarted.step3.bodyAfter">
+                <source>. Users will see a dismissible banner prompting them to register a passkey.</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step4.title" resname="dashboard.gettingStarted.step4.title">
+                <source>Roll out gradually</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step4.bodyBefore" resname="dashboard.gettingStarted.step4.bodyBefore">
+                <source>See the</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step4.helpLink" resname="dashboard.gettingStarted.step4.helpLink">
+                <source>Help tab</source>
+            </trans-unit>
+            <trans-unit id="dashboard.gettingStarted.step4.bodyAfter" resname="dashboard.gettingStarted.step4.bodyAfter">
+                <source>for a full rollout guide covering all enforcement levels and recovery procedures.</source>
+            </trans-unit>
+            <trans-unit id="dashboard.configNote.title" resname="dashboard.configNote.title">
+                <source>Configuration note</source>
+            </trans-unit>
+            <trans-unit id="dashboard.configNote.bodyBefore" resname="dashboard.configNote.bodyBefore">
+                <source>Both Relying Party ID and Origin are auto-detected (currently</source>
+            </trans-unit>
+            <trans-unit id="dashboard.configNote.bodyAfter" resname="dashboard.configNote.bodyAfter">
+                <source>). For production environments with multiple domains or reverse proxies, consider setting these explicitly in</source>
+            </trans-unit>
+            <trans-unit id="dashboard.mfa.title" resname="dashboard.mfa.title">
+                <source>Passkeys &amp; MFA</source>
+            </trans-unit>
+            <trans-unit id="dashboard.mfa.body" resname="dashboard.mfa.body">
+                <source>Passkeys are inherently multi-factor (device + biometric/PIN) and phishing-resistant. For most environments, passkeys alone are more secure than password + TOTP. Consider disabling the MFA requirement for passkey-authenticated users.</source>
+            </trans-unit>
+            <trans-unit id="dashboard.mfa.helpLink" resname="dashboard.mfa.helpLink">
+                <source>Learn more in the Help tab.</source>
+            </trans-unit>
             <trans-unit id="enforcement.level.off" resname="enforcement.level.off">
                 <source>Off</source>
             </trans-unit>
