@@ -138,7 +138,7 @@ final class PasskeySettingsPanel
      data-remove-url="{$removeUrl}">
     <h4>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h4>
     <p class="text-body-secondary">{$description}</p>
-    <div id="passkey-single-warning" class="alert alert-warning d-none">{$singleKeyWarning}</div>
+    <div id="passkey-single-warning" class="alert alert-warning d-none" role="status" aria-live="polite">{$singleKeyWarning}</div>
     <div class="mb-3">
         <div class="d-flex align-items-center gap-2">
             <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" aria-describedby="passkey-name-help" />
@@ -146,7 +146,7 @@ final class PasskeySettingsPanel
         </div>
         <small id="passkey-name-help" class="form-text text-body-secondary">{$nameHelp}</small>
     </div>
-    <div id="passkey-empty" class="alert alert-info d-none">{$noPasskeys}</div>
+    <div id="passkey-empty" class="alert alert-info d-none" role="status" aria-live="polite">{$noPasskeys}</div>
     <table class="table table-hover" id="passkey-list-table">
         <thead>
             <tr>

@@ -81,7 +81,7 @@ class PasskeyManagement {
       const data = await response.resolve();
       this.renderList(data.credentials, data.enforcementEnabled);
     } catch (error) {
-      Notification.error('Load failed', 'Failed to load passkeys.');
+      Notification.error('Load failed', await this.resolveErrorMessage(error, 'Failed to load passkeys.'));
     }
   }
 
@@ -239,7 +239,7 @@ class PasskeyManagement {
       if (error.name === 'NotAllowedError' || error.name === 'AbortError') {
         Notification.info('Cancelled', 'Registration was cancelled.');
       } else {
-        Notification.error('Registration failed', error.message || 'Failed to register passkey.');
+        Notification.error('Registration failed', await this.resolveErrorMessage(error, 'Failed to register passkey.'));
       }
     }
 
@@ -280,7 +280,7 @@ class PasskeyManagement {
         }
       } catch (error) {
         labelSpan.textContent = currentLabel;
-        Notification.error('Rename failed', error.message || 'Failed to rename passkey.');
+        Notification.error('Rename failed', await this.resolveErrorMessage(error, 'Failed to rename passkey.'));
       }
     };
 
@@ -329,7 +329,7 @@ class PasskeyManagement {
                 Notification.error('Remove failed', data.error || 'Failed to remove passkey.');
               }
             } catch (error) {
-              Notification.error('Remove failed', error.message || 'Failed to remove passkey.');
+              Notification.error('Remove failed', await this.resolveErrorMessage(error, 'Failed to remove passkey.'));
             }
             modal.hideModal();
           },
@@ -361,6 +361,33 @@ class PasskeyManagement {
     const el = document.createElement('span');
     el.textContent = text;
     return el.innerHTML;
+  }
+
+  /**
+   * Extract a human-readable error message from a caught error.
+   *
+   * TYPO3's AjaxRequest throws an AjaxResponse (which has no `.message`) on any
+   * non-2xx response, so `error.message` was always undefined and every failure
+   * showed the generic fallback — including the important last-passkey 409. The
+   * server's `{ "error": "..." }` body lives on the wrapped fetch Response, so we
+   * read it from there first, then fall back to a DOMException/Error message, then
+   * the provided default.
+   */
+  async resolveErrorMessage(error, fallback) {
+    if (error && error.response && typeof error.response.json === 'function') {
+      try {
+        const body = await error.response.json();
+        if (body && body.error) {
+          return body.error;
+        }
+      } catch (e) {
+        // Response body was not JSON — fall through to the generic handling.
+      }
+    }
+    if (error && typeof error.message === 'string' && error.message !== '') {
+      return error.message;
+    }
+    return fallback;
   }
 
   // Base64URL utilities
