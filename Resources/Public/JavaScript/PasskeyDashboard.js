@@ -10,6 +10,8 @@
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import Notification from '@typo3/backend/notification.js';
 import DocumentService from '@typo3/core/document-service.js';
+import Modal from '@typo3/backend/modal.js';
+import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 
 class PasskeyDashboard {
   constructor() {
@@ -73,12 +75,52 @@ class PasskeyDashboard {
     });
   }
 
-  async handleEnforcementChange(event) {
+  handleEnforcementChange(event) {
     const select = event.target;
     const groupUid = parseInt(select.dataset.groupUid, 10);
     const enforcement = select.value;
     const originalValue = select.dataset.originalValue;
 
+    // Escalating to a level that can block backend login (Required/Enforced) is a
+    // lockout risk for everyone in the group, so require explicit confirmation
+    // before applying. Off/Encourage apply immediately.
+    if ((enforcement === 'required' || enforcement === 'enforced') && enforcement !== originalValue) {
+      Modal.show(
+        this.translate('js.enforcement.confirm.title', 'Confirm enforcement change'),
+        this.translate(
+          'js.enforcement.confirm.body',
+          'Setting this group to "%s" can block backend login for its members until they register a passkey. Continue?',
+        ).replace('%s', enforcement),
+        SeverityEnum.warning,
+        [
+          {
+            text: this.translate('js.button.cancel', 'Cancel'),
+            active: true,
+            btnClass: 'btn-default',
+            name: 'cancel',
+            trigger: (e, modal) => {
+              select.value = originalValue;
+              modal.hideModal();
+            },
+          },
+          {
+            text: this.translate('js.enforcement.confirm.ok', 'Yes, change enforcement'),
+            btnClass: 'btn-warning',
+            name: 'confirm',
+            trigger: (e, modal) => {
+              modal.hideModal();
+              this.performEnforcementChange(select, groupUid, enforcement, originalValue);
+            },
+          },
+        ],
+      );
+      return;
+    }
+
+    this.performEnforcementChange(select, groupUid, enforcement, originalValue);
+  }
+
+  async performEnforcementChange(select, groupUid, enforcement, originalValue) {
     select.disabled = true;
 
     try {

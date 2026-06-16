@@ -341,6 +341,18 @@
             <trans-unit id="js.enforcement.failed" resname="js.enforcement.failed">
                 <source>Update failed</source>
             </trans-unit>
+            <trans-unit id="js.enforcement.confirm.title" resname="js.enforcement.confirm.title">
+                <source>Confirm enforcement change</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.confirm.body" resname="js.enforcement.confirm.body">
+                <source>Setting this group to "%s" can block backend login for its members until they register a passkey. Continue?</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.confirm.ok" resname="js.enforcement.confirm.ok">
+                <source>Yes, change enforcement</source>
+            </trans-unit>
+            <trans-unit id="js.button.cancel" resname="js.button.cancel">
+                <source>Cancel</source>
+            </trans-unit>
             <trans-unit id="js.unlock.progress" resname="js.unlock.progress">
                 <source>Resetting...</source>
             </trans-unit>
