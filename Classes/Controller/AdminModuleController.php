@@ -107,6 +107,8 @@ final class AdminModuleController
             'adoptionBadge' => $this->adoptionBadge($adoptionPercentage, $stats->totalUsers),
             'groups' => $groupData,
             'usersWithoutPasskeys' => $userData,
+            'usersWithoutPasskeysTruncated' => $stats->usersWithoutPasskeysTruncated,
+            'usersWithoutPasskeysLimit' => AdoptionStatsService::USERS_WITHOUT_PASSKEYS_LIMIT,
             'enforcementLevels' => $this->getEnforcementLevelOptions(),
             'helpUrl' => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'),
             'configRpId' => $this->configService->getEffectiveRpId(),

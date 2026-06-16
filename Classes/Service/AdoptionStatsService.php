@@ -26,6 +26,13 @@ final class AdoptionStatsService
     private const TABLE_CREDENTIALS = 'tx_nrpasskeysbe_credential';
     private const TABLE_GROUPS = 'be_groups';
 
+    /**
+     * Cap on the number of passkey-less users listed on the dashboard. When more
+     * exist the list is truncated and AdoptionStats::$usersWithoutPasskeysTruncated
+     * is set so the UI can say so (ADMIN-4).
+     */
+    public const USERS_WITHOUT_PASSKEYS_LIMIT = 500;
+
     public function __construct(
         private readonly ConnectionPool $connectionPool,
         private readonly EnforcementService $enforcementService,
@@ -41,11 +48,19 @@ final class AdoptionStatsService
         [$groups, $groupTitleMap] = $this->getGroupStats();
         $usersWithoutPasskeys = $this->getUsersWithoutPasskeys($groupTitleMap);
 
+        // The query fetches one extra row past the cap so we can tell the UI the
+        // list was truncated rather than silently showing only the first N (ADMIN-4).
+        $truncated = \count($usersWithoutPasskeys) > self::USERS_WITHOUT_PASSKEYS_LIMIT;
+        if ($truncated) {
+            $usersWithoutPasskeys = \array_slice($usersWithoutPasskeys, 0, self::USERS_WITHOUT_PASSKEYS_LIMIT);
+        }
+
         return new AdoptionStats(
             totalUsers: $totalUsers,
             usersWithPasskeys: $usersWithPasskeys,
             groups: $groups,
             usersWithoutPasskeys: $usersWithoutPasskeys,
+            usersWithoutPasskeysTruncated: $truncated,
         );
     }
 
@@ -306,7 +321,7 @@ final class AdoptionStatsService
                 $queryBuilder->expr()->eq(self::TABLE_USERS . '.disable', 0),
                 $queryBuilder->expr()->isNull('c.uid'),
             )
-            ->setMaxResults(500)
+            ->setMaxResults(self::USERS_WITHOUT_PASSKEYS_LIMIT + 1)
             ->executeQuery()
             ->fetchAllAssociative();
 
