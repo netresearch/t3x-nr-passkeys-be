@@ -20,10 +20,12 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Core\Http\Response;
+use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\Locale;
 
@@ -38,8 +40,11 @@ final class PasskeySetupInterstitialTest extends TestCase
         parent::setUp();
 
         $this->enforcementService = $this->createMock(EnforcementService::class);
+        $uriBuilder = $this->createMock(UriBuilder::class);
+        $uriBuilder->method('buildUriFromRoute')->willReturn(new Uri('/typo3/module/user/setup'));
         $this->subject = new PasskeySetupInterstitial(
             $this->enforcementService,
+            $uriBuilder,
             $this->createMock(LoggerInterface::class),
         );
     }
@@ -140,7 +145,7 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
-    public function passesThroughForExemptSetupRoute(): void
+    public function passesThroughForExemptUserSetupRoute(): void
     {
         $this->setUpBackendUser(1);
 
@@ -152,7 +157,7 @@ final class PasskeySetupInterstitialTest extends TestCase
         );
         $this->enforcementService->method('getStatus')->willReturn($status);
 
-        $request = $this->createMockRequest('setup');
+        $request = $this->createMockRequest('user_setup');
         $handler = $this->createMockHandler();
 
         $handler->expects(self::once())->method('handle')->with($request);
@@ -309,7 +314,7 @@ final class PasskeySetupInterstitialTest extends TestCase
         $response = $this->subject->process($request, $handler);
 
         $body = (string) $response->getBody();
-        self::assertStringContainsString('/typo3/setup/', $body);
+        self::assertStringContainsString('/typo3/module/user/setup', $body);
         self::assertStringContainsString('Set up now', $body);
     }
 
@@ -814,8 +819,10 @@ final class PasskeySetupInterstitialTest extends TestCase
 
         $response = $this->subject->process($request, $handler);
 
+        // The skip-form action uses the normalized backend path; the "Set up now"
+        // link is built from UriBuilder (user_setup route) and is asserted separately.
         $body = (string) $response->getBody();
-        self::assertStringContainsString('/subdir/typo3/setup/', $body);
+        self::assertStringContainsString('action="/subdir/typo3/"', $body);
     }
 
     #[Test]

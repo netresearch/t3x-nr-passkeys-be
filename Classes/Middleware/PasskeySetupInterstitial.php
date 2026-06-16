@@ -18,6 +18,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Backend\Routing\Route;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
@@ -43,6 +44,11 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
      */
     private const EXEMPT_ROUTE_PREFIXES = [
         'ajax_',
+        // 'user_setup' is the real User Settings module identifier (where passkey
+        // registration lives); it MUST be exempt so users forced into setup by the
+        // interstitial can actually reach the registration panel. 'setup' covers the
+        // standalone setup_mfa route.
+        'user_setup',
         'setup',
         'logout',
         'passkeys_manage_',
@@ -55,6 +61,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
 
     public function __construct(
         private readonly EnforcementService $enforcementService,
+        private readonly UriBuilder $uriBuilder,
         private readonly LoggerInterface $logger,
     ) {}
 
@@ -223,6 +230,12 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
         $escapedBackendPath = \htmlspecialchars($backendPath, ENT_QUOTES, 'UTF-8');
         $escapedNonce = \htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8');
 
+        // Link to the real User Settings module (identifier "user_setup") where the
+        // passkey registration panel is rendered. The module is exempt from this
+        // middleware (see EXEMPT_ROUTE_PREFIXES) so the user can actually reach it.
+        $setupUrl = (string) $this->uriBuilder->buildUriFromRoute('user_setup');
+        $escapedSetupUrl = \htmlspecialchars($setupUrl, ENT_QUOTES, 'UTF-8');
+
         $title = $this->translate('interstitial.title', 'Set up your passkey');
         $description = $this->translate('interstitial.description', 'Passkeys provide a more secure and convenient way to sign in without passwords. They use your device\'s built-in biometric sensors or security keys to verify your identity, making your account resistant to phishing attacks.');
         $setupLabel = $this->translate('interstitial.button.setup', 'Set up now');
@@ -353,7 +366,7 @@ HTML;
         <p class="description">{$escapedDescription}</p>
         <div class="grace-period">{$escapedGraceMessage}</div>
         <div class="actions">
-            <a href="{$escapedBackendPath}setup/" class="btn-setup" autofocus>{$escapedSetupLabel}</a>
+            <a href="{$escapedSetupUrl}" class="btn-setup" autofocus>{$escapedSetupLabel}</a>
             {$skipButton}
         </div>
     </main>
