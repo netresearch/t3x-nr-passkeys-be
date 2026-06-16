@@ -123,6 +123,7 @@
                                     <td>{group.title}</td>
                                     <td>
                                         <select class="form-select form-select-sm passkey-enforcement-select"
+                                                aria-label="{f:translate(key: 'dashboard.groups.enforcement', extensionName: 'NrPasskeysBe')}: {group.title}"
                                                 data-group-uid="{group.uid}"
                                                 data-original-value="{group.enforcement}">
                                             <f:for each="{enforcementLevels}" as="label" key="value">
