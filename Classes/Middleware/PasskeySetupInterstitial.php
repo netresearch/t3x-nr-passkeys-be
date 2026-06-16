@@ -38,6 +38,14 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
     private const SESSION_KEY = 'tx_nrpasskeysbe';
 
     /**
+     * How long (seconds) a "no interstitial needed" decision is cached in the
+     * session to avoid re-running the enforcement queries (credential count +
+     * group enforcement) on every backend request. Kept short so an admin's
+     * enforcement change takes effect quickly.
+     */
+    private const ENFORCEMENT_CACHE_TTL = 60;
+
+    /**
      * Route identifier prefixes that are exempt from the interstitial.
      *
      * @var list<string>
@@ -128,10 +136,30 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             }
         }
 
+        // PERF-1 / ONB-3: reuse a recent "no interstitial needed" decision instead of
+        // re-querying the database on every backend request. The short TTL bounds how
+        // long a stale decision (e.g. enforcement raised, or passkeys revoked) can
+        // suppress the interstitial, so it cannot be permanently suppressed.
+        $now = \time();
+        $decidedAt = $sessionArray['enforcement_ok_at'] ?? 0;
+        if (\is_int($decidedAt) && $decidedAt > 0 && ($now - $decidedAt) < self::ENFORCEMENT_CACHE_TTL) {
+            return $handler->handle($request);
+        }
+
         $status = $this->enforcementService->getStatus($userRow);
 
         if (!$status->requiresInterstitial()) {
+            // Cache the clear decision so subsequent requests skip the queries.
+            $sessionArray['enforcement_ok_at'] = $now;
+            $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
+
             return $handler->handle($request);
+        }
+
+        // No longer compliant — drop any cached "ok" decision so it is not reused.
+        if (isset($sessionArray['enforcement_ok_at'])) {
+            unset($sessionArray['enforcement_ok_at']);
+            $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
         }
 
         // Start grace period on first intercept — construct updated status

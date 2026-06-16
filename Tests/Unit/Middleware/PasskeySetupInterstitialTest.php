@@ -468,6 +468,55 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
+    public function reusesCachedOkDecisionWithoutQueryingEnforcement(): void
+    {
+        // PERF-1: a fresh "no interstitial needed" decision in the session must skip
+        // the enforcement query entirely on subsequent requests.
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
+        $backendUser->method('getSessionData')
+            ->with('tx_nrpasskeysbe')
+            ->willReturn(['enforcement_ok_at' => \time()]);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $this->enforcementService->expects(self::never())->method('getStatus');
+
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+        $handler->expects(self::once())->method('handle')->with($request);
+
+        $this->subject->process($request, $handler);
+    }
+
+    #[Test]
+    public function requeriesEnforcementWhenCachedDecisionIsStale(): void
+    {
+        // An expired cache (> TTL) must re-run the enforcement query.
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
+        $backendUser->method('getSessionData')
+            ->with('tx_nrpasskeysbe')
+            ->willReturn(['enforcement_ok_at' => \time() - 3600]);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        $this->enforcementService
+            ->expects(self::once())
+            ->method('getStatus')
+            ->willReturn(new EnforcementStatus(
+                level: EnforcementLevel::Off,
+                gracePeriodDays: 0,
+                gracePeriodStart: 0,
+                hasPasskeys: true,
+            ));
+
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+        $handler->expects(self::once())->method('handle')->with($request);
+
+        $this->subject->process($request, $handler);
+    }
+
+    #[Test]
     public function doesNotPassThroughWhenSessionSkipFlagSetButCannotSkip(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
