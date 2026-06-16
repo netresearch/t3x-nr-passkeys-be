@@ -31,14 +31,11 @@ final readonly class InjectPasskeyLoginFields
     {
         $config = $this->configService->getConfiguration();
 
-        $this->pageRenderer->addJsFile(
-            'EXT:nr_passkeys_be/Resources/Public/JavaScript/PasskeyLogin.js',
-            'text/javascript',
-            false,
-            false,
-            '',
-            true,
-        );
+        // The backend login screen ships the importmap (JavaScriptModules.php), so the
+        // login module can be loaded as an ES module. window.NrPasskeysBeConfig is set
+        // below via a classic inline script, which runs before the deferred module — so
+        // the config is available by the time the module's init() runs.
+        $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyLogin.js');
 
         $passkeyConfig = [
             'loginOptionsUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_options'),
