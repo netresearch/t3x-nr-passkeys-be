@@ -46,7 +46,11 @@ passkey.
           During the grace period, users can click :guilabel:`Skip for now` to
           dismiss the interstitial for the remainder of their session. After the
           grace period expires, the interstitial becomes mandatory and cannot be
-          skipped.
+          skipped. In addition, once the grace period has expired, **password
+          login is refused for users who already have a passkey** -- they must
+          authenticate with their passkey (the same behaviour as **Enforced**
+          for those users). If such a user loses access to their authenticator,
+          see *Recovery procedures* below.
 
     *   - **Enforced**
         - 3

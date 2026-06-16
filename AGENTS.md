@@ -155,7 +155,7 @@ Makefile                  -> make up (dev), make ci (checks), make test-e2e, mak
 - Discoverable login behind `discoverableLoginEnabled` feature flag
 - V14 uses web components (`typo3-backend-module-router`) instead of `.scaffold-content-module`
 - TER publish workflow requires `v` prefix stripping for version validation
-- Shared traits: TranslationTrait, BackendUserTrait (Controller/), TypeCastTrait (Utility/)
+- Shared traits: JsonBodyTrait, BackendUserTrait (Controller/); TranslationTrait, TypeCastTrait (Utility/)
 - RateLimiterService uses atomic locking (LockFactory) with dual counters (per-IP + per-username)
 - Encryption key access centralized in ExtensionConfigurationService::getEncryptionKey()
 - Mutation testing: MSI >= 80%, covered MSI >= 80% (infection.json5)
