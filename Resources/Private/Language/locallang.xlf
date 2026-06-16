@@ -605,6 +605,246 @@
             <trans-unit id="js.banner.dismiss" resname="js.banner.dismiss">
                 <source>Dismiss</source>
             </trans-unit>
+            <trans-unit id="help.heading" resname="help.heading">
+                <source>Passkey Management Help</source>
+            </trans-unit>
+            <trans-unit id="help.lead" resname="help.lead">
+                <source>This guide explains how to roll out passkeys to your backend users, handle recovery scenarios, and understand how passkeys interact with TYPO3's multi-factor authentication (MFA).</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.heading" resname="help.rollout.heading">
+                <source>Rolling out passkeys</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.intro" resname="help.rollout.intro">
+                <source>A phased rollout lets you introduce passkeys gradually, giving users time to register their devices before enforcement becomes mandatory.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step1Heading" resname="help.rollout.step1Heading">
+                <source>Step 1 — Install the extension</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step1Body" resname="help.rollout.step1Body">
+                <source>Install &lt;code&gt;netresearch/nr-passkeys-be&lt;/code&gt; via Composer and activate it in the Extension Manager. No database schema changes are required beyond the automatic table creation for &lt;code&gt;tx_nrpasskeysbe_credential&lt;/code&gt;.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step2Heading" resname="help.rollout.step2Heading">
+                <source>Step 2 — Configure extension settings</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step2Body" resname="help.rollout.step2Body">
+                <source>In &lt;strong&gt;Admin Tools &gt; Settings &gt; Extension Configuration&lt;/strong&gt;, review the settings for &lt;code&gt;nr_passkeys_be&lt;/code&gt;. Key options include the Relying Party name (displayed during WebAuthn ceremonies) and whether discoverable (usernameless) login is enabled.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step3Heading" resname="help.rollout.step3Heading">
+                <source>Step 3 — Set groups to &lt;em&gt;Encourage&lt;/em&gt;</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step3Body" resname="help.rollout.step3Body">
+                <source>On the &lt;a href="%1$s"&gt;Dashboard&lt;/a&gt; tab, change a group's enforcement level to &lt;strong&gt;Encourage&lt;/strong&gt;. Users in that group will see a non-blocking banner on every backend login reminding them to register a passkey. They can dismiss the banner and continue working normally.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step3TipTitle" resname="help.rollout.step3TipTitle">
+                <source>Tip</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step3TipBody" resname="help.rollout.step3TipBody">
+                <source>Start with a pilot group (e.g., your admin team) to validate the workflow before widening the rollout.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step4Heading" resname="help.rollout.step4Heading">
+                <source>Step 4 — Set groups to &lt;em&gt;Required&lt;/em&gt;</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step4Body" resname="help.rollout.step4Body">
+                <source>When you are confident the process works, change the group to &lt;strong&gt;Required&lt;/strong&gt;. Users who have not yet registered a passkey will see a full-screen interstitial after password login. The interstitial guides them through passkey registration and shows how many grace-period days remain.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step4GracePeriod" resname="help.rollout.step4GracePeriod">
+                <source>During the grace period users can skip the interstitial and continue to the backend, but they will see it on every login until they register a passkey or the grace period expires.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step5Heading" resname="help.rollout.step5Heading">
+                <source>Step 5 — After the grace period expires</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step5Body" resname="help.rollout.step5Body">
+                <source>Once the grace period ends, enforcement becomes strict: users &lt;strong&gt;must&lt;/strong&gt; register a passkey before they can access the backend. The interstitial can no longer be skipped.</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step6Heading" resname="help.rollout.step6Heading">
+                <source>Step 6 — Monitor adoption</source>
+            </trans-unit>
+            <trans-unit id="help.rollout.step6Body" resname="help.rollout.step6Body">
+                <source>Use the &lt;a href="%1$s"&gt;Dashboard&lt;/a&gt; tab to track overall adoption rates, per-group progress, and identify users who have not yet registered passkeys.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.heading" resname="help.recovery.heading">
+                <source>Recovery procedures</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.intro" resname="help.recovery.intro">
+                <source>When a user loses access to their authenticator device (phone lost, security key broken, laptop replaced), follow these steps:</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step1Heading" resname="help.recovery.step1Heading">
+                <source>1. User reports lost device</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step1Body" resname="help.recovery.step1Body">
+                <source>The user contacts an administrator and reports which device or authenticator is no longer available.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step2Heading" resname="help.recovery.step2Heading">
+                <source>2. Admin revokes affected passkey(s)</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step2Body" resname="help.recovery.step2Body">
+                <source>Open the user's &lt;code&gt;be_users&lt;/code&gt; record in &lt;strong&gt;System &gt; Backend Users&lt;/strong&gt;. In the &lt;em&gt;Passkeys&lt;/em&gt; section, locate the affected credential(s) and delete them. If the device name is not clear, the user can identify the credential by its registration date or the authenticator type.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step3Heading" resname="help.recovery.step3Heading">
+                <source>3. User has zero passkeys and group enforcement is active</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step3Body" resname="help.recovery.step3Body">
+                <source>If the user's group is set to &lt;strong&gt;Required&lt;/strong&gt; or &lt;strong&gt;Enforced&lt;/strong&gt; and the user now has zero registered passkeys, the next password-based login will trigger the mandatory setup interstitial. The user is guided through registering a new passkey on their replacement device before they can continue.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step4Heading" resname="help.recovery.step4Heading">
+                <source>4. User cannot log in at all</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step4Body" resname="help.recovery.step4Body">
+                <source>If the user has no working authenticator and cannot complete the password-based login flow (e.g., the only registered passkey was their sole credential), the administrator can:</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step4OptionLowerEnforcement" resname="help.recovery.step4OptionLowerEnforcement">
+                <source>&lt;strong&gt;Temporarily lower group enforcement&lt;/strong&gt; — switch the group from &lt;em&gt;Enforced&lt;/em&gt;/&lt;em&gt;Required&lt;/em&gt; to &lt;em&gt;Encourage&lt;/em&gt; or &lt;em&gt;Off&lt;/em&gt; so the user can log in with a password.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.step4OptionResetPassword" resname="help.recovery.step4OptionResetPassword">
+                <source>&lt;strong&gt;Reset the user's password&lt;/strong&gt; — if the password has also been forgotten, reset it in the &lt;code&gt;be_users&lt;/code&gt; record so the user can log in and re-register a passkey.</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.infoboxTitle" resname="help.recovery.infoboxTitle">
+                <source>Important</source>
+            </trans-unit>
+            <trans-unit id="help.recovery.infoboxBody" resname="help.recovery.infoboxBody">
+                <source>Remember to restore the group's enforcement level after the user has re-registered a passkey. Leaving enforcement lowered indefinitely weakens your security posture.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.cardTitle" resname="help.mfa.cardTitle">
+                <source>Passkeys &amp; MFA (two-factor authentication)</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.infoboxTitle" resname="help.mfa.infoboxTitle">
+                <source>A passkey already is multi-factor</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.infoboxBody" resname="help.mfa.infoboxBody">
+                <source>A passkey combines &lt;em&gt;something you have&lt;/em&gt; (the device or security key) with &lt;em&gt;something you are&lt;/em&gt; (biometric) or &lt;em&gt;something you know&lt;/em&gt; (device PIN). It is also phishing-resistant by design — cryptographically bound to the origin and cannot be replayed elsewhere. For most TYPO3 backends, passkey-only login is stronger than password + TOTP.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.allOrNothingHeading" resname="help.mfa.allOrNothingHeading">
+                <source>The TYPO3 MFA policy is all-or-nothing — by default</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.allOrNothingIntro" resname="help.mfa.allOrNothingIntro">
+                <source>TYPO3's built-in MFA requirement (&lt;code&gt;$GLOBALS['TYPO3_CONF_VARS']['BE']['requireMfa']&lt;/code&gt;) applies &lt;strong&gt;regardless of how the user authenticated&lt;/strong&gt;. That creates an operational dilemma for teams that want passkeys &lt;em&gt;instead of&lt;/em&gt; TOTP:</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.tableHeadPolicy" resname="help.mfa.tableHeadPolicy">
+                <source>TYPO3 MFA policy</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.tableHeadPasskeyUser" resname="help.mfa.tableHeadPasskeyUser">
+                <source>Passkey user</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.tableHeadPasswordUser" resname="help.mfa.tableHeadPasswordUser">
+                <source>Password user</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.tableRequiredPolicy" resname="help.mfa.tableRequiredPolicy">
+                <source>&lt;strong&gt;Required (on)&lt;/strong&gt;</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.tableRequiredPasskey" resname="help.mfa.tableRequiredPasskey">
+                <source>MFA prompt blocks passkey-only login — user must also complete TOTP</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.tableRequiredPassword" resname="help.mfa.tableRequiredPassword">
+                <source>MFA enforced — standard TYPO3 behaviour</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.tableOffPolicy" resname="help.mfa.tableOffPolicy">
+                <source>&lt;strong&gt;Off&lt;/strong&gt;</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.tableOffPasskey" resname="help.mfa.tableOffPasskey">
+                <source>Passkey-only login works</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.tableOffPassword" resname="help.mfa.tableOffPassword">
+                <source>&lt;strong&gt;Password-only login becomes possible — no second factor at all&lt;/strong&gt;</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.loopholeExplanation" resname="help.mfa.loopholeExplanation">
+                <source>The highlighted row is the &lt;strong&gt;password-only loophole&lt;/strong&gt;: if you disable TYPO3's MFA requirement to let passkey users in with just one step, users without a passkey can suddenly log in with only a password. This is a security regression.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.closingHeading" resname="help.mfa.closingHeading">
+                <source>Closing the loophole</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.closingIntro" resname="help.mfa.closingIntro">
+                <source>This extension provides two settings that let you enforce "passkey = MFA satisfied, password = still requires MFA" and prevent the regression:</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.closingSkipMfa" resname="help.mfa.closingSkipMfa">
+                <source>&lt;code&gt;skipMfaOnPasskeyAuth&lt;/code&gt; (default: &lt;strong&gt;enabled&lt;/strong&gt;) — after a successful passkey login, the TYPO3 MFA challenge is skipped for that session. The passkey has already proven multi-factor. Password logins still go through MFA normally.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.closingDisablePassword" resname="help.mfa.closingDisablePassword">
+                <source>&lt;code&gt;disablePasswordLogin&lt;/code&gt; (default: disabled) — blocks password-based login for users who have a registered passkey, preventing fallback.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.recommendedHeading" resname="help.mfa.recommendedHeading">
+                <source>Recommended production combination</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.recommendedIntro" resname="help.mfa.recommendedIntro">
+                <source>For the strongest security posture with the least friction:</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.recommendedStep1" resname="help.mfa.recommendedStep1">
+                <source>Keep TYPO3's &lt;code&gt;requireMfa&lt;/code&gt; policy &lt;strong&gt;enabled&lt;/strong&gt; (protects password users).</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.recommendedStep2" resname="help.mfa.recommendedStep2">
+                <source>Keep &lt;code&gt;skipMfaOnPasskeyAuth&lt;/code&gt; &lt;strong&gt;enabled&lt;/strong&gt; (passkey users skip the redundant TOTP prompt).</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.recommendedStep3" resname="help.mfa.recommendedStep3">
+                <source>Roll out per-group passkey enforcement up to &lt;em&gt;Required&lt;/em&gt; (users in critical groups must register a passkey).</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.recommendedStep4" resname="help.mfa.recommendedStep4">
+                <source>Enable &lt;code&gt;disablePasswordLogin&lt;/code&gt; once adoption is high enough (closes the password fallback entirely).</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.keepMfaHeading" resname="help.mfa.keepMfaHeading">
+                <source>When to keep MFA on top of passkeys</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.keepMfaIntro" resname="help.mfa.keepMfaIntro">
+                <source>Disable &lt;code&gt;skipMfaOnPasskeyAuth&lt;/code&gt; only if:</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.keepMfaItem1" resname="help.mfa.keepMfaItem1">
+                <source>Your security policy explicitly mandates defence-in-depth with independent factors regardless of the primary factor's strength.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.keepMfaItem2" resname="help.mfa.keepMfaItem2">
+                <source>You need compliance with a standard that prescribes a separate MFA step (e.g. PCI-DSS in specific configurations).</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.keepMfaItem3" resname="help.mfa.keepMfaItem3">
+                <source>Your threat model seriously considers authenticator device compromise.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.pipelineHeading" resname="help.mfa.pipelineHeading">
+                <source>Login pipeline order</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.pipelineIntro" resname="help.mfa.pipelineIntro">
+                <source>With &lt;code&gt;skipMfaOnPasskeyAuth&lt;/code&gt; enabled, the backend login pipeline processes requests as follows:</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.pipelineStep1" resname="help.mfa.pipelineStep1">
+                <source>&lt;strong&gt;Authentication&lt;/strong&gt; — passkey (priority 80) or, if no passkey payload is present, password.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.pipelineStep2" resname="help.mfa.pipelineStep2">
+                <source>&lt;strong&gt;MFA challenge&lt;/strong&gt; — skipped for passkey logins; prompted for password logins if a provider is configured and the TYPO3 policy requires it.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.pipelineStep3" resname="help.mfa.pipelineStep3">
+                <source>&lt;strong&gt;Passkey interstitial&lt;/strong&gt; — only for password-authenticated users whose group requires a passkey.</source>
+            </trans-unit>
+            <trans-unit id="help.mfa.pipelineStep4" resname="help.mfa.pipelineStep4">
+                <source>&lt;strong&gt;Backend rendering&lt;/strong&gt; — normal access.</source>
+            </trans-unit>
+            <trans-unit id="help.faq.heading" resname="help.faq.heading">
+                <source>Frequently asked questions</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question1" resname="help.faq.question1">
+                <source>What happens if I set enforcement to "Required" and users have not set up passkeys?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer1" resname="help.faq.answer1">
+                <source>A grace period begins. Users who log in with a password will see a full-screen interstitial that explains passkey registration and shows the number of days remaining. During the grace period they can skip the interstitial and continue working. Once the grace period expires, the interstitial becomes mandatory and cannot be skipped.</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question2" resname="help.faq.question2">
+                <source>Can I enforce passkeys for some groups but not others?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer2" resname="help.faq.answer2">
+                <source>Yes. Enforcement is configured per backend user group. You can set different levels for different groups: for example, &lt;em&gt;Enforced&lt;/em&gt; for administrators, &lt;em&gt;Required&lt;/em&gt; for editors, and &lt;em&gt;Off&lt;/em&gt; for service accounts that do not support interactive login.</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question3" resname="help.faq.question3">
+                <source>What if a user belongs to multiple groups with different enforcement levels?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer3" resname="help.faq.answer3">
+                <source>The &lt;strong&gt;strictest level wins&lt;/strong&gt;. If a user belongs to one group with &lt;em&gt;Encourage&lt;/em&gt; and another with &lt;em&gt;Required&lt;/em&gt;, the effective enforcement level is &lt;em&gt;Required&lt;/em&gt;. This ensures that security policies cannot be bypassed by group membership overlap.</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question4" resname="help.faq.question4">
+                <source>How do I know how many users have adopted passkeys?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer4" resname="help.faq.answer4">
+                <source>The &lt;a href="%1$s"&gt;Dashboard&lt;/a&gt; tab shows the overall adoption rate, per-group statistics, and a list of users who have not yet registered a passkey. Use these numbers to plan your enforcement timeline.</source>
+            </trans-unit>
+            <trans-unit id="help.faq.question5" resname="help.faq.question5">
+                <source>Can users still use passwords during the grace period?</source>
+            </trans-unit>
+            <trans-unit id="help.faq.answer5" resname="help.faq.answer5">
+                <source>Yes. During the grace period, password login remains fully functional. After each password login, users see the setup interstitial but can skip it. Once the grace period expires, the interstitial becomes blocking and they must register a passkey before continuing to the backend.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>
