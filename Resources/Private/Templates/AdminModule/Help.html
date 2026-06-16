@@ -10,11 +10,9 @@
 -->
 <f:layout name="Module" />
 <f:section name="Content">
-    <h1>Passkey Management Help</h1>
+    <h1><f:translate key="help.heading" extensionName="NrPasskeysBe" /></h1>
     <p class="lead">
-        This guide explains how to roll out passkeys to your backend users,
-        handle recovery scenarios, and understand how passkeys interact with
-        TYPO3's multi-factor authentication (MFA).
+        <f:translate key="help.lead" extensionName="NrPasskeysBe" />
     </p>
 
     <!-- ================================================================== -->
@@ -22,69 +20,47 @@
     <!-- ================================================================== -->
     <div class="card mb-3">
         <div class="card-header">
-            <h2 class="card-title mb-0">Rolling out passkeys</h2>
+            <h2 class="card-title mb-0"><f:translate key="help.rollout.heading" extensionName="NrPasskeysBe" /></h2>
         </div>
         <div class="card-body">
             <p>
-                A phased rollout lets you introduce passkeys gradually, giving users
-                time to register their devices before enforcement becomes mandatory.
+                <f:translate key="help.rollout.intro" extensionName="NrPasskeysBe" />
             </p>
 
-            <h3>Step 1 &mdash; Install the extension</h3>
+            <h3><f:translate key="help.rollout.step1Heading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                Install <code>netresearch/nr-passkeys-be</code> via Composer and
-                activate it in the Extension Manager. No database schema changes are
-                required beyond the automatic table creation for
-                <code>tx_nrpasskeysbe_credential</code>.
+                <f:format.raw><f:translate key="help.rollout.step1Body" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
 
-            <h3>Step 2 &mdash; Configure extension settings</h3>
+            <h3><f:translate key="help.rollout.step2Heading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                In <strong>Admin Tools &gt; Settings &gt; Extension Configuration</strong>,
-                review the settings for <code>nr_passkeys_be</code>.
-                Key options include the Relying Party name (displayed during WebAuthn
-                ceremonies) and whether discoverable (usernameless) login is enabled.
+                <f:format.raw><f:translate key="help.rollout.step2Body" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
 
-            <h3>Step 3 &mdash; Set groups to <em>Encourage</em></h3>
+            <h3><f:format.raw><f:translate key="help.rollout.step3Heading" extensionName="NrPasskeysBe" /></f:format.raw></h3>
             <p>
-                On the <a href="{dashboardUrl}">Dashboard</a> tab,
-                change a group's enforcement level to <strong>Encourage</strong>.
-                Users in that group will see a non-blocking banner on every backend
-                login reminding them to register a passkey. They can dismiss the
-                banner and continue working normally.
+                <f:format.raw><f:translate key="help.rollout.step3Body" extensionName="NrPasskeysBe" arguments="{0: dashboardUrl}" /></f:format.raw>
             </p>
-            <f:be.infobox title="Tip" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_INFO')}">
-                Start with a pilot group (e.g., your admin team) to validate the
-                workflow before widening the rollout.
+            <f:be.infobox title="{f:translate(key: 'help.rollout.step3TipTitle', extensionName: 'NrPasskeysBe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_INFO')}">
+                <f:translate key="help.rollout.step3TipBody" extensionName="NrPasskeysBe" />
             </f:be.infobox>
 
-            <h3>Step 4 &mdash; Set groups to <em>Required</em></h3>
+            <h3><f:format.raw><f:translate key="help.rollout.step4Heading" extensionName="NrPasskeysBe" /></f:format.raw></h3>
             <p>
-                When you are confident the process works, change the group to
-                <strong>Required</strong>. Users who have not yet registered a
-                passkey will see a full-screen interstitial after password login.
-                The interstitial guides them through passkey registration and shows
-                how many grace-period days remain.
+                <f:format.raw><f:translate key="help.rollout.step4Body" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
             <p>
-                During the grace period users can skip the interstitial and
-                continue to the backend, but they will see it on every login until
-                they register a passkey or the grace period expires.
+                <f:translate key="help.rollout.step4GracePeriod" extensionName="NrPasskeysBe" />
             </p>
 
-            <h3>Step 5 &mdash; After the grace period expires</h3>
+            <h3><f:translate key="help.rollout.step5Heading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                Once the grace period ends, enforcement becomes strict: users
-                <strong>must</strong> register a passkey before they can access the
-                backend. The interstitial can no longer be skipped.
+                <f:format.raw><f:translate key="help.rollout.step5Body" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
 
-            <h3>Step 6 &mdash; Monitor adoption</h3>
+            <h3><f:translate key="help.rollout.step6Heading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                Use the <a href="{dashboardUrl}">Dashboard</a>
-                tab to track overall adoption rates, per-group progress, and identify
-                users who have not yet registered passkeys.
+                <f:format.raw><f:translate key="help.rollout.step6Body" extensionName="NrPasskeysBe" arguments="{0: dashboardUrl}" /></f:format.raw>
             </p>
         </div>
     </div>
@@ -94,62 +70,42 @@
     <!-- ================================================================== -->
     <div class="card mb-3">
         <div class="card-header">
-            <h2 class="card-title mb-0">Recovery procedures</h2>
+            <h2 class="card-title mb-0"><f:translate key="help.recovery.heading" extensionName="NrPasskeysBe" /></h2>
         </div>
         <div class="card-body">
             <p>
-                When a user loses access to their authenticator device (phone lost,
-                security key broken, laptop replaced), follow these steps:
+                <f:translate key="help.recovery.intro" extensionName="NrPasskeysBe" />
             </p>
 
-            <h3>1. User reports lost device</h3>
+            <h3><f:translate key="help.recovery.step1Heading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                The user contacts an administrator and reports which device or
-                authenticator is no longer available.
+                <f:translate key="help.recovery.step1Body" extensionName="NrPasskeysBe" />
             </p>
 
-            <h3>2. Admin revokes affected passkey(s)</h3>
+            <h3><f:translate key="help.recovery.step2Heading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                Open the user's <code>be_users</code> record in
-                <strong>System &gt; Backend Users</strong>. In the
-                <em>Passkeys</em> section, locate the affected credential(s) and
-                delete them. If the device name is not clear, the user can identify
-                the credential by its registration date or the authenticator type.
+                <f:format.raw><f:translate key="help.recovery.step2Body" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
 
-            <h3>3. User has zero passkeys and group enforcement is active</h3>
+            <h3><f:translate key="help.recovery.step3Heading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                If the user's group is set to <strong>Required</strong> or
-                <strong>Enforced</strong> and the user now has zero registered
-                passkeys, the next password-based login will trigger the mandatory
-                setup interstitial. The user is guided through registering a new
-                passkey on their replacement device before they can continue.
+                <f:format.raw><f:translate key="help.recovery.step3Body" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
 
-            <h3>4. User cannot log in at all</h3>
+            <h3><f:translate key="help.recovery.step4Heading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                If the user has no working authenticator and cannot complete the
-                password-based login flow (e.g., the only registered passkey was
-                their sole credential), the administrator can:
+                <f:translate key="help.recovery.step4Body" extensionName="NrPasskeysBe" />
             </p>
             <ul>
                 <li>
-                    <strong>Temporarily lower group enforcement</strong> &mdash;
-                    switch the group from <em>Enforced</em>/<em>Required</em> to
-                    <em>Encourage</em> or <em>Off</em> so the user can log in with
-                    a password.
+                    <f:format.raw><f:translate key="help.recovery.step4OptionLowerEnforcement" extensionName="NrPasskeysBe" /></f:format.raw>
                 </li>
                 <li>
-                    <strong>Reset the user's password</strong> &mdash; if the
-                    password has also been forgotten, reset it in the
-                    <code>be_users</code> record so the user can log in and
-                    re-register a passkey.
+                    <f:format.raw><f:translate key="help.recovery.step4OptionResetPassword" extensionName="NrPasskeysBe" /></f:format.raw>
                 </li>
             </ul>
-            <f:be.infobox title="Important" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_WARNING')}">
-                Remember to restore the group's enforcement level after the user
-                has re-registered a passkey. Leaving enforcement lowered
-                indefinitely weakens your security posture.
+            <f:be.infobox title="{f:translate(key: 'help.recovery.infoboxTitle', extensionName: 'NrPasskeysBe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_WARNING')}">
+                <f:translate key="help.recovery.infoboxBody" extensionName="NrPasskeysBe" />
             </f:be.infobox>
         </div>
     </div>
@@ -159,119 +115,96 @@
     <!-- ================================================================== -->
     <div class="card mb-3">
         <div class="card-header">
-            <h2 class="card-title mb-0">Passkeys &amp; MFA (two-factor authentication)</h2>
+            <h2 class="card-title mb-0"><f:translate key="help.mfa.cardTitle" extensionName="NrPasskeysBe" /></h2>
         </div>
         <div class="card-body">
-            <f:be.infobox title="A passkey already is multi-factor" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_INFO')}">
+            <f:be.infobox title="{f:translate(key: 'help.mfa.infoboxTitle', extensionName: 'NrPasskeysBe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_INFO')}">
                 <p>
-                    A passkey combines <em>something you have</em> (the device or
-                    security key) with <em>something you are</em> (biometric) or
-                    <em>something you know</em> (device PIN). It is also
-                    phishing-resistant by design &mdash; cryptographically bound to
-                    the origin and cannot be replayed elsewhere. For most TYPO3
-                    backends, passkey-only login is stronger than password + TOTP.
+                    <f:format.raw><f:translate key="help.mfa.infoboxBody" extensionName="NrPasskeysBe" /></f:format.raw>
                 </p>
             </f:be.infobox>
 
-            <h3>The TYPO3 MFA policy is all-or-nothing &mdash; by default</h3>
+            <h3><f:translate key="help.mfa.allOrNothingHeading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                TYPO3's built-in MFA requirement (<code>$GLOBALS['TYPO3_CONF_VARS']['BE']['requireMfa']</code>)
-                applies <strong>regardless of how the user authenticated</strong>.
-                That creates an operational dilemma for teams that want passkeys
-                <em>instead of</em> TOTP:
+                <f:format.raw><f:translate key="help.mfa.allOrNothingIntro" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
             <div class="table-responsive">
                 <table class="table table-bordered table-sm">
                     <thead>
                         <tr>
-                            <th>TYPO3 MFA policy</th>
-                            <th>Passkey user</th>
-                            <th>Password user</th>
+                            <th><f:translate key="help.mfa.tableHeadPolicy" extensionName="NrPasskeysBe" /></th>
+                            <th><f:translate key="help.mfa.tableHeadPasskeyUser" extensionName="NrPasskeysBe" /></th>
+                            <th><f:translate key="help.mfa.tableHeadPasswordUser" extensionName="NrPasskeysBe" /></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td><strong>Required (on)</strong></td>
-                            <td>MFA prompt blocks passkey-only login &mdash; user must also complete TOTP</td>
-                            <td>MFA enforced &mdash; standard TYPO3 behaviour</td>
+                            <td><f:format.raw><f:translate key="help.mfa.tableRequiredPolicy" extensionName="NrPasskeysBe" /></f:format.raw></td>
+                            <td><f:format.raw><f:translate key="help.mfa.tableRequiredPasskey" extensionName="NrPasskeysBe" /></f:format.raw></td>
+                            <td><f:format.raw><f:translate key="help.mfa.tableRequiredPassword" extensionName="NrPasskeysBe" /></f:format.raw></td>
                         </tr>
                         <tr class="table-warning">
-                            <td><strong>Off</strong></td>
-                            <td>Passkey-only login works</td>
-                            <td><strong>Password-only login becomes possible &mdash; no second factor at all</strong></td>
+                            <td><f:format.raw><f:translate key="help.mfa.tableOffPolicy" extensionName="NrPasskeysBe" /></f:format.raw></td>
+                            <td><f:translate key="help.mfa.tableOffPasskey" extensionName="NrPasskeysBe" /></td>
+                            <td><f:format.raw><f:translate key="help.mfa.tableOffPassword" extensionName="NrPasskeysBe" /></f:format.raw></td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             <p>
-                The highlighted row is the <strong>password-only loophole</strong>:
-                if you disable TYPO3's MFA requirement to let passkey users in with
-                just one step, users without a passkey can suddenly log in with
-                only a password. This is a security regression.
+                <f:format.raw><f:translate key="help.mfa.loopholeExplanation" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
 
-            <h3>Closing the loophole</h3>
+            <h3><f:translate key="help.mfa.closingHeading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                This extension provides two settings that let you enforce
-                "passkey = MFA satisfied, password = still requires MFA" and
-                prevent the regression:
+                <f:translate key="help.mfa.closingIntro" extensionName="NrPasskeysBe" />
             </p>
             <ul>
                 <li>
-                    <code>skipMfaOnPasskeyAuth</code> (default: <strong>enabled</strong>)
-                    &mdash; after a successful passkey login, the TYPO3 MFA challenge
-                    is skipped for that session. The passkey has already proven
-                    multi-factor. Password logins still go through MFA normally.
+                    <f:format.raw><f:translate key="help.mfa.closingSkipMfa" extensionName="NrPasskeysBe" /></f:format.raw>
                 </li>
                 <li>
-                    <code>disablePasswordLogin</code> (default: disabled)
-                    &mdash; blocks password-based login for users who have a
-                    registered passkey, preventing fallback.
+                    <f:format.raw><f:translate key="help.mfa.closingDisablePassword" extensionName="NrPasskeysBe" /></f:format.raw>
                 </li>
             </ul>
 
-            <h3>Recommended production combination</h3>
+            <h3><f:translate key="help.mfa.recommendedHeading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                For the strongest security posture with the least friction:
+                <f:translate key="help.mfa.recommendedIntro" extensionName="NrPasskeysBe" />
             </p>
             <ol>
-                <li>Keep TYPO3's <code>requireMfa</code> policy <strong>enabled</strong> (protects password users).</li>
-                <li>Keep <code>skipMfaOnPasskeyAuth</code> <strong>enabled</strong> (passkey users skip the redundant TOTP prompt).</li>
-                <li>Roll out per-group passkey enforcement up to <em>Required</em> (users in critical groups must register a passkey).</li>
-                <li>Enable <code>disablePasswordLogin</code> once adoption is high enough (closes the password fallback entirely).</li>
+                <li><f:format.raw><f:translate key="help.mfa.recommendedStep1" extensionName="NrPasskeysBe" /></f:format.raw></li>
+                <li><f:format.raw><f:translate key="help.mfa.recommendedStep2" extensionName="NrPasskeysBe" /></f:format.raw></li>
+                <li><f:format.raw><f:translate key="help.mfa.recommendedStep3" extensionName="NrPasskeysBe" /></f:format.raw></li>
+                <li><f:format.raw><f:translate key="help.mfa.recommendedStep4" extensionName="NrPasskeysBe" /></f:format.raw></li>
             </ol>
 
-            <h3>When to keep MFA on top of passkeys</h3>
+            <h3><f:translate key="help.mfa.keepMfaHeading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                Disable <code>skipMfaOnPasskeyAuth</code> only if:
+                <f:format.raw><f:translate key="help.mfa.keepMfaIntro" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
             <ul>
-                <li>Your security policy explicitly mandates defence-in-depth with independent factors regardless of the primary factor's strength.</li>
-                <li>You need compliance with a standard that prescribes a separate MFA step (e.g.&nbsp;PCI-DSS in specific configurations).</li>
-                <li>Your threat model seriously considers authenticator device compromise.</li>
+                <li><f:translate key="help.mfa.keepMfaItem1" extensionName="NrPasskeysBe" /></li>
+                <li><f:translate key="help.mfa.keepMfaItem2" extensionName="NrPasskeysBe" /></li>
+                <li><f:translate key="help.mfa.keepMfaItem3" extensionName="NrPasskeysBe" /></li>
             </ul>
 
-            <h3>Login pipeline order</h3>
+            <h3><f:translate key="help.mfa.pipelineHeading" extensionName="NrPasskeysBe" /></h3>
             <p>
-                With <code>skipMfaOnPasskeyAuth</code> enabled, the backend login
-                pipeline processes requests as follows:
+                <f:format.raw><f:translate key="help.mfa.pipelineIntro" extensionName="NrPasskeysBe" /></f:format.raw>
             </p>
             <ol>
                 <li>
-                    <strong>Authentication</strong> &mdash; passkey (priority 80) or,
-                    if no passkey payload is present, password.
+                    <f:format.raw><f:translate key="help.mfa.pipelineStep1" extensionName="NrPasskeysBe" /></f:format.raw>
                 </li>
                 <li>
-                    <strong>MFA challenge</strong> &mdash; skipped for passkey logins;
-                    prompted for password logins if a provider is configured and the
-                    TYPO3 policy requires it.
+                    <f:format.raw><f:translate key="help.mfa.pipelineStep2" extensionName="NrPasskeysBe" /></f:format.raw>
                 </li>
                 <li>
-                    <strong>Passkey interstitial</strong> &mdash; only for
-                    password-authenticated users whose group requires a passkey.
+                    <f:format.raw><f:translate key="help.mfa.pipelineStep3" extensionName="NrPasskeysBe" /></f:format.raw>
                 </li>
                 <li>
-                    <strong>Backend rendering</strong> &mdash; normal access.
+                    <f:format.raw><f:translate key="help.mfa.pipelineStep4" extensionName="NrPasskeysBe" /></f:format.raw>
                 </li>
             </ol>
         </div>
@@ -282,7 +215,7 @@
     <!-- ================================================================== -->
     <div class="card mb-3">
         <div class="card-header">
-            <h2 class="card-title mb-0">Frequently asked questions</h2>
+            <h2 class="card-title mb-0"><f:translate key="help.faq.heading" extensionName="NrPasskeysBe" /></h2>
         </div>
         <div class="card-body">
             <div class="accordion" id="faqAccordion">
@@ -293,20 +226,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse1"
                                 aria-expanded="false" aria-controls="faqCollapse1">
-                            What happens if I set enforcement to "Required" and users have not set up passkeys?
+                            <f:translate key="help.faq.question1" extensionName="NrPasskeysBe" />
                         </button>
                     </h3>
                     <div id="faqCollapse1" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading1" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                A grace period begins. Users who log in with a password
-                                will see a full-screen interstitial that explains
-                                passkey registration and shows the number of days
-                                remaining. During the grace period they can skip the
-                                interstitial and continue working. Once the grace
-                                period expires, the interstitial becomes mandatory and
-                                cannot be skipped.
+                                <f:translate key="help.faq.answer1" extensionName="NrPasskeysBe" />
                             </p>
                         </div>
                     </div>
@@ -318,18 +245,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse2"
                                 aria-expanded="false" aria-controls="faqCollapse2">
-                            Can I enforce passkeys for some groups but not others?
+                            <f:translate key="help.faq.question2" extensionName="NrPasskeysBe" />
                         </button>
                     </h3>
                     <div id="faqCollapse2" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading2" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                Yes. Enforcement is configured per backend user group.
-                                You can set different levels for different groups: for
-                                example, <em>Enforced</em> for administrators,
-                                <em>Required</em> for editors, and <em>Off</em> for
-                                service accounts that do not support interactive login.
+                                <f:format.raw><f:translate key="help.faq.answer2" extensionName="NrPasskeysBe" /></f:format.raw>
                             </p>
                         </div>
                     </div>
@@ -341,19 +264,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse3"
                                 aria-expanded="false" aria-controls="faqCollapse3">
-                            What if a user belongs to multiple groups with different enforcement levels?
+                            <f:translate key="help.faq.question3" extensionName="NrPasskeysBe" />
                         </button>
                     </h3>
                     <div id="faqCollapse3" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading3" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                The <strong>strictest level wins</strong>. If a user
-                                belongs to one group with <em>Encourage</em> and
-                                another with <em>Required</em>, the effective
-                                enforcement level is <em>Required</em>. This ensures
-                                that security policies cannot be bypassed by group
-                                membership overlap.
+                                <f:format.raw><f:translate key="help.faq.answer3" extensionName="NrPasskeysBe" /></f:format.raw>
                             </p>
                         </div>
                     </div>
@@ -365,18 +283,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse4"
                                 aria-expanded="false" aria-controls="faqCollapse4">
-                            How do I know how many users have adopted passkeys?
+                            <f:translate key="help.faq.question4" extensionName="NrPasskeysBe" />
                         </button>
                     </h3>
                     <div id="faqCollapse4" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading4" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                The <a href="{dashboardUrl}">Dashboard</a>
-                                tab shows the overall adoption rate, per-group
-                                statistics, and a list of users who have not yet
-                                registered a passkey. Use these numbers to plan your
-                                enforcement timeline.
+                                <f:format.raw><f:translate key="help.faq.answer4" extensionName="NrPasskeysBe" arguments="{0: dashboardUrl}" /></f:format.raw>
                             </p>
                         </div>
                     </div>
@@ -388,19 +302,14 @@
                         <button class="accordion-button collapsed" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#faqCollapse5"
                                 aria-expanded="false" aria-controls="faqCollapse5">
-                            Can users still use passwords during the grace period?
+                            <f:translate key="help.faq.question5" extensionName="NrPasskeysBe" />
                         </button>
                     </h3>
                     <div id="faqCollapse5" class="accordion-collapse collapse"
                          aria-labelledby="faqHeading5" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
                             <p>
-                                Yes. During the grace period, password login remains
-                                fully functional. After each password login, users see
-                                the setup interstitial but can skip it. Once the grace
-                                period expires, the interstitial becomes blocking and
-                                they must register a passkey before continuing to the
-                                backend.
+                                <f:translate key="help.faq.answer5" extensionName="NrPasskeysBe" />
                             </p>
                         </div>
                     </div>
