@@ -255,6 +255,32 @@ broken YubiKey):
 
       {"beUserUid": 123, "username": "johndoe"}
 
+Command-line recovery
+---------------------
+
+If **all** administrators are locked out -- for example a group was set to
+**Enforced** and every member lost access to their authenticator -- recovery is
+still possible from the server shell, without a backend login, using the
+``passkeys:recovery`` command:
+
+..  code-block:: bash
+    :caption: Emergency recovery from the CLI
+
+    # List all groups and their enforcement level
+    vendor/bin/typo3 passkeys:recovery --list
+
+    # Disable passkey enforcement for one group (by UID)
+    vendor/bin/typo3 passkeys:recovery --disable-group=5
+
+    # Disable passkey enforcement for ALL groups
+    vendor/bin/typo3 passkeys:recovery --disable-all
+
+    # Reset the login lockout for a specific account
+    vendor/bin/typo3 passkeys:recovery --unlock=johndoe
+
+After enforcement is disabled, affected users can log in with their password
+again and re-register a passkey.
+
 4. The user logs in with their password (if password login is still available)
    and registers a new passkey.
 
