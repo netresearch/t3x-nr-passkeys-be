@@ -52,7 +52,11 @@ class PasskeyManagement {
 
     // Check WebAuthn support
     if (!window.PublicKeyCredential) {
-      Notification.warning('WebAuthn not supported', 'Your browser does not support Passkeys (WebAuthn).', 0);
+      Notification.warning(
+        this.translate('js.manage.unsupported.title', 'WebAuthn not supported'),
+        this.translate('js.manage.unsupported.body', 'Your browser does not support Passkeys (WebAuthn).'),
+        0,
+      );
       if (this.addBtn) {
         this.addBtn.disabled = true;
       }
@@ -61,7 +65,11 @@ class PasskeyManagement {
 
     // Check secure context (HTTPS required for WebAuthn)
     if (window.isSecureContext === false) {
-      Notification.warning('HTTPS required', 'Passkeys require a secure connection (HTTPS).', 0);
+      Notification.warning(
+        this.translate('js.manage.https.title', 'HTTPS required'),
+        this.translate('js.manage.https.body', 'Passkeys require a secure connection (HTTPS).'),
+        0,
+      );
       if (this.addBtn) {
         this.addBtn.disabled = true;
       }
@@ -81,7 +89,10 @@ class PasskeyManagement {
       const data = await response.resolve();
       this.renderList(data.credentials, data.enforcementEnabled);
     } catch (error) {
-      Notification.error('Load failed', 'Failed to load passkeys.');
+      Notification.error(
+        this.translate('js.manage.load.failed', 'Load failed'),
+        await this.resolveErrorMessage(error, this.translate('js.manage.load.failedBody', 'Failed to load passkeys.')),
+      );
     }
   }
 
@@ -124,7 +135,7 @@ class PasskeyManagement {
       const labelCell = document.createElement('td');
       const labelSpan = document.createElement('span');
       labelSpan.className = 'passkey-label';
-      labelSpan.textContent = cred.label || 'Unnamed';
+      labelSpan.textContent = cred.label || this.translate('js.manage.unnamed', 'Unnamed');
       labelSpan.dataset.uid = cred.uid;
       labelSpan.addEventListener('dblclick', () => this.startRename(labelSpan, cred.uid));
       labelCell.appendChild(labelSpan);
@@ -137,7 +148,7 @@ class PasskeyManagement {
 
       // Last used cell
       const lastUsedCell = document.createElement('td');
-      lastUsedCell.textContent = cred.lastUsedAt ? this.formatTimestamp(cred.lastUsedAt) : 'Never';
+      lastUsedCell.textContent = cred.lastUsedAt ? this.formatTimestamp(cred.lastUsedAt) : this.translate('js.manage.never', 'Never');
       row.appendChild(lastUsedCell);
 
       // Actions cell
@@ -145,13 +156,13 @@ class PasskeyManagement {
 
       const renameBtn = document.createElement('button');
       renameBtn.className = 'btn btn-sm btn-outline-secondary me-1';
-      renameBtn.textContent = 'Rename';
+      renameBtn.textContent = this.translate('js.manage.rename', 'Rename');
       renameBtn.addEventListener('click', () => this.startRename(labelSpan, cred.uid));
       actionsCell.appendChild(renameBtn);
 
       const removeBtn = document.createElement('button');
       removeBtn.className = 'btn btn-sm btn-outline-danger';
-      removeBtn.textContent = 'Remove';
+      removeBtn.textContent = this.translate('js.manage.remove', 'Remove');
       removeBtn.addEventListener('click', () => this.handleRemove(cred.uid, cred.label));
       actionsCell.appendChild(removeBtn);
 
@@ -226,20 +237,32 @@ class PasskeyManagement {
         });
       const verifyData = await verifyResponse.resolve();
       if (verifyData.status === 'ok') {
-        Notification.success('Passkey registered', 'Passkey registered successfully.');
+        Notification.success(
+          this.translate('js.manage.register.success.title', 'Passkey registered'),
+          this.translate('js.manage.register.success.body', 'Passkey registered successfully.'),
+        );
         const nameInput = document.getElementById('passkey-name-input');
         if (nameInput) {
           nameInput.value = 'Passkey';
         }
         this.loadPasskeys();
       } else {
-        Notification.error('Registration failed', verifyData.error || 'Registration failed.');
+        Notification.error(
+          this.translate('js.manage.register.failed.title', 'Registration failed'),
+          verifyData.error || this.translate('js.manage.register.failed.body', 'Registration failed.'),
+        );
       }
     } catch (error) {
       if (error.name === 'NotAllowedError' || error.name === 'AbortError') {
-        Notification.info('Cancelled', 'Registration was cancelled.');
+        Notification.info(
+          this.translate('js.manage.register.cancelled.title', 'Cancelled'),
+          this.translate('js.manage.register.cancelled.body', 'Registration was cancelled.'),
+        );
       } else {
-        Notification.error('Registration failed', error.message || 'Failed to register passkey.');
+        Notification.error(
+          this.translate('js.manage.register.failed.title', 'Registration failed'),
+          await this.resolveErrorMessage(error, this.translate('js.manage.register.failed.body2', 'Failed to register passkey.')),
+        );
       }
     }
 
@@ -273,14 +296,23 @@ class PasskeyManagement {
         const data = await response.resolve();
         if (data.status === 'ok') {
           labelSpan.textContent = newLabel;
-          Notification.success('Passkey renamed', 'Passkey renamed successfully.');
+          Notification.success(
+            this.translate('js.manage.rename.success.title', 'Passkey renamed'),
+            this.translate('js.manage.rename.success.body', 'Passkey renamed successfully.'),
+          );
         } else {
           labelSpan.textContent = currentLabel;
-          Notification.error('Rename failed', data.error || 'Failed to rename passkey.');
+          Notification.error(
+            this.translate('js.manage.rename.failed.title', 'Rename failed'),
+            data.error || this.translate('js.manage.rename.failed.body', 'Failed to rename passkey.'),
+          );
         }
       } catch (error) {
         labelSpan.textContent = currentLabel;
-        Notification.error('Rename failed', error.message || 'Failed to rename passkey.');
+        Notification.error(
+          this.translate('js.manage.rename.failed.title', 'Rename failed'),
+          await this.resolveErrorMessage(error, this.translate('js.manage.rename.failed.body', 'Failed to rename passkey.')),
+        );
       }
     };
 
@@ -297,14 +329,14 @@ class PasskeyManagement {
   }
 
   handleRemove(uid, label) {
-    const safeLabel = this.escapeHtml(label || 'Unnamed');
+    const safeLabel = this.escapeHtml(label || this.translate('js.manage.unnamed', 'Unnamed'));
     Modal.show(
-      'Remove passkey',
-      'Are you sure you want to remove the passkey "' + safeLabel + '"?',
+      this.translate('js.manage.remove.confirm.title', 'Remove passkey'),
+      this.translate('js.manage.remove.confirm.body', 'Are you sure you want to remove the passkey "%s"?').replace('%s', safeLabel),
       SeverityEnum.warning,
       [
         {
-          text: 'Cancel',
+          text: this.translate('js.button.cancel', 'Cancel'),
           active: true,
           btnClass: 'btn-default',
           name: 'cancel',
@@ -313,7 +345,7 @@ class PasskeyManagement {
           },
         },
         {
-          text: 'Remove',
+          text: this.translate('js.manage.remove', 'Remove'),
           btnClass: 'btn-danger',
           name: 'remove',
           trigger: async (event, modal) => {
@@ -323,13 +355,22 @@ class PasskeyManagement {
                 .post({ uid: uid });
               const data = await response.resolve();
               if (data.status === 'ok') {
-                Notification.success('Passkey removed', 'Passkey removed successfully.');
+                Notification.success(
+                  this.translate('js.manage.remove.success.title', 'Passkey removed'),
+                  this.translate('js.manage.remove.success.body', 'Passkey removed successfully.'),
+                );
                 this.loadPasskeys();
               } else {
-                Notification.error('Remove failed', data.error || 'Failed to remove passkey.');
+                Notification.error(
+                  this.translate('js.manage.remove.failed.title', 'Remove failed'),
+                  data.error || this.translate('js.manage.remove.failed.body', 'Failed to remove passkey.'),
+                );
               }
             } catch (error) {
-              Notification.error('Remove failed', error.message || 'Failed to remove passkey.');
+              Notification.error(
+                this.translate('js.manage.remove.failed.title', 'Remove failed'),
+                await this.resolveErrorMessage(error, this.translate('js.manage.remove.failed.body', 'Failed to remove passkey.')),
+              );
             }
             modal.hideModal();
           },
@@ -341,7 +382,9 @@ class PasskeyManagement {
   setAddLoading(loading) {
     if (this.addBtn) {
       this.addBtn.disabled = loading;
-      this.addBtn.textContent = loading ? 'Registering...' : 'Add Passkey';
+      this.addBtn.textContent = loading
+        ? this.translate('js.manage.adding', 'Registering...')
+        : this.translate('js.manage.add', 'Add Passkey');
     }
     const nameInput = document.getElementById('passkey-name-input');
     if (nameInput) {
@@ -361,6 +404,44 @@ class PasskeyManagement {
     const el = document.createElement('span');
     el.textContent = text;
     return el.innerHTML;
+  }
+
+  /**
+   * Translate a key from the TYPO3 inline language labels with an English fallback.
+   *
+   * @param {string} key
+   * @param {string} fallback
+   * @returns {string}
+   */
+  translate(key, fallback) {
+    return (typeof TYPO3 !== 'undefined' && TYPO3.lang && TYPO3.lang[key]) || fallback;
+  }
+
+  /**
+   * Extract a human-readable error message from a caught error.
+   *
+   * TYPO3's AjaxRequest throws an AjaxResponse (which has no `.message`) on any
+   * non-2xx response, so `error.message` was always undefined and every failure
+   * showed the generic fallback — including the important last-passkey 409. The
+   * server's `{ "error": "..." }` body lives on the wrapped fetch Response, so we
+   * read it from there first, then fall back to a DOMException/Error message, then
+   * the provided default.
+   */
+  async resolveErrorMessage(error, fallback) {
+    if (error && error.response && typeof error.response.json === 'function') {
+      try {
+        const body = await error.response.json();
+        if (body && body.error) {
+          return body.error;
+        }
+      } catch (e) {
+        // Response body was not JSON — fall through to the generic handling.
+      }
+    }
+    if (error && typeof error.message === 'string' && error.message !== '') {
+      return error.message;
+    }
+    return fallback;
   }
 
   // Base64URL utilities

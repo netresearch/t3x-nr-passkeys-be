@@ -15,7 +15,7 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 | `Controller/AdminController.php` | Admin-only JSON API: list/revoke passkeys, update enforcement, send reminders |
 | `Controller/AdminModuleController.php` | Backend module: admin dashboard with adoption stats and enforcement controls |
 | `Controller/JsonBodyTrait.php` | Shared JSON request body parsing for all controllers |
-| `Controller/TranslationTrait.php` | Shared translation helper with fallback (uses $GLOBALS['LANG']) |
+| `Utility/TranslationTrait.php` | Shared translation helper with fallback (uses $GLOBALS['LANG']) |
 | `Controller/BackendUserTrait.php` | Extracts authenticated user from $GLOBALS['BE_USER'] as AuthenticatedUser DTO |
 | `Domain/Dto/EnforcementStatus.php` | User's enforcement status, grace period, passkey ownership |
 | `Domain/Dto/AdoptionStats.php` | Passkey adoption statistics per group |
@@ -52,7 +52,7 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 - Use constructor DI via `Services.yaml` for all services/controllers
 - **Exception**: `PasskeyAuthenticationService` uses `GeneralUtility::makeInstance()` (TYPO3 auth chain, no DI)
 - **Exception**: `PasskeySettingsPanel` uses `GeneralUtility::makeInstance()` (TYPO3 callUserFunction, no DI)
-- Shared traits: `JsonBodyTrait`, `TranslationTrait`, `BackendUserTrait` (Controller/), `TypeCastTrait` (Utility/)
+- Shared traits: `JsonBodyTrait`, `BackendUserTrait` (Controller/); `TranslationTrait`, `TypeCastTrait` (Utility/)
 - No Extbase models — `Credential` is a plain PHP class
 - No ViewHelpers in this extension
 - User enumeration prevention: dummy responses with randomized timing for unknown users

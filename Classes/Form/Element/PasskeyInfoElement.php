@@ -223,11 +223,24 @@ class PasskeyInfoElement extends AbstractFormElement
         if ($isManagementAllowed) {
             /** @var list<JavaScriptModuleInstruction> $jsModules */
             $jsModules = $resultArray['javaScriptModules'] ?? [];
+            $ll = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:';
             $jsModules[] = JavaScriptModuleInstruction::create(
                 '@netresearch/nr-passkeys-be/PasskeyAdminInfo.js',
             )->instance('#' . $fieldId, [
                 'userId' => $userId,
                 'username' => $username,
+                // Server-translated notification labels (the Modal labels are passed via
+                // data-* attributes; these cover the JS Notification.* calls). I18N-3.
+                'labels' => [
+                    'revoked' => $lang->sL($ll . 'admin.passkeys.notification.revoked'),
+                    'revokeFailed' => $lang->sL($ll . 'admin.passkeys.notification.revokeFailed'),
+                    'revokeAllDone' => $lang->sL($ll . 'admin.passkeys.notification.revokeAllDone'),
+                    'revokeAllFailed' => $lang->sL($ll . 'admin.passkeys.notification.revokeAllFailed'),
+                    'unlockDone' => $lang->sL($ll . 'admin.passkeys.notification.unlockDone'),
+                    'unlockFailed' => $lang->sL($ll . 'admin.passkeys.notification.unlockFailed'),
+                    'requestFailed' => $lang->sL($ll . 'admin.passkeys.notification.requestFailed'),
+                    'badgeRevoked' => $lang->sL($ll . 'admin.passkeys.status.revoked'),
+                ],
             ]);
             $resultArray['javaScriptModules'] = $jsModules;
         }

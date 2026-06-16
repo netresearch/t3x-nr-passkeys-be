@@ -93,9 +93,13 @@ page:
 
 ..  note::
 
-    Passkeys work alongside TYPO3's built-in multi-factor authentication
-    (MFA). If MFA is enabled, you will complete MFA verification after
-    passkey authentication.
+    A passkey is itself multi-factor (device possession plus a biometric or
+    PIN), so by default the extension **skips** TYPO3's additional MFA challenge
+    after a successful passkey login. This is controlled by the
+    ``skipMfaOnPasskeyAuth`` setting, which is enabled by default. If an
+    administrator disables it, you will also complete TYPO3's MFA verification
+    after passkey authentication. Password logins are unaffected and always
+    follow TYPO3's MFA configuration.
 
 Managing your passkeys
 ======================

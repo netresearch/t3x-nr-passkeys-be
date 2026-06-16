@@ -220,4 +220,27 @@ final class ArchitectureTest
             ->should()->beFinal()
             ->because('UserSettings panel is a leaf class — composition over inheritance');
     }
+
+    public function test_authentication_is_final(): Rule
+    {
+        // PasskeyAuthenticationService is the one documented exception — it extends the
+        // TYPO3 AbstractAuthenticationService base class and is wired into the auth
+        // chain. Any *other* class added here must still be final.
+        return PHPat::rule()
+            ->classes(Selector::inNamespace(self::NS . 'Authentication'))
+            ->excluding(Selector::classname(self::NS . 'Authentication\\PasskeyAuthenticationService'))
+            ->should()->beFinal()
+            ->because('Authentication classes are leaf classes — composition over inheritance');
+    }
+
+    public function test_form_is_final(): Rule
+    {
+        // PasskeyInfoElement is the one documented exception — it extends the FormEngine
+        // AbstractFormElement base class. Any *other* class added here must still be final.
+        return PHPat::rule()
+            ->classes(Selector::inNamespace(self::NS . 'Form'))
+            ->excluding(Selector::classname(self::NS . 'Form\\Element\\PasskeyInfoElement'))
+            ->should()->beFinal()
+            ->because('Form classes are leaf classes — composition over inheritance');
+    }
 }

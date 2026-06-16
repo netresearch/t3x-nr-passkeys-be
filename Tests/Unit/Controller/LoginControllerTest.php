@@ -159,16 +159,37 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
-    public function optionsActionWithUnknownUser(): void
+    public function optionsActionWithUnknownUserReturnsDecoyOptionsToPreventEnumeration(): void
     {
         $request = $this->createJsonRequest(['username' => 'unknown']);
         $this->setUpFindBeUser('unknown', null);
 
+        $options = PublicKeyCredentialRequestOptions::create(
+            challenge: \random_bytes(32),
+            rpId: 'example.com',
+        );
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('createDecoyAssertionOptions')
+            ->with('unknown')
+            ->willReturn(new AssertionOptions(
+                options: $options,
+                challengeToken: 'ct_decoy',
+            ));
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('serializeRequestOptions')
+            ->with($options)
+            ->willReturn('{"challenge":"abc","rpId":"example.com","allowCredentials":[{"type":"public-key","id":"decoy"}]}');
+
         $response = $this->subject->optionsAction($request);
 
-        self::assertSame(401, $response->getStatusCode());
+        // Same shape and status (200) as a real user -> no enumeration oracle.
+        self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Authentication failed', $body['error']);
+        self::assertArrayHasKey('options', $body);
+        self::assertSame('ct_decoy', $body['challengeToken']);
+        self::assertArrayNotHasKey('error', $body);
     }
 
     #[Test]
@@ -184,7 +205,8 @@ final class LoginControllerTest extends TestCase
 
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Too many requests', $body['error']);
+        self::assertSame('Too many requests. Please try again later.', $body['error']);
+        self::assertFalse($body['locked']);
     }
 
     #[Test]
@@ -275,7 +297,8 @@ final class LoginControllerTest extends TestCase
 
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Too many requests', $body['error']);
+        self::assertSame('Too many requests. Please try again later.', $body['error']);
+        self::assertFalse($body['locked']);
     }
 
     #[Test]
@@ -393,13 +416,15 @@ final class LoginControllerTest extends TestCase
 
         $this->rateLimiterService
             ->method('checkLockout')
-            ->willThrowException(new RuntimeException('Account locked out', 1700000020));
+            ->willThrowException(new RuntimeException('Account locked out', 1700000011));
 
         $response = $this->subject->optionsAction($request);
 
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Too many requests', $body['error']);
+        // UX-3: a lockout (code 1700000011) is reported distinctly from rate limiting.
+        self::assertSame('Account temporarily locked. Please contact your administrator.', $body['error']);
+        self::assertTrue($body['locked']);
     }
 
     #[Test]
@@ -435,7 +460,9 @@ final class LoginControllerTest extends TestCase
 
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Too many requests', $body['error']);
+        // UX-3: lockout reported distinctly from rate limiting.
+        self::assertSame('Account temporarily locked. Please contact your administrator.', $body['error']);
+        self::assertTrue($body['locked']);
     }
 
     #[Test]

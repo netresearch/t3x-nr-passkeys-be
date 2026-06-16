@@ -873,22 +873,43 @@ final class WebAuthnServiceTest extends TestCase
     #[Test]
     public function verifyAssertionResponseThrowsForRevokedCredential(): void
     {
-        $config = new ExtensionConfiguration(rpId: 'example.com');
-        $this->configServiceMock->method('getConfiguration')->willReturn($config);
-        $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
-
+        // Build a real, deserializable assertion so we reach the revocation check
+        // (which runs after credential lookup and before signature validation).
+        $rpId = 'example.com';
+        $origin = 'https://example.com';
         $challenge = \random_bytes(32);
+        $challengeToken = 'token';
+
+        [$assertionJson, $credentialId] = $this->buildAssertionJson($rpId, $challenge, $origin);
+
+        $config = new ExtensionConfiguration(rpId: $rpId, allowedAlgorithms: 'ES256');
+        $this->configServiceMock->method('getConfiguration')->willReturn($config);
+        $this->configServiceMock->method('getEffectiveRpId')->willReturn($rpId);
+        $this->configServiceMock->method('getEffectiveOrigin')->willReturn($origin);
         $this->challengeServiceMock
             ->method('verifyChallengeToken')
+            ->with($challengeToken)
             ->willReturn($challenge);
 
-        // We cannot easily test the full deserialization flow because webauthn-lib classes are final.
-        // Instead, we test through the code path that checks credential revocation.
-        // The credential lookup happens after deserialization, so we need a different approach.
-        // We'll test this through the exception code.
-        $this->expectException(Throwable::class);
+        $revokedCredential = new Credential(
+            uid: 10,
+            beUser: 100,
+            credentialId: $credentialId,
+            publicKeyCose: 'cose-data',
+            transports: '[]',
+            label: 'Revoked Key',
+            revokedAt: 1700000000,
+        );
+        $this->credentialRepositoryMock
+            ->method('findByCredentialId')
+            ->with($credentialId)
+            ->willReturn($revokedCredential);
 
-        $this->subject->verifyAssertionResponse('{"invalid":"structure"}', 'token', 100);
+        // The revocation guard must fire with its dedicated code (1700000033).
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000033);
+
+        $this->subject->verifyAssertionResponse($assertionJson, $challengeToken, 100);
     }
 
     #[Test]

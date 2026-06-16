@@ -83,21 +83,36 @@ final class LoginController
         try {
             $this->rateLimiterService->checkRateLimit('login_options', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
-        } catch (RuntimeException) {
-            return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
+        } catch (RuntimeException $e) {
+            return $this->throttledResponse($e);
         }
 
         $this->rateLimiterService->recordAttempt('login_options', $ip);
 
-        // Look up user - return generic response for unknown users to prevent enumeration
+        // Look up user. To prevent username enumeration, an unknown user receives a
+        // DECOY options response with the SAME shape and HTTP 200 status as a real
+        // user (deterministic per-username decoy credentials). A later assertion
+        // against the decoy fails exactly as a wrong passkey would.
         $beUserUid = $this->findBeUserUid($username);
         if ($beUserUid === null) {
-            // Use a short sleep to normalize timing
+            // Short randomized sleep to further normalize timing.
             \usleep(\random_int(50000, 150000));
 
-            return new JsonResponse([
-                'error' => 'Authentication failed',
-            ], 401);
+            try {
+                $result = $this->webAuthnService->createDecoyAssertionOptions($username);
+                $optionsJson = $this->webAuthnService->serializeRequestOptions($result->options);
+
+                return new JsonResponse([
+                    'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
+                    'challengeToken' => $result->challengeToken,
+                ]);
+            } catch (Throwable $e) {
+                $this->logger->error('Failed to generate decoy assertion options', [
+                    'error' => $e->getMessage(),
+                ]);
+
+                return new JsonResponse(['error' => 'Internal error'], 500);
+            }
         }
 
         try {
@@ -149,8 +164,8 @@ final class LoginController
         try {
             $this->rateLimiterService->checkRateLimit('login_verify', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
-        } catch (RuntimeException) {
-            return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
+        } catch (RuntimeException $e) {
+            return $this->throttledResponse($e);
         }
 
         $this->rateLimiterService->recordAttempt('login_verify', $ip);
@@ -172,7 +187,9 @@ final class LoginController
 
             return new JsonResponse(['status' => 'ok']);
         } catch (RuntimeException $e) {
-            $this->rateLimiterService->recordFailure($username, $ip);
+            // Do not feed the cross-IP per-username lockout (passkey assertions are
+            // unforgeable; counting them only enables an account-lockout DoS).
+            $this->rateLimiterService->recordFailure($username, $ip, countUserLockout: false);
 
             $this->logger->warning('Passkey assertion verification failed', [
                 'username_hash' => \hash('sha256', $username),
@@ -182,6 +199,27 @@ final class LoginController
 
             return new JsonResponse(['error' => 'Authentication failed'], 401);
         }
+    }
+
+    /**
+     * Build a 429 response distinguishing an account lockout from transient rate
+     * limiting (UX-3). The lockout exception carries code 1700000011; the client
+     * uses the 'locked' flag to show the dedicated "account locked" message.
+     */
+    private function throttledResponse(RuntimeException $e): ResponseInterface
+    {
+        $locked = $e->getCode() === 1700000011;
+
+        return new JsonResponse(
+            [
+                'error' => $locked
+                    ? 'Account temporarily locked. Please contact your administrator.'
+                    : 'Too many requests. Please try again later.',
+                'locked' => $locked,
+            ],
+            429,
+            ['Retry-After' => '60'],
+        );
     }
 
     private function findBeUserUid(string $username): ?int

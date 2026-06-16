@@ -35,6 +35,30 @@
             <trans-unit id="login.error.locked" resname="login.error.locked">
                 <source>Account temporarily locked. Please contact your administrator.</source>
             </trans-unit>
+            <trans-unit id="login.error.notAllowed" resname="login.error.notAllowed">
+                <source>Authentication was cancelled or no passkey found for this site. Have you registered a passkey?</source>
+            </trans-unit>
+            <trans-unit id="login.error.security" resname="login.error.security">
+                <source>Security error. Please check your connection.</source>
+            </trans-unit>
+            <trans-unit id="login.error.usernameRequired" resname="login.error.usernameRequired">
+                <source>Please enter your username.</source>
+            </trans-unit>
+            <trans-unit id="login.error.verifyFailed" resname="login.error.verifyFailed">
+                <source>Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.</source>
+            </trans-unit>
+            <trans-unit id="login.divider.or" resname="login.divider.or">
+                <source>or</source>
+            </trans-unit>
+            <trans-unit id="login.help.title" resname="login.help.title">
+                <source>What are passkeys?</source>
+            </trans-unit>
+            <trans-unit id="login.help.content" resname="login.help.content">
+                <source>Passkeys are a modern replacement for passwords. They use your device’s biometric sensors (fingerprint, face) or security keys to verify your identity. They’re faster and more secure than passwords because they can’t be phished or stolen.</source>
+            </trans-unit>
+            <trans-unit id="login.help.learnMore" resname="login.help.learnMore">
+                <source>Learn more about passkeys</source>
+            </trans-unit>
             <trans-unit id="manage.title" resname="manage.title">
                 <source>Passkeys</source>
             </trans-unit>
@@ -145,6 +169,27 @@
             </trans-unit>
             <trans-unit id="admin.passkeys.status.revoked" resname="admin.passkeys.status.revoked">
                 <source>Revoked</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.revoked" resname="admin.passkeys.notification.revoked">
+                <source>Passkey revoked</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.revokeFailed" resname="admin.passkeys.notification.revokeFailed">
+                <source>Failed to revoke passkey</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.revokeAllDone" resname="admin.passkeys.notification.revokeAllDone">
+                <source>All passkeys revoked</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.revokeAllFailed" resname="admin.passkeys.notification.revokeAllFailed">
+                <source>Failed to revoke passkeys</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.unlockDone" resname="admin.passkeys.notification.unlockDone">
+                <source>Login lock reset</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.unlockFailed" resname="admin.passkeys.notification.unlockFailed">
+                <source>Failed to reset login lock</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.requestFailed" resname="admin.passkeys.notification.requestFailed">
+                <source>Request failed</source>
             </trans-unit>
             <trans-unit id="admin.passkeys.created" resname="admin.passkeys.created">
                 <source>Created</source>
@@ -316,6 +361,105 @@
             </trans-unit>
             <trans-unit id="js.enforcement.failed" resname="js.enforcement.failed">
                 <source>Update failed</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.confirm.title" resname="js.enforcement.confirm.title">
+                <source>Confirm enforcement change</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.confirm.body" resname="js.enforcement.confirm.body">
+                <source>Setting this group to "%s" can block backend login for its members until they register a passkey. Continue?</source>
+            </trans-unit>
+            <trans-unit id="js.enforcement.confirm.ok" resname="js.enforcement.confirm.ok">
+                <source>Yes, change enforcement</source>
+            </trans-unit>
+            <trans-unit id="js.button.cancel" resname="js.button.cancel">
+                <source>Cancel</source>
+            </trans-unit>
+            <trans-unit id="js.manage.unsupported.title" resname="js.manage.unsupported.title">
+                <source>WebAuthn not supported</source>
+            </trans-unit>
+            <trans-unit id="js.manage.unsupported.body" resname="js.manage.unsupported.body">
+                <source>Your browser does not support Passkeys (WebAuthn).</source>
+            </trans-unit>
+            <trans-unit id="js.manage.https.title" resname="js.manage.https.title">
+                <source>HTTPS required</source>
+            </trans-unit>
+            <trans-unit id="js.manage.https.body" resname="js.manage.https.body">
+                <source>Passkeys require a secure connection (HTTPS).</source>
+            </trans-unit>
+            <trans-unit id="js.manage.load.failed" resname="js.manage.load.failed">
+                <source>Load failed</source>
+            </trans-unit>
+            <trans-unit id="js.manage.load.failedBody" resname="js.manage.load.failedBody">
+                <source>Failed to load passkeys.</source>
+            </trans-unit>
+            <trans-unit id="js.manage.unnamed" resname="js.manage.unnamed">
+                <source>Unnamed</source>
+            </trans-unit>
+            <trans-unit id="js.manage.never" resname="js.manage.never">
+                <source>Never</source>
+            </trans-unit>
+            <trans-unit id="js.manage.rename" resname="js.manage.rename">
+                <source>Rename</source>
+            </trans-unit>
+            <trans-unit id="js.manage.remove" resname="js.manage.remove">
+                <source>Remove</source>
+            </trans-unit>
+            <trans-unit id="js.manage.add" resname="js.manage.add">
+                <source>Add Passkey</source>
+            </trans-unit>
+            <trans-unit id="js.manage.adding" resname="js.manage.adding">
+                <source>Registering...</source>
+            </trans-unit>
+            <trans-unit id="js.manage.register.success.title" resname="js.manage.register.success.title">
+                <source>Passkey registered</source>
+            </trans-unit>
+            <trans-unit id="js.manage.register.success.body" resname="js.manage.register.success.body">
+                <source>Passkey registered successfully.</source>
+            </trans-unit>
+            <trans-unit id="js.manage.register.failed.title" resname="js.manage.register.failed.title">
+                <source>Registration failed</source>
+            </trans-unit>
+            <trans-unit id="js.manage.register.failed.body" resname="js.manage.register.failed.body">
+                <source>Registration failed.</source>
+            </trans-unit>
+            <trans-unit id="js.manage.register.failed.body2" resname="js.manage.register.failed.body2">
+                <source>Failed to register passkey.</source>
+            </trans-unit>
+            <trans-unit id="js.manage.register.cancelled.title" resname="js.manage.register.cancelled.title">
+                <source>Cancelled</source>
+            </trans-unit>
+            <trans-unit id="js.manage.register.cancelled.body" resname="js.manage.register.cancelled.body">
+                <source>Registration was cancelled.</source>
+            </trans-unit>
+            <trans-unit id="js.manage.rename.success.title" resname="js.manage.rename.success.title">
+                <source>Passkey renamed</source>
+            </trans-unit>
+            <trans-unit id="js.manage.rename.success.body" resname="js.manage.rename.success.body">
+                <source>Passkey renamed successfully.</source>
+            </trans-unit>
+            <trans-unit id="js.manage.rename.failed.title" resname="js.manage.rename.failed.title">
+                <source>Rename failed</source>
+            </trans-unit>
+            <trans-unit id="js.manage.rename.failed.body" resname="js.manage.rename.failed.body">
+                <source>Failed to rename passkey.</source>
+            </trans-unit>
+            <trans-unit id="js.manage.remove.confirm.title" resname="js.manage.remove.confirm.title">
+                <source>Remove passkey</source>
+            </trans-unit>
+            <trans-unit id="js.manage.remove.confirm.body" resname="js.manage.remove.confirm.body">
+                <source>Are you sure you want to remove the passkey "%s"?</source>
+            </trans-unit>
+            <trans-unit id="js.manage.remove.success.title" resname="js.manage.remove.success.title">
+                <source>Passkey removed</source>
+            </trans-unit>
+            <trans-unit id="js.manage.remove.success.body" resname="js.manage.remove.success.body">
+                <source>Passkey removed successfully.</source>
+            </trans-unit>
+            <trans-unit id="js.manage.remove.failed.title" resname="js.manage.remove.failed.title">
+                <source>Remove failed</source>
+            </trans-unit>
+            <trans-unit id="js.manage.remove.failed.body" resname="js.manage.remove.failed.body">
+                <source>Failed to remove passkey.</source>
             </trans-unit>
             <trans-unit id="js.unlock.progress" resname="js.unlock.progress">
                 <source>Resetting...</source>

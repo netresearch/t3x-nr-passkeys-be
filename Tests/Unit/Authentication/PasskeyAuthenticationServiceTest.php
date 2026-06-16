@@ -254,6 +254,33 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
+    public function authUserFailsOpenWhenEnforcementCheckThrows(): void
+    {
+        // OPS-2: a database/enforcement failure must NOT lock every backend user out
+        // of password login. On error the service logs and falls through (returns 100).
+        GeneralUtility::purgeInstances();
+
+        $configService = $this->createMock(ExtensionConfigurationService::class);
+        $configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
+
+        $enforcementService = $this->createMock(EnforcementService::class);
+        $enforcementService->method('getStatus')->willThrowException(new RuntimeException('database unavailable'));
+
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
+        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+
+        $subject = new PasskeyAuthenticationService();
+        $this->injectLogger($subject, $this->logger);
+        $subject->pObj = $this->pObj;
+        // No passkey payload -> password path -> enforcement check throws -> fail open.
+        $subject->login = ['uname' => 'admin', 'uident' => 'regularPassword123'];
+
+        $result = $subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertSame(100, $result, 'Enforcement-check failure must fail open (allow password auth)');
+    }
+
+    #[Test]
     public function authUserWithInvalidPasskeyDataReturns0(): void
     {
         $this->subject->login = [

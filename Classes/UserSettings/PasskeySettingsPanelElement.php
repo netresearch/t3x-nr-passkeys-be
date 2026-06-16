@@ -85,6 +85,10 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
         }
 
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyManagement.js');
+        $this->pageRenderer->addInlineLanguageLabelFile(
+            'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+            'js.',
+        );
 
         $passkeyCount = $this->credentialRepository->countByBeUser($userId);
 

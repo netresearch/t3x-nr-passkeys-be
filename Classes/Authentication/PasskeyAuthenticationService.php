@@ -108,37 +108,50 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     {
         $payload = $this->getPasskeyPayload();
         if ($payload === null) {
-            // Not a passkey login attempt - check per-user enforcement
-            if ($this->getExtensionConfigService()->getConfiguration()->isDisablePasswordLogin()) {
-                $uid = \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
-                if ($uid > 0 && $this->hasRegisteredPasskeys($uid)) {
-                    $this->getLogger()->warning('Password login blocked for user with registered passkeys', [
-                        'be_user_uid' => $uid,
-                    ]);
+            // Not a passkey login attempt - check per-user/per-group enforcement.
+            //
+            // Fail-open: any failure of the enforcement checks (e.g. a database
+            // outage while querying credentials or be_groups) MUST NOT lock every
+            // backend user out of password login. On error we log and fall through
+            // to the password service (return 100). Legitimate blocks are explicit
+            // `return 0` statements that are not affected by the catch.
+            try {
+                if ($this->getExtensionConfigService()->getConfiguration()->isDisablePasswordLogin()) {
+                    $uid = \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
+                    if ($uid > 0 && $this->hasRegisteredPasskeys($uid)) {
+                        $this->getLogger()->warning('Password login blocked for user with registered passkeys', [
+                            'be_user_uid' => $uid,
+                        ]);
 
-                    return 0;
-                }
-            }
-
-            // Per-group enforcement: block password login when the user's group demands passkeys
-            /** @var array<string, mixed> $user TYPO3 backend user record from AbstractAuthenticationService */
-            $status = $this->getEnforcementService()->getStatus($user);
-            if ($status->hasPasskeys) {
-                if ($status->level === EnforcementLevel::Enforced) {
-                    $this->getLogger()->warning('Password login blocked by group enforcement', [
-                        'username' => $user['username'] ?? '',
-                    ]);
-
-                    return 0;
+                        return 0;
+                    }
                 }
 
-                if ($status->level === EnforcementLevel::Required && $status->isGracePeriodExpired()) {
-                    $this->getLogger()->warning('Password login blocked: grace period expired', [
-                        'username' => $user['username'] ?? '',
-                    ]);
+                // Per-group enforcement: block password login when the user's group demands passkeys
+                /** @var array<string, mixed> $user TYPO3 backend user record from AbstractAuthenticationService */
+                $status = $this->getEnforcementService()->getStatus($user);
+                if ($status->hasPasskeys) {
+                    if ($status->level === EnforcementLevel::Enforced) {
+                        $this->getLogger()->warning('Password login blocked by group enforcement', [
+                            'username' => $user['username'] ?? '',
+                        ]);
 
-                    return 0;
+                        return 0;
+                    }
+
+                    if ($status->level === EnforcementLevel::Required && $status->isGracePeriodExpired()) {
+                        $this->getLogger()->warning('Password login blocked: grace period expired', [
+                            'username' => $user['username'] ?? '',
+                        ]);
+
+                        return 0;
+                    }
                 }
+            } catch (Throwable $e) {
+                $this->getLogger()->error('Passkey enforcement check failed; allowing password login (fail-open)', [
+                    'be_user_uid' => $user['uid'] ?? null,
+                    'error' => $e->getMessage(),
+                ]);
             }
 
             return 100;
@@ -190,7 +203,9 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             // Return 200 = authenticated, stop further auth processing
             return 200;
         } catch (Throwable $e) {
-            $this->getRateLimiterService()->recordFailure($username, $ip);
+            // Passkey assertions are unforgeable; do not feed the cross-IP
+            // per-username lockout (avoids an account-lockout DoS).
+            $this->getRateLimiterService()->recordFailure($username, $ip, countUserLockout: false);
 
             $this->getLogger()->warning('Passkey authentication failed', [
                 'be_user_uid' => $user['uid'],

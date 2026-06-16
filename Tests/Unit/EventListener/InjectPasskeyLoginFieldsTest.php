@@ -179,6 +179,38 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     }
 
     #[Test]
+    public function invokeInjectsTranslatedUiLabels(): void
+    {
+        $this->setUpConfigService();
+
+        $this->pageRenderer->method('addJsFile');
+
+        $this->pageRenderer
+            ->expects(self::once())
+            ->method('addJsInlineCode')
+            ->with(
+                'nr-passkeys-be-config',
+                self::callback(static function (string $code): bool {
+                    $jsonPart = \rtrim(\str_replace('window.NrPasskeysBeConfig = ', '', $code), ';');
+                    $decoded = \json_decode($jsonPart, true);
+                    self::assertIsArray($decoded);
+                    // Login screen is pre-auth, so UI strings are injected as labels
+                    // (with English fallbacks) rather than via TYPO3.lang (I18N-1/L10N-1).
+                    self::assertArrayHasKey('labels', $decoded);
+                    self::assertIsArray($decoded['labels']);
+                    foreach (['signIn', 'errorUnsupported', 'errorRateLimit', 'errorNotAllowed', 'helpTitle'] as $key) {
+                        self::assertArrayHasKey($key, $decoded['labels']);
+                        self::assertNotSame('', $decoded['labels'][$key]);
+                    }
+
+                    return true;
+                }),
+            );
+
+        ($this->subject)($this->createEvent());
+    }
+
+    #[Test]
     public function invokeUsesEffectiveRpIdFromConfigService(): void
     {
         $this->setUpConfigService(rpId: 'fallback.example.com');

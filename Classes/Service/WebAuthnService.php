@@ -253,6 +253,49 @@ final class WebAuthnService
     }
 
     /**
+     * Create *decoy* assertion options for an unknown username.
+     *
+     * Returns options structurally identical to a real user's so the public
+     * login-options endpoint cannot be used to enumerate valid backend usernames.
+     * The decoy allowCredentials are derived deterministically from the username
+     * (HMAC over an HKDF-derived key from the extension encryption key), so repeated
+     * requests for the same unknown username yield stable, unguessable credential
+     * descriptors. A subsequent assertion against a decoy fails verification exactly
+     * as a wrong passkey would, keeping known and unknown users indistinguishable.
+     */
+    public function createDecoyAssertionOptions(string $username): AssertionOptions
+    {
+        $rpId = $this->configService->getEffectiveRpId();
+        $challenge = $this->challengeService->generateChallenge();
+        $challengeToken = $this->challengeService->createChallengeToken($challenge);
+
+        $key = $this->configService->getEncryptionKey();
+        $derivedKey = \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_decoy');
+        $decoyId = \hash_hmac('sha256', $username, $derivedKey, true);
+
+        $allowCredentials = [
+            PublicKeyCredentialDescriptor::create(
+                type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
+                id: $decoyId,
+                transports: [],
+            ),
+        ];
+
+        $options = PublicKeyCredentialRequestOptions::create(
+            challenge: $challenge,
+            rpId: $rpId,
+            allowCredentials: $allowCredentials,
+            userVerification: $this->configService->getConfiguration()->getUserVerification(),
+            timeout: 60000,
+        );
+
+        return new AssertionOptions(
+            options: $options,
+            challengeToken: $challengeToken,
+        );
+    }
+
+    /**
      * Resolve the backend user UID from a passkey assertion response.
      *
      * Used for discoverable (usernameless) login where the credential ID

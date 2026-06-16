@@ -94,15 +94,20 @@ test.describe('Login API - Validated with Session', () => {
         expect(body.options.allowCredentials).toEqual([]);
     });
 
-    test('login options returns 401 for non-existent user', async ({ page }) => {
+    test('login options returns indistinguishable decoy options for a non-existent user', async ({ page }) => {
+        // Anti-enumeration (SEC-1): an unknown username must NOT be distinguishable
+        // from a known one. The endpoint returns 200 with decoy assertion options +
+        // a challengeToken, exactly like a real user, rather than a 401.
         const response = await page.request.post('/typo3/passkeys/login/options', {
             headers: { 'Content-Type': 'application/json' },
             data: { username: 'nonexistent_user_xyz_12345' },
         });
 
-        expect(response.status()).toBe(401);
+        expect(response.status()).toBe(200);
         const body = await response.json();
-        expect(body.error).toContain('failed');
+        expect(body.options).toBeDefined();
+        expect(body.challengeToken).toBeDefined();
+        expect(body.error).toBeUndefined();
     });
 
     test('login verify rejects missing fields with 400', async ({ page }) => {
