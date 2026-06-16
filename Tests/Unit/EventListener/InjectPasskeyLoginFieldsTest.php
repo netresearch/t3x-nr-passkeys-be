@@ -119,21 +119,14 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     }
 
     #[Test]
-    public function invokeAddsJavaScriptFile(): void
+    public function invokeLoadsJavaScriptModule(): void
     {
         $this->setUpConfigService();
 
         $this->pageRenderer
             ->expects(self::once())
-            ->method('addJsFile')
-            ->with(
-                'EXT:nr_passkeys_be/Resources/Public/JavaScript/PasskeyLogin.js',
-                'text/javascript',
-                false,
-                false,
-                '',
-                true,
-            );
+            ->method('loadJavaScriptModule')
+            ->with('@netresearch/nr-passkeys-be/PasskeyLogin.js');
 
         $this->pageRenderer
             ->method('addJsInlineCode');
@@ -151,7 +144,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
         );
 
         $this->pageRenderer
-            ->method('addJsFile');
+            ->method('loadJavaScriptModule');
 
         $this->pageRenderer
             ->expects(self::once())
@@ -183,7 +176,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     {
         $this->setUpConfigService();
 
-        $this->pageRenderer->method('addJsFile');
+        $this->pageRenderer->method('loadJavaScriptModule');
 
         $this->pageRenderer
             ->expects(self::once())
@@ -215,7 +208,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     {
         $this->setUpConfigService(rpId: 'fallback.example.com');
 
-        $this->pageRenderer->method('addJsFile');
+        $this->pageRenderer->method('loadJavaScriptModule');
 
         $this->pageRenderer
             ->expects(self::once())
@@ -239,7 +232,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     {
         $this->setUpConfigService(origin: 'https://custom-origin.example.com');
 
-        $this->pageRenderer->method('addJsFile');
+        $this->pageRenderer->method('loadJavaScriptModule');
 
         $this->pageRenderer
             ->expects(self::once())
@@ -263,7 +256,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     {
         $this->setUpConfigService(discoverableEnabled: false);
 
-        $this->pageRenderer->method('addJsFile');
+        $this->pageRenderer->method('loadJavaScriptModule');
 
         $this->pageRenderer
             ->expects(self::once())
@@ -287,7 +280,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     {
         $this->setUpConfigService();
 
-        $this->pageRenderer->method('addJsFile');
+        $this->pageRenderer->method('loadJavaScriptModule');
 
         $this->pageRenderer
             ->expects(self::once())
@@ -314,7 +307,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
         // The injected PageRenderer should receive the calls
         $this->pageRenderer
             ->expects(self::once())
-            ->method('addJsFile');
+            ->method('loadJavaScriptModule');
 
         $this->pageRenderer
             ->expects(self::once())

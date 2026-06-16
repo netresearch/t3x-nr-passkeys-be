@@ -12,6 +12,7 @@ import Notification from '@typo3/backend/notification.js';
 import Modal from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
 import { sudoModeInterceptor } from '@typo3/backend/security/sudo-mode-interceptor.js';
+import { base64urlToBuffer, bufferToBase64url, bufferToBase64 } from '@netresearch/nr-passkeys-be/Util/Base64.js';
 
 class PasskeyManagement {
   constructor() {
@@ -187,13 +188,13 @@ class PasskeyManagement {
 
       // Step 2: Create credential with browser
       const publicKeyOptions = {
-        challenge: this.base64urlToBuffer(options.challenge),
+        challenge: base64urlToBuffer(options.challenge),
         rp: {
           name: options.rp.name,
           id: options.rp.id,
         },
         user: {
-          id: this.base64urlToBuffer(options.user.id),
+          id: base64urlToBuffer(options.user.id),
           name: options.user.name,
           displayName: options.user.displayName,
         },
@@ -206,7 +207,7 @@ class PasskeyManagement {
       if (options.excludeCredentials) {
         publicKeyOptions.excludeCredentials = options.excludeCredentials.map((cred) => ({
           type: cred.type,
-          id: this.base64urlToBuffer(cred.id),
+          id: base64urlToBuffer(cred.id),
           transports: cred.transports || [],
         }));
       }
@@ -215,12 +216,12 @@ class PasskeyManagement {
 
       // Step 3: Encode and send to server (sudo mode protected)
       const credentialResponse = {
-        id: this.bufferToBase64url(credential.rawId),
-        rawId: this.bufferToBase64(credential.rawId),
+        id: bufferToBase64url(credential.rawId),
+        rawId: bufferToBase64(credential.rawId),
         type: credential.type,
         response: {
-          clientDataJSON: this.bufferToBase64url(credential.response.clientDataJSON),
-          attestationObject: this.bufferToBase64url(credential.response.attestationObject),
+          clientDataJSON: bufferToBase64url(credential.response.clientDataJSON),
+          attestationObject: bufferToBase64url(credential.response.attestationObject),
         },
       };
 
@@ -442,37 +443,6 @@ class PasskeyManagement {
       return error.message;
     }
     return fallback;
-  }
-
-  // Base64URL utilities
-  base64urlToBuffer(base64url) {
-    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-    const padLen = (4 - (base64.length % 4)) % 4;
-    const padded = base64 + '='.repeat(padLen);
-    const binary = atob(padded);
-    const buffer = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      buffer[i] = binary.charCodeAt(i);
-    }
-    return buffer.buffer;
-  }
-
-  bufferToBase64url(buffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  }
-
-  bufferToBase64(buffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
   }
 }
 

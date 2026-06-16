@@ -1,43 +1,12 @@
 /**
- * Unit tests for PasskeyLogin.js base64url encoding/decoding utilities.
+ * Unit tests for the passkey login WebAuthn base64 helpers.
  *
- * The IIFE in PasskeyLogin.js cannot be imported directly, so we test
- * the utility function logic independently. IIFE behavior (DOM interaction,
- * WebAuthn checks) is tested via Playwright E2E tests.
+ * These import the SHIPPED helpers from Util/Base64.js — the exact code the login
+ * module (PasskeyLogin.js) runs — so the tests exercise the real implementation, not
+ * a copy. Full DOM/WebAuthn behaviour is covered by the Playwright E2E tests.
  */
 import { describe, it, expect } from 'vitest';
-
-// --- Extracted utility functions (same logic as PasskeyLogin.js) ---
-
-function base64urlToBuffer(base64url) {
-    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-    const padLen = (4 - (base64.length % 4)) % 4;
-    const padded = base64 + '='.repeat(padLen);
-    const binary = atob(padded);
-    const buffer = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-        buffer[i] = binary.charCodeAt(i);
-    }
-    return buffer.buffer;
-}
-
-function bufferToBase64url(buffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-}
-
-function bufferToBase64(buffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-}
+import { base64urlToBuffer, bufferToBase64url, bufferToBase64 } from '../../Resources/Public/JavaScript/Util/Base64.js';
 
 // --- Tests ---
 
