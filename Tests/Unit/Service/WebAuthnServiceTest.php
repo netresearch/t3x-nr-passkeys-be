@@ -15,9 +15,12 @@ use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
 use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
 use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
+use Netresearch\NrPasskeysBe\Service\AssertionService;
+use Netresearch\NrPasskeysBe\Service\AttestationService;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
+use Netresearch\NrPasskeysBe\Service\WebAuthnCeremonyFactory;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use OpenSSLAsymmetricKey;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -34,12 +37,18 @@ use Webauthn\PublicKeyCredentialCreationOptions;
 use Webauthn\PublicKeyCredentialRequestOptions;
 
 #[CoversClass(WebAuthnService::class)]
+#[CoversClass(AttestationService::class)]
+#[CoversClass(AssertionService::class)]
+#[CoversClass(WebAuthnCeremonyFactory::class)]
 final class WebAuthnServiceTest extends TestCase
 {
     private ExtensionConfigurationService&MockObject $configServiceMock;
     private ChallengeService&MockObject $challengeServiceMock;
     private CredentialRepository&MockObject $credentialRepositoryMock;
     private LoggerInterface&MockObject $loggerMock;
+    private WebAuthnCeremonyFactory $ceremonyFactory;
+    private AttestationService $attestationService;
+    private AssertionService $assertionService;
     private WebAuthnService $subject;
 
     protected function setUp(): void
@@ -55,11 +64,27 @@ final class WebAuthnServiceTest extends TestCase
         $this->credentialRepositoryMock = $this->createMock(CredentialRepository::class);
         $this->loggerMock = $this->createMock(LoggerInterface::class);
 
-        $this->subject = new WebAuthnService(
+        $this->ceremonyFactory = new WebAuthnCeremonyFactory(
+            $this->configServiceMock,
+            $this->loggerMock,
+        );
+        $this->attestationService = new AttestationService(
             $this->configServiceMock,
             $this->challengeServiceMock,
             $this->credentialRepositoryMock,
             $this->loggerMock,
+            $this->ceremonyFactory,
+        );
+        $this->assertionService = new AssertionService(
+            $this->configServiceMock,
+            $this->challengeServiceMock,
+            $this->credentialRepositoryMock,
+            $this->loggerMock,
+            $this->ceremonyFactory,
+        );
+        $this->subject = new WebAuthnService(
+            $this->attestationService,
+            $this->assertionService,
         );
     }
 
@@ -741,11 +766,22 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
 
+        $ceremonyFactory = new WebAuthnCeremonyFactory($configServiceMock, $this->loggerMock);
         $subject = new WebAuthnService(
-            $configServiceMock,
-            $this->challengeServiceMock,
-            $this->credentialRepositoryMock,
-            $this->loggerMock,
+            new AttestationService(
+                $configServiceMock,
+                $this->challengeServiceMock,
+                $this->credentialRepositoryMock,
+                $this->loggerMock,
+                $ceremonyFactory,
+            ),
+            new AssertionService(
+                $configServiceMock,
+                $this->challengeServiceMock,
+                $this->credentialRepositoryMock,
+                $this->loggerMock,
+                $ceremonyFactory,
+            ),
         );
 
         $result1 = $subject->createRegistrationOptions($beUserUid, 'user', 'User');
@@ -865,9 +901,9 @@ final class WebAuthnServiceTest extends TestCase
             ->with('Unknown algorithm configured', ['algorithm' => 'UNKNOWN_ALGO']);
 
         // Use reflection to call the private createAlgorithmManager method directly
-        $reflection = new ReflectionMethod($this->subject, 'createAlgorithmManager');
+        $reflection = new ReflectionMethod($this->ceremonyFactory, 'createAlgorithmManager');
 
-        $reflection->invoke($this->subject);
+        $reflection->invoke($this->ceremonyFactory);
     }
 
     #[Test]
@@ -1489,10 +1525,10 @@ final class WebAuthnServiceTest extends TestCase
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn('https://example.com');
 
-        $reflection = new ReflectionMethod($this->subject, 'createAlgorithmManager');
+        $reflection = new ReflectionMethod($this->ceremonyFactory, 'createAlgorithmManager');
 
         /** @var AlgorithmManager $manager */
-        $manager = $reflection->invoke($this->subject);
+        $manager = $reflection->invoke($this->ceremonyFactory);
 
         self::assertInstanceOf(AlgorithmManager::class, $manager);
 
@@ -1524,10 +1560,10 @@ final class WebAuthnServiceTest extends TestCase
             aaguid: '',
         );
 
-        $reflection = new ReflectionMethod($this->subject, 'credentialToSource');
+        $reflection = new ReflectionMethod($this->assertionService, 'credentialToSource');
 
         /** @var CredentialRecord $source */
-        $source = $reflection->invoke($this->subject, $credential);
+        $source = $reflection->invoke($this->assertionService, $credential);
 
         self::assertInstanceOf(CredentialRecord::class, $source);
         self::assertSame('cred-id-123', $source->publicKeyCredentialId);
@@ -1561,10 +1597,10 @@ final class WebAuthnServiceTest extends TestCase
             aaguid: $fixedAaguid,
         );
 
-        $reflection = new ReflectionMethod($this->subject, 'credentialToSource');
+        $reflection = new ReflectionMethod($this->assertionService, 'credentialToSource');
 
         /** @var CredentialRecord $source */
-        $source = $reflection->invoke($this->subject, $credential);
+        $source = $reflection->invoke($this->assertionService, $credential);
 
         self::assertSame($fixedAaguid, $source->aaguid->toString());
     }
