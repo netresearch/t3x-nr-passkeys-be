@@ -228,6 +228,7 @@
                                         <div class="btn-group" role="group" aria-label="{f:translate(key: 'dashboard.usersWithout.actions', extensionName: 'NrPasskeysBe')}">
                                             <button type="button"
                                                     class="btn btn-default btn-sm passkey-send-reminder"
+                                                    aria-live="polite"
                                                     data-user-uid="{user.uid}"
                                                     data-username="{user.username}"
                                                     title="{f:translate(key: 'dashboard.usersWithout.sendReminder', extensionName: 'NrPasskeysBe')}">
@@ -237,6 +238,7 @@
                                             <f:if condition="{user.hasActiveNudge}">
                                                 <button type="button"
                                                         class="btn btn-default btn-sm passkey-clear-nudge"
+                                                        aria-live="polite"
                                                         data-user-uid="{user.uid}"
                                                         data-username="{user.username}"
                                                         title="{f:translate(key: 'dashboard.usersWithout.clearNudge', extensionName: 'NrPasskeysBe')}">
@@ -246,6 +248,7 @@
                                             </f:if>
                                             <button type="button"
                                                     class="btn btn-default btn-sm passkey-unlock-user"
+                                                    aria-live="polite"
                                                     data-user-uid="{user.uid}"
                                                     data-username="{user.username}"
                                                     title="{f:translate(key: 'dashboard.usersWithout.unlock', extensionName: 'NrPasskeysBe')}">
