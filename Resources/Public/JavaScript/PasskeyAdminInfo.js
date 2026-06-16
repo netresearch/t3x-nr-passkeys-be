@@ -14,6 +14,7 @@ import { sudoModeInterceptor } from '@typo3/backend/security/sudo-mode-intercept
 class PasskeyAdminInfo {
   constructor(selector, options) {
     this.options = options || {};
+    this.labels = this.options.labels || {};
     this.fullElement = null;
     this.request = null;
 
@@ -152,15 +153,15 @@ class PasskeyAdminInfo {
       .then(async (response) => {
         const data = await response.resolve();
         if (data.status === 'ok') {
-          Notification.success('Passkey revoked');
+          Notification.success(this.labels.revoked || 'Passkey revoked');
           this.markItemAsRevoked(credentialUid);
           this.updateStatusAfterRevoke();
         } else {
-          Notification.error('Failed to revoke passkey', data.error || '');
+          Notification.error(this.labels.revokeFailed || 'Failed to revoke passkey', data.error || '');
         }
       })
       .catch(() => {
-        Notification.error('Request failed');
+        Notification.error(this.labels.requestFailed || 'Request failed');
       })
       .finally(() => {
         this.request = null;
@@ -181,14 +182,14 @@ class PasskeyAdminInfo {
       .then(async (response) => {
         const data = await response.resolve();
         if (data.status === 'ok') {
-          Notification.success('All passkeys revoked (' + data.revokedCount + ')');
+          Notification.success((this.labels.revokeAllDone || 'All passkeys revoked') + ' (' + data.revokedCount + ')');
           this.markAllItemsAsRevoked();
         } else {
-          Notification.error('Failed to revoke passkeys', data.error || '');
+          Notification.error(this.labels.revokeAllFailed || 'Failed to revoke passkeys', data.error || '');
         }
       })
       .catch(() => {
-        Notification.error('Request failed');
+        Notification.error(this.labels.requestFailed || 'Request failed');
       })
       .finally(() => {
         this.request = null;
@@ -208,13 +209,13 @@ class PasskeyAdminInfo {
       .then(async (response) => {
         const data = await response.resolve();
         if (data.status === 'ok') {
-          Notification.success('Login lock reset');
+          Notification.success(this.labels.unlockDone || 'Login lock reset');
         } else {
-          Notification.error('Failed to reset login lock', data.error || '');
+          Notification.error(this.labels.unlockFailed || 'Failed to reset login lock', data.error || '');
         }
       })
       .catch(() => {
-        Notification.error('Request failed');
+        Notification.error(this.labels.requestFailed || 'Request failed');
       })
       .finally(() => {
         this.request = null;
@@ -231,7 +232,7 @@ class PasskeyAdminInfo {
     if (activeBadge) {
       activeBadge.classList.remove('badge-success');
       activeBadge.classList.add('badge-danger');
-      activeBadge.textContent = 'Revoked';
+      activeBadge.textContent = this.labels.badgeRevoked || 'Revoked';
     }
     // Remove the per-item revoke button
     const revokeBtn = item.querySelector('.t3js-passkey-revoke-button');
@@ -267,7 +268,7 @@ class PasskeyAdminInfo {
       if (activeBadge) {
         activeBadge.classList.remove('badge-success');
         activeBadge.classList.add('badge-danger');
-        activeBadge.textContent = 'Revoked';
+        activeBadge.textContent = this.labels.badgeRevoked || 'Revoked';
       }
       const revokeBtn = item.querySelector('.t3js-passkey-revoke-button');
       if (revokeBtn) {

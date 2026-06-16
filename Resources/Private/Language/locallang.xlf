@@ -170,6 +170,27 @@
             <trans-unit id="admin.passkeys.status.revoked" resname="admin.passkeys.status.revoked">
                 <source>Revoked</source>
             </trans-unit>
+            <trans-unit id="admin.passkeys.notification.revoked" resname="admin.passkeys.notification.revoked">
+                <source>Passkey revoked</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.revokeFailed" resname="admin.passkeys.notification.revokeFailed">
+                <source>Failed to revoke passkey</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.revokeAllDone" resname="admin.passkeys.notification.revokeAllDone">
+                <source>All passkeys revoked</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.revokeAllFailed" resname="admin.passkeys.notification.revokeAllFailed">
+                <source>Failed to revoke passkeys</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.unlockDone" resname="admin.passkeys.notification.unlockDone">
+                <source>Login lock reset</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.unlockFailed" resname="admin.passkeys.notification.unlockFailed">
+                <source>Failed to reset login lock</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.notification.requestFailed" resname="admin.passkeys.notification.requestFailed">
+                <source>Request failed</source>
+            </trans-unit>
             <trans-unit id="admin.passkeys.created" resname="admin.passkeys.created">
                 <source>Created</source>
             </trans-unit>
