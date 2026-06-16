@@ -26,6 +26,7 @@ final readonly class AdoptionStats
         public int $usersWithPasskeys,
         public array $groups,
         public array $usersWithoutPasskeys,
+        public bool $usersWithoutPasskeysTruncated = false,
     ) {}
 
     /**

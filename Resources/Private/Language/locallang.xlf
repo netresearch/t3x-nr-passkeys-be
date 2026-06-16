@@ -239,6 +239,9 @@
             <trans-unit id="dashboard.usersWithout.title" resname="dashboard.usersWithout.title">
                 <source>Users Without Passkeys</source>
             </trans-unit>
+            <trans-unit id="dashboard.usersWithout.truncated" resname="dashboard.usersWithout.truncated">
+                <source>Showing the first %s users without passkeys. More users exist than are listed here — use the per-group enforcement controls above to drive adoption.</source>
+            </trans-unit>
             <trans-unit id="dashboard.usersWithout.sendReminder" resname="dashboard.usersWithout.sendReminder">
                 <source>Send Reminder</source>
             </trans-unit>
