@@ -35,6 +35,30 @@
             <trans-unit id="login.error.locked" resname="login.error.locked">
                 <source>Account temporarily locked. Please contact your administrator.</source>
             </trans-unit>
+            <trans-unit id="login.error.notAllowed" resname="login.error.notAllowed">
+                <source>Authentication was cancelled or no passkey found for this site. Have you registered a passkey?</source>
+            </trans-unit>
+            <trans-unit id="login.error.security" resname="login.error.security">
+                <source>Security error. Please check your connection.</source>
+            </trans-unit>
+            <trans-unit id="login.error.usernameRequired" resname="login.error.usernameRequired">
+                <source>Please enter your username.</source>
+            </trans-unit>
+            <trans-unit id="login.error.verifyFailed" resname="login.error.verifyFailed">
+                <source>Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.</source>
+            </trans-unit>
+            <trans-unit id="login.divider.or" resname="login.divider.or">
+                <source>or</source>
+            </trans-unit>
+            <trans-unit id="login.help.title" resname="login.help.title">
+                <source>What are passkeys?</source>
+            </trans-unit>
+            <trans-unit id="login.help.content" resname="login.help.content">
+                <source>Passkeys are a modern replacement for passwords. They use your device’s biometric sensors (fingerprint, face) or security keys to verify your identity. They’re faster and more secure than passwords because they can’t be phished or stolen.</source>
+            </trans-unit>
+            <trans-unit id="login.help.learnMore" resname="login.help.learnMore">
+                <source>Learn more about passkeys</source>
+            </trans-unit>
             <trans-unit id="manage.title" resname="manage.title">
                 <source>Passkeys</source>
             </trans-unit>

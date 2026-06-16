@@ -19,11 +19,14 @@
     var config = window.NrPasskeysBeConfig;
     if (!config || !config.loginOptionsUrl) return;
 
+    // Server-translated UI labels (with English fallbacks if injection is absent).
+    var L = config.labels || {};
+
     var loginForm = document.getElementById('typo3-login-form');
     if (!loginForm) return;
 
     // Build and inject passkey UI below the login button with an "or" divider
-    var container = buildPasskeyUI();
+    var container = buildPasskeyUI(L);
     var submitSection = document.getElementById('t3-login-submit-section');
     if (submitSection) {
       submitSection.parentNode.insertBefore(container, submitSection.nextSibling);
@@ -42,14 +45,14 @@
 
     // Check WebAuthn support
     if (!window.PublicKeyCredential) {
-      showError('Your browser does not support Passkeys (WebAuthn).');
+      showError(L.errorUnsupported || 'Your browser does not support Passkeys (WebAuthn).');
       if (loginBtn) loginBtn.disabled = true;
       return;
     }
 
     // Check secure context
     if (!window.isSecureContext) {
-      showError('Passkeys require a secure connection (HTTPS).');
+      showError(L.errorInsecure || 'Passkeys require a secure connection (HTTPS).');
       if (loginBtn) loginBtn.disabled = true;
       return;
     }
@@ -68,7 +71,7 @@
           // Still on the login page after a passkey submission = auth failed.
           // TYPO3 does a POST-Redirect-GET after failed login, so the generic
           // error div (#t3-login-error) may not be present on the redirected page.
-          showError('Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.');
+          showError(L.errorVerifyFailed || 'Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.');
           // Hide generic TYPO3 error if it exists
           var typo3Error = document.getElementById('t3-login-error');
           if (typo3Error) {
@@ -85,7 +88,7 @@
       var username = usernameInput ? usernameInput.value.trim() : '';
 
       if (!username && !config.discoverableEnabled) {
-        showError('Please enter your username.');
+        showError(L.errorUsernameRequired || 'Please enter your username.');
         if (usernameInput) usernameInput.focus();
         return;
       }
@@ -105,9 +108,9 @@
         if (!optionsResponse.ok) {
           var data = await optionsResponse.json().catch(function () { return {}; });
           if (optionsResponse.status === 429) {
-            showError('Too many attempts. Please try again later.');
+            showError(L.errorRateLimit || 'Too many attempts. Please try again later.');
           } else {
-            showError(data.error || 'Authentication failed. Please try again.');
+            showError(data.error || L.errorGeneric || 'Authentication failed. Please try again.');
           }
           setLoading(false);
           return;
@@ -195,13 +198,13 @@
         setLoading(false);
 
         if (err.name === 'NotAllowedError') {
-          showError('Authentication was cancelled or no passkey found for this site. Have you registered a passkey?');
+          showError(L.errorNotAllowed || 'Authentication was cancelled or no passkey found for this site. Have you registered a passkey?');
         } else if (err.name === 'SecurityError') {
-          showError('Security error. Please check your connection.');
+          showError(L.errorSecurity || 'Security error. Please check your connection.');
         } else if (err.name === 'AbortError') {
-          showError('Authentication was cancelled.');
+          showError(L.errorCancelled || 'Authentication was cancelled.');
         } else {
-          showError('Authentication failed: ' + (err.message || 'Please try again.'));
+          showError(L.errorGeneric || 'Authentication failed. Please try again.');
           console.error('Passkey login error:', err);
         }
       }
@@ -215,8 +218,11 @@
 
     function showError(message) {
       if (errorEl) {
-        errorEl.textContent = message;
+        // Make the live region visible/in the a11y tree BEFORE injecting text so
+        // the aria-live="assertive" announcement fires reliably (NVDA/JAWS/VoiceOver
+        // do not consistently announce text set on a display:none node).
         errorEl.classList.remove('d-none');
+        errorEl.textContent = message;
       }
     }
 
@@ -240,8 +246,8 @@
     '28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 ' +
     '17 11.5 28.5T740-400Z"/></svg>';
 
-  function buildPasskeyUI() {
-    // All content is static/hardcoded — no user input in this markup
+  function buildPasskeyUI(labels) {
+    labels = labels || {};
     var divider = document.createElement('div');
     divider.className = 'passkey-divider mb-2 mt-2';
     divider.setAttribute('style', 'display:flex;align-items:center;gap:8px');
@@ -249,7 +255,7 @@
     hrLeft.setAttribute('style', 'flex:1;border:none;border-top:1px solid #ccc;margin:0');
     var orLabel = document.createElement('span');
     orLabel.setAttribute('style', 'color:#999;font-size:12px;text-transform:uppercase;letter-spacing:1px');
-    orLabel.textContent = 'or';
+    orLabel.textContent = labels.dividerOr || 'or';
     var hrRight = document.createElement('hr');
     hrRight.setAttribute('style', 'flex:1;border:none;border-top:1px solid #ccc;margin:0');
     divider.appendChild(hrLeft);
@@ -276,7 +282,7 @@
     iconSpan.innerHTML = PASSKEY_ICON; // eslint-disable-line -- static SVG constant
     var textSpan = document.createElement('span');
     textSpan.id = 'passkey-btn-text';
-    textSpan.textContent = 'Sign in with a passkey';
+    textSpan.textContent = labels.signIn || 'Sign in with a passkey';
     var loadingSpan = document.createElement('span');
     loadingSpan.id = 'passkey-btn-loading';
     loadingSpan.className = 'd-none';
@@ -284,7 +290,7 @@
     spinner.className = 'spinner-border spinner-border-sm me-2';
     spinner.setAttribute('role', 'status');
     loadingSpan.appendChild(spinner);
-    loadingSpan.appendChild(document.createTextNode('Authenticating\u2026'));
+    loadingSpan.appendChild(document.createTextNode(labels.loading || 'Authenticating\u2026'));
 
     btn.appendChild(iconSpan);
     btn.appendChild(textSpan);
@@ -297,14 +303,14 @@
     var helpContent = document.createElement('div');
     helpContent.id = 'passkey-help-content';
     helpContent.className = 'alert alert-light small d-none mb-2';
-    helpContent.textContent = 'Passkeys are a modern replacement for passwords. They use your device\u2019s biometric sensors (fingerprint, face) or security keys to verify your identity. They\u2019re faster and more secure than passwords because they can\u2019t be phished or stolen.';
+    helpContent.textContent = labels.helpContent || 'Passkeys are a modern replacement for passwords. They use your device\u2019s biometric sensors (fingerprint, face) or security keys to verify your identity. They\u2019re faster and more secure than passwords because they can\u2019t be phished or stolen.';
 
     var learnMore = document.createElement('a');
     learnMore.href = 'https://passkeys.dev';
     learnMore.target = '_blank';
     learnMore.rel = 'noopener noreferrer';
     learnMore.className = 'small d-block mt-1';
-    learnMore.textContent = 'Learn more about passkeys';
+    learnMore.textContent = labels.helpLearnMore || 'Learn more about passkeys';
     helpContent.appendChild(document.createElement('br'));
     helpContent.appendChild(learnMore);
 
@@ -312,7 +318,7 @@
     helpLink.href = '#';
     helpLink.id = 'passkey-help-link';
     helpLink.className = 'passkey-help-link small text-muted d-block text-center mb-2';
-    helpLink.textContent = 'What are passkeys?';
+    helpLink.textContent = labels.helpTitle || 'What are passkeys?';
     helpLink.addEventListener('click', function (e) {
       e.preventDefault();
       helpContent.classList.toggle('d-none');
@@ -325,6 +331,9 @@
     errorDiv.id = 'passkey-error';
     errorDiv.className = 'alert alert-danger d-none mb-2';
     errorDiv.setAttribute('role', 'alert');
+    // Announce async WebAuthn errors to screen readers (A11Y-1).
+    errorDiv.setAttribute('aria-live', 'assertive');
+    errorDiv.setAttribute('aria-atomic', 'true');
     container.appendChild(errorDiv);
 
     var assertionInput = document.createElement('input');
