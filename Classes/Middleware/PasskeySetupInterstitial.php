@@ -266,11 +266,11 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
                         <form method="post" action="{$escapedBackendPath}" style="display:inline">
                             <input type="hidden" name="passkey_setup_skip" value="1" />
                             <input type="hidden" name="passkey_setup_nonce" value="{$escapedNonce}" />
-                            <button type="submit" style="
+                            <button type="submit" class="btn-skip" style="
                                 padding: 10px 24px;
                                 background: transparent;
-                                color: #b0b0b0;
-                                border: 1px solid #555;
+                                color: #c9c9c9;
+                                border: 1px solid #8a8a8a;
                                 border-radius: 4px;
                                 font-size: 14px;
                                 cursor: pointer;
@@ -357,6 +357,11 @@ HTML;
         }
         .btn-setup:hover {
             background: #106ebe;
+        }
+        .btn-setup:focus-visible,
+        .btn-skip:focus-visible {
+            outline: 2px solid #ffffff;
+            outline-offset: 2px;
         }
     </style>
 </head>
