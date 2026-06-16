@@ -205,7 +205,8 @@ final class LoginControllerTest extends TestCase
 
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Too many requests', $body['error']);
+        self::assertSame('Too many requests. Please try again later.', $body['error']);
+        self::assertFalse($body['locked']);
     }
 
     #[Test]
@@ -296,7 +297,8 @@ final class LoginControllerTest extends TestCase
 
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Too many requests', $body['error']);
+        self::assertSame('Too many requests. Please try again later.', $body['error']);
+        self::assertFalse($body['locked']);
     }
 
     #[Test]
@@ -414,13 +416,15 @@ final class LoginControllerTest extends TestCase
 
         $this->rateLimiterService
             ->method('checkLockout')
-            ->willThrowException(new RuntimeException('Account locked out', 1700000020));
+            ->willThrowException(new RuntimeException('Account locked out', 1700000011));
 
         $response = $this->subject->optionsAction($request);
 
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Too many requests', $body['error']);
+        // UX-3: a lockout (code 1700000011) is reported distinctly from rate limiting.
+        self::assertSame('Account temporarily locked. Please contact your administrator.', $body['error']);
+        self::assertTrue($body['locked']);
     }
 
     #[Test]
@@ -456,7 +460,9 @@ final class LoginControllerTest extends TestCase
 
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Too many requests', $body['error']);
+        // UX-3: lockout reported distinctly from rate limiting.
+        self::assertSame('Account temporarily locked. Please contact your administrator.', $body['error']);
+        self::assertTrue($body['locked']);
     }
 
     #[Test]

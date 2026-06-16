@@ -108,7 +108,9 @@
         if (!optionsResponse.ok) {
           var data = await optionsResponse.json().catch(function () { return {}; });
           if (optionsResponse.status === 429) {
-            showError(L.errorRateLimit || 'Too many attempts. Please try again later.');
+            showError(data.locked
+              ? (L.errorLocked || 'Account temporarily locked. Please contact your administrator.')
+              : (L.errorRateLimit || 'Too many attempts. Please try again later.'));
           } else {
             showError(data.error || L.errorGeneric || 'Authentication failed. Please try again.');
           }

@@ -83,8 +83,8 @@ final class LoginController
         try {
             $this->rateLimiterService->checkRateLimit('login_options', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
-        } catch (RuntimeException) {
-            return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
+        } catch (RuntimeException $e) {
+            return $this->throttledResponse($e);
         }
 
         $this->rateLimiterService->recordAttempt('login_options', $ip);
@@ -164,8 +164,8 @@ final class LoginController
         try {
             $this->rateLimiterService->checkRateLimit('login_verify', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
-        } catch (RuntimeException) {
-            return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
+        } catch (RuntimeException $e) {
+            return $this->throttledResponse($e);
         }
 
         $this->rateLimiterService->recordAttempt('login_verify', $ip);
@@ -199,6 +199,27 @@ final class LoginController
 
             return new JsonResponse(['error' => 'Authentication failed'], 401);
         }
+    }
+
+    /**
+     * Build a 429 response distinguishing an account lockout from transient rate
+     * limiting (UX-3). The lockout exception carries code 1700000011; the client
+     * uses the 'locked' flag to show the dedicated "account locked" message.
+     */
+    private function throttledResponse(RuntimeException $e): ResponseInterface
+    {
+        $locked = $e->getCode() === 1700000011;
+
+        return new JsonResponse(
+            [
+                'error' => $locked
+                    ? 'Account temporarily locked. Please contact your administrator.'
+                    : 'Too many requests. Please try again later.',
+                'locked' => $locked,
+            ],
+            429,
+            ['Retry-After' => '60'],
+        );
     }
 
     private function findBeUserUid(string $username): ?int

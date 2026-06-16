@@ -54,6 +54,7 @@ final readonly class InjectPasskeyLoginFields
                 'errorUnsupported' => $this->translate('login.error.unsupported', 'Your browser does not support Passkeys (WebAuthn).'),
                 'errorInsecure' => $this->translate('login.error.insecure', 'Passkeys require a secure connection (HTTPS).'),
                 'errorRateLimit' => $this->translate('login.error.rateLimit', 'Too many attempts. Please try again later.'),
+                'errorLocked' => $this->translate('login.error.locked', 'Account temporarily locked. Please contact your administrator.'),
                 'errorGeneric' => $this->translate('login.error.generic', 'Authentication failed. Please try again.'),
                 'errorCancelled' => $this->translate('login.error.cancelled', 'Authentication was cancelled.'),
                 'errorNotAllowed' => $this->translate('login.error.notAllowed', 'Authentication was cancelled or no passkey found for this site. Have you registered a passkey?'),
