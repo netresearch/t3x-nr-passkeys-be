@@ -66,13 +66,13 @@ final class RecoveryCommand extends Command
         $disableGroup = $input->getOption('disable-group');
         if (\is_string($disableGroup) && $disableGroup !== '') {
             $uid = (int) $disableGroup;
-            $count = $this->disableEnforcement($uid);
+            $count = $this->disableEnforcementForGroup($uid);
             $io->success(\sprintf('Passkey enforcement set to "off" for group %d (%d row(s) updated).', $uid, $count));
             $didSomething = true;
         }
 
         if ($input->getOption('disable-all') === true) {
-            $count = $this->disableEnforcement(null);
+            $count = $this->disableEnforcementForAllGroups();
             $io->success(\sprintf('Passkey enforcement set to "off" for all groups (%d row(s) updated).', $count));
             $didSomething = true;
         }
@@ -120,23 +120,29 @@ final class RecoveryCommand extends Command
     }
 
     /**
-     * Set passkey_enforcement to "off" for one group (by UID) or for all groups.
+     * Set passkey_enforcement to "off" for a single group.
      *
      * @return int number of affected rows
      */
-    private function disableEnforcement(?int $groupUid): int
+    private function disableEnforcementForGroup(int $groupUid): int
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE_GROUPS);
 
-        if ($groupUid !== null) {
-            return $connection->update(self::TABLE_GROUPS, ['passkey_enforcement' => 'off'], ['uid' => $groupUid]);
-        }
+        return $connection->update(self::TABLE_GROUPS, ['passkey_enforcement' => 'off'], ['uid' => $groupUid]);
+    }
 
-        $queryBuilder = $connection->createQueryBuilder();
+    /**
+     * Set passkey_enforcement to "off" for all groups.
+     *
+     * @return int number of affected rows
+     */
+    private function disableEnforcementForAllGroups(): int
+    {
+        $queryBuilder = $this->connectionPool->getConnectionForTable(self::TABLE_GROUPS)->createQueryBuilder();
         $queryBuilder
             ->update(self::TABLE_GROUPS)
             ->set('passkey_enforcement', 'off');
 
-        return (int) $queryBuilder->executeStatement();
+        return $queryBuilder->executeStatement();
     }
 }

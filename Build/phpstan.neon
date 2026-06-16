@@ -120,12 +120,25 @@ parameters:
             message: '#expects string, mixed given#'
             path: %currentWorkingDirectory%/Classes/Controller/AdminModuleController.php
             reportUnmatched: false
-        # NOTE: the former blanket '#Call to deprecated method#' suppression for
-        # AdminModuleController has been removed. The v14 docheader-component
-        # deprecations (makeMenu/makeMenuItem/makeLinkButton) are now handled with
-        # ComponentFactory on v14+ and precise inline @phpstan-ignore on the
-        # v12/v13-only fallback calls, so a future unrelated deprecation on this
-        # file is no longer silently masked.
+        # Docheader components are built via ComponentFactory on TYPO3 v14+ and via
+        # the make* API on v12/v13 (where it is NOT deprecated). These suppressions
+        # are SPECIFIC to that cross-version split (not a blanket '#deprecated method#'),
+        # so an unrelated future deprecation on this file still surfaces. reportUnmatched
+        # is false because each only applies to the version that triggers it.
+        # -- v14: the v12/v13 fallback make* calls are deprecated there:
+        -
+            message: '#Call to deprecated method (makeMenu|makeMenuItem|makeLinkButton)\(\)#'
+            path: %currentWorkingDirectory%/Classes/Controller/AdminModuleController.php
+            reportUnmatched: false
+        # -- v12/v13: ComponentFactory does not exist there:
+        -
+            message: '#TYPO3\\CMS\\Backend\\Template\\Components\\ComponentFactory#'
+            path: %currentWorkingDirectory%/Classes/Controller/AdminModuleController.php
+            reportUnmatched: false
+        -
+            message: '#should return TYPO3\\CMS\\Backend\\Template\\Components\\(Menu\\Menu|Menu\\MenuItem|Buttons\\LinkButton) but returns mixed#'
+            path: %currentWorkingDirectory%/Classes/Controller/AdminModuleController.php
+            reportUnmatched: false
         # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
             message: '#no value type specified in iterable type array#'

@@ -182,7 +182,7 @@ final class AdminModuleController
             return $factory->createMenu();
         }
 
-        return $menuRegistry->makeMenu(); // @phpstan-ignore method.deprecated
+        return $menuRegistry->makeMenu();
     }
 
     /**
@@ -196,7 +196,7 @@ final class AdminModuleController
             return $factory->createMenuItem();
         }
 
-        return $menu->makeMenuItem(); // @phpstan-ignore method.deprecated
+        return $menu->makeMenuItem();
     }
 
     /**
@@ -265,7 +265,7 @@ final class AdminModuleController
             return $factory->createLinkButton();
         }
 
-        return $buttonBar->makeLinkButton(); // @phpstan-ignore method.deprecated
+        return $buttonBar->makeLinkButton();
     }
 
     /**
