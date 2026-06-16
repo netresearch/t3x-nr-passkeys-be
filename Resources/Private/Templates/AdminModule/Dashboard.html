@@ -93,7 +93,7 @@
 
         <!-- MFA hint: suggest dropping MFA when passkeys are adopted -->
         <f:if condition="{usersWithPasskeys} > 0">
-            <f:be.infobox title="Passkeys &amp; MFA" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_NOTICE')}">
+            <f:be.infobox title="Passkeys & MFA" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_NOTICE')}">
                 Passkeys are inherently multi-factor (device + biometric/PIN) and phishing-resistant.
                 For most environments, passkeys alone are more secure than password + TOTP.
                 Consider disabling the MFA requirement for passkey-authenticated users.
