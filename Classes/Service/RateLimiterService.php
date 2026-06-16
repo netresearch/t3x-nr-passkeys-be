@@ -130,9 +130,17 @@ final class RateLimiterService
     /**
      * Record a failed authentication attempt.
      *
-     * Increments both per-IP+username and per-username counters atomically.
+     * Always increments the per-IP+username counter. The cross-IP per-username
+     * counter is incremented only when $countUserLockout is true.
+     *
+     * Passkey assertion failures pass false: a WebAuthn assertion cannot be forged
+     * without the authenticator's private key, so a cross-IP per-username lockout
+     * provides no real brute-force protection for passkeys but would let an
+     * unauthenticated attacker lock a victim out of passkey login by spamming
+     * failures for their username (account-lockout DoS). The per-IP+username
+     * counter still throttles a single abusive source.
      */
-    public function recordFailure(string $username, string $ip): void
+    public function recordFailure(string $username, string $ip, bool $countUserLockout = true): void
     {
         $config = $this->configService->getConfiguration();
         $duration = $config->getLockoutDurationSeconds();
@@ -142,9 +150,11 @@ final class RateLimiterService
         $ipKey = $this->buildLockoutKey($username, $ip);
         $this->atomicIncrement($ipKey, [$tag], $duration);
 
-        // Increment per-username counter
-        $userKey = $this->buildUserLockoutKey($username);
-        $this->atomicIncrement($userKey, [$tag], $duration);
+        // Increment per-username counter only when requested (see method docblock)
+        if ($countUserLockout) {
+            $userKey = $this->buildUserLockoutKey($username);
+            $this->atomicIncrement($userKey, [$tag], $duration);
+        }
     }
 
     /**

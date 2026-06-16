@@ -303,6 +303,28 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
+    public function recordFailureWithoutUserLockoutOnlyIncrementsPerIpCounter(): void
+    {
+        // Passkey assertion failures pass countUserLockout=false so an attacker
+        // cannot trip the cross-IP per-username lockout (account-lockout DoS).
+        $this->rateLimitCacheMock
+            ->method('get')
+            ->willReturn(false);
+
+        $this->rateLimitCacheMock
+            ->expects(self::once())
+            ->method('set')
+            ->with(
+                self::isType('string'),
+                '1',
+                self::isType('array'),
+                900,
+            );
+
+        $this->subject->recordFailure('admin', '192.168.1.1', false);
+    }
+
+    #[Test]
     public function recordFailureIncrementsExistingFailures(): void
     {
         // Previous failures: 2

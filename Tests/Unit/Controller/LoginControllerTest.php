@@ -159,16 +159,37 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
-    public function optionsActionWithUnknownUser(): void
+    public function optionsActionWithUnknownUserReturnsDecoyOptionsToPreventEnumeration(): void
     {
         $request = $this->createJsonRequest(['username' => 'unknown']);
         $this->setUpFindBeUser('unknown', null);
 
+        $options = PublicKeyCredentialRequestOptions::create(
+            challenge: \random_bytes(32),
+            rpId: 'example.com',
+        );
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('createDecoyAssertionOptions')
+            ->with('unknown')
+            ->willReturn(new AssertionOptions(
+                options: $options,
+                challengeToken: 'ct_decoy',
+            ));
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('serializeRequestOptions')
+            ->with($options)
+            ->willReturn('{"challenge":"abc","rpId":"example.com","allowCredentials":[{"type":"public-key","id":"decoy"}]}');
+
         $response = $this->subject->optionsAction($request);
 
-        self::assertSame(401, $response->getStatusCode());
+        // Same shape and status (200) as a real user -> no enumeration oracle.
+        self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
-        self::assertSame('Authentication failed', $body['error']);
+        self::assertArrayHasKey('options', $body);
+        self::assertSame('ct_decoy', $body['challengeToken']);
+        self::assertArrayNotHasKey('error', $body);
     }
 
     #[Test]
