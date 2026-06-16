@@ -12,6 +12,7 @@ import Notification from '@typo3/backend/notification.js';
 import DocumentService from '@typo3/core/document-service.js';
 import Modal from '@typo3/backend/modal.js';
 import { SeverityEnum } from '@typo3/backend/enum/severity.js';
+import { sudoModeInterceptor } from '@typo3/backend/security/sudo-mode-interceptor.js';
 
 class PasskeyDashboard {
   constructor() {
@@ -124,7 +125,7 @@ class PasskeyDashboard {
     select.disabled = true;
 
     try {
-      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_update_enforcement).post({
+      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_update_enforcement).addMiddleware(sudoModeInterceptor).post({
         groupUid: groupUid,
         enforcement: enforcement,
       });
@@ -169,7 +170,7 @@ class PasskeyDashboard {
     button.textContent = this.translate('js.unlock.progress', 'Resetting...');
 
     try {
-      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_unlock).post({
+      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_unlock).addMiddleware(sudoModeInterceptor).post({
         beUserUid: beUserUid,
         username: username,
       });
@@ -225,7 +226,7 @@ class PasskeyDashboard {
     }
 
     try {
-      const response = await new AjaxRequest(url).post({
+      const response = await new AjaxRequest(url).addMiddleware(sudoModeInterceptor).post({
         beUserUid: beUserUid,
       });
       const data = await response.resolve();
@@ -262,7 +263,7 @@ class PasskeyDashboard {
     button.textContent = this.translate('js.reminder.progress', 'Sending...');
 
     try {
-      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_send_reminder).post({
+      const response = await new AjaxRequest(TYPO3.settings.ajaxUrls.passkeys_admin_send_reminder).addMiddleware(sudoModeInterceptor).post({
         beUserUid: beUserUid,
       });
       const data = await response.resolve();
