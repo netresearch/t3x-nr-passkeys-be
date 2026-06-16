@@ -25,6 +25,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
 use TYPO3\CMS\Backend\Template\Components\Buttons\LinkButton;
+use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
 use TYPO3\CMS\Backend\Template\Components\DocHeaderComponent;
 use TYPO3\CMS\Backend\Template\Components\Menu\Menu;
 use TYPO3\CMS\Backend\Template\Components\Menu\MenuItem;
@@ -36,6 +37,7 @@ use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 #[CoversClass(AdminModuleController::class)]
 final class AdminModuleControllerTest extends TestCase
@@ -105,6 +107,18 @@ final class AdminModuleControllerTest extends TestCase
         $buttonBar = $this->createMock(ButtonBar::class);
         $buttonBar->method('makeLinkButton')->willReturn($linkButton);
 
+        // TYPO3 v14+: the controller resolves the docheader components via
+        // ComponentFactory (GeneralUtility::makeInstance). Queue a mock returning the
+        // same component doubles. On v12/v13 the class is absent and the make* mocks
+        // above are used instead.
+        if (\class_exists(ComponentFactory::class)) {
+            $componentFactory = $this->createMock(ComponentFactory::class);
+            $componentFactory->method('createMenu')->willReturn($menu);
+            $componentFactory->method('createMenuItem')->willReturn($menuItem);
+            $componentFactory->method('createLinkButton')->willReturn($linkButton);
+            GeneralUtility::addInstance(ComponentFactory::class, $componentFactory);
+        }
+
         $docHeader = $this->createMock(DocHeaderComponent::class);
         $docHeader->method('getMenuRegistry')->willReturn($menuRegistry);
         $docHeader->method('getButtonBar')->willReturn($buttonBar);
@@ -118,6 +132,7 @@ final class AdminModuleControllerTest extends TestCase
     protected function tearDown(): void
     {
         unset($GLOBALS['LANG']);
+        GeneralUtility::purgeInstances();
         parent::tearDown();
     }
 

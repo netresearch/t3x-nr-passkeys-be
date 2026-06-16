@@ -17,11 +17,17 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
+use TYPO3\CMS\Backend\Template\Components\Buttons\LinkButton;
+use TYPO3\CMS\Backend\Template\Components\ComponentFactory;
+use TYPO3\CMS\Backend\Template\Components\Menu\Menu;
+use TYPO3\CMS\Backend\Template\Components\Menu\MenuItem;
+use TYPO3\CMS\Backend\Template\Components\MenuRegistry;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use TYPO3\CMS\Core\Imaging\IconSize;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * Backend module controller for the passkey management admin module.
@@ -31,6 +37,13 @@ use TYPO3\CMS\Core\Page\PageRenderer;
 final class AdminModuleController
 {
     use TranslationTrait;
+
+    /**
+     * Resolved docheader ComponentFactory (TYPO3 v14+), or null on v12/v13 where it
+     * does not exist. false means "not yet resolved" (lazy, resolved at most once).
+     */
+    private ComponentFactory|false|null $componentFactory = false;
+
     public function __construct(
         private readonly ModuleTemplateFactory $moduleTemplateFactory,
         private readonly AdoptionStatsService $adoptionStatsService,
@@ -136,10 +149,10 @@ final class AdminModuleController
     private function buildDocHeaderMenu(ModuleTemplate $moduleTemplate, string $activeTab): void
     {
         $menuRegistry = $moduleTemplate->getDocHeaderComponent()->getMenuRegistry();
-        $menu = $menuRegistry->makeMenu();
+        $menu = $this->createMenu($menuRegistry);
         $menu->setIdentifier('PasskeyManagementMenu');
 
-        $dashboardItem = $menu->makeMenuItem()
+        $dashboardItem = $this->createMenuItem($menu)
             ->setTitle($this->translate('module.dashboard', 'Dashboard'))
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys'));
         if ($activeTab === 'dashboard') {
@@ -147,7 +160,7 @@ final class AdminModuleController
         }
         $menu->addMenuItem($dashboardItem);
 
-        $helpItem = $menu->makeMenuItem()
+        $helpItem = $this->createMenuItem($menu)
             ->setTitle($this->translate('module.help', 'Help'))
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'));
         if ($activeTab === 'help') {
@@ -156,6 +169,49 @@ final class AdminModuleController
         $menu->addMenuItem($helpItem);
 
         $menuRegistry->addMenu($menu);
+    }
+
+    /**
+     * Create a docheader Menu, using the v14+ ComponentFactory when available and
+     * falling back to the (v12/v13-only, non-deprecated there) MenuRegistry::makeMenu().
+     */
+    private function createMenu(MenuRegistry $menuRegistry): Menu
+    {
+        $factory = $this->componentFactory();
+        if ($factory !== null) {
+            return $factory->createMenu();
+        }
+
+        return $menuRegistry->makeMenu(); // @phpstan-ignore method.deprecated
+    }
+
+    /**
+     * Create a docheader MenuItem, using the v14+ ComponentFactory when available and
+     * falling back to the (v12/v13-only, non-deprecated there) Menu::makeMenuItem().
+     */
+    private function createMenuItem(Menu $menu): MenuItem
+    {
+        $factory = $this->componentFactory();
+        if ($factory !== null) {
+            return $factory->createMenuItem();
+        }
+
+        return $menu->makeMenuItem(); // @phpstan-ignore method.deprecated
+    }
+
+    /**
+     * Resolve the docheader ComponentFactory once. Returns null on TYPO3 v12/v13
+     * where the class does not exist (callers fall back to the deprecated make* API).
+     */
+    private function componentFactory(): ?ComponentFactory
+    {
+        if ($this->componentFactory === false) {
+            $this->componentFactory = \class_exists(ComponentFactory::class)
+                ? GeneralUtility::makeInstance(ComponentFactory::class)
+                : null;
+        }
+
+        return $this->componentFactory;
     }
 
     /**
@@ -187,7 +243,7 @@ final class AdminModuleController
     private function addHelpButton(ModuleTemplate $moduleTemplate): void
     {
         $buttonBar = $moduleTemplate->getDocHeaderComponent()->getButtonBar();
-        $helpButton = $buttonBar->makeLinkButton()
+        $helpButton = $this->createLinkButton($buttonBar)
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'))
             ->setTitle($this->translate('module.help', 'Help'))
             ->setIcon($this->iconFactory->getIcon(
@@ -196,6 +252,20 @@ final class AdminModuleController
             ))
             ->setShowLabelText(false);
         $buttonBar->addButton($helpButton, ButtonBar::BUTTON_POSITION_RIGHT, 1);
+    }
+
+    /**
+     * Create a docheader LinkButton, using the v14+ ComponentFactory when available and
+     * falling back to the (v12/v13-only, non-deprecated there) ButtonBar::makeLinkButton().
+     */
+    private function createLinkButton(ButtonBar $buttonBar): LinkButton
+    {
+        $factory = $this->componentFactory();
+        if ($factory !== null) {
+            return $factory->createLinkButton();
+        }
+
+        return $buttonBar->makeLinkButton(); // @phpstan-ignore method.deprecated
     }
 
     /**

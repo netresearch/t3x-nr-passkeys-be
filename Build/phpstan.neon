@@ -120,11 +120,12 @@ parameters:
             message: '#expects string, mixed given#'
             path: %currentWorkingDirectory%/Classes/Controller/AdminModuleController.php
             reportUnmatched: false
-        # TYPO3 v14 deprecations (makeMenu/makeMenuItem) - will be addressed in v15 migration
-        -
-            message: '#Call to deprecated method#'
-            path: %currentWorkingDirectory%/Classes/Controller/AdminModuleController.php
-            reportUnmatched: false
+        # NOTE: the former blanket '#Call to deprecated method#' suppression for
+        # AdminModuleController has been removed. The v14 docheader-component
+        # deprecations (makeMenu/makeMenuItem/makeLinkButton) are now handled with
+        # ComponentFactory on v14+ and precise inline @phpstan-ignore on the
+        # v12/v13-only fallback calls, so a future unrelated deprecation on this
+        # file is no longer silently masked.
         # TYPO3 AbstractAuthenticationService uses untyped arrays from parent class
         -
             message: '#no value type specified in iterable type array#'
