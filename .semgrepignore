@@ -1,0 +1,2 @@
+# python.django.security.django-no-csrf-token false-positive: Fluid template misdetected as Django (--config auto). Not Django; TYPO3 Fluid.
+Resources/Private/Templates/Interstitial/Setup.html
