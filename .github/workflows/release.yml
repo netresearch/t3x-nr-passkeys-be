@@ -15,8 +15,8 @@ jobs:
       id-token: write
       attestations: write
     with:
-      archive-prefix: nr-passkeys-be
-      package-name: netresearch/nr-passkeys-be
-      extension-key: nr_passkeys_be
+      archive-prefix: 'nr-passkeys-be'
+      package-name: 'netresearch/nr-passkeys-be'
+      extension-key: 'nr_passkeys_be'
     secrets:
       TYPO3_TER_ACCESS_TOKEN: ${{ secrets.TYPO3_TER_ACCESS_TOKEN }}
