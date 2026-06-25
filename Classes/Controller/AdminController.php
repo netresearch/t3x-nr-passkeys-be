@@ -32,6 +32,8 @@ final class AdminController
 
     private const NUDGE_DURATION_DAYS = 14;
 
+    private const ERROR_INSUFFICIENT_PRIVILEGES = 'Insufficient privileges to manage this user';
+
     public function __construct(
         private readonly CredentialRepository $credentialRepository,
         private readonly RateLimiterService $rateLimiterService,
@@ -57,6 +59,10 @@ final class AdminController
 
         if ($beUserUid === 0) {
             return new JsonResponse(['error' => 'Missing beUserUid parameter'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
         }
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
@@ -93,6 +99,10 @@ final class AdminController
 
         if ($beUserUid === 0 || $credentialUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
         }
 
         // Verify the credential belongs to the specified user
@@ -133,6 +143,10 @@ final class AdminController
 
         if ($beUserUid === 0 || $username === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
         }
 
         // Validate that beUserUid matches the given username to ensure audit log integrity
@@ -178,6 +192,10 @@ final class AdminController
 
         if ($beUserUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
         }
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
@@ -287,6 +305,10 @@ final class AdminController
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
+        }
+
         // Verify the user exists and is active
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
         $queryBuilder->getRestrictions()->removeAll();
@@ -351,6 +373,10 @@ final class AdminController
 
         if ($beUserUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
         }
 
         // Verify the user exists and is active

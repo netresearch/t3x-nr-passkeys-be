@@ -67,4 +67,39 @@ trait BackendUserTrait
 
         return $user;
     }
+
+    /**
+     * Whether the current admin may manage the given target backend user's passkeys.
+     *
+     * Mirrors the system-maintainer boundary enforced in the FormEngine UI
+     * (PasskeyInfoElement): only a system maintainer may manage another system
+     * maintainer's security settings. Any non-maintainer target is allowed.
+     */
+    private function isManagementAllowedFor(int $targetUid): bool
+    {
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        if (!$backendUser instanceof BackendUserAuthentication) {
+            return false;
+        }
+
+        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
+        $systemMaintainers = \is_array($sysConf) ? ($sysConf['systemMaintainers'] ?? []) : [];
+        if (!\is_array($systemMaintainers) || $systemMaintainers === []) {
+            return true;
+        }
+
+        $systemMaintainerIds = [];
+        foreach ($systemMaintainers as $maintainer) {
+            if (\is_numeric($maintainer)) {
+                $systemMaintainerIds[] = (int) $maintainer;
+            }
+        }
+
+        if (!\in_array($targetUid, $systemMaintainerIds, true)) {
+            return true;
+        }
+
+        return $backendUser->isSystemMaintainer();
+    }
 }
