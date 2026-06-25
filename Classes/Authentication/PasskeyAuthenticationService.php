@@ -73,6 +73,16 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         ]);
 
         if ($username === '') {
+            // Discoverable login is an operator-gated feature. Enforce the flag on the
+            // path that establishes a session, not only on challenge issuance
+            // (LoginController::optionsAction). A challenge token carries no mode binding,
+            // so a token from the username-first flow must not be replayable through the
+            // discoverable code path when the operator disabled it.
+            if (!$this->getExtensionConfigService()->getConfiguration()->isDiscoverableLoginEnabled()) {
+                $this->getLogger()->info('Discoverable login attempted while disabled');
+                return false;
+            }
+
             // Discoverable login: resolve user from credential ID in the assertion
             $beUserUid = $this->getWebAuthnService()->findBeUserUidFromAssertion($payload['assertion']);
             if ($beUserUid === null) {

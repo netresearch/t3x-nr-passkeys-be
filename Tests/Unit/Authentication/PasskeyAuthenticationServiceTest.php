@@ -918,6 +918,30 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
+    public function getUserWithEmptyUsernameReturnsFalseWhenDiscoverableLoginDisabled(): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
+        $configServiceDisabled
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
+
+        $this->subject->login = [
+            'uname' => '',
+            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+        ];
+
+        // Policy gate must short-circuit before any credential resolution.
+        $this->webAuthnService
+            ->expects(self::never())
+            ->method('findBeUserUidFromAssertion');
+
+        self::assertFalse($this->subject->getUser());
+    }
+
+    #[Test]
     public function getUserWithEmptyUsernameResolvesUserFromCredential(): void
     {
         $this->subject->login = [
