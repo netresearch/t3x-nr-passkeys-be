@@ -89,7 +89,13 @@ trait BackendUserTrait
             return true;
         }
 
-        $systemMaintainerIds = \array_map('\intval', $systemMaintainers);
+        $systemMaintainerIds = [];
+        foreach ($systemMaintainers as $maintainer) {
+            if (\is_numeric($maintainer)) {
+                $systemMaintainerIds[] = (int) $maintainer;
+            }
+        }
+
         if (!\in_array($targetUid, $systemMaintainerIds, true)) {
             return true;
         }
