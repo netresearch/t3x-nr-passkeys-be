@@ -59,6 +59,10 @@ final class AdminController
             return new JsonResponse(['error' => 'Missing beUserUid parameter'], 400);
         }
 
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => 'Insufficient privileges to manage this user'], 403);
+        }
+
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
         $list = \array_map(
             static fn($cred) => $cred->toAdminCredentialInfo(),
@@ -93,6 +97,10 @@ final class AdminController
 
         if ($beUserUid === 0 || $credentialUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => 'Insufficient privileges to manage this user'], 403);
         }
 
         // Verify the credential belongs to the specified user
@@ -133,6 +141,10 @@ final class AdminController
 
         if ($beUserUid === 0 || $username === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => 'Insufficient privileges to manage this user'], 403);
         }
 
         // Validate that beUserUid matches the given username to ensure audit log integrity
@@ -178,6 +190,10 @@ final class AdminController
 
         if ($beUserUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => 'Insufficient privileges to manage this user'], 403);
         }
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
