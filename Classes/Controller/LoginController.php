@@ -79,6 +79,9 @@ final class LoginController
         }
 
         try {
+            // consumeRateLimit counts this attempt up front (atomic check+increment),
+            // so an attempt that is subsequently lockout-rejected still consumes
+            // per-IP rate-limit budget. This is intentional: it is still an attempt.
             $this->rateLimiterService->consumeRateLimit('login_options', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
         } catch (RuntimeException $e) {

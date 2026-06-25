@@ -570,7 +570,7 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
-    public function optionsActionRecordsAttempt(): void
+    public function optionsActionConsumesRateLimit(): void
     {
         $request = $this->createJsonRequest(['username' => 'admin']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
@@ -598,7 +598,7 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
-    public function verifyActionRecordsAttempt(): void
+    public function verifyActionConsumesRateLimit(): void
     {
         $request = $this->createJsonRequest([
             'username' => 'admin',

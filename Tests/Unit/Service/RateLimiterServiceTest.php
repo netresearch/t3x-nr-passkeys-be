@@ -606,6 +606,20 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
+    public function consumeRateLimitAllowsAndIncrementsAtLastAllowedAttempt(): void
+    {
+        // Count is 4, limit is 5: the last allowed attempt (>= comparison) must pass
+        // and increment to 5. Guards the >= vs > boundary the at-limit test cannot.
+        $this->rateLimitCacheMock->method('get')->willReturn('4');
+        $this->rateLimitCacheMock
+            ->expects(self::once())
+            ->method('set')
+            ->with(self::anything(), '5', [], 300);
+
+        $this->subject->consumeRateLimit('login_options', '10.0.0.1');
+    }
+
+    #[Test]
     public function consumeRateLimitThrowsAtLimitWithoutIncrementing(): void
     {
         // At the limit (5/5): the single critical section must reject and must NOT
