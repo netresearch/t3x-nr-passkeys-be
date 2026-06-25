@@ -170,6 +170,31 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
+    public function passesThroughForExemptCoreAuthAjaxRoutes(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Enforced,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        // The login/logout/MFA AJAX routes must stay exempt so an enforced user can
+        // still authenticate, log out, and complete MFA.
+        foreach (['ajax_login', 'ajax_logout', 'ajax_mfa'] as $identifier) {
+            $request = $this->createMockRequest($identifier);
+            $handler = $this->createMockHandler();
+
+            $handler->expects(self::once())->method('handle')->with($request);
+
+            $this->subject->process($request, $handler);
+        }
+    }
+
+    #[Test]
     public function passesThroughForExemptUserSetupRoute(): void
     {
         $this->setUpBackendUser(1);

@@ -87,10 +87,13 @@ final class ExtensionConfigurationService
      * the request Host header (NormalizedParams::getHttpHost()). That value is
      * only trustworthy when TYPO3's host-header validation (VerifyHostHeader,
      * driven by $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern']) is
-     * actually enforcing a pattern. The framework treats both '' and the
-     * allow-all '.*' as "accept any Host", which turns the derived rpId/origin
-     * into attacker-controlled values. Fail closed in that case instead of
-     * emitting a Host-controlled anchor.
+     * actually enforcing a pattern. The allow-all '.*' makes VerifyHostHeader
+     * accept ANY Host header, turning the derived rpId/origin into
+     * attacker-controlled values. An empty pattern is treated by core as invalid
+     * and rejects every Host (fail-closed at the framework level, see
+     * VerifyHostHeader::isAllowedHostHeaderValue()); we still refuse to derive an
+     * anchor from it. Fail closed in both cases rather than emit a Host-controlled
+     * (or otherwise untrustworthy) anchor.
      *
      * @throws RuntimeException if host-header trust is disabled and no explicit
      *                          rpId/origin is configured
@@ -103,7 +106,8 @@ final class ExtensionConfigurationService
             ? $confVars['SYS']['trustedHostsPattern']
             : '';
 
-        // '' and '.*' both make VerifyHostHeader accept any Host header.
+        // '.*' makes VerifyHostHeader accept any Host header; '' is treated by core
+        // as invalid (rejects every Host). Refuse to derive an anchor from either.
         if ($pattern === '' || $pattern === '.*') {
             throw new RuntimeException(
                 'Refusing to derive WebAuthn rpId/origin from the request Host header: '

@@ -257,6 +257,34 @@ final class ExtensionConfigurationServiceTest extends TestCase
     }
 
     #[Test]
+    public function getEffectiveRpIdThrowsWhenHostTrustDisabledByEmptyPattern(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['rpId' => '']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000060);
+
+        $service->getEffectiveRpId();
+    }
+
+    #[Test]
+    public function getEffectiveOriginThrowsWhenHostTrustDisabledByAllowAllPattern(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['origin' => '']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000060);
+
+        $service->getEffectiveOrigin();
+    }
+
+    #[Test]
     public function getConfigurationReturnsSameInstanceOnMultipleCalls(): void
     {
         $service = $this->createService(['rpId' => 'test.example.com']);
