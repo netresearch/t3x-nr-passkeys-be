@@ -17,6 +17,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
@@ -173,8 +174,7 @@ final class AdminControllerTest extends TestCase
     #[Test]
     public function removeActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
-        $this->setUpAdminUser(1, 'admin');
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+        $this->setUpNonMaintainerAdminTargetingMaintainer();
 
         $request = $this->createJsonRequest([
             'beUserUid' => 99,
@@ -186,18 +186,13 @@ final class AdminControllerTest extends TestCase
 
         $response = $this->subject->removeAction($request);
 
-        self::assertSame(403, $response->getStatusCode());
-        self::assertSame(
-            'Insufficient privileges to manage this user',
-            $this->decodeResponse($response)['error'],
-        );
+        $this->assertManagementDenied($response);
     }
 
     #[Test]
     public function listActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
-        $this->setUpAdminUser(1, 'admin');
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+        $this->setUpNonMaintainerAdminTargetingMaintainer();
 
         $request = $this->createMock(ServerRequestInterface::class);
         $request->method('getQueryParams')->willReturn(['beUserUid' => 99]);
@@ -239,8 +234,7 @@ final class AdminControllerTest extends TestCase
     #[Test]
     public function unlockActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
-        $this->setUpAdminUser(1, 'admin');
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+        $this->setUpNonMaintainerAdminTargetingMaintainer();
 
         $request = $this->createJsonRequest([
             'beUserUid' => 99,
@@ -251,18 +245,13 @@ final class AdminControllerTest extends TestCase
 
         $response = $this->subject->unlockAction($request);
 
-        self::assertSame(403, $response->getStatusCode());
-        self::assertSame(
-            'Insufficient privileges to manage this user',
-            $this->decodeResponse($response)['error'],
-        );
+        $this->assertManagementDenied($response);
     }
 
     #[Test]
     public function revokeAllActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
-        $this->setUpAdminUser(1, 'admin');
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+        $this->setUpNonMaintainerAdminTargetingMaintainer();
 
         $request = $this->createJsonRequest(['beUserUid' => 99]);
 
@@ -277,8 +266,7 @@ final class AdminControllerTest extends TestCase
     #[Test]
     public function sendReminderActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
-        $this->setUpAdminUser(1, 'admin');
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+        $this->setUpNonMaintainerAdminTargetingMaintainer();
 
         $request = $this->createJsonRequest(['beUserUid' => 99]);
 
@@ -287,18 +275,13 @@ final class AdminControllerTest extends TestCase
 
         $response = $this->subject->sendReminderAction($request);
 
-        self::assertSame(403, $response->getStatusCode());
-        self::assertSame(
-            'Insufficient privileges to manage this user',
-            $this->decodeResponse($response)['error'],
-        );
+        $this->assertManagementDenied($response);
     }
 
     #[Test]
     public function clearNudgeActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
-        $this->setUpAdminUser(1, 'admin');
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+        $this->setUpNonMaintainerAdminTargetingMaintainer();
 
         $request = $this->createJsonRequest(['beUserUid' => 99]);
 
@@ -313,8 +296,7 @@ final class AdminControllerTest extends TestCase
     public function removeActionAllowedForNonMaintainerTargetWhenMaintainerListSet(): void
     {
         // A non-empty systemMaintainers list must not block managing a NON-maintainer.
-        $this->setUpAdminUser(1, 'admin');
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+        $this->setUpNonMaintainerAdminTargetingMaintainer();
 
         $request = $this->createJsonRequest([
             'beUserUid' => 42,
@@ -452,6 +434,27 @@ final class AdminControllerTest extends TestCase
         $backendUser->method('isAdmin')->willReturn(true);
         $backendUser->method('isSystemMaintainer')->willReturn($isSystemMaintainer);
         $GLOBALS['BE_USER'] = $backendUser;
+    }
+
+    /**
+     * Authenticate as a plain (non-maintainer) admin and mark $maintainerUid a system maintainer.
+     */
+    private function setUpNonMaintainerAdminTargetingMaintainer(int $maintainerUid = 99): void
+    {
+        $this->setUpAdminUser(1, 'admin');
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [$maintainerUid];
+    }
+
+    /**
+     * Assert a 403 "insufficient privileges" management-denied response.
+     */
+    private function assertManagementDenied(ResponseInterface $response): void
+    {
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame(
+            'Insufficient privileges to manage this user',
+            $this->decodeResponse($response)['error'],
+        );
     }
 
     /**
