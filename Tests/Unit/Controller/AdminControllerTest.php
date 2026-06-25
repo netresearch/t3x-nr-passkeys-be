@@ -237,6 +237,104 @@ final class AdminControllerTest extends TestCase
     }
 
     #[Test]
+    public function unlockActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
+    {
+        $this->setUpAdminUser(1, 'admin');
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 99,
+            'username' => 'maintainer',
+        ]);
+
+        $this->rateLimiterService->expects(self::never())->method('resetLockout');
+
+        $response = $this->subject->unlockAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame(
+            'Insufficient privileges to manage this user',
+            $this->decodeResponse($response)['error'],
+        );
+    }
+
+    #[Test]
+    public function revokeAllActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
+    {
+        $this->setUpAdminUser(1, 'admin');
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+
+        $request = $this->createJsonRequest(['beUserUid' => 99]);
+
+        $this->credentialRepository->expects(self::never())->method('findAllByBeUser');
+        $this->credentialRepository->expects(self::never())->method('revoke');
+
+        $response = $this->subject->revokeAllAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function sendReminderActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
+    {
+        $this->setUpAdminUser(1, 'admin');
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+
+        $request = $this->createJsonRequest(['beUserUid' => 99]);
+
+        // The guard returns before any DB access.
+        $this->connectionPool->expects(self::never())->method('getConnectionForTable');
+
+        $response = $this->subject->sendReminderAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame(
+            'Insufficient privileges to manage this user',
+            $this->decodeResponse($response)['error'],
+        );
+    }
+
+    #[Test]
+    public function clearNudgeActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
+    {
+        $this->setUpAdminUser(1, 'admin');
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+
+        $request = $this->createJsonRequest(['beUserUid' => 99]);
+
+        $this->connectionPool->expects(self::never())->method('getConnectionForTable');
+
+        $response = $this->subject->clearNudgeAction($request);
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function removeActionAllowedForNonMaintainerTargetWhenMaintainerListSet(): void
+    {
+        // A non-empty systemMaintainers list must not block managing a NON-maintainer.
+        $this->setUpAdminUser(1, 'admin');
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
+
+        $request = $this->createJsonRequest([
+            'beUserUid' => 42,
+            'credentialUid' => 5,
+        ]);
+
+        $cred = new Credential(uid: 5, beUser: 42, label: 'Key');
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('findByUidAndBeUser')
+            ->with(5, 42)
+            ->willReturn($cred);
+        $this->credentialRepository->expects(self::once())->method('revoke')->with(5, 1);
+
+        $response = $this->subject->removeAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+    }
+
+    #[Test]
     public function removeActionCredentialNotFound(): void
     {
         $this->setUpAdminUser(1, 'superadmin');

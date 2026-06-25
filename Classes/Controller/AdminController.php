@@ -303,6 +303,10 @@ final class AdminController
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => 'Insufficient privileges to manage this user'], 403);
+        }
+
         // Verify the user exists and is active
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
         $queryBuilder->getRestrictions()->removeAll();
@@ -367,6 +371,10 @@ final class AdminController
 
         if ($beUserUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => 'Insufficient privileges to manage this user'], 403);
         }
 
         // Verify the user exists and is active
