@@ -58,8 +58,16 @@ final class ExtensionConfigurationService
         }
 
         $host = $this->getNormalizedParams()->getHttpHost();
+        if ($host === '') {
+            // CLI / cron / background task: no Host header to spoof, so the
+            // 'localhost' fallback is a safe anchor and trust enforcement does
+            // not apply.
+            return 'localhost';
+        }
 
-        return $host !== '' ? $host : 'localhost';
+        $this->assertHostTrustEnforced();
+
+        return $host;
     }
 
     public function getEffectiveOrigin(): string
@@ -72,8 +80,53 @@ final class ExtensionConfigurationService
         $params = $this->getNormalizedParams();
         $scheme = $params->isHttps() ? 'https' : 'http';
         $host = $params->getHttpHost();
+        if ($host === '') {
+            // CLI / cron / background task: no Host header to spoof; safe fallback.
+            return $scheme . '://localhost';
+        }
 
-        return $scheme . '://' . ($host !== '' ? $host : 'localhost');
+        $this->assertHostTrustEnforced();
+
+        return $scheme . '://' . $host;
+    }
+
+    /**
+     * Guard the rpId/origin auto-detection paths.
+     *
+     * When rpId/origin are left empty the anti-phishing anchor is derived from
+     * the request Host header (NormalizedParams::getHttpHost()). That value is
+     * only trustworthy when TYPO3's host-header validation (VerifyHostHeader,
+     * driven by $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern']) is
+     * actually enforcing a pattern. The allow-all '.*' makes VerifyHostHeader
+     * accept ANY Host header, turning the derived rpId/origin into
+     * attacker-controlled values. An empty pattern is treated by core as invalid
+     * and rejects every Host (fail-closed at the framework level, see
+     * VerifyHostHeader::isAllowedHostHeaderValue()); we still refuse to derive an
+     * anchor from it. Fail closed in both cases rather than emit a Host-controlled
+     * (or otherwise untrustworthy) anchor.
+     *
+     * @throws RuntimeException if host-header trust is disabled and no explicit
+     *                          rpId/origin is configured
+     */
+    private function assertHostTrustEnforced(): void
+    {
+        $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $pattern = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS'])
+            && \is_string($confVars['SYS']['trustedHostsPattern'] ?? null)
+            ? $confVars['SYS']['trustedHostsPattern']
+            : '';
+
+        // '.*' makes VerifyHostHeader accept any Host header; '' is treated by core
+        // as invalid (rejects every Host). Refuse to derive an anchor from either.
+        if ($pattern === '' || $pattern === '.*') {
+            throw new RuntimeException(
+                'Refusing to derive WebAuthn rpId/origin from the request Host header: '
+                . 'host-header validation is disabled (trustedHostsPattern is empty or ".*"). '
+                . 'Configure $GLOBALS[\'TYPO3_CONF_VARS\'][\'SYS\'][\'trustedHostsPattern\'] '
+                . 'with a strict pattern, or set the rpId and origin extension settings explicitly.',
+                1700000060,
+            );
+        }
     }
 
     /**

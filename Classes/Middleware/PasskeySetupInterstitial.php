@@ -48,10 +48,22 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
     /**
      * Route identifier prefixes that are exempt from the interstitial.
      *
+     * NOTE: do NOT add a bare 'ajax_' here. TYPO3 core registers every backend
+     * AJAX route as 'ajax_'.<id> (AbstractServiceProvider), so a broad 'ajax_'
+     * prefix would exempt ~260 state-changing endpoints (ajax_record_process =
+     * DataHandler save, ajax_file_process, ...) and let an enforced-but-unenrolled
+     * user drive the backend through them, defeating enforcement. Only the AJAX
+     * routes the enrollment/login flow actually needs are exempted, by their
+     * explicit identifier prefix.
+     *
      * @var list<string>
      */
     private const EXEMPT_ROUTE_PREFIXES = [
-        'ajax_',
+        'ajax_login',
+        'ajax_logout',
+        'ajax_mfa',
+        'ajax_passkeys_manage_',
+        'ajax_passkeys_enforcement_status',
         // 'user_setup' is the real User Settings module identifier (where passkey
         // registration lives); it MUST be exempt so users forced into setup by the
         // interstitial can actually reach the registration panel. 'setup' covers the

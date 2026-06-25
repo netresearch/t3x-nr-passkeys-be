@@ -23,13 +23,16 @@ final class ExtensionConfigurationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // A strict (non-empty, non-".*") trustedHostsPattern so the host-derivation
+        // tests reach the Host fallback without tripping the fail-closed guard.
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '(^|\.)example\.(org|com)$';
         GeneralUtility::flushInternalRuntimeCaches();
     }
 
     protected function tearDown(): void
     {
         GeneralUtility::flushInternalRuntimeCaches();
-        unset($_SERVER['HTTP_HOST'], $_SERVER['HTTPS']);
+        unset($_SERVER['HTTP_HOST'], $_SERVER['HTTPS'], $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern']);
         parent::tearDown();
     }
 
@@ -220,6 +223,89 @@ final class ExtensionConfigurationServiceTest extends TestCase
 
         // Origin should come from HTTP_HOST, not rpId
         self::assertSame('https://host.example.com', $service->getEffectiveOrigin());
+    }
+
+    #[Test]
+    public function getEffectiveRpIdThrowsWhenHostTrustDisabledByAllowAllPattern(): void
+    {
+        // trustedHostsPattern '.*' makes VerifyHostHeader accept any Host header,
+        // so the request-derived rpId would be attacker-controllable.
+        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['rpId' => '']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000060);
+
+        $service->getEffectiveRpId();
+    }
+
+    #[Test]
+    public function getEffectiveOriginThrowsWhenHostTrustDisabledByEmptyPattern(): void
+    {
+        // Empty trustedHostsPattern is also treated as allow-all by VerifyHostHeader.
+        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['origin' => '']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000060);
+
+        $service->getEffectiveOrigin();
+    }
+
+    #[Test]
+    public function getEffectiveRpIdThrowsWhenHostTrustDisabledByEmptyPattern(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['rpId' => '']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000060);
+
+        $service->getEffectiveRpId();
+    }
+
+    #[Test]
+    public function getEffectiveOriginThrowsWhenHostTrustDisabledByAllowAllPattern(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['origin' => '']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000060);
+
+        $service->getEffectiveOrigin();
+    }
+
+    #[Test]
+    public function getEffectiveRpIdReturnsLocalhostWithoutThrowingWhenHostEmptyEvenIfTrustDisabled(): void
+    {
+        // CLI / cron / background: no Host header to spoof. Host-trust enforcement
+        // must not fire, since the 'localhost' fallback is a safe anchor.
+        unset($_SERVER['HTTP_HOST']);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['rpId' => '']);
+
+        self::assertSame('localhost', $service->getEffectiveRpId());
+    }
+
+    #[Test]
+    public function getEffectiveOriginReturnsLocalhostWithoutThrowingWhenHostEmptyEvenIfTrustDisabled(): void
+    {
+        unset($_SERVER['HTTP_HOST'], $_SERVER['HTTPS']);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['origin' => '']);
+
+        self::assertSame('http://localhost', $service->getEffectiveOrigin());
     }
 
     #[Test]

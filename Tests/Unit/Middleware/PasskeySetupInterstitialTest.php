@@ -124,7 +124,7 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
-    public function passesThroughForAjaxRoutes(): void
+    public function passesThroughForExemptEnrollmentAjaxRoute(): void
     {
         $this->setUpBackendUser(1);
 
@@ -136,12 +136,62 @@ final class PasskeySetupInterstitialTest extends TestCase
         );
         $this->enforcementService->method('getStatus')->willReturn($status);
 
-        $request = $this->createMockRequest('ajax_page_tree');
+        $request = $this->createMockRequest('ajax_passkeys_manage_list');
         $handler = $this->createMockHandler();
 
         $handler->expects(self::once())->method('handle')->with($request);
 
         $this->subject->process($request, $handler);
+    }
+
+    #[Test]
+    public function doesNotExemptStateChangingCoreAjaxRoute(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Enforced,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        // ajax_record_process is the DataHandler save endpoint; an
+        // enforced-but-unenrolled user must be blocked from it, not exempted.
+        $request = $this->createMockRequest('ajax_record_process');
+        $handler = $this->createMockHandler();
+
+        $handler->expects(self::never())->method('handle');
+
+        $response = $this->subject->process($request, $handler);
+
+        self::assertInstanceOf(HtmlResponse::class, $response);
+    }
+
+    #[Test]
+    public function passesThroughForExemptCoreAuthAjaxRoutes(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Enforced,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        // The login/logout/MFA AJAX routes must stay exempt so an enforced user can
+        // still authenticate, log out, and complete MFA.
+        foreach (['ajax_login', 'ajax_logout', 'ajax_mfa'] as $identifier) {
+            $request = $this->createMockRequest($identifier);
+            $handler = $this->createMockHandler();
+
+            $handler->expects(self::once())->method('handle')->with($request);
+
+            $this->subject->process($request, $handler);
+        }
     }
 
     #[Test]
@@ -649,7 +699,7 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
-    public function passesThroughForExemptAjaxSetupRoute(): void
+    public function passesThroughForExemptPasskeysEnforcementStatusAjaxRoute(): void
     {
         $this->setUpBackendUser(1);
 
@@ -661,7 +711,7 @@ final class PasskeySetupInterstitialTest extends TestCase
         );
         $this->enforcementService->method('getStatus')->willReturn($status);
 
-        $request = $this->createMockRequest('ajax_setup_something');
+        $request = $this->createMockRequest('ajax_passkeys_enforcement_status');
         $handler = $this->createMockHandler();
 
         $handler->expects(self::once())->method('handle')->with($request);
