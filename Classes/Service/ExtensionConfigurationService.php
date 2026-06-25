@@ -57,11 +57,17 @@ final class ExtensionConfigurationService
             return $rpId;
         }
 
+        $host = $this->getNormalizedParams()->getHttpHost();
+        if ($host === '') {
+            // CLI / cron / background task: no Host header to spoof, so the
+            // 'localhost' fallback is a safe anchor and trust enforcement does
+            // not apply.
+            return 'localhost';
+        }
+
         $this->assertHostTrustEnforced();
 
-        $host = $this->getNormalizedParams()->getHttpHost();
-
-        return $host !== '' ? $host : 'localhost';
+        return $host;
     }
 
     public function getEffectiveOrigin(): string
@@ -71,13 +77,17 @@ final class ExtensionConfigurationService
             return $origin;
         }
 
-        $this->assertHostTrustEnforced();
-
         $params = $this->getNormalizedParams();
         $scheme = $params->isHttps() ? 'https' : 'http';
         $host = $params->getHttpHost();
+        if ($host === '') {
+            // CLI / cron / background task: no Host header to spoof; safe fallback.
+            return $scheme . '://localhost';
+        }
 
-        return $scheme . '://' . ($host !== '' ? $host : 'localhost');
+        $this->assertHostTrustEnforced();
+
+        return $scheme . '://' . $host;
     }
 
     /**

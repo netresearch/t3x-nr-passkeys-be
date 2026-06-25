@@ -285,6 +285,30 @@ final class ExtensionConfigurationServiceTest extends TestCase
     }
 
     #[Test]
+    public function getEffectiveRpIdReturnsLocalhostWithoutThrowingWhenHostEmptyEvenIfTrustDisabled(): void
+    {
+        // CLI / cron / background: no Host header to spoof. Host-trust enforcement
+        // must not fire, since the 'localhost' fallback is a safe anchor.
+        unset($_SERVER['HTTP_HOST']);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['rpId' => '']);
+
+        self::assertSame('localhost', $service->getEffectiveRpId());
+    }
+
+    #[Test]
+    public function getEffectiveOriginReturnsLocalhostWithoutThrowingWhenHostEmptyEvenIfTrustDisabled(): void
+    {
+        unset($_SERVER['HTTP_HOST'], $_SERVER['HTTPS']);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
+        GeneralUtility::flushInternalRuntimeCaches();
+        $service = $this->createService(['origin' => '']);
+
+        self::assertSame('http://localhost', $service->getEffectiveOrigin());
+    }
+
+    #[Test]
     public function getConfigurationReturnsSameInstanceOnMultipleCalls(): void
     {
         $service = $this->createService(['rpId' => 'test.example.com']);
