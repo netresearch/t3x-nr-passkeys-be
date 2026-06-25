@@ -55,12 +55,10 @@ final class LoginController
             }
 
             try {
-                $this->rateLimiterService->checkRateLimit('login_options', $ip);
+                $this->rateLimiterService->consumeRateLimit('login_options', $ip);
             } catch (RuntimeException) {
                 return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
             }
-
-            $this->rateLimiterService->recordAttempt('login_options', $ip);
 
             try {
                 $result = $this->webAuthnService->createDiscoverableAssertionOptions();
@@ -81,13 +79,14 @@ final class LoginController
         }
 
         try {
-            $this->rateLimiterService->checkRateLimit('login_options', $ip);
+            // consumeRateLimit counts this attempt up front (atomic check+increment),
+            // so an attempt that is subsequently lockout-rejected still consumes
+            // per-IP rate-limit budget. This is intentional: it is still an attempt.
+            $this->rateLimiterService->consumeRateLimit('login_options', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
         } catch (RuntimeException $e) {
             return $this->throttledResponse($e);
         }
-
-        $this->rateLimiterService->recordAttempt('login_options', $ip);
 
         // Look up user. To prevent username enumeration, an unknown user receives a
         // DECOY options response with the SAME shape and HTTP 200 status as a real
@@ -162,13 +161,11 @@ final class LoginController
         $ip = $this->getRemoteAddress($request);
 
         try {
-            $this->rateLimiterService->checkRateLimit('login_verify', $ip);
+            $this->rateLimiterService->consumeRateLimit('login_verify', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
         } catch (RuntimeException $e) {
             return $this->throttledResponse($e);
         }
-
-        $this->rateLimiterService->recordAttempt('login_verify', $ip);
 
         $beUserUid = $this->findBeUserUid($username);
         if ($beUserUid === null) {

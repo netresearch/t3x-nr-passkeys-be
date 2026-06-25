@@ -594,6 +594,68 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
+    public function consumeRateLimitIncrementsUnderLimitInOneCriticalSection(): void
+    {
+        $this->rateLimitCacheMock->method('get')->willReturn('2');
+        $this->rateLimitCacheMock
+            ->expects(self::once())
+            ->method('set')
+            ->with(self::anything(), '3', [], 300);
+
+        $this->subject->consumeRateLimit('login_options', '10.0.0.1');
+    }
+
+    #[Test]
+    public function consumeRateLimitAllowsAndIncrementsAtLastAllowedAttempt(): void
+    {
+        // Count is 4, limit is 5: the last allowed attempt (>= comparison) must pass
+        // and increment to 5. Guards the >= vs > boundary the at-limit test cannot.
+        $this->rateLimitCacheMock->method('get')->willReturn('4');
+        $this->rateLimitCacheMock
+            ->expects(self::once())
+            ->method('set')
+            ->with(self::anything(), '5', [], 300);
+
+        $this->subject->consumeRateLimit('login_options', '10.0.0.1');
+    }
+
+    #[Test]
+    public function consumeRateLimitThrowsAtLimitWithoutIncrementing(): void
+    {
+        // At the limit (5/5): the single critical section must reject and must NOT
+        // increment, so a rejected attempt cannot push the counter further.
+        $this->rateLimitCacheMock->method('get')->willReturn('5');
+        $this->rateLimitCacheMock->expects(self::never())->method('set');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000010);
+
+        $this->subject->consumeRateLimit('login_options', '10.0.0.1');
+    }
+
+    #[Test]
+    public function consumeRateLimitThrowsWhenLockCannotBeAcquired(): void
+    {
+        $failingLocker = $this->createMock(LockingStrategyInterface::class);
+        $failingLocker->method('acquire')->willReturn(false);
+
+        $failingLockFactory = $this->createMock(LockFactory::class);
+        $failingLockFactory->method('createLocker')->willReturn($failingLocker);
+
+        $subject = new RateLimiterService(
+            $this->rateLimitCacheMock,
+            $this->configService,
+            $failingLockFactory,
+            $this->loggerMock,
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000012);
+
+        $subject->consumeRateLimit('login_options', '10.0.0.1');
+    }
+
+    #[Test]
     public function recordAttemptAcquiresAndReleasesLock(): void
     {
         $this->rateLimitCacheMock

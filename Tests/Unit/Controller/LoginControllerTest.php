@@ -198,7 +198,7 @@ final class LoginControllerTest extends TestCase
         $request = $this->createJsonRequest(['username' => 'admin']);
 
         $this->rateLimiterService
-            ->method('checkRateLimit')
+            ->method('consumeRateLimit')
             ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
 
         $response = $this->subject->optionsAction($request);
@@ -290,7 +290,7 @@ final class LoginControllerTest extends TestCase
         ]);
 
         $this->rateLimiterService
-            ->method('checkRateLimit')
+            ->method('consumeRateLimit')
             ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
 
         $response = $this->subject->verifyAction($request);
@@ -311,7 +311,7 @@ final class LoginControllerTest extends TestCase
             ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
 
         $this->rateLimiterService
-            ->method('checkRateLimit')
+            ->method('consumeRateLimit')
             ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
 
         $response = $this->subject->optionsAction($request);
@@ -570,7 +570,7 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
-    public function optionsActionRecordsAttempt(): void
+    public function optionsActionConsumesRateLimit(): void
     {
         $request = $this->createJsonRequest(['username' => 'admin']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
@@ -591,14 +591,14 @@ final class LoginControllerTest extends TestCase
 
         $this->rateLimiterService
             ->expects(self::once())
-            ->method('recordAttempt')
+            ->method('consumeRateLimit')
             ->with('login_options', self::anything());
 
         $this->subject->optionsAction($request);
     }
 
     #[Test]
-    public function verifyActionRecordsAttempt(): void
+    public function verifyActionConsumesRateLimit(): void
     {
         $request = $this->createJsonRequest([
             'username' => 'admin',
@@ -612,7 +612,7 @@ final class LoginControllerTest extends TestCase
 
         $this->rateLimiterService
             ->expects(self::once())
-            ->method('recordAttempt')
+            ->method('consumeRateLimit')
             ->with('login_verify', self::anything());
 
         $this->subject->verifyAction($request);
