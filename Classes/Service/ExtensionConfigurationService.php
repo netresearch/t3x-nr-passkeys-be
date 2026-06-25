@@ -57,6 +57,8 @@ final class ExtensionConfigurationService
             return $rpId;
         }
 
+        $this->assertHostTrustEnforced();
+
         $host = $this->getNormalizedParams()->getHttpHost();
 
         return $host !== '' ? $host : 'localhost';
@@ -69,11 +71,48 @@ final class ExtensionConfigurationService
             return $origin;
         }
 
+        $this->assertHostTrustEnforced();
+
         $params = $this->getNormalizedParams();
         $scheme = $params->isHttps() ? 'https' : 'http';
         $host = $params->getHttpHost();
 
         return $scheme . '://' . ($host !== '' ? $host : 'localhost');
+    }
+
+    /**
+     * Guard the rpId/origin auto-detection paths.
+     *
+     * When rpId/origin are left empty the anti-phishing anchor is derived from
+     * the request Host header (NormalizedParams::getHttpHost()). That value is
+     * only trustworthy when TYPO3's host-header validation (VerifyHostHeader,
+     * driven by $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern']) is
+     * actually enforcing a pattern. The framework treats both '' and the
+     * allow-all '.*' as "accept any Host", which turns the derived rpId/origin
+     * into attacker-controlled values. Fail closed in that case instead of
+     * emitting a Host-controlled anchor.
+     *
+     * @throws RuntimeException if host-header trust is disabled and no explicit
+     *                          rpId/origin is configured
+     */
+    private function assertHostTrustEnforced(): void
+    {
+        $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $pattern = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS'])
+            && \is_string($confVars['SYS']['trustedHostsPattern'] ?? null)
+            ? $confVars['SYS']['trustedHostsPattern']
+            : '';
+
+        // '' and '.*' both make VerifyHostHeader accept any Host header.
+        if ($pattern === '' || $pattern === '.*') {
+            throw new RuntimeException(
+                'Refusing to derive WebAuthn rpId/origin from the request Host header: '
+                . 'host-header validation is disabled (trustedHostsPattern is empty or ".*"). '
+                . 'Configure $GLOBALS[\'TYPO3_CONF_VARS\'][\'SYS\'][\'trustedHostsPattern\'] '
+                . 'with a strict pattern, or set the rpId and origin extension settings explicitly.',
+                1700000060,
+            );
+        }
     }
 
     /**
