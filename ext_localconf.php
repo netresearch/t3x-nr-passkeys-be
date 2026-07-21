@@ -34,9 +34,14 @@ ExtensionManagementUtility::addService(
 // WARNING and above: failed logins, lockouts, rate limiting, password-disable blocks.
 // INFO: successful logins, discoverable flow resolutions.
 // Uses ??= so site configuration can override.
+// The log must live in the project var path: a relative path resolves below
+// the public web root (typo3temp/), where the file may be world-readable and,
+// in containerized setups, the directory is often not writable by the PHP
+// user — an unwritable FileWriter throws and takes down every request that
+// logs a warning.
 $GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfiguration'][\TYPO3\CMS\Core\Log\LogLevel::WARNING] ??= [
     \TYPO3\CMS\Core\Log\Writer\FileWriter::class => [
-        'logFile' => 'typo3temp/var/log/passkey_auth.log',
+        'logFile' => \TYPO3\CMS\Core\Core\Environment::getVarPath() . '/log/passkey_auth.log',
     ],
 ];
 
