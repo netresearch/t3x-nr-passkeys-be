@@ -66,8 +66,11 @@ final class AdoptionStatsService
 
     /**
      * Count total active (non-deleted, non-disabled) backend users.
+     *
+     * Public because the dashboard adoption widget needs this single
+     * aggregate without triggering the full getStats() computation.
      */
-    private function countTotalActiveUsers(): int
+    public function countTotalActiveUsers(): int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
         $queryBuilder->getRestrictions()->removeAll();
@@ -87,14 +90,42 @@ final class AdoptionStatsService
 
     /**
      * Count distinct users who have at least one active (non-deleted, non-revoked) credential.
+     *
+     * Public because the dashboard adoption widget needs this single
+     * aggregate without triggering the full getStats() computation.
      */
-    private function countUsersWithPasskeys(): int
+    public function countUsersWithPasskeys(): int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_CREDENTIALS);
         $queryBuilder->getRestrictions()->removeAll();
 
         $result = $queryBuilder
             ->addSelectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('be_user') . ') AS cnt')
+            ->from(self::TABLE_CREDENTIALS)
+            ->where(
+                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder->expr()->eq('revoked_at', 0),
+            )
+            ->executeQuery()
+            ->fetchOne();
+
+        return \is_numeric($result) ? (int) $result : 0;
+    }
+
+    /**
+     * Count all active (non-deleted, non-revoked) passkey credentials.
+     *
+     * Unlike countUsersWithPasskeys() this counts credentials, not distinct
+     * users — one user may have registered several passkeys. Used by the
+     * dashboard credentials widget.
+     */
+    public function countActiveCredentials(): int
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_CREDENTIALS);
+        $queryBuilder->getRestrictions()->removeAll();
+
+        $result = $queryBuilder
+            ->count('uid')
             ->from(self::TABLE_CREDENTIALS)
             ->where(
                 $queryBuilder->expr()->eq('deleted', 0),

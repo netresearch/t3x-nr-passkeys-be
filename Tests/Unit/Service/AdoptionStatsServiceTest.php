@@ -327,6 +327,59 @@ final class AdoptionStatsServiceTest extends TestCase
         self::assertSame('', $stats->usersWithoutPasskeys[0]->groups);
     }
 
+    #[Test]
+    public function countTotalActiveUsersReturnsAggregateCount(): void
+    {
+        $this->connectionPool
+            ->expects(self::once())
+            ->method('getQueryBuilderForTable')
+            ->with('be_users')
+            ->willReturn($this->createCountQueryBuilder(7));
+
+        self::assertSame(7, $this->subject->countTotalActiveUsers());
+    }
+
+    #[Test]
+    public function countUsersWithPasskeysReturnsAggregateCount(): void
+    {
+        $this->connectionPool
+            ->expects(self::once())
+            ->method('getQueryBuilderForTable')
+            ->with('tx_nrpasskeysbe_credential')
+            ->willReturn($this->createSelectLiteralQueryBuilder(4));
+
+        self::assertSame(4, $this->subject->countUsersWithPasskeys());
+    }
+
+    #[Test]
+    public function countActiveCredentialsReturnsAggregateCount(): void
+    {
+        $this->connectionPool
+            ->expects(self::once())
+            ->method('getQueryBuilderForTable')
+            ->with('tx_nrpasskeysbe_credential')
+            ->willReturn($this->createCountQueryBuilder(11));
+
+        self::assertSame(11, $this->subject->countActiveCredentials());
+    }
+
+    #[Test]
+    public function countActiveCredentialsReturnsZeroForNonNumericResult(): void
+    {
+        $queryBuilder = $this->createBaseQueryBuilder();
+        $queryBuilder->method('count')->willReturnSelf();
+
+        $result = $this->createMock(Result::class);
+        $result->method('fetchOne')->willReturn(false);
+        $queryBuilder->method('executeQuery')->willReturn($result);
+
+        $this->connectionPool
+            ->method('getQueryBuilderForTable')
+            ->willReturn($queryBuilder);
+
+        self::assertSame(0, $this->subject->countActiveCredentials());
+    }
+
     /**
      * Create a QueryBuilder mock that returns a count result.
      */

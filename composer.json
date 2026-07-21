@@ -43,7 +43,11 @@
         "phpstan/extension-installer": "^1.4",
         "friendsofphp/php-cs-fixer": "^3.68",
         "typo3/testing-framework": "^8.2 || ^9.0",
+        "typo3/cms-dashboard": "^12.4 || ^13.4 || ^14.3",
         "phpat/phpat": "^0.12"
+    },
+    "suggest": {
+        "typo3/cms-dashboard": "Adds passkey adoption and credential-count widgets to the TYPO3 dashboard"
     },
     "autoload": {
         "psr-4": {

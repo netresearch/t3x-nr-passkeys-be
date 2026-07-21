@@ -20,6 +20,15 @@ parameters:
     excludePaths:
         - %currentWorkingDirectory%/.Build/*
         - %currentWorkingDirectory%/ext_emconf.php
+        # AdminOnlyWidgetInterface exists on TYPO3 v14.3+ only. On the
+        # v12/v13 matrix legs the missing interface makes PHPStan fail with
+        # an unignorable internal reflection error, so these two thin marker
+        # subclasses (no logic; wiring pinned by
+        # Tests/Unit/Widgets/AdminOnlyWidgetWiringTest.php on v14.3+) are
+        # excluded from analysis. They are only registered on v14.3+ via the
+        # guarded Configuration/Services.Dashboard.php.
+        - %currentWorkingDirectory%/Classes/Widgets/AdminOnlyDoughnutChartWidget.php
+        - %currentWorkingDirectory%/Classes/Widgets/AdminOnlyNumberWithIconWidget.php
 
     ignoreErrors:
         # --- Shared ignoreErrors (from typo3-ci-workflows) ---
