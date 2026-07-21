@@ -371,22 +371,8 @@ final class PasskeySetupInterstitialTest extends TestCase
     #[Test]
     public function interstitialUsesSchemeAwarePalette(): void
     {
-        $this->setUpBackendUser(1);
+        $body = $this->renderInterstitialBody();
 
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
-        $this->enforcementService->method('getStatus')->willReturn($status);
-
-        $request = $this->createMockRequest('main');
-        $handler = $this->createMockHandler();
-
-        $response = $this->subject->process($request, $handler);
-
-        $body = (string) $response->getBody();
         // Adapts to light AND dark schemes instead of a hardcoded dark palette
         self::assertStringContainsString('color-scheme: light dark', $body);
         self::assertStringContainsString('data-color-scheme="auto"', $body);
@@ -399,26 +385,31 @@ final class PasskeySetupInterstitialTest extends TestCase
     #[Test]
     public function interstitialHonorsUserDarkColorScheme(): void
     {
+        $body = $this->renderInterstitialBody(['colorScheme' => 'dark']);
+
+        self::assertStringContainsString('data-color-scheme="dark"', $body);
+    }
+
+    /**
+     * Render the interstitial for a user under Required enforcement and
+     * return the response body.
+     *
+     * @param array<string, mixed> $uc backend user settings (e.g. colorScheme)
+     */
+    private function renderInterstitialBody(array $uc = []): string
+    {
         $this->setUpBackendUser(1);
         $backendUser = $GLOBALS['BE_USER'];
         self::assertInstanceOf(BackendUserAuthentication::class, $backendUser);
-        $backendUser->uc = ['colorScheme' => 'dark'];
-
-        $status = new EnforcementStatus(
+        $backendUser->uc = $uc;
+        $this->enforcementService->method('getStatus')->willReturn(new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: \time(),
             hasPasskeys: false,
-        );
-        $this->enforcementService->method('getStatus')->willReturn($status);
+        ));
 
-        $request = $this->createMockRequest('main');
-        $handler = $this->createMockHandler();
-
-        $response = $this->subject->process($request, $handler);
-
-        $body = (string) $response->getBody();
-        self::assertStringContainsString('data-color-scheme="dark"', $body);
+        return (string) $this->subject->process($this->createMockRequest('main'), $this->createMockHandler())->getBody();
     }
 
     #[Test]
