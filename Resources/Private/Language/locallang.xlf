@@ -845,6 +845,12 @@
             <trans-unit id="help.faq.answer5" resname="help.faq.answer5">
                 <source>Yes. During the grace period, password login remains fully functional. After each password login, users see the setup interstitial but can skip it. Once the grace period expires, the interstitial becomes blocking and they must register a passkey before continuing to the backend.</source>
             </trans-unit>
+            <trans-unit id="widget.adoption.label.with_passkeys" resname="widget.adoption.label.with_passkeys">
+                <source>With passkeys</source>
+            </trans-unit>
+            <trans-unit id="widget.adoption.label.without_passkeys" resname="widget.adoption.label.without_passkeys">
+                <source>Without passkeys</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

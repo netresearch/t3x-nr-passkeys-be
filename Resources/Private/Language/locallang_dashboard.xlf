@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" datatype="plaintext" original="messages">
+        <body>
+            <trans-unit id="widget_group.nrpasskeys">
+                <source>Passkeys</source>
+            </trans-unit>
+            <trans-unit id="widget.adoption.title">
+                <source>Passkey adoption</source>
+            </trans-unit>
+            <trans-unit id="widget.adoption.description">
+                <source>Doughnut chart of active backend users with at least one active passkey versus those without any.</source>
+            </trans-unit>
+            <trans-unit id="widget.credentials.title">
+                <source>Active passkeys</source>
+            </trans-unit>
+            <trans-unit id="widget.credentials.subtitle">
+                <source>Registered backend credentials</source>
+            </trans-unit>
+            <trans-unit id="widget.credentials.description">
+                <source>Total number of active (not revoked) passkey credentials registered by backend users.</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

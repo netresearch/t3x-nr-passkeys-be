@@ -8,6 +8,10 @@ services:
     resource: '../Classes/*'
     exclude:
       - '../Classes/Domain/Model/*'
+      # Widget classes reference typo3/cms-dashboard interfaces (a suggest,
+      # not a requirement) and are registered explicitly in the guarded
+      # Services.Dashboard.php instead.
+      - '../Classes/Widgets/*'
 
   # Event listener tags for TYPO3 v12 (does not support #[AsEventListener] attribute).
   # v13+ ignores these tags when the attribute is present.
