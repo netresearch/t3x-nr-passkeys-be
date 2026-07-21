@@ -33,6 +33,9 @@ final readonly class InjectPasskeyBanner
             'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
             'js.',
         );
+        // Theme-aware banner styles (colors inherit from the core callout
+        // component so the banner follows the v14 light/dark scheme).
+        $this->pageRenderer->addCssFile('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyBanner.js');
     }
 }

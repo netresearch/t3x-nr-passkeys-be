@@ -285,14 +285,11 @@ function buildPasskeyUI(labels) {
   labels = labels || {};
   const divider = document.createElement('div');
   divider.className = 'passkey-divider mb-2 mt-2';
-  divider.setAttribute('style', 'display:flex;align-items:center;gap:8px');
   const hrLeft = document.createElement('hr');
-  hrLeft.setAttribute('style', 'flex:1;border:none;border-top:1px solid #ccc;margin:0');
   const orLabel = document.createElement('span');
-  orLabel.setAttribute('style', 'color:#999;font-size:12px;text-transform:uppercase;letter-spacing:1px');
+  orLabel.className = 'passkey-divider-label';
   orLabel.textContent = labels.dividerOr || 'or';
   const hrRight = document.createElement('hr');
-  hrRight.setAttribute('style', 'flex:1;border:none;border-top:1px solid #ccc;margin:0');
   divider.appendChild(hrLeft);
   divider.appendChild(orLabel);
   divider.appendChild(hrRight);

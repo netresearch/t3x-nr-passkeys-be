@@ -135,6 +135,25 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     }
 
     #[Test]
+    public function invokeAddsThemeAwareCssFile(): void
+    {
+        $this->setUpConfigService();
+
+        $this->pageRenderer
+            ->expects(self::once())
+            ->method('addCssFile')
+            ->with('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');
+
+        $this->pageRenderer
+            ->method('loadJavaScriptModule');
+
+        $this->pageRenderer
+            ->method('addJsInlineCode');
+
+        ($this->subject)($this->createEvent());
+    }
+
+    #[Test]
     public function invokeAddsInlineConfigScript(): void
     {
         $this->setUpConfigService(

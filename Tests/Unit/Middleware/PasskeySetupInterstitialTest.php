@@ -369,6 +369,59 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
+    public function interstitialUsesSchemeAwarePalette(): void
+    {
+        $this->setUpBackendUser(1);
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: \time(),
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+
+        $response = $this->subject->process($request, $handler);
+
+        $body = (string) $response->getBody();
+        // Adapts to light AND dark schemes instead of a hardcoded dark palette
+        self::assertStringContainsString('color-scheme: light dark', $body);
+        self::assertStringContainsString('data-color-scheme="auto"', $body);
+        self::assertStringContainsString('prefers-color-scheme: dark', $body);
+        // Brand teal accent instead of the former off-brand blue
+        self::assertStringContainsString('#2F99A4', $body);
+        self::assertStringNotContainsString('#0078d4', $body);
+    }
+
+    #[Test]
+    public function interstitialHonorsUserDarkColorScheme(): void
+    {
+        $this->setUpBackendUser(1);
+        $backendUser = $GLOBALS['BE_USER'];
+        self::assertInstanceOf(BackendUserAuthentication::class, $backendUser);
+        $backendUser->uc = ['colorScheme' => 'dark'];
+
+        $status = new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: \time(),
+            hasPasskeys: false,
+        );
+        $this->enforcementService->method('getStatus')->willReturn($status);
+
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+
+        $response = $this->subject->process($request, $handler);
+
+        $body = (string) $response->getBody();
+        self::assertStringContainsString('data-color-scheme="dark"', $body);
+    }
+
+    #[Test]
     public function interstitialShowsSkipButtonWhenCanSkip(): void
     {
         $this->setUpBackendUser(1);

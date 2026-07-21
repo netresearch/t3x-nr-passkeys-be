@@ -55,24 +55,12 @@ class PasskeyBanner {
     banner.className = 'callout callout-info passkey-setup-banner';
     banner.setAttribute('role', 'status');
     banner.setAttribute('aria-live', 'polite');
-    banner.style.cssText = [
-      'flex: 0 0 auto',
-      'width: 100%',
-      'margin: 0',
-      'border-radius: 0',
-      'background: #cce5ff',
-      'border-left: 4px solid #004085',
-      'border-bottom: 1px solid #b8daff',
-      'color: #004085',
-      'font-size: 0.85rem',
-    ].join(';');
 
     const body = document.createElement('div');
     body.className = 'callout-body';
-    body.style.cssText = 'display: flex; align-items: flex-start; justify-content: space-between; padding: 0.5rem 1rem; gap: 1rem;';
 
     const textWrapper = document.createElement('div');
-    textWrapper.style.cssText = 'flex: 1 1 auto; min-width: 0;';
+    textWrapper.className = 'passkey-banner-text';
 
     const title = document.createElement('strong');
     title.textContent = data.gracePeriodRemainingDays > 0
@@ -81,7 +69,6 @@ class PasskeyBanner {
 
     const description = document.createElement('div');
     description.className = 'passkey-banner-description';
-    description.style.cssText = 'margin-top: 0.15rem;';
     description.textContent = this.translate('js.banner.description',
       'Passkeys replace your password with fingerprint, face, or security key authentication \u2014 faster to use and resistant to phishing attacks.');
 
@@ -90,13 +77,11 @@ class PasskeyBanner {
     learnMore.target = '_blank';
     learnMore.rel = 'noopener noreferrer';
     learnMore.textContent = this.translate('js.banner.learnMore', 'Learn more');
-    learnMore.style.cssText = 'margin-left: 0.5rem; color: #004085; text-decoration: underline;';
     description.appendChild(document.createTextNode(' '));
     description.appendChild(learnMore);
 
     const help = document.createElement('div');
     help.className = 'passkey-banner-help';
-    help.style.cssText = 'margin-top: 0.15rem; font-size: 0.8rem; opacity: 0.85;';
     help.textContent = this.translate('js.banner.help', 'Need help? Contact your administrator.');
 
     textWrapper.appendChild(title);
@@ -104,13 +89,12 @@ class PasskeyBanner {
     textWrapper.appendChild(help);
 
     const actions = document.createElement('span');
-    actions.style.cssText = 'white-space: nowrap; padding-top: 0.15rem;';
+    actions.className = 'passkey-banner-actions';
 
     const setupLink = document.createElement('a');
     setupLink.href = '#';
     setupLink.className = 'btn btn-sm btn-primary';
     setupLink.textContent = this.translate('js.banner.setup', 'Set up now');
-    setupLink.style.marginRight = '0.5rem';
     setupLink.addEventListener('click', (e) => {
       e.preventDefault();
       top.TYPO3.ModuleMenu.App.showModule('user_setup');

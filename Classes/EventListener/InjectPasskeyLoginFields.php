@@ -35,6 +35,9 @@ final readonly class InjectPasskeyLoginFields
         // login module can be loaded as an ES module. window.NrPasskeysBeConfig is set
         // below via a classic inline script, which runs before the deferred module — so
         // the config is available by the time the module's init() runs.
+        // Scheme-neutral divider/button styles (currentColor + opacity) so the
+        // injected login UI adapts to the light and dark login screens.
+        $this->pageRenderer->addCssFile('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyLogin.js');
 
         $passkeyConfig = [

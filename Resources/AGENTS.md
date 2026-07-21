@@ -46,7 +46,7 @@ Resources/
 - Banner config comes from `InjectPasskeyBanner` event listener via inline JS
 - JavaScript uses browser WebAuthn API (`navigator.credentials.create/get`)
 - JS modules use TYPO3 `@typo3/backend/` imports for Modal, Notification, etc.
-- Icons are SVG format
-- No CSS files -- uses TYPO3 backend default styling + inline styles for banner
+- Icons are SVG format (v14 three-color style: currentColor + 40% detail + `var(--nr-icon-accent, #2F99A4)`; `.legacy` teal-tile variant for v12/v13)
+- `Public/Css/backend.css` holds theme-aware styles for banner + login divider (colors via core callout classes / currentColor, never hardcoded)
 - V14 DOM: uses web components (`typo3-backend-module-router`) instead of `.scaffold-content-module`
 - Banner container detection uses fallback chain for v12/v13/v14 compatibility

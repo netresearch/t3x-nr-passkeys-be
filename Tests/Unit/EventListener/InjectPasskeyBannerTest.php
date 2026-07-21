@@ -54,4 +54,20 @@ final class InjectPasskeyBannerTest extends TestCase
         $subject = new InjectPasskeyBanner($pageRenderer);
         $subject($event);
     }
+
+    #[Test]
+    public function invokeAddsThemeAwareCssFile(): void
+    {
+        $pageRenderer = $this->createMock(PageRenderer::class);
+        $pageRenderer
+            ->expects(self::once())
+            ->method('addCssFile')
+            ->with('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');
+
+        $view = $this->createMock(ViewInterface::class);
+        $event = new AfterBackendPageRenderEvent('<html></html>', $view);
+
+        $subject = new InjectPasskeyBanner($pageRenderer);
+        $subject($event);
+    }
 }

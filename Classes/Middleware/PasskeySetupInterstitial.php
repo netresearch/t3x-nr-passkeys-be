@@ -211,7 +211,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             'canSkip' => $status->canSkip(),
         ]);
 
-        return $this->renderInterstitial($status, $backendPath, $nonce);
+        return $this->renderInterstitial($status, $backendPath, $nonce, $this->resolveColorScheme($backendUser));
     }
 
     /**
@@ -240,6 +240,19 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
     }
 
     /**
+     * Resolve the user's backend color scheme preference (TYPO3 v13.3+).
+     *
+     * Returns 'light', 'dark' or 'auto'. On v12 (no colorScheme user setting)
+     * this returns 'auto', which follows the operating system preference.
+     */
+    private function resolveColorScheme(BackendUserAuthentication $backendUser): string
+    {
+        $scheme = $backendUser->uc['colorScheme'] ?? null;
+
+        return \is_string($scheme) && \in_array($scheme, ['light', 'dark'], true) ? $scheme : 'auto';
+    }
+
+    /**
      * Determine the backend base path from the normalized request parameters.
      *
      * Falls back to '/typo3/' when normalized params are unavailable.
@@ -263,7 +276,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
      * Uses inline PHP-rendered HTML for cross-version compatibility (v12/v13/v14).
      * All user-facing strings use LanguageService for i18n when available.
      */
-    private function renderInterstitial(EnforcementStatus $status, string $backendPath, string $nonce): HtmlResponse
+    private function renderInterstitial(EnforcementStatus $status, string $backendPath, string $nonce, string $colorScheme): HtmlResponse
     {
         $remainingDays = $status->gracePeriodRemainingDays();
         $canSkip = $status->canSkip();
@@ -303,19 +316,10 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             $escapedSkipLabel = \htmlspecialchars($skipLabel, ENT_QUOTES, 'UTF-8');
 
             $skipButton = <<<HTML
-                        <form method="post" action="{$escapedBackendPath}" style="display:inline">
+                        <form method="post" action="{$escapedBackendPath}" class="skip-form">
                             <input type="hidden" name="passkey_setup_skip" value="1" />
                             <input type="hidden" name="passkey_setup_nonce" value="{$escapedNonce}" />
-                            <button type="submit" class="btn-skip" style="
-                                padding: 10px 24px;
-                                background: transparent;
-                                color: #c9c9c9;
-                                border: 1px solid #8a8a8a;
-                                border-radius: 4px;
-                                font-size: 14px;
-                                cursor: pointer;
-                                text-decoration: none;
-                            ">{$escapedSkipLabel}</button>
+                            <button type="submit" class="btn-skip">{$escapedSkipLabel}</button>
                         </form>
 HTML;
         }
@@ -332,20 +336,57 @@ HTML;
             }
         }
         $escapedHtmlLang = \htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8');
+        $escapedColorScheme = \htmlspecialchars($colorScheme, ENT_QUOTES, 'UTF-8');
 
         $html = <<<HTML
 <!DOCTYPE html>
-<html lang="{$escapedHtmlLang}">
+<html lang="{$escapedHtmlLang}" data-color-scheme="{$escapedColorScheme}">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{$escapedTitle}</title>
     <style>
+        /* Scheme-aware palette: light defaults, dark values applied either by
+           the OS preference (data-color-scheme="auto") or the user's explicit
+           TYPO3 backend color scheme setting. Brand teal (#2F99A4) accents. */
+        :root {
+            color-scheme: light dark;
+            --int-bg: #ffffff;
+            --int-text: #313131;
+            --int-text-strong: #000000;
+            --int-text-muted: #6a6a6a;
+            --int-surface: #f5f5f5;
+            --int-border: #cccccc;
+            --int-accent: #2F99A4;
+            --int-accent-text: #ffffff;
+        }
+        :root[data-color-scheme="light"] {
+            color-scheme: light;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-color-scheme="light"]) {
+                --int-bg: #1e1e1e;
+                --int-text: #e0e0e0;
+                --int-text-strong: #ffffff;
+                --int-text-muted: #b0b0b0;
+                --int-surface: #2a2a2a;
+                --int-border: #444444;
+            }
+        }
+        :root[data-color-scheme="dark"] {
+            color-scheme: dark;
+            --int-bg: #1e1e1e;
+            --int-text: #e0e0e0;
+            --int-text-strong: #ffffff;
+            --int-text-muted: #b0b0b0;
+            --int-surface: #2a2a2a;
+            --int-border: #444444;
+        }
         body {
             margin: 0;
             padding: 0;
-            background: #1e1e1e;
-            color: #e0e0e0;
+            background: var(--int-bg);
+            color: var(--int-text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             align-items: center;
@@ -361,12 +402,12 @@ HTML;
             font-size: 28px;
             font-weight: 600;
             margin-bottom: 16px;
-            color: #ffffff;
+            color: var(--int-text-strong);
         }
         .description {
             font-size: 15px;
             line-height: 1.6;
-            color: #b0b0b0;
+            color: var(--int-text-muted);
             margin-bottom: 24px;
         }
         .grace-period {
@@ -374,8 +415,8 @@ HTML;
             padding: 12px 20px;
             border-radius: 6px;
             margin-bottom: 32px;
-            background: #2a2a2a;
-            border: 1px solid #444;
+            background: var(--int-surface);
+            border: 1px solid var(--int-border);
         }
         .actions {
             display: flex;
@@ -383,24 +424,37 @@ HTML;
             gap: 12px;
             align-items: center;
         }
+        .skip-form {
+            display: inline;
+        }
         .btn-setup {
             display: inline-block;
             padding: 12px 32px;
-            background: #0078d4;
-            color: #ffffff;
+            background: var(--int-accent);
+            color: var(--int-accent-text);
             border: none;
             border-radius: 4px;
             font-size: 15px;
-            font-weight: 500;
+            font-weight: 600;
             text-decoration: none;
             cursor: pointer;
         }
         .btn-setup:hover {
-            background: #106ebe;
+            filter: brightness(0.92);
+        }
+        .btn-skip {
+            padding: 10px 24px;
+            background: transparent;
+            color: var(--int-text-muted);
+            border: 1px solid var(--int-border);
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
         }
         .btn-setup:focus-visible,
         .btn-skip:focus-visible {
-            outline: 2px solid #ffffff;
+            outline: 2px solid var(--int-accent);
             outline-offset: 2px;
         }
     </style>
