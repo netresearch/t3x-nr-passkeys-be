@@ -369,6 +369,50 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
+    public function interstitialUsesSchemeAwarePalette(): void
+    {
+        $body = $this->renderInterstitialBody();
+
+        // Adapts to light AND dark schemes instead of a hardcoded dark palette
+        self::assertStringContainsString('color-scheme: light dark', $body);
+        self::assertStringContainsString('data-color-scheme="auto"', $body);
+        self::assertStringContainsString('prefers-color-scheme: dark', $body);
+        // Brand teal accent instead of the former off-brand blue
+        self::assertStringContainsString('#2F99A4', $body);
+        self::assertStringNotContainsString('#0078d4', $body);
+    }
+
+    #[Test]
+    public function interstitialHonorsUserDarkColorScheme(): void
+    {
+        $body = $this->renderInterstitialBody(['colorScheme' => 'dark']);
+
+        self::assertStringContainsString('data-color-scheme="dark"', $body);
+    }
+
+    /**
+     * Render the interstitial for a user under Required enforcement and
+     * return the response body.
+     *
+     * @param array<string, mixed> $uc backend user settings (e.g. colorScheme)
+     */
+    private function renderInterstitialBody(array $uc = []): string
+    {
+        $this->setUpBackendUser(1);
+        $backendUser = $GLOBALS['BE_USER'];
+        self::assertInstanceOf(BackendUserAuthentication::class, $backendUser);
+        $backendUser->uc = $uc;
+        $this->enforcementService->method('getStatus')->willReturn(new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 14,
+            gracePeriodStart: \time(),
+            hasPasskeys: false,
+        ));
+
+        return (string) $this->subject->process($this->createMockRequest('main'), $this->createMockHandler())->getBody();
+    }
+
+    #[Test]
     public function interstitialShowsSkipButtonWhenCanSkip(): void
     {
         $this->setUpBackendUser(1);

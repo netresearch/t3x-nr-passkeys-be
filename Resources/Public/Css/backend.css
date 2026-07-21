@@ -1,0 +1,82 @@
+/**
+ * Backend styles for nr_passkeys_be.
+ *
+ * Scheme-neutral by design: colors come from the TYPO3 core component
+ * classes (callout, btn) or from currentColor + opacity, so every rule
+ * renders correctly in the TYPO3 v14 light AND dark backend schemes and
+ * degrades gracefully on v12/v13.
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+/* Encourage-stage adoption banner (injected by PasskeyBanner.js).
+   Colors are inherited from the core "callout callout-info" component,
+   which is theme-aware in v14 and styled appropriately in v12/v13. */
+.passkey-setup-banner {
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+  font-size: 0.85rem;
+}
+
+.passkey-setup-banner .callout-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  gap: 1rem;
+}
+
+.passkey-banner-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.passkey-banner-description {
+  margin-top: 0.15rem;
+}
+
+.passkey-banner-description a {
+  margin-left: 0.5rem;
+  color: inherit;
+  text-decoration: underline;
+}
+
+.passkey-banner-help {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.passkey-banner-actions {
+  display: inline-flex;
+  gap: 0.5rem;
+  white-space: nowrap;
+  padding-top: 0.15rem;
+}
+
+/* Login-form "or" divider (injected by PasskeyLogin.js).
+   currentColor + opacity adapts to the login card's text color in any
+   scheme instead of hardcoding light-theme greys. */
+.passkey-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.passkey-divider hr {
+  flex: 1;
+  border: none;
+  border-top: 1px solid currentColor;
+  opacity: 0.25;
+  margin: 0;
+}
+
+.passkey-divider-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.65;
+}

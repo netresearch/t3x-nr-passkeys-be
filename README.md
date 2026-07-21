@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://www.netresearch.de/">
-    <img src="Resources/Public/Icons/Extension.svg" alt="Netresearch" width="80" height="80">
+    <img src="Resources/Public/Icons/Extension.svg" alt="nr_passkeys_be extension icon" width="80" height="80">
   </a>
 </p>
 
