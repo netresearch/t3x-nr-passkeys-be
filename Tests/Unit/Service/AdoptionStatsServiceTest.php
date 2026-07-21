@@ -449,6 +449,7 @@ final class AdoptionStatsServiceTest extends TestCase
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $queryBuilder->method('getRestrictions')->willReturn($restrictions);
         $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('join')->willReturnSelf();
         $queryBuilder->method('where')->willReturnSelf();
         $queryBuilder->method('expr')->willReturn($expressionBuilder);
         $queryBuilder->method('createNamedParameter')->willReturn("'mocked'");

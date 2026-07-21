@@ -113,11 +113,13 @@ final class AdoptionStatsService
     }
 
     /**
-     * Count all active (non-deleted, non-revoked) passkey credentials.
+     * Count all active (non-deleted, non-revoked) passkey credentials that
+     * belong to active (non-deleted, non-disabled) backend users.
      *
      * Unlike countUsersWithPasskeys() this counts credentials, not distinct
-     * users — one user may have registered several passkeys. Used by the
-     * dashboard credentials widget.
+     * users — one user may have registered several passkeys. The join on
+     * be_users keeps leftover credentials of soft-deleted or disabled users
+     * out of the count. Used by the dashboard credentials widget.
      */
     public function countActiveCredentials(): int
     {
@@ -125,11 +127,22 @@ final class AdoptionStatsService
         $queryBuilder->getRestrictions()->removeAll();
 
         $result = $queryBuilder
-            ->count('uid')
+            ->count(self::TABLE_CREDENTIALS . '.uid')
             ->from(self::TABLE_CREDENTIALS)
+            ->join(
+                self::TABLE_CREDENTIALS,
+                self::TABLE_USERS,
+                'u',
+                $queryBuilder->expr()->eq(
+                    self::TABLE_CREDENTIALS . '.be_user',
+                    $queryBuilder->quoteIdentifier('u.uid'),
+                ),
+            )
             ->where(
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('revoked_at', 0),
+                $queryBuilder->expr()->eq(self::TABLE_CREDENTIALS . '.deleted', 0),
+                $queryBuilder->expr()->eq(self::TABLE_CREDENTIALS . '.revoked_at', 0),
+                $queryBuilder->expr()->eq('u.deleted', 0),
+                $queryBuilder->expr()->eq('u.disable', 0),
             )
             ->executeQuery()
             ->fetchOne();

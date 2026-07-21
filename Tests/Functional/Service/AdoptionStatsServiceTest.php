@@ -249,4 +249,53 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         // Disabled user should NOT be counted
         self::assertSame(5, $stats->totalUsers);
     }
+
+    #[Test]
+    public function countActiveCredentialsCountsActiveCredentialsOfActiveUsersOnly(): void
+    {
+        // credential.csv: user 1 has 2 active + 1 revoked + 1 deleted,
+        // user 2 has 1 active => 3 active credentials of active users
+        self::assertSame(3, $this->subject->countActiveCredentials());
+
+        // A leftover active credential of a disabled user must not count
+        $connectionPool = $this->get(\TYPO3\CMS\Core\Database\ConnectionPool::class);
+        $connectionPool->getConnectionForTable('be_users')->insert('be_users', [
+            'uid' => 102,
+            'pid' => 0,
+            'username' => 'disabledwithpasskey',
+            'password' => 'pass',
+            'admin' => 0,
+            'disable' => 1,
+            'deleted' => 0,
+            'usergroup' => '1',
+        ]);
+        $connectionPool->getConnectionForTable('tx_nrpasskeysbe_credential')->insert('tx_nrpasskeysbe_credential', [
+            'uid' => 100,
+            'pid' => 0,
+            'be_user' => 102,
+            'credential_id' => 'credential-id-disabled-user',
+            'public_key_cose' => 'public-key-cose-data-disabled',
+            'sign_count' => 0,
+            'user_handle' => 'user-handle-disabled',
+            'aaguid' => '00000000-0000-0000-0000-000000000005',
+            'transports' => '["usb"]',
+            'label' => 'Disabled User Credential',
+            'created_at' => 1_700_000_000,
+            'last_used_at' => 0,
+            'revoked_at' => 0,
+            'revoked_by' => 0,
+            'deleted' => 0,
+        ]);
+
+        self::assertSame(3, $this->subject->countActiveCredentials());
+    }
+
+    #[Test]
+    public function countAggregatesMatchGetStats(): void
+    {
+        $stats = $this->subject->getStats();
+
+        self::assertSame($stats->totalUsers, $this->subject->countTotalActiveUsers());
+        self::assertSame($stats->usersWithPasskeys, $this->subject->countUsersWithPasskeys());
+    }
 }
