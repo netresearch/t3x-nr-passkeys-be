@@ -42,6 +42,7 @@ final readonly class InjectPasskeyLoginFields
 
         $passkeyConfig = [
             'loginOptionsUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_options'),
+            'loginVerifyUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_verify'),
             'rpId' => $this->configService->getEffectiveRpId(),
             'origin' => $this->configService->getEffectiveOrigin(),
             'discoverableEnabled' => $config->isDiscoverableLoginEnabled(),

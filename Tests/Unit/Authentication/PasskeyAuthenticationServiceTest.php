@@ -116,6 +116,74 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         ], JSON_THROW_ON_ERROR);
     }
 
+    /**
+     * Build a passkey_token payload JSON string as the JS puts into userident
+     * after the /passkeys/login/verify endpoint returned a login token.
+     */
+    private static function buildTokenUident(string $token): string
+    {
+        return \json_encode(['_type' => 'passkey_token', 'token' => $token], JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Stub the singleton CacheManager so the nonce cache resolves the given
+     * login token to the stored value (false = not found / expired).
+     */
+    private function stubTokenCache(string $token, string|false $value): void
+    {
+        $cache = $this->createMock(\TYPO3\CMS\Core\Cache\Frontend\FrontendInterface::class);
+        $cache->method('get')->with('passkey_login_' . $token)->willReturn($value);
+        $cacheManager = $this->createStub(\TYPO3\CMS\Core\Cache\CacheManager::class);
+        $cacheManager->method('getCache')->willReturn($cache);
+        GeneralUtility::setSingletonInstance(\TYPO3\CMS\Core\Cache\CacheManager::class, $cacheManager);
+    }
+
+    // --- token-based login (pre-verified by /passkeys/login/verify) ---
+
+    #[Test]
+    public function authUserAcceptsValidLoginToken(): void
+    {
+        $this->stubTokenCache('tok123', '42');
+        $this->subject->login = [
+            'uname' => '',
+            'uident' => self::buildTokenUident('tok123'),
+        ];
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertSame(200, $result);
+    }
+
+    #[Test]
+    public function authUserRejectsLoginTokenBoundToDifferentUser(): void
+    {
+        // Token maps to uid 99; authUser runs for uid 42 → must not accept it as
+        // a passkey login (falls through to the password-enforcement path).
+        $this->stubTokenCache('tok123', '99');
+        $this->subject->login = [
+            'uname' => '',
+            'uident' => self::buildTokenUident('tok123'),
+        ];
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertNotSame(200, $result);
+    }
+
+    #[Test]
+    public function authUserIgnoresUnknownOrExpiredLoginToken(): void
+    {
+        $this->stubTokenCache('tok123', false);
+        $this->subject->login = [
+            'uname' => '',
+            'uident' => self::buildTokenUident('tok123'),
+        ];
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertNotSame(200, $result);
+    }
+
     // --- authUser tests ---
 
     #[Test]
