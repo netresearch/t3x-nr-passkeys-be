@@ -71,8 +71,66 @@ function init() {
   // Detect failed passkey login from previous attempt
   checkForFailedPasskeyLogin();
 
+  // Holds the AbortController of a pending conditional-mediation get() so an
+  // explicit button click can cancel it first (only one credentials.get() may
+  // be in flight at a time).
+  let conditionalAbort = null;
+
   if (loginBtn) {
     loginBtn.addEventListener('click', handlePasskeyLogin);
+  }
+
+  // Conditional UI / Autofill: surface discoverable passkeys directly in the
+  // standard username field's autofill menu, so a returning user does not have
+  // to click the passkey button. Requires discoverable (resident) credentials
+  // and browser support for conditional mediation; degrades silently to the
+  // button otherwise. See passkeys.dev "Conditional UI".
+  if (config.discoverableEnabled && usernameInput
+      && typeof PublicKeyCredential.isConditionalMediationAvailable === 'function') {
+    startConditionalLogin();
+  }
+
+  async function startConditionalLogin() {
+    let available = false;
+    try {
+      available = await PublicKeyCredential.isConditionalMediationAvailable();
+    } catch (e) {
+      return;
+    }
+    if (!available) return;
+
+    // Advertise WebAuthn autofill on the standard username field without
+    // clobbering an existing autocomplete token.
+    const existing = usernameInput.getAttribute('autocomplete') || '';
+    if (existing.indexOf('webauthn') === -1) {
+      usernameInput.setAttribute('autocomplete', (existing ? existing + ' ' : 'username ') + 'webauthn');
+    }
+
+    // Prefetch discoverable assertion options quietly: a 429/rate-limit or any
+    // error here must NOT surface on page load — the explicit button remains.
+    const optionsData = await fetchAssertionOptions('', true);
+    if (!optionsData) return;
+
+    const publicKeyOptions = buildPublicKeyOptions(optionsData.options);
+    conditionalAbort = new AbortController();
+    try {
+      const assertion = await navigator.credentials.get({
+        publicKey: publicKeyOptions,
+        mediation: 'conditional',
+        signal: conditionalAbort.signal,
+      });
+      conditionalAbort = null;
+      // Discoverable login: username stays empty; the server resolves the user
+      // from the assertion's userHandle.
+      submitAssertion(encodeAssertion(assertion), optionsData.challengeToken, '');
+    } catch (err) {
+      conditionalAbort = null;
+      // Abort (explicit button took over) and NotAllowedError (user dismissed
+      // the autofill) are normal for conditional UI — stay silent.
+      if (err.name !== 'AbortError' && err.name !== 'NotAllowedError') {
+        console.error('Passkey conditional login error:', err);
+      }
+    }
   }
 
   function checkForFailedPasskeyLogin() {
@@ -96,6 +154,12 @@ function init() {
 
   async function handlePasskeyLogin() {
     hideError();
+    // Cancel a pending conditional get() first — only one credentials.get()
+    // ceremony may run at a time.
+    if (conditionalAbort) {
+      conditionalAbort.abort();
+      conditionalAbort = null;
+    }
     const username = usernameInput ? usernameInput.value.trim() : '';
 
     if (!username && !config.discoverableEnabled) {
@@ -131,18 +195,32 @@ function init() {
   /**
    * Fetch assertion options from the server. On an error response the user is
    * informed and null is returned; otherwise the parsed options payload.
+   *
+   * When `silent` is true (conditional-UI prefetch on page load) errors are
+   * swallowed and null is returned without surfacing a message — the explicit
+   * button flow stays the visible path.
    */
-  async function fetchAssertionOptions(username) {
-    const optionsResponse = await fetch(optionsUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username: username }),
-    });
+  async function fetchAssertionOptions(username, silent) {
+    let optionsResponse;
+    try {
+      optionsResponse = await fetch(optionsUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: username }),
+      });
+    } catch (e) {
+      if (!silent) showError(L.errorGeneric || 'Authentication failed. Please try again.');
+      return null;
+    }
 
     if (optionsResponse.ok) {
       return optionsResponse.json();
+    }
+
+    if (silent) {
+      return null;
     }
 
     const data = await optionsResponse.json().catch(function () { return {}; });
