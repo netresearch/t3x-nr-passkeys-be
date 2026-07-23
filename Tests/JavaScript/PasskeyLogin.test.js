@@ -246,3 +246,50 @@ describe('base64urlToBuffer edge cases', () => {
         expect(decoded).toEqual(large);
     });
 });
+
+describe('signalUnknownCredential guard', () => {
+    /**
+     * Mirrors the shipped signalUnknownCredential() guard (inside the
+     * PasskeyLogin.js IIFE): best-effort, feature-detected, never throws, and
+     * only fires with a concrete rpId + credentialId.
+     */
+    function signalUnknownCredential(PKC, rpId, credentialId) {
+        let called = null;
+        try {
+            if (PKC && typeof PKC.signalUnknownCredential === 'function' && rpId && credentialId) {
+                const result = PKC.signalUnknownCredential({ rpId, credentialId });
+                called = { rpId, credentialId };
+                if (result && typeof result.catch === 'function') {
+                    result.catch(() => {});
+                }
+            }
+        } catch {
+            // best-effort
+        }
+        return called;
+    }
+
+    it('calls the API with rpId + credentialId when supported', () => {
+        let seen = null;
+        const PKC = { signalUnknownCredential: (arg) => { seen = arg; return Promise.resolve(); } };
+        const called = signalUnknownCredential(PKC, 'example.com', 'CRED123');
+        expect(called).toEqual({ rpId: 'example.com', credentialId: 'CRED123' });
+        expect(seen).toEqual({ rpId: 'example.com', credentialId: 'CRED123' });
+    });
+
+    it('is a no-op when the Signal API is unavailable', () => {
+        expect(signalUnknownCredential({}, 'example.com', 'CRED123')).toBeNull();
+        expect(signalUnknownCredential(undefined, 'example.com', 'CRED123')).toBeNull();
+    });
+
+    it('is a no-op when rpId or credentialId is missing', () => {
+        const PKC = { signalUnknownCredential: () => Promise.resolve() };
+        expect(signalUnknownCredential(PKC, '', 'CRED123')).toBeNull();
+        expect(signalUnknownCredential(PKC, 'example.com', '')).toBeNull();
+    });
+
+    it('swallows a rejecting promise (best-effort)', () => {
+        const PKC = { signalUnknownCredential: () => Promise.reject(new Error('x')) };
+        expect(() => signalUnknownCredential(PKC, 'example.com', 'CRED123')).not.toThrow();
+    });
+});

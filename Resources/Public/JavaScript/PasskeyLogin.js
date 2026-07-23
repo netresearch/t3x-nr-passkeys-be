@@ -121,8 +121,8 @@ function init() {
       });
       conditionalAbort = null;
       // Discoverable login: username stays empty; the server resolves the user
-      // from the assertion's userHandle.
-      submitAssertion(encodeAssertion(assertion), optionsData.challengeToken, '');
+      // from the credential ID.
+      await verifyAndSubmit(encodeAssertion(assertion), optionsData.options, optionsData.challengeToken, '');
     } catch (err) {
       conditionalAbort = null;
       // Abort (explicit button took over) and NotAllowedError (user dismissed
@@ -183,13 +183,111 @@ function init() {
       const publicKeyOptions = buildPublicKeyOptions(optionsData.options);
       const assertion = await navigator.credentials.get({ publicKey: publicKeyOptions });
 
-      // Step 3: Encode and submit the assertion via the TYPO3 login form
+      // Step 3: Verify server-side, then submit the resulting login token.
       const credentialResponse = encodeAssertion(assertion);
-      submitAssertion(credentialResponse, optionsData.challengeToken, username);
+      await verifyAndSubmit(credentialResponse, optionsData.options, optionsData.challengeToken, username);
     } catch (err) {
       setLoading(false);
       handleAuthError(err);
     }
+  }
+
+  /**
+   * Verify the assertion at the /passkeys/login/verify endpoint. On success the
+   * server returns a single-use login token, which is submitted through the
+   * standard login form (the auth service consumes it — the challenge is
+   * single-use and cannot be verified again). On the discoverable path a
+   * credential the server does not know yields reason "unknown_credential", which
+   * we report to the authenticator via the WebAuthn Signal API.
+   */
+  async function verifyAndSubmit(credentialResponse, options, challengeToken, username) {
+    // Backward-compatible fallback: no verify endpoint injected → submit the raw
+    // assertion through the login form as before.
+    if (!config.loginVerifyUrl) {
+      submitAssertion(credentialResponse, challengeToken, username);
+      return;
+    }
+
+    let verifyResponse;
+    try {
+      verifyResponse = await fetch(config.loginVerifyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assertion: credentialResponse,
+          challengeToken: challengeToken,
+          username: username,
+        }),
+      });
+    } catch (e) {
+      setLoading(false);
+      showError(L.errorGeneric || 'Authentication failed. Please try again.');
+      return;
+    }
+
+    const data = await verifyResponse.json().catch(function () { return {}; });
+
+    if (verifyResponse.ok && data.status === 'ok' && data.loginToken) {
+      submitLoginToken(data.loginToken, username);
+      return;
+    }
+
+    setLoading(false);
+
+    // The server confirmed this credential ID is not (or no longer) registered
+    // (discoverable path only — never for username-first, to keep the decoy
+    // enumeration defence intact). Ask the authenticator to prune the orphan.
+    if (data.reason === 'unknown_credential') {
+      signalUnknownCredential(options.rpId, credentialResponse.id);
+    }
+
+    if (verifyResponse.status === 429) {
+      showError(data.locked
+        ? (L.errorLocked || 'Account temporarily locked. Please contact your administrator.')
+        : (L.errorRateLimit || 'Too many attempts. Please try again later.'));
+    } else {
+      showError(data.error || L.errorGeneric || 'Authentication failed. Please try again.');
+    }
+  }
+
+  /**
+   * Submit a verified single-use login token through the standard TYPO3 login
+   * form. The token is packed into userident as JSON; the auth service resolves
+   * and consumes it.
+   */
+  function submitLoginToken(token, username) {
+    const useridentField = document.querySelector('.t3js-login-userident-field');
+    if (useridentField) {
+      useridentField.value = JSON.stringify({ _type: 'passkey_token', token: token });
+    }
+    if (usernameInput) {
+      usernameInput.value = username;
+    }
+    try { sessionStorage.setItem('nr_passkey_attempt', '1'); } catch (e) { /* ignore */ }
+    loginForm.submit();
+  }
+
+  /**
+   * Best-effort WebAuthn Signal API call: report a credential ID the server no
+   * longer recognises so a supporting authenticator/password manager can remove
+   * the orphaned passkey. Feature-detected and error-swallowing.
+   */
+  function signalUnknownCredential(rpId, credentialId) {
+    if (!window.PublicKeyCredential
+        || typeof PublicKeyCredential.signalUnknownCredential !== 'function'
+        || !rpId || !credentialId) {
+      return;
+    }
+    // Fire-and-forget: an async IIFE keeps the awaited call and its rejection
+    // handling together, and `void` explicitly discards the promise so nothing
+    // escapes unhandled. A failure here must never affect the login flow.
+    void (async function () {
+      try {
+        await PublicKeyCredential.signalUnknownCredential({ rpId: rpId, credentialId: credentialId });
+      } catch (e) {
+        /* best-effort: Signal API support varies */
+      }
+    })();
   }
 
   /**

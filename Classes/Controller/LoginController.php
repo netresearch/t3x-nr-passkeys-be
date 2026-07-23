@@ -17,13 +17,22 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\NormalizedParams;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 final class LoginController
 {
     use JsonBodyTrait;
+
+    /**
+     * Generic auth-failure message. Deliberately identical across the unknown-user,
+     * unknown-credential and verification-failure cases so the response cannot be
+     * used as an enumeration oracle.
+     */
+    private const AUTH_FAILED = 'Authentication failed';
 
     public function __construct(
         private readonly WebAuthnService $webAuthnService,
@@ -133,13 +142,21 @@ final class LoginController
     }
 
     /**
-     * Verify assertion is not needed as a separate endpoint.
-     * The verification happens through the standard TYPO3 login form submission
-     * with hidden fields (passkey_assertion + passkey_challenge_token).
+     * Verify an assertion and, on success, issue a short-lived single-use login
+     * token that the JS submits through the standard login form; the auth
+     * service consumes the token instead of re-verifying the assertion (the
+     * challenge is single-use, so it cannot be verified twice).
      *
-     * This endpoint exists for optional AJAX-only flow.
+     * Returning a structured result lets the client drive the WebAuthn Signal
+     * API: on the DISCOVERABLE path, a credential ID that is not in the store is
+     * reported as reason "unknown_credential" so the authenticator can prune the
+     * orphaned passkey. The username-first path never sets that reason — the
+     * response for "unknown user" and "known user, unknown credential" must be
+     * identical, otherwise the decoy (username-enumeration) defence becomes an
+     * oracle.
      *
      * POST /passkeys/login/verify
+     * Body: { "assertion": {...}, "challengeToken": "...", "username"?: "..." }
      */
     public function verifyAction(ServerRequestInterface $request): ResponseInterface
     {
@@ -147,14 +164,14 @@ final class LoginController
         $username = isset($body['username']) && \is_scalar($body['username'])
             ? (string) $body['username']
             : '';
-        $assertion = isset($body['assertion']) && \is_scalar($body['assertion'])
-            ? (string) $body['assertion']
+        $assertion = isset($body['assertion']) && \is_array($body['assertion'])
+            ? \json_encode($body['assertion'], JSON_THROW_ON_ERROR)
             : '';
         $challengeToken = isset($body['challengeToken']) && \is_scalar($body['challengeToken'])
             ? (string) $body['challengeToken']
             : '';
 
-        if ($username === '' || $assertion === '' || $challengeToken === '') {
+        if ($assertion === '' || $challengeToken === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
@@ -162,27 +179,71 @@ final class LoginController
 
         try {
             $this->rateLimiterService->consumeRateLimit('login_verify', $ip);
-            $this->rateLimiterService->checkLockout($username, $ip);
+            if ($username !== '') {
+                $this->rateLimiterService->checkLockout($username, $ip);
+            }
         } catch (RuntimeException $e) {
             return $this->throttledResponse($e);
         }
 
+        return $username === ''
+            ? $this->verifyDiscoverable($assertion, $challengeToken, $ip)
+            : $this->verifyUsernameFirst($username, $assertion, $challengeToken, $ip);
+    }
+
+    /**
+     * Discoverable (usernameless) verify. A credential ID that resolves to no
+     * user is a genuine unknown credential and is reported to the Signal API.
+     */
+    private function verifyDiscoverable(string $assertion, string $challengeToken, string $ip): ResponseInterface
+    {
+        if (!$this->configService->getConfiguration()->isDiscoverableLoginEnabled()) {
+            return new JsonResponse(['error' => 'Username is required'], 400);
+        }
+
+        // Resolve the user from the credential ID alone (no signature check yet).
+        // A miss means the authenticator offered a passkey this server does not
+        // know — safe to report: no username is involved, so no enumeration oracle.
+        $beUserUid = $this->webAuthnService->findBeUserUidFromAssertion($assertion);
+        if ($beUserUid === null) {
+            \usleep(\random_int(50000, 150000));
+
+            return new JsonResponse(['error' => self::AUTH_FAILED, 'reason' => 'unknown_credential'], 401);
+        }
+
+        return $this->verifyAndIssueToken($assertion, $challengeToken, $beUserUid, '', $ip);
+    }
+
+    /**
+     * Username-first verify. Never returns a reason: the response for an unknown
+     * username and for a known user with an unknown credential must be identical
+     * to keep the decoy anti-enumeration defence intact.
+     */
+    private function verifyUsernameFirst(string $username, string $assertion, string $challengeToken, string $ip): ResponseInterface
+    {
         $beUserUid = $this->findBeUserUid($username);
         if ($beUserUid === null) {
             \usleep(\random_int(50000, 150000));
-            return new JsonResponse(['error' => 'Authentication failed'], 401);
+
+            return new JsonResponse(['error' => self::AUTH_FAILED], 401);
         }
 
+        return $this->verifyAndIssueToken($assertion, $challengeToken, $beUserUid, $username, $ip);
+    }
+
+    /**
+     * Verify the assertion signature for a resolved backend user and, on success,
+     * issue the login token. Shared by the discoverable and username-first paths.
+     * $username is '' for discoverable login.
+     */
+    private function verifyAndIssueToken(string $assertion, string $challengeToken, int $beUserUid, string $username, string $ip): ResponseInterface
+    {
         try {
             $this->webAuthnService->verifyAssertionResponse(
                 responseJson: $assertion,
                 challengeToken: $challengeToken,
                 beUserUid: $beUserUid,
             );
-
-            $this->rateLimiterService->recordSuccess($username, $ip);
-
-            return new JsonResponse(['status' => 'ok']);
         } catch (RuntimeException $e) {
             // Do not feed the cross-IP per-username lockout (passkey assertions are
             // unforgeable; counting them only enables an account-lockout DoS).
@@ -194,8 +255,27 @@ final class LoginController
                 'error_code' => $e->getCode(),
             ]);
 
-            return new JsonResponse(['error' => 'Authentication failed'], 401);
+            return new JsonResponse(['error' => self::AUTH_FAILED], 401);
         }
+
+        $this->rateLimiterService->recordSuccess($username, $ip);
+
+        return $this->issueLoginToken($beUserUid);
+    }
+
+    /**
+     * Store a single-use login token (120s TTL) mapping to the verified backend
+     * user and return it. The JS submits it through the login form; the auth
+     * service resolves + consumes it. The token proves a completed WebAuthn
+     * ceremony without re-spending the single-use challenge.
+     */
+    private function issueLoginToken(int $beUserUid): ResponseInterface
+    {
+        $token = \bin2hex(\random_bytes(32));
+        $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce');
+        $cache->set('passkey_login_' . $token, (string) $beUserUid, [], 120);
+
+        return new JsonResponse(['status' => 'ok', 'loginToken' => $token]);
     }
 
     /**

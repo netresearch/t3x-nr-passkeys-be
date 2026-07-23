@@ -20,6 +20,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Log\NullLogger;
 use Throwable;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
+use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Log\LogManager;
@@ -60,6 +61,23 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $loginData = $this->login;
         $rawUsername = $loginData['uname'] ?? '';
         $username = \is_string($rawUsername) ? $rawUsername : '';
+
+        // Token-based passkey login: the /passkeys/login/verify endpoint already
+        // ran the full WebAuthn ceremony (and enforced the discoverable-login
+        // flag) and issued a single-use token bound to this user. getUser() and
+        // authUser() run on DIFFERENT service instances, so each resolves the
+        // token independently; it is consumed only in authUser().
+        $tokenUid = $this->resolvePasskeyToken();
+        if ($tokenUid > 0) {
+            $user = $this->fetchUserByUid($tokenUid);
+            if (\is_array($user)) {
+                $this->getLogger()->info('Passkey token login', ['be_user_uid' => $tokenUid]);
+
+                return $user;
+            }
+
+            return false;
+        }
 
         $payload = $this->getPasskeyPayload();
         if ($payload === null) {
@@ -114,8 +132,25 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         return $user;
     }
 
+    /**
+     * @param array<string, mixed> $user TYPO3 backend user record
+     */
     public function authUser(array $user): int
     {
+        // Token-based passkey login (pre-verified by /passkeys/login/verify).
+        // Runs before getPasskeyPayload() because a passkey_token payload is not
+        // a raw-assertion payload and must not fall through to the password path.
+        $tokenUid = $this->resolvePasskeyToken();
+        if ($tokenUid > 0 && $tokenUid === (\is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
+            $this->consumePasskeyToken();
+            $this->markSessionAsPasskeyAuthenticated($user);
+            $this->getLogger()->info('Passkey token authentication successful', [
+                'be_user_uid' => $tokenUid,
+            ]);
+
+            return 200;
+        }
+
         $payload = $this->getPasskeyPayload();
         if ($payload === null) {
             // Not a passkey login attempt - check per-user/per-group enforcement.
@@ -191,24 +226,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 'credential_uid' => $result->credential->getUid(),
             ]);
 
-            // Mark session as passkey-authenticated so the interstitial middleware
-            // knows to skip — users who logged in via passkey should never see it.
-            $sessionData = $this->pObj->getSessionData('tx_nrpasskeysbe');
-            $merged = \is_array($sessionData) ? $sessionData : [];
-            $merged['passkey_authenticated'] = true;
-            $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', $merged);
-
-            // A passkey is already multi-factor (possession + biometric/PIN), so the
-            // additional TYPO3 MFA challenge is redundant. Setting the 'mfa' session
-            // key to true satisfies the check in AbstractUserAuthentication::evaluateMfaRequirements()
-            // and skips the MfaRequiredException path. Password logins are unaffected.
-            if ($this->getExtensionConfigService()->getConfiguration()->isSkipMfaOnPasskeyAuth()) {
-                $this->pObj->setAndSaveSessionData('mfa', true);
-                $this->getLogger()->info('Passkey auth satisfied MFA requirement (skipping TYPO3 MFA challenge)', [
-                    'be_user_uid' => $user['uid'],
-                    'username_hash' => \hash('sha256', $username),
-                ]);
-            }
+            $this->markSessionAsPasskeyAuthenticated($user);
 
             // Return 200 = authenticated, stop further auth processing
             return 200;
@@ -276,6 +294,106 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         ];
 
         return $this->passkeyPayload;
+    }
+
+    /**
+     * Mark the session as passkey-authenticated so the setup interstitial is
+     * skipped, and satisfy the TYPO3 MFA requirement (a passkey is already
+     * multi-factor: possession + biometric/PIN) when configured. Shared by the
+     * raw-assertion and token login paths.
+     *
+     * @param array<string, mixed> $user
+     */
+    private function markSessionAsPasskeyAuthenticated(array $user): void
+    {
+        // Interstitial middleware checks this to skip users who used a passkey.
+        $sessionData = $this->pObj->getSessionData('tx_nrpasskeysbe');
+        $merged = \is_array($sessionData) ? $sessionData : [];
+        $merged['passkey_authenticated'] = true;
+        $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', $merged);
+
+        // Setting the 'mfa' session key satisfies the check in
+        // AbstractUserAuthentication::evaluateMfaRequirements() and skips the
+        // MfaRequiredException path. Password logins are unaffected.
+        if ($this->getExtensionConfigService()->getConfiguration()->isSkipMfaOnPasskeyAuth()) {
+            $this->pObj->setAndSaveSessionData('mfa', true);
+            $this->getLogger()->info('Passkey auth satisfied MFA requirement (skipping TYPO3 MFA challenge)', [
+                'be_user_uid' => $user['uid'] ?? null,
+            ]);
+        }
+    }
+
+    /**
+     * Resolve the backend user UID a single-use login token maps to.
+     *
+     * The token is packed into uident as JSON: {"_type":"passkey_token","token":"..."}.
+     * It is NOT removed here — getUser() and authUser() run on different service
+     * instances and both must read it; authUser() consumes it via
+     * {@see consumePasskeyToken()} after acceptance. The 120s TTL bounds replay.
+     */
+    private function resolvePasskeyToken(): int
+    {
+        $token = $this->extractLoginToken();
+        if ($token === '') {
+            return 0;
+        }
+
+        try {
+            $value = GeneralUtility::makeInstance(CacheManager::class)
+                ->getCache('nr_passkeys_be_nonce')
+                ->get('passkey_login_' . $token);
+        } catch (Throwable $e) {
+            $this->getLogger()->warning('Passkey token resolution failed', ['error' => $e->getMessage()]);
+
+            return 0;
+        }
+
+        // A cache miss returns false, which is not numeric → resolves to 0.
+        return \is_numeric($value) ? (int) $value : 0;
+    }
+
+    /**
+     * Remove the single-use login token from the cache (one-time use).
+     */
+    private function consumePasskeyToken(): void
+    {
+        $token = $this->extractLoginToken();
+        if ($token === '') {
+            return;
+        }
+
+        try {
+            GeneralUtility::makeInstance(CacheManager::class)
+                ->getCache('nr_passkeys_be_nonce')
+                ->remove('passkey_login_' . $token);
+        } catch (Throwable) {
+            // Token cleanup failure is non-critical: the 120s TTL still expires it.
+        }
+    }
+
+    /**
+     * Extract the login token string from the uident passkey_token payload, or ''.
+     */
+    private function extractLoginToken(): string
+    {
+        $rawUident = $this->login['uident'] ?? '';
+        $uident = \is_string($rawUident) ? $rawUident : '';
+
+        try {
+            $data = ($uident !== '' && $uident[0] === '{')
+                ? \json_decode($uident, true, 8, JSON_THROW_ON_ERROR)
+                : null;
+        } catch (JsonException) {
+            $data = null;
+        }
+
+        if (!\is_array($data) || ($data['_type'] ?? '') !== 'passkey_token') {
+            return '';
+        }
+
+        $token = $data['token'] ?? '';
+
+        return \is_string($token) ? $token : '';
     }
 
     /**

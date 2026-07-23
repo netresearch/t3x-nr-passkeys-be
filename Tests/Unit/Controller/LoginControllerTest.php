@@ -24,6 +24,8 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use TYPO3\CMS\Core\Cache\CacheManager;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
@@ -45,6 +47,8 @@ final class LoginControllerTest extends TestCase
 
     private LoggerInterface&MockObject $logger;
 
+    private FrontendInterface&MockObject $loginTokenCache;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,6 +58,13 @@ final class LoginControllerTest extends TestCase
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
         $this->connectionPool = $this->createMock(ConnectionPool::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+
+        // verifyAction issues a login token into the nonce cache via
+        // GeneralUtility::makeInstance(CacheManager::class); stub it out.
+        $this->loginTokenCache = $this->createMock(FrontendInterface::class);
+        $cacheManagerStub = $this->createStub(CacheManager::class);
+        $cacheManagerStub->method('getCache')->willReturn($this->loginTokenCache);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
 
         $this->subject = new LoginController(
             $this->webAuthnService,
@@ -214,7 +225,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest([
             'username' => 'admin',
-            'assertion' => '{"id":"cred123","response":{}}',
+            'assertion' => ['id' => 'cred123', 'response' => []],
             'challengeToken' => 'ct_abc123',
         ]);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
@@ -223,7 +234,7 @@ final class LoginControllerTest extends TestCase
             ->expects(self::once())
             ->method('verifyAssertionResponse')
             ->with(
-                responseJson: '{"id":"cred123","response":{}}',
+                responseJson: self::isType('string'),
                 challengeToken: 'ct_abc123',
                 beUserUid: 42,
             );
@@ -233,11 +244,17 @@ final class LoginControllerTest extends TestCase
             ->method('recordSuccess')
             ->with('admin', self::anything());
 
+        // A verified username-first login yields a single-use token, stored in
+        // the nonce cache, that the JS submits through the login form.
+        $this->loginTokenCache->expects(self::once())->method('set');
+
         $response = $this->subject->verifyAction($request);
 
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
+        self::assertIsString($body['loginToken']);
+        self::assertNotSame('', $body['loginToken']);
     }
 
     #[Test]
@@ -245,7 +262,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest([
             'username' => 'admin',
-            'assertion' => '{"bad":"data"}',
+            'assertion' => ['bad' => 'data'],
             'challengeToken' => 'ct_abc123',
         ]);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
@@ -285,7 +302,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest([
             'username' => 'admin',
-            'assertion' => '{"id":"cred123"}',
+            'assertion' => ['id' => 'cred123'],
             'challengeToken' => 'ct_abc123',
         ]);
 
@@ -377,7 +394,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest([
             'username' => 'nonexistent',
-            'assertion' => '{"id":"cred123","response":{}}',
+            'assertion' => ['id' => 'cred123', 'response' => []],
             'challengeToken' => 'ct_abc123',
         ]);
         $this->setUpFindBeUser('nonexistent', null);
@@ -391,6 +408,71 @@ final class LoginControllerTest extends TestCase
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Authentication failed', $body['error']);
+        // Username-first must never leak a reason (decoy anti-enumeration).
+        self::assertArrayNotHasKey('reason', $body);
+    }
+
+    #[Test]
+    public function verifyActionDiscoverableUnknownCredentialReturnsSignalReason(): void
+    {
+        $request = $this->createJsonRequest([
+            'assertion' => ['id' => 'orphan-cred', 'response' => []],
+            'challengeToken' => 'ct_abc123',
+        ]);
+
+        $this->configService->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+
+        // Credential ID resolves to no user → genuine unknown credential.
+        $this->webAuthnService->method('findBeUserUidFromAssertion')->willReturn(null);
+        $this->webAuthnService->expects(self::never())->method('verifyAssertionResponse');
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('unknown_credential', $body['reason']);
+    }
+
+    #[Test]
+    public function verifyActionDiscoverableValidAssertionIssuesToken(): void
+    {
+        $request = $this->createJsonRequest([
+            'assertion' => ['id' => 'cred123', 'response' => []],
+            'challengeToken' => 'ct_abc123',
+        ]);
+
+        $this->configService->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+
+        $this->webAuthnService->method('findBeUserUidFromAssertion')->willReturn(7);
+        $this->webAuthnService->expects(self::once())->method('verifyAssertionResponse')
+            ->with(responseJson: self::isType('string'), challengeToken: 'ct_abc123', beUserUid: 7);
+        $this->rateLimiterService->expects(self::once())->method('recordSuccess');
+        $this->loginTokenCache->expects(self::once())->method('set');
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decodeResponse($response);
+        self::assertSame('ok', $body['status']);
+        self::assertNotSame('', $body['loginToken']);
+    }
+
+    #[Test]
+    public function verifyActionDiscoverableRejectedWhenFeatureDisabled(): void
+    {
+        $request = $this->createJsonRequest([
+            'assertion' => ['id' => 'cred123', 'response' => []],
+            'challengeToken' => 'ct_abc123',
+        ]);
+
+        $this->configService->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
     }
 
     #[Test]
@@ -448,7 +530,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest([
             'username' => 'lockeduser',
-            'assertion' => '{"id":"cred123"}',
+            'assertion' => ['id' => 'cred123'],
             'challengeToken' => 'ct_abc123',
         ]);
 
@@ -466,11 +548,12 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
-    public function verifyActionWithNonScalarAssertion(): void
+    public function verifyActionWithNonArrayAssertion(): void
     {
+        // The assertion must be a JSON object; a scalar is rejected as missing.
         $request = $this->createJsonRequest([
             'username' => 'admin',
-            'assertion' => ['not' => 'scalar'],
+            'assertion' => 'not-an-object',
             'challengeToken' => 'ct_abc123',
         ]);
 
@@ -550,7 +633,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest([
             'username' => 'admin',
-            'assertion' => '{"bad":"data"}',
+            'assertion' => ['bad' => 'data'],
             'challengeToken' => 'ct_abc123',
         ]);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
@@ -602,7 +685,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest([
             'username' => 'admin',
-            'assertion' => '{"id":"cred123","response":{}}',
+            'assertion' => ['id' => 'cred123', 'response' => []],
             'challengeToken' => 'ct_abc123',
         ]);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
