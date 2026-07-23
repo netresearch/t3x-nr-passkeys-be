@@ -27,6 +27,13 @@ final class LoginController
 {
     use JsonBodyTrait;
 
+    /**
+     * Generic auth-failure message. Deliberately identical across the unknown-user,
+     * unknown-credential and verification-failure cases so the response cannot be
+     * used as an enumeration oracle.
+     */
+    private const AUTH_FAILED = 'Authentication failed';
+
     public function __construct(
         private readonly WebAuthnService $webAuthnService,
         private readonly ExtensionConfigurationService $configService,
@@ -201,7 +208,7 @@ final class LoginController
         if ($beUserUid === null) {
             \usleep(\random_int(50000, 150000));
 
-            return new JsonResponse(['error' => 'Authentication failed', 'reason' => 'unknown_credential'], 401);
+            return new JsonResponse(['error' => self::AUTH_FAILED, 'reason' => 'unknown_credential'], 401);
         }
 
         try {
@@ -217,7 +224,7 @@ final class LoginController
                 'error_code' => $e->getCode(),
             ]);
 
-            return new JsonResponse(['error' => 'Authentication failed'], 401);
+            return new JsonResponse(['error' => self::AUTH_FAILED], 401);
         }
 
         $this->rateLimiterService->recordSuccess('', $ip);
@@ -236,7 +243,7 @@ final class LoginController
         if ($beUserUid === null) {
             \usleep(\random_int(50000, 150000));
 
-            return new JsonResponse(['error' => 'Authentication failed'], 401);
+            return new JsonResponse(['error' => self::AUTH_FAILED], 401);
         }
 
         try {
@@ -256,7 +263,7 @@ final class LoginController
                 'error_code' => $e->getCode(),
             ]);
 
-            return new JsonResponse(['error' => 'Authentication failed'], 401);
+            return new JsonResponse(['error' => self::AUTH_FAILED], 401);
         }
 
         $this->rateLimiterService->recordSuccess($username, $ip);

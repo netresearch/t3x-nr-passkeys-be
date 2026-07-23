@@ -348,10 +348,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             return 0;
         }
 
-        if ($value === false) {
-            return 0;
-        }
-
+        // A cache miss returns false, which is not numeric → resolves to 0.
         return \is_numeric($value) ? (int) $value : 0;
     }
 
@@ -381,14 +378,13 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     {
         $rawUident = $this->login['uident'] ?? '';
         $uident = \is_string($rawUident) ? $rawUident : '';
-        if ($uident === '' || $uident[0] !== '{') {
-            return '';
-        }
 
         try {
-            $data = \json_decode($uident, true, 8, JSON_THROW_ON_ERROR);
+            $data = ($uident !== '' && $uident[0] === '{')
+                ? \json_decode($uident, true, 8, JSON_THROW_ON_ERROR)
+                : null;
         } catch (JsonException) {
-            return '';
+            $data = null;
         }
 
         if (!\is_array($data) || ($data['_type'] ?? '') !== 'passkey_token') {

@@ -273,15 +273,14 @@ function init() {
    * the orphaned passkey. Feature-detected and error-swallowing.
    */
   function signalUnknownCredential(rpId, credentialId) {
+    if (!window.PublicKeyCredential
+        || typeof PublicKeyCredential.signalUnknownCredential !== 'function'
+        || !rpId || !credentialId) {
+      return;
+    }
     try {
-      if (window.PublicKeyCredential
-          && typeof PublicKeyCredential.signalUnknownCredential === 'function'
-          && rpId && credentialId) {
-        const result = PublicKeyCredential.signalUnknownCredential({ rpId: rpId, credentialId: credentialId });
-        if (result && typeof result.catch === 'function') {
-          result.catch(function () { /* best-effort */ });
-        }
-      }
+      Promise.resolve(PublicKeyCredential.signalUnknownCredential({ rpId: rpId, credentialId: credentialId }))
+        .catch(function () { /* best-effort: Signal API support varies */ });
     } catch (e) {
       /* best-effort */
     }
