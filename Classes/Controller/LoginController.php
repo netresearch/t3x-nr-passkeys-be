@@ -211,25 +211,7 @@ final class LoginController
             return new JsonResponse(['error' => self::AUTH_FAILED, 'reason' => 'unknown_credential'], 401);
         }
 
-        try {
-            $this->webAuthnService->verifyAssertionResponse(
-                responseJson: $assertion,
-                challengeToken: $challengeToken,
-                beUserUid: $beUserUid,
-            );
-        } catch (RuntimeException $e) {
-            $this->rateLimiterService->recordFailure('', $ip, countUserLockout: false);
-            $this->logger->warning('Passkey discoverable verification failed', [
-                'ip' => $ip,
-                'error_code' => $e->getCode(),
-            ]);
-
-            return new JsonResponse(['error' => self::AUTH_FAILED], 401);
-        }
-
-        $this->rateLimiterService->recordSuccess('', $ip);
-
-        return $this->issueLoginToken($beUserUid);
+        return $this->verifyAndIssueToken($assertion, $challengeToken, $beUserUid, '', $ip);
     }
 
     /**
@@ -246,6 +228,16 @@ final class LoginController
             return new JsonResponse(['error' => self::AUTH_FAILED], 401);
         }
 
+        return $this->verifyAndIssueToken($assertion, $challengeToken, $beUserUid, $username, $ip);
+    }
+
+    /**
+     * Verify the assertion signature for a resolved backend user and, on success,
+     * issue the login token. Shared by the discoverable and username-first paths.
+     * $username is '' for discoverable login.
+     */
+    private function verifyAndIssueToken(string $assertion, string $challengeToken, int $beUserUid, string $username, string $ip): ResponseInterface
+    {
         try {
             $this->webAuthnService->verifyAssertionResponse(
                 responseJson: $assertion,

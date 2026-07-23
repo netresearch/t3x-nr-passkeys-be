@@ -278,12 +278,16 @@ function init() {
         || !rpId || !credentialId) {
       return;
     }
-    try {
-      Promise.resolve(PublicKeyCredential.signalUnknownCredential({ rpId: rpId, credentialId: credentialId }))
-        .catch(function () { /* best-effort: Signal API support varies */ });
-    } catch (e) {
-      /* best-effort */
-    }
+    // Fire-and-forget: an async IIFE keeps the awaited call and its rejection
+    // handling together, and `void` explicitly discards the promise so nothing
+    // escapes unhandled. A failure here must never affect the login flow.
+    void (async function () {
+      try {
+        await PublicKeyCredential.signalUnknownCredential({ rpId: rpId, credentialId: credentialId });
+      } catch (e) {
+        /* best-effort: Signal API support varies */
+      }
+    })();
   }
 
   /**
