@@ -192,6 +192,37 @@ describe('checkForFailedPasskeyLogin logic', () => {
     });
 });
 
+describe('conditional-UI autocomplete merge logic', () => {
+    /**
+     * Conditional UI advertises WebAuthn autofill by adding the `webauthn`
+     * token to the username field's autocomplete without clobbering an existing
+     * token and without duplicating it. This mirrors the inline logic in
+     * startConditionalLogin() (which lives inside the PasskeyLogin.js IIFE).
+     */
+    function mergeWebauthnAutocomplete(existing) {
+        existing = existing || '';
+        if (existing.indexOf('webauthn') !== -1) {
+            return existing;
+        }
+        return (existing ? existing + ' ' : 'username ') + 'webauthn';
+    }
+
+    it('adds "username webauthn" when the field has no autocomplete', () => {
+        expect(mergeWebauthnAutocomplete('')).toBe('username webauthn');
+        expect(mergeWebauthnAutocomplete(null)).toBe('username webauthn');
+    });
+
+    it('appends webauthn to an existing token without clobbering it', () => {
+        expect(mergeWebauthnAutocomplete('username')).toBe('username webauthn');
+        expect(mergeWebauthnAutocomplete('email')).toBe('email webauthn');
+    });
+
+    it('is idempotent when webauthn is already present', () => {
+        expect(mergeWebauthnAutocomplete('username webauthn')).toBe('username webauthn');
+        expect(mergeWebauthnAutocomplete('webauthn')).toBe('webauthn');
+    });
+});
+
 describe('base64urlToBuffer edge cases', () => {
     it('should handle already-padded input', () => {
         const encoded = 'QQ=='; // With padding
