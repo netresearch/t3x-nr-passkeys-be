@@ -34,20 +34,9 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
         'netresearch/nr-passkeys-be',
     ];
 
-    protected array $configurationToUseInTestInstance = [
-        'SYS' => [
-            'caching' => [
-                'cacheConfigurations' => [
-                    'nr_passkeys_be_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
-                    ],
-                    'nr_passkeys_be_ratelimit' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
-                    ],
-                ],
-            ],
-        ],
-    ];
+    // No cache override needed: this DI smoke test resolves the stats
+    // providers only and never invokes the nonce/rate-limit caches, so the
+    // file-backend defaults registered in ext_localconf.php are fine.
 
     protected function setUp(): void
     {
