@@ -6,6 +6,46 @@
 Changelog
 =========
 
+0.12.0
+======
+
+Features
+--------
+
+- Consolidated the passkey dashboard widgets into a single, unified Core
+  widget set owned by this extension. The two widgets (adoption doughnut,
+  active-credentials count) now gather their data from an extensible,
+  cross-extension provider collection instead of querying the backend
+  tables directly. When ``nr_passkeys_fe`` is installed the same two
+  widgets additionally show the frontend audience, replacing the previous
+  duplicate frontend widget pair — the dashboard shows two passkey widgets
+  instead of four.
+- Added a public extension point: the
+  ``PasskeyAdoptionStatsProviderInterface`` and the immutable
+  ``PasskeyAudienceStats`` DTO. Any service implementing the interface is
+  collected under the DI tag ``nr_passkeys_be.adoption_stats_provider`` and
+  contributes one audience segment. This extension registers the backend
+  (``be_users``) provider; ``nr_passkeys_fe`` registers the frontend
+  (``fe_users``) provider without this extension depending on it.
+- The adoption doughnut now renders one ring per audience with a distinct
+  colour family (backend green/orange, frontend teal/magenta) and localised
+  segment labels, so the two populations are unmistakable and never summed
+  into a single ratio. The credentials tile sums the homogeneous
+  credential counts across audiences.
+- Added two purpose-specific dashboard icons (``passkeys-adoption``,
+  ``passkeys-credentials``) so the widgets no longer borrow the module icon.
+
+Important
+---------
+
+- The dashboard widget identifiers were renamed from ``nrpasskeysbe-adoption``
+  / ``nrpasskeysbe-credentials`` to ``nrpasskeys-adoption`` /
+  ``nrpasskeys-credentials`` (the ``be`` infix was dropped now that this is
+  the single Core widget set). Backend users who had manually placed the old
+  widgets on a dashboard will need to add the renamed widgets again; the
+  placement of the old identifiers no longer resolves. Acceptable for a
+  pre-1.0 minor.
+
 0.9.4
 =====
 

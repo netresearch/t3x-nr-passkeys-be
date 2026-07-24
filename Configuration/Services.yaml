@@ -59,6 +59,19 @@ services:
   Netresearch\NrPasskeysBe\Service\AdoptionStatsService:
     public: true
 
+  # Backend segment provider for the unified passkey-adoption dashboard
+  # widgets. Tagged explicitly here rather than relying solely on the
+  # registerForAutoconfiguration() rule in Services.php. autoconfigure is
+  # disabled for this one service so the interface autoconfiguration does
+  # NOT also apply its tag — that would list the provider twice in the
+  # tagged_iterator and double-count the credentials total. public so the
+  # DI smoke test can resolve it.
+  Netresearch\NrPasskeysBe\Service\BackendPasskeyAdoptionStatsProvider:
+    public: true
+    autoconfigure: false
+    tags:
+      - name: nr_passkeys_be.adoption_stats_provider
+
   Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService:
     public: true
 

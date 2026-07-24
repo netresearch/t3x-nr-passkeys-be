@@ -28,4 +28,14 @@ return [
         'provider' => SvgIconProvider::class,
         'source' => $passkeyIcon,
     ],
+    // Purpose-specific icons for the unified dashboard widgets, so they no
+    // longer borrow the module icon and are distinguishable in the picker.
+    'passkeys-adoption' => [
+        'provider' => SvgIconProvider::class,
+        'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/widget-adoption.svg',
+    ],
+    'passkeys-credentials' => [
+        'provider' => SvgIconProvider::class,
+        'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/widget-credentials.svg',
+    ],
 ];
