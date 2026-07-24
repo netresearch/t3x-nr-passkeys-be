@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path fill="currentColor" fill-rule="evenodd" opacity=".4" d="M32 8a24 24 0 1 0 0 48 24 24 0 1 0 0-48Zm0 14a10 10 0 1 0 0 20 10 10 0 1 0 0-20Z"/><path fill="var(--nr-icon-accent, #2F99A4)" d="M32 8a24 24 0 0 1 24 24H42a10 10 0 0 0-10-10Z"/><circle cx="32" cy="32" r="4" fill="currentColor"/></svg>
