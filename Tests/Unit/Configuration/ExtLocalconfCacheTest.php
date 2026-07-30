@@ -44,9 +44,11 @@ final class ExtLocalconfCacheTest extends TestCase
 
         $GLOBALS['TYPO3_CONF_VARS'] = [];
 
-        // ext_localconf.php is not a value-returning file and registers the auth
-        // service as a side effect; only the resulting cache configuration matters here.
-        require \dirname(__DIR__, 3) . '/ext_localconf.php';
+        // ext_localconf.php registers the auth service as a side effect; only the
+        // resulting cache configuration matters here. Each test method runs in its own
+        // process (see the class attributes), so a single include per process is
+        // enough and require_once cannot swallow a needed re-execution.
+        require_once \dirname(__DIR__, 3) . '/ext_localconf.php';
 
         $caching = $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations'] ?? null;
         self::assertIsArray($caching);
@@ -82,12 +84,14 @@ final class ExtLocalconfCacheTest extends TestCase
 
         // The chosen backend must implement expiry itself rather than inheriting
         // SimpleFileBackend's no-op behaviour.
-        self::assertTrue(
-            (new ReflectionMethod($backend, 'collectGarbage'))->getDeclaringClass()->getName() !== SimpleFileBackend::class,
+        self::assertNotSame(
+            SimpleFileBackend::class,
+            (new ReflectionMethod($backend, 'collectGarbage'))->getDeclaringClass()->getName(),
             $backend . '::collectGarbage() must not be SimpleFileBackend\'s empty implementation',
         );
-        self::assertTrue(
-            (new ReflectionMethod($backend, 'get'))->getDeclaringClass()->getName() !== SimpleFileBackend::class,
+        self::assertNotSame(
+            SimpleFileBackend::class,
+            (new ReflectionMethod($backend, 'get'))->getDeclaringClass()->getName(),
             $backend . '::get() must check expiry',
         );
     }

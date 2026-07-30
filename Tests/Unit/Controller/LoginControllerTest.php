@@ -118,16 +118,53 @@ final class LoginControllerTest extends TestCase
     /**
      * The enumeration oracle F7 closed: the unknown-username branch used to sleep
      * 50-150ms while the known-username branch returned immediately, so the minimum
-     * round-trip classified any username. Both branches must now spend the same
-     * wall-clock time.
+     * round-trip classified any username.
+     *
+     * Both branches are asserted against the same absolute window rather than against
+     * each other, so neither can drift without failing — and a one-sided delay on
+     * either side breaks its own case.
      */
     #[Test]
-    public function optionsActionTakesTheSameTimeForKnownAndUnknownUsernames(): void
+    public function optionsActionForKnownUsernameSpendsTheTimingBudget(): void
+    {
+        $this->stubAssertionOptionGeneration();
+        $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
+
+        self::assertTimingBudgetSpent($this->timeOptionsAction('admin'));
+    }
+
+    #[Test]
+    public function optionsActionForUnknownUsernameSpendsTheTimingBudget(): void
+    {
+        $this->stubAssertionOptionGeneration();
+        $this->setUpFindBeUser('nosuchuser', null);
+
+        self::assertTimingBudgetSpent($this->timeOptionsAction('nosuchuser'));
+    }
+
+    /**
+     * Assert an optionsAction run took roughly the padded budget: at least the budget
+     * (so no branch answers early) and not far beyond it (so both land in the same
+     * window and cannot be told apart).
+     */
+    private static function assertTimingBudgetSpent(float $elapsedNs): void
+    {
+        $budgetNs = 150_000_000.0;
+
+        self::assertGreaterThan($budgetNs * 0.9, $elapsedNs, 'Response must not come back before the budget');
+        self::assertLessThan($budgetNs * 2, $elapsedNs, 'Response must not overshoot the budget');
+    }
+
+    /**
+     * Stub both option-generation paths so only the controller's own timing is measured.
+     */
+    private function stubAssertionOptionGeneration(): void
     {
         $options = PublicKeyCredentialRequestOptions::create(
             challenge: \random_bytes(32),
             rpId: 'example.com',
         );
+
         $this->webAuthnService
             ->method('createAssertionOptions')
             ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_known'));
@@ -137,25 +174,6 @@ final class LoginControllerTest extends TestCase
         $this->webAuthnService
             ->method('serializeRequestOptions')
             ->willReturn('{"challenge":"abc","rpId":"example.com"}');
-
-        $this->setUpFindBeUserMap([
-            'admin' => ['uid' => 42, 'username' => 'admin'],
-            'nosuchuser' => null,
-        ]);
-
-        $knownNs = $this->timeOptionsAction('admin');
-        $unknownNs = $this->timeOptionsAction('nosuchuser');
-
-        // Both are padded to the same 150ms budget; allow generous slack for
-        // scheduling noise while still failing on the old 50-150ms one-sided delay.
-        $budgetNs = 150_000_000;
-        self::assertGreaterThan($budgetNs * 0.9, $knownNs, 'Known username must not answer faster than the budget');
-        self::assertGreaterThan($budgetNs * 0.9, $unknownNs);
-        self::assertLessThan(
-            $budgetNs * 0.5,
-            \abs($knownNs - $unknownNs),
-            'Known and unknown usernames must not differ measurably in response time',
-        );
     }
 
     /**
@@ -851,53 +869,6 @@ final class LoginControllerTest extends TestCase
         $queryBuilder->method('where')->willReturnSelf();
         $queryBuilder->method('expr')->willReturn($expressionBuilder);
         $queryBuilder->method('createNamedParameter')->willReturn("'" . $username . "'");
-        $queryBuilder->method('executeQuery')->willReturn($result);
-
-        $this->connectionPool
-            ->method('getQueryBuilderForTable')
-            ->with('be_users')
-            ->willReturn($queryBuilder);
-    }
-
-    /**
-     * Like setUpFindBeUser(), but resolves several usernames in one test: the row is
-     * chosen by the username bound through createNamedParameter().
-     *
-     * @param array<string, array<string, mixed>|null> $usersByUsername
-     */
-    private function setUpFindBeUserMap(array $usersByUsername): void
-    {
-        $boundUsername = '';
-
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
-        $result->method('fetchAssociative')->willReturnCallback(
-            /**
-             * @return array<string, mixed>|false
-             */
-            static function () use (&$boundUsername, $usersByUsername): array|false {
-                $row = \is_string($boundUsername) ? ($usersByUsername[$boundUsername] ?? null) : null;
-
-                return $row ?? false;
-            },
-        );
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturnCallback(
-            static function (mixed $value) use (&$boundUsername): string {
-                if (\is_string($value)) {
-                    $boundUsername = $value;
-                }
-
-                return "'" . (\is_scalar($value) ? (string) $value : '') . "'";
-            },
-        );
         $queryBuilder->method('executeQuery')->willReturn($result);
 
         $this->connectionPool

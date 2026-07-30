@@ -25,15 +25,29 @@ use TYPO3\CMS\Backend\Security\SudoMode\Access\AccessLifetime;
 final class AjaxRoutesTest extends TestCase
 {
     /**
+     * Route configuration, loaded once per process.
+     *
+     * The file returns a value, and require_once yields `true` rather than that value
+     * on a second load, so it must be included exactly once and the result cached —
+     * hence the static. assertIsArray() below turns a violated assumption into a
+     * failure here instead of a confusing error further down.
+     *
+     * @var array<string, mixed>|null
+     */
+    private static ?array $routes = null;
+
+    /**
      * @return array<string, mixed>
      */
     private static function routes(): array
     {
-        // Not require_once: the file returns a value and is read by several tests.
-        $routes = require \dirname(__DIR__, 3) . '/Configuration/Backend/AjaxRoutes.php';
-        self::assertIsArray($routes);
+        if (self::$routes === null) {
+            $routes = require_once \dirname(__DIR__, 3) . '/Configuration/Backend/AjaxRoutes.php';
+            self::assertIsArray($routes, 'AjaxRoutes.php must be included exactly once per process');
+            self::$routes = $routes;
+        }
 
-        return $routes;
+        return self::$routes;
     }
 
     /**
