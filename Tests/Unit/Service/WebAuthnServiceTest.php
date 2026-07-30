@@ -979,8 +979,14 @@ final class WebAuthnServiceTest extends TestCase
         self::assertSame([], $result->getTransportsArray());
     }
 
+    /**
+     * A user who exists but has not registered a passkey yet gets decoy credentials,
+     * not an empty list: an empty allowCredentials was unreachable for an unknown
+     * username, so it disclosed that the account exists. Decoy shape is covered in
+     * AssertionDecoyTest.
+     */
     #[Test]
-    public function createAssertionOptionsWithNoCredentials(): void
+    public function createAssertionOptionsWithNoCredentialsReturnsDecoys(): void
     {
         $config = new ExtensionConfiguration(rpId: 'example.com');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
@@ -994,7 +1000,17 @@ final class WebAuthnServiceTest extends TestCase
 
         $result = $this->subject->createAssertionOptions('user', 999);
 
-        self::assertCount(0, $result->options->allowCredentials);
+        self::assertNotEmpty($result->options->allowCredentials);
+        self::assertSame(
+            \array_map(
+                static fn(\Webauthn\PublicKeyCredentialDescriptor $d): string => $d->id,
+                \array_values($this->subject->createDecoyAssertionOptions('user')->options->allowCredentials),
+            ),
+            \array_map(
+                static fn(\Webauthn\PublicKeyCredentialDescriptor $d): string => $d->id,
+                \array_values($result->options->allowCredentials),
+            ),
+        );
     }
 
     #[Test]
