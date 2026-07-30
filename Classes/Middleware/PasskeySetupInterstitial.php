@@ -113,6 +113,14 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             return $handler->handle($request);
         }
 
+        // Never interstitial a switch-user (impersonation) session: passkey
+        // registration is refused in that mode (ManagementController), so the prompt
+        // would be a dead end. Enforcement applies to the impersonated user's own
+        // sessions, not to an admin acting on their behalf.
+        if ($backendUser->getOriginalUserIdWhenInSwitchUserMode() !== null) {
+            return $handler->handle($request);
+        }
+
         // Check if request is exempt before any interstitial logic
         if ($this->isExemptRequest($request)) {
             return $handler->handle($request);

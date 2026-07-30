@@ -102,6 +102,25 @@ final class PasskeySetupInterstitialTest extends TestCase
         $this->subject->process($request, $handler);
     }
 
+    /**
+     * Registration is refused in switch-user mode, so an interstitial there would be
+     * a dead end for the impersonating admin.
+     */
+    #[Test]
+    public function passesThroughInSwitchUserModeEvenWhenSetupIsRequired(): void
+    {
+        $this->setUpBackendUser(1, switchUserOriginalUid: 7);
+
+        $this->enforcementService->expects(self::never())->method('getStatus');
+
+        $request = $this->createMockRequest('main');
+        $handler = $this->createMockHandler();
+
+        $handler->expects(self::once())->method('handle')->with($request);
+
+        $this->subject->process($request, $handler);
+    }
+
     #[Test]
     public function passesThroughWhenUserHasPasskeys(): void
     {
@@ -1089,13 +1108,14 @@ final class PasskeySetupInterstitialTest extends TestCase
         self::assertStringContainsString('Übersetzt', $body);
     }
 
-    private function setUpBackendUser(int $uid): void
+    private function setUpBackendUser(int $uid, ?int $switchUserOriginalUid = null): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'usergroup' => '1'];
         $backendUser->method('getSessionData')
             ->with('tx_nrpasskeysbe')
             ->willReturn(null);
+        $backendUser->method('getOriginalUserIdWhenInSwitchUserMode')->willReturn($switchUserOriginalUid);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 

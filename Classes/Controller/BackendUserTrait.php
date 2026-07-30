@@ -69,6 +69,26 @@ trait BackendUserTrait
     }
 
     /**
+     * Whether the current session is a switch-user (impersonation) session.
+     *
+     * In switch-user mode $GLOBALS['BE_USER']->user is the impersonated user, so a
+     * passkey registration would bind the acting admin's authenticator to the
+     * impersonated account as a permanent, password-independent credential —
+     * bypassing the system-maintainer boundary isManagementAllowedFor() enforces
+     * on the admin endpoints. Core refuses MFA setup in this mode for the same
+     * reason (MfaSetupController).
+     */
+    private function isSwitchUserMode(): bool
+    {
+        $backendUser = $GLOBALS['BE_USER'] ?? null;
+        if (!$backendUser instanceof BackendUserAuthentication) {
+            return false;
+        }
+
+        return $backendUser->getOriginalUserIdWhenInSwitchUserMode() !== null;
+    }
+
+    /**
      * Whether the current admin may manage the given target backend user's passkeys.
      *
      * Mirrors the system-maintainer boundary enforced in the FormEngine UI

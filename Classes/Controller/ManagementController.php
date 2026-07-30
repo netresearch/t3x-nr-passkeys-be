@@ -48,6 +48,10 @@ final class ManagementController
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
+        if ($this->isSwitchUserMode()) {
+            return $this->denySwitchUserMode('registration_options', $user->uid);
+        }
+
         try {
             $result = $this->webAuthnService->createRegistrationOptions(
                 beUserUid: $user->uid,
@@ -82,6 +86,10 @@ final class ManagementController
         $user = $this->getAuthenticatedUser();
         if ($user === null) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
+        }
+
+        if ($this->isSwitchUserMode()) {
+            return $this->denySwitchUserMode('registration_verify', $user->uid);
         }
 
         $body = $this->getJsonBody($request);
@@ -213,6 +221,10 @@ final class ManagementController
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
+        if ($this->isSwitchUserMode()) {
+            return $this->denySwitchUserMode('rename', $user->uid);
+        }
+
         $body = $this->getJsonBody($request);
         $credentialUid = self::intVal($body['uid'] ?? null);
         $rawLabel = $body['label'] ?? null;
@@ -257,6 +269,10 @@ final class ManagementController
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
+        if ($this->isSwitchUserMode()) {
+            return $this->denySwitchUserMode('remove', $user->uid);
+        }
+
         $body = $this->getJsonBody($request);
         $credentialUid = self::intVal($body['uid'] ?? null);
 
@@ -286,5 +302,23 @@ final class ManagementController
         ]);
 
         return new JsonResponse(['status' => 'ok']);
+    }
+
+    /**
+     * Refuse a passkey write issued from a switch-user (impersonation) session.
+     *
+     * $uid is the impersonated user — the account the write would have targeted.
+     */
+    private function denySwitchUserMode(string $operation, int $uid): ResponseInterface
+    {
+        $this->logger->warning('Passkey management blocked in switch-user mode', [
+            'operation' => $operation,
+            'be_user_uid' => $uid,
+        ]);
+
+        return new JsonResponse(
+            ['error' => 'Passkeys cannot be managed while impersonating another user'],
+            403,
+        );
     }
 }
