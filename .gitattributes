@@ -1,0 +1,45 @@
+# Keep development files out of the release archive.
+#
+# `git archive` drops every path marked export-ignore. That governs the release
+# assets the Release workflow builds and the dist zips Packagist serves, so a
+# Composer install no longer pulls the test suites, CI workflows and dev tooling.
+#
+# It does NOT govern the TER upload: `tailor ter:publish` packs the working
+# directory using tailor's own list (conf/ExcludeFromPackaging.php) and never
+# reads .gitattributes — despite the CI warning that asks for this file citing
+# TER. Trimming the TER artefact would need TYPO3_EXCLUDE_FROM_PACKAGING instead.
+#
+# What ships is the code the extension needs at runtime (Classes/, Configuration/,
+# Resources/, ext_*.php, ext_tables.sql, ext_conf_template.txt, composer.json),
+# plus LICENSE, README.md, SECURITY.md and the documentation sources.
+
+# Development environment and CI
+/.ddev              export-ignore
+/.github            export-ignore
+/Build              export-ignore
+/codecov.yml        export-ignore
+
+# Test suites and their tooling
+/Tests              export-ignore
+/package.json       export-ignore
+/playwright.config.ts export-ignore
+/vitest.config.mjs  export-ignore
+
+# Repository-local tooling and editor configuration
+/.editorconfig      export-ignore
+/.envrc             export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/.semgrepignore     export-ignore
+/Makefile           export-ignore
+
+# Architecture decision records — not user documentation
+/docs               export-ignore
+
+# Contributor-facing files that add nothing to an installed extension
+/CODE_OF_CONDUCT.md export-ignore
+/CONTRIBUTING.md    export-ignore
+
+# Agent instruction files, at every level
+AGENTS.md           export-ignore
+CLAUDE.md           export-ignore
