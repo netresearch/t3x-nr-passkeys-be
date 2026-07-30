@@ -36,6 +36,8 @@ use Webauthn\PublicKeyCredentialUserEntity;
 #[CoversClass(ManagementController::class)]
 final class ManagementControllerTest extends TestCase
 {
+    use FormRequestTrait;
+
     private ManagementController $subject;
 
     private WebAuthnService&MockObject $webAuthnService;
@@ -1055,6 +1057,22 @@ final class ManagementControllerTest extends TestCase
     }
 
     #[Test]
+    public function registrationVerifyActionRejectsNonUtf8BodyWithABadRequestResponse(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+
+        $this->webAuthnService->expects(self::never())->method('verifyRegistrationResponse');
+
+        $response = $this->subject->registrationVerifyAction($this->createFormRequest([
+            'credential' => ['attestationObject' => "\xFF\xFE"],
+            'challengeToken' => 'ct_reg_abc',
+        ]));
+
+        self::assertSame(400, $response->getStatusCode());
+        self::assertSame('Invalid request body', $this->decodeResponse($response)['error']);
+    }
+
+    #[Test]
     public function registrationOptionsActionRefusedInSwitchUserMode(): void
     {
         $this->setUpAuthenticatedUser(42, 'maintainer', 'Maintainer', switchUserOriginalUid: 7);
@@ -1181,6 +1199,7 @@ final class ManagementControllerTest extends TestCase
 
         return $request;
     }
+
 
     /**
      * Decode a PSR-7 response body as JSON.
