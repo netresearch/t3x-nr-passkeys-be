@@ -34,6 +34,26 @@ final class LoginController
      */
     private const AUTH_FAILED = 'Authentication failed';
 
+    /**
+     * Seconds a freshly issued login token stays redeemable. Enforced by
+     * PasskeyAuthenticationService against the expiresAt stored in the token value,
+     * so it does not depend on the cache backend implementing lifetimes.
+     */
+    private const LOGIN_TOKEN_TTL = 120;
+
+    /**
+     * Wall-clock budget, in nanoseconds, that every username-first response is padded
+     * to before it is returned (150 ms).
+     *
+     * A delay applied only to the unknown-username branch does not normalize timing —
+     * it *is* the signal, and a larger one than the work it was meant to mask. Both
+     * branches are padded to the same target instead, so response time carries no
+     * information about whether the account exists. The budget must stay comfortably
+     * above the real work (a be_users lookup plus challenge generation); a response
+     * that exceeds it is returned immediately and would still be distinguishable.
+     */
+    private const TIMING_BUDGET_NS = 150_000_000;
+
     public function __construct(
         private readonly WebAuthnService $webAuthnService,
         private readonly ExtensionConfigurationService $configService,
@@ -100,45 +120,35 @@ final class LoginController
         // Look up user. To prevent username enumeration, an unknown user receives a
         // DECOY options response with the SAME shape and HTTP 200 status as a real
         // user (deterministic per-username decoy credentials). A later assertion
-        // against the decoy fails exactly as a wrong passkey would.
+        // against the decoy fails exactly as a wrong passkey would. Every branch
+        // below is padded to the same wall-clock budget, so the response time does
+        // not reveal which one ran.
+        $startedAt = \hrtime(true);
         $beUserUid = $this->findBeUserUid($username);
-        if ($beUserUid === null) {
-            // Short randomized sleep to further normalize timing.
-            \usleep(\random_int(50000, 150000));
-
-            try {
-                $result = $this->webAuthnService->createDecoyAssertionOptions($username);
-                $optionsJson = $this->webAuthnService->serializeRequestOptions($result->options);
-
-                return new JsonResponse([
-                    'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
-                    'challengeToken' => $result->challengeToken,
-                ]);
-            } catch (Throwable $e) {
-                $this->logger->error('Failed to generate decoy assertion options', [
-                    'error' => $e->getMessage(),
-                ]);
-
-                return new JsonResponse(['error' => 'Internal error'], 500);
-            }
-        }
 
         try {
-            $result = $this->webAuthnService->createAssertionOptions($username, $beUserUid);
+            $result = $beUserUid === null
+                ? $this->webAuthnService->createDecoyAssertionOptions($username)
+                : $this->webAuthnService->createAssertionOptions($username, $beUserUid);
 
             $optionsJson = $this->webAuthnService->serializeRequestOptions($result->options);
 
-            return new JsonResponse([
+            $response = new JsonResponse([
                 'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
                 'challengeToken' => $result->challengeToken,
             ]);
         } catch (Throwable $e) {
             $this->logger->error('Failed to generate assertion options', [
+                'decoy' => $beUserUid === null,
                 'error' => $e->getMessage(),
             ]);
 
-            return new JsonResponse(['error' => 'Internal error'], 500);
+            $response = new JsonResponse(['error' => 'Internal error'], 500);
         }
+
+        $this->padToTimingBudget($startedAt);
+
+        return $response;
     }
 
     /**
@@ -221,14 +231,37 @@ final class LoginController
      */
     private function verifyUsernameFirst(string $username, string $assertion, string $challengeToken, string $ip): ResponseInterface
     {
+        $startedAt = \hrtime(true);
         $beUserUid = $this->findBeUserUid($username);
         if ($beUserUid === null) {
-            \usleep(\random_int(50000, 150000));
+            $this->padToTimingBudget($startedAt);
 
             return new JsonResponse(['error' => self::AUTH_FAILED], 401);
         }
 
-        return $this->verifyAndIssueToken($assertion, $challengeToken, $beUserUid, $username, $ip);
+        $response = $this->verifyAndIssueToken($assertion, $challengeToken, $beUserUid, $username, $ip);
+
+        // Pad rejections only: a 200 already tells the caller the account exists, and
+        // the failure paths are the ones an enumerating attacker can compare.
+        if ($response->getStatusCode() !== 200) {
+            $this->padToTimingBudget($startedAt);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Sleep until the elapsed time since $startedAt reaches TIMING_BUDGET_NS.
+     *
+     * $startedAt is an hrtime(true) reading (monotonic nanoseconds), so a clock
+     * adjustment cannot shorten or extend the budget.
+     */
+    private function padToTimingBudget(int $startedAt): void
+    {
+        $remainingNs = self::TIMING_BUDGET_NS - (\hrtime(true) - $startedAt);
+        if ($remainingNs > 0) {
+            \usleep(\intdiv($remainingNs, 1000));
+        }
     }
 
     /**
@@ -244,7 +277,13 @@ final class LoginController
                 challengeToken: $challengeToken,
                 beUserUid: $beUserUid,
             );
-        } catch (RuntimeException $e) {
+        } catch (Throwable $e) {
+            // Throwable, not RuntimeException: webauthn-lib's deserializer throws
+            // Webauthn\Exception\InvalidDataException, which extends \Exception, so a
+            // structurally invalid assertion object used to escape this catch and
+            // surface as an uncaught-exception 500 — skipping recordFailure() on the
+            // way out, and leaking paths when debug output is on.
+            //
             // Do not feed the cross-IP per-username lockout (passkey assertions are
             // unforgeable; counting them only enables an account-lockout DoS).
             $this->rateLimiterService->recordFailure($username, $ip, countUserLockout: false);
@@ -253,6 +292,7 @@ final class LoginController
                 'username_hash' => \hash('sha256', $username),
                 'ip' => $ip,
                 'error_code' => $e->getCode(),
+                'error_class' => \get_class($e),
             ]);
 
             return new JsonResponse(['error' => self::AUTH_FAILED], 401);
@@ -264,16 +304,26 @@ final class LoginController
     }
 
     /**
-     * Store a single-use login token (120s TTL) mapping to the verified backend
-     * user and return it. The JS submits it through the login form; the auth
-     * service resolves + consumes it. The token proves a completed WebAuthn
-     * ceremony without re-spending the single-use challenge.
+     * Store a single-use login token mapping to the verified backend user and
+     * return it. The JS submits it through the login form; the auth service
+     * resolves + consumes it. The token proves a completed WebAuthn ceremony
+     * without re-spending the single-use challenge.
+     *
+     * The expiry is written INTO the cached value, not left to the cache TTL: this
+     * token authenticates a backend user, and a cache backend that ignores
+     * lifetimes would otherwise turn it into a permanent credential. The TTL is
+     * still passed so a compliant backend also drops the entry.
      */
     private function issueLoginToken(int $beUserUid): ResponseInterface
     {
         $token = \bin2hex(\random_bytes(32));
+        $payload = \json_encode(
+            ['uid' => $beUserUid, 'expiresAt' => \time() + self::LOGIN_TOKEN_TTL],
+            JSON_THROW_ON_ERROR,
+        );
+
         $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce');
-        $cache->set('passkey_login_' . $token, (string) $beUserUid, [], 120);
+        $cache->set('passkey_login_' . $token, $payload, [], self::LOGIN_TOKEN_TTL);
 
         return new JsonResponse(['status' => 'ok', 'loginToken' => $token]);
     }

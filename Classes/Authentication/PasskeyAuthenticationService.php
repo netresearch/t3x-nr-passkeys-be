@@ -327,15 +327,46 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      * Resolve the backend user UID a single-use login token maps to.
      *
      * The token is packed into uident as JSON: {"_type":"passkey_token","token":"..."}.
-     * It is NOT removed here — getUser() and authUser() run on different service
-     * instances and both must read it; authUser() consumes it via
-     * {@see consumePasskeyToken()} after acceptance. The 120s TTL bounds replay.
+     * It is NOT removed on the happy path — getUser() and authUser() run on
+     * different service instances and both must read it; authUser() consumes it via
+     * {@see consumePasskeyToken()} after acceptance.
+     *
+     * Replay is bounded by the expiresAt written into the cached value by
+     * LoginController::issueLoginToken(), checked here rather than delegated to the
+     * cache TTL: a backend that ignores lifetimes (SimpleFileBackend) would
+     * otherwise make an unredeemed token a permanent login credential. An expired
+     * or malformed entry is removed on the spot.
      */
     private function resolvePasskeyToken(): int
     {
+        $value = $this->fetchLoginTokenValue();
+        if ($value === null) {
+            return 0;
+        }
+
+        $payload = self::decodeLoginTokenPayload($value);
+        if ($payload === null || \time() > $payload['expiresAt']) {
+            $this->getLogger()->warning('Passkey login token rejected', [
+                'reason' => $payload === null ? 'unusable_payload' : 'expired',
+                'be_user_uid' => $payload['uid'] ?? null,
+            ]);
+            $this->consumePasskeyToken();
+
+            return 0;
+        }
+
+        return $payload['uid'];
+    }
+
+    /**
+     * Read the raw cached value for the presented login token, or null when no token
+     * was presented, the cache is unreachable, or the entry is gone.
+     */
+    private function fetchLoginTokenValue(): ?string
+    {
         $token = $this->extractLoginToken();
         if ($token === '') {
-            return 0;
+            return null;
         }
 
         try {
@@ -345,11 +376,37 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         } catch (Throwable $e) {
             $this->getLogger()->warning('Passkey token resolution failed', ['error' => $e->getMessage()]);
 
-            return 0;
+            return null;
         }
 
-        // A cache miss returns false, which is not numeric → resolves to 0.
-        return \is_numeric($value) ? (int) $value : 0;
+        // A cache miss returns false.
+        return \is_string($value) ? $value : null;
+    }
+
+    /**
+     * Decode a cached login-token value, or null when it is not the expected
+     * {"uid":…,"expiresAt":…} shape written by LoginController::issueLoginToken().
+     *
+     * @return array{uid: int, expiresAt: int}|null
+     */
+    private static function decodeLoginTokenPayload(string $value): ?array
+    {
+        try {
+            $payload = \json_decode($value, true, 8, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return null;
+        }
+
+        if (!\is_array($payload)) {
+            return null;
+        }
+
+        $uid = \is_numeric($payload['uid'] ?? null) ? (int) $payload['uid'] : 0;
+        $expiresAt = \is_numeric($payload['expiresAt'] ?? null) ? (int) $payload['expiresAt'] : 0;
+
+        return $uid > 0 && $expiresAt > 0
+            ? ['uid' => $uid, 'expiresAt' => $expiresAt]
+            : null;
     }
 
     /**
@@ -367,7 +424,8 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 ->getCache('nr_passkeys_be_nonce')
                 ->remove('passkey_login_' . $token);
         } catch (Throwable) {
-            // Token cleanup failure is non-critical: the 120s TTL still expires it.
+            // Cleanup failure is non-critical: the expiresAt in the token value is
+            // still enforced on every redemption attempt.
         }
     }
 

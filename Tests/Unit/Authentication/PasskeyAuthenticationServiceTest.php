@@ -126,16 +126,32 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     /**
+     * Build the cached login-token value as LoginController::issueLoginToken()
+     * writes it. A negative $expiresIn produces an already-expired token.
+     */
+    private static function buildTokenValue(int $uid, int $expiresIn = 120): string
+    {
+        return \json_encode(
+            ['uid' => $uid, 'expiresAt' => \time() + $expiresIn],
+            JSON_THROW_ON_ERROR,
+        );
+    }
+
+    /**
      * Stub the singleton CacheManager so the nonce cache resolves the given
      * login token to the stored value (false = not found / expired).
+     *
+     * Returns the cache mock so a test can assert on remove().
      */
-    private function stubTokenCache(string $token, string|false $value): void
+    private function stubTokenCache(string $token, string|false $value): \TYPO3\CMS\Core\Cache\Frontend\FrontendInterface&MockObject
     {
         $cache = $this->createMock(\TYPO3\CMS\Core\Cache\Frontend\FrontendInterface::class);
         $cache->method('get')->with('passkey_login_' . $token)->willReturn($value);
         $cacheManager = $this->createStub(\TYPO3\CMS\Core\Cache\CacheManager::class);
         $cacheManager->method('getCache')->willReturn($cache);
         GeneralUtility::setSingletonInstance(\TYPO3\CMS\Core\Cache\CacheManager::class, $cacheManager);
+
+        return $cache;
     }
 
     // --- token-based login (pre-verified by /passkeys/login/verify) ---
@@ -143,7 +159,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAcceptsValidLoginToken(): void
     {
-        $this->stubTokenCache('tok123', '42');
+        $this->stubTokenCache('tok123', self::buildTokenValue(42));
         $this->subject->login = [
             'uname' => '',
             'uident' => self::buildTokenUident('tok123'),
@@ -154,12 +170,64 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         self::assertSame(200, $result);
     }
 
+    /**
+     * The expiry lives in the cached value, so an unredeemed token stops working
+     * even on a cache backend that ignores the lifetime passed to set().
+     */
+    #[Test]
+    public function authUserRejectsExpiredLoginTokenEvenWhenTheCacheStillReturnsIt(): void
+    {
+        $cache = $this->stubTokenCache('tok123', self::buildTokenValue(42, -1));
+        $cache->expects(self::atLeastOnce())->method('remove')->with('passkey_login_tok123');
+
+        $this->subject->login = [
+            'uname' => '',
+            'uident' => self::buildTokenUident('tok123'),
+        ];
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertNotSame(200, $result);
+    }
+
+    #[Test]
+    public function authUserRejectsLoginTokenWithoutExpiry(): void
+    {
+        // The pre-fix format: a bare uid with no expiry information.
+        $cache = $this->stubTokenCache('tok123', '42');
+        $cache->expects(self::atLeastOnce())->method('remove')->with('passkey_login_tok123');
+
+        $this->subject->login = [
+            'uname' => '',
+            'uident' => self::buildTokenUident('tok123'),
+        ];
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertNotSame(200, $result);
+    }
+
+    #[Test]
+    public function authUserRejectsLoginTokenWithMalformedPayload(): void
+    {
+        $this->stubTokenCache('tok123', '{"uid":"not-a-number","expiresAt":');
+
+        $this->subject->login = [
+            'uname' => '',
+            'uident' => self::buildTokenUident('tok123'),
+        ];
+
+        $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
+
+        self::assertNotSame(200, $result);
+    }
+
     #[Test]
     public function authUserRejectsLoginTokenBoundToDifferentUser(): void
     {
         // Token maps to uid 99; authUser runs for uid 42 → must not accept it as
         // a passkey login (falls through to the password-enforcement path).
-        $this->stubTokenCache('tok123', '99');
+        $this->stubTokenCache('tok123', self::buildTokenValue(99));
         $this->subject->login = [
             'uname' => '',
             'uident' => self::buildTokenUident('tok123'),

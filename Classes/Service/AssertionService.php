@@ -31,6 +31,30 @@ use Webauthn\TrustPath\EmptyTrustPath;
  */
 final class AssertionService
 {
+    /**
+     * Realistic credential-ID byte lengths. A single fixed length made every decoy
+     * recognisable: a 32-byte id is uncommon for real authenticators, which mostly
+     * emit 16 or 20 bytes.
+     *
+     * @var list<int>
+     */
+    private const DECOY_ID_LENGTHS = [16, 20, 32];
+
+    /**
+     * Transport sets browsers actually report, plus the empty set real credentials
+     * registered without transport information carry.
+     *
+     * @var list<list<string>>
+     */
+    private const DECOY_TRANSPORT_SETS = [
+        ['internal'],
+        ['internal', 'hybrid'],
+        ['usb'],
+        ['usb', 'nfc'],
+        ['hybrid'],
+        [],
+    ];
+
     public function __construct(
         private readonly ExtensionConfigurationService $configService,
         private readonly ChallengeService $challengeService,
@@ -49,14 +73,22 @@ final class AssertionService
         $challengeToken = $this->challengeService->createChallengeToken($challenge);
 
         $credentials = $this->credentialRepository->findByBeUser($beUserUid);
-        $allowCredentials = \array_map(
+        $allowCredentials = \array_values(\array_map(
             static fn(Credential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
                 type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
                 id: $cred->getCredentialId(),
                 transports: $cred->getTransportsArray(),
             ),
             $credentials,
-        );
+        ));
+
+        // An existing user who has not registered a passkey yet would otherwise
+        // answer with an empty allowCredentials — a reliable "this account exists"
+        // signal during rollout, since no unknown username ever produces one. Serve
+        // the same decoys an unknown username gets.
+        if ($allowCredentials === []) {
+            $allowCredentials = $this->buildDecoyDescriptors($username);
+        }
 
         $options = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
@@ -98,7 +130,7 @@ final class AssertionService
     /**
      * Create *decoy* assertion options for an unknown username.
      *
-     * Returns options structurally identical to a real user's so the public
+     * Returns options structurally indistinguishable from a real user's so the public
      * login-options endpoint cannot be used to enumerate valid backend usernames.
      * The decoy allowCredentials are derived deterministically from the username
      * (HMAC over an HKDF-derived key from the extension encryption key), so repeated
@@ -112,22 +144,10 @@ final class AssertionService
         $challenge = $this->challengeService->generateChallenge();
         $challengeToken = $this->challengeService->createChallengeToken($challenge);
 
-        $key = $this->configService->getEncryptionKey();
-        $derivedKey = \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_decoy');
-        $decoyId = \hash_hmac('sha256', $username, $derivedKey, true);
-
-        $allowCredentials = [
-            PublicKeyCredentialDescriptor::create(
-                type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
-                id: $decoyId,
-                transports: [],
-            ),
-        ];
-
         $options = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
-            allowCredentials: $allowCredentials,
+            allowCredentials: $this->buildDecoyDescriptors($username),
             userVerification: $this->configService->getConfiguration()->getUserVerification(),
             timeout: 60000,
         );
@@ -136,6 +156,47 @@ final class AssertionService
             options: $options,
             challengeToken: $challengeToken,
         );
+    }
+
+    /**
+     * Build the decoy credential descriptors for a username.
+     *
+     * Every property an observer can see is varied over the range real responses
+     * span — how many descriptors, each id's length, and the transports — and all of
+     * it is derived deterministically from HMAC(username) under a key derived from
+     * the extension encryption key. Stable across requests, unguessable without the
+     * key, and no longer a fingerprint: the previous version always returned exactly
+     * one 32-byte id with no transports, which no real response looks like.
+     *
+     * @return list<PublicKeyCredentialDescriptor>
+     */
+    private function buildDecoyDescriptors(string $username): array
+    {
+        $derivedKey = \hash_hkdf(
+            'sha256',
+            $this->configService->getEncryptionKey(),
+            32,
+            'nr_passkeys_be_decoy',
+        );
+
+        $seed = \hash_hmac('sha256', $username, $derivedKey, true);
+        $count = 1 + (\ord($seed[0]) % 3);
+
+        $descriptors = [];
+        for ($index = 0; $index < $count; ++$index) {
+            $material = \hash_hmac('sha256', $username . '|' . $index, $derivedKey, true);
+
+            $length = self::DECOY_ID_LENGTHS[\ord($material[0]) % \count(self::DECOY_ID_LENGTHS)];
+            $transports = self::DECOY_TRANSPORT_SETS[\ord($material[1]) % \count(self::DECOY_TRANSPORT_SETS)];
+
+            $descriptors[] = PublicKeyCredentialDescriptor::create(
+                type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
+                id: \substr($material, 0, $length),
+                transports: $transports,
+            );
+        }
+
+        return $descriptors;
     }
 
     /**

@@ -1054,11 +1054,106 @@ final class ManagementControllerTest extends TestCase
         self::assertSame('Not authenticated', $body['error']);
     }
 
+    #[Test]
+    public function registrationOptionsActionRefusedInSwitchUserMode(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'maintainer', 'Maintainer', switchUserOriginalUid: 7);
+
+        $this->webAuthnService->expects(self::never())->method('createRegistrationOptions');
+
+        $response = $this->subject->registrationOptionsAction($this->createJsonRequest([]));
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame(
+            'Passkeys cannot be managed while impersonating another user',
+            $this->decodeResponse($response)['error'],
+        );
+    }
+
+    /**
+     * The privilege-escalation path: a non-maintainer admin impersonates a system
+     * maintainer and stores their own authenticator on that account.
+     */
+    #[Test]
+    public function registrationVerifyActionRefusedInSwitchUserMode(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'maintainer', 'Maintainer', switchUserOriginalUid: 7);
+
+        $this->webAuthnService->expects(self::never())->method('verifyRegistrationResponse');
+        $this->webAuthnService->expects(self::never())->method('storeCredential');
+
+        $response = $this->subject->registrationVerifyAction($this->createJsonRequest([
+            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+            'challengeToken' => 'ct_reg_abc',
+            'label' => 'Attacker key',
+        ]));
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function renameActionRefusedInSwitchUserMode(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'maintainer', 'Maintainer', switchUserOriginalUid: 7);
+
+        $this->credentialRepository->expects(self::never())->method('updateLabel');
+
+        $response = $this->subject->renameAction($this->createJsonRequest([
+            'uid' => 99,
+            'label' => 'Renamed',
+        ]));
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function removeActionRefusedInSwitchUserMode(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'maintainer', 'Maintainer', switchUserOriginalUid: 7);
+
+        $this->credentialRepository->expects(self::never())->method('delete');
+
+        $response = $this->subject->removeAction($this->createJsonRequest(['uid' => 99]));
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function registrationVerifyActionAllowedInNormalSession(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+
+        $sourceMock = $this->createMock(CredentialRecord::class);
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('verifyRegistrationResponse')
+            ->willReturn($sourceMock);
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('storeCredential')
+            ->willReturn(new Credential(uid: 99, beUser: 42, label: 'Passkey'));
+
+        $response = $this->subject->registrationVerifyAction($this->createJsonRequest([
+            'credential' => ['id' => 'cred-xyz'],
+            'challengeToken' => 'ct_reg_abc',
+        ]));
+
+        self::assertSame(200, $response->getStatusCode());
+    }
+
     /**
      * Set up GLOBALS['BE_USER'] with a mock backend user.
+     *
+     * $switchUserOriginalUid mimics a switch-user (impersonation) session: it is the
+     * UID of the admin acting as $uid, exactly what core's
+     * getOriginalUserIdWhenInSwitchUserMode() returns in that mode.
      */
-    private function setUpAuthenticatedUser(int $uid, string $username, string $realName): void
-    {
+    private function setUpAuthenticatedUser(
+        int $uid,
+        string $username,
+        string $realName,
+        ?int $switchUserOriginalUid = null,
+    ): void {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = [
             'uid' => $uid,
@@ -1066,6 +1161,7 @@ final class ManagementControllerTest extends TestCase
             'realName' => $realName,
         ];
         $backendUser->method('isAdmin')->willReturn(false);
+        $backendUser->method('getOriginalUserIdWhenInSwitchUserMode')->willReturn($switchUserOriginalUid);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 

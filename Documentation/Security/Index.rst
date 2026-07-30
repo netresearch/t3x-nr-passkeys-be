@@ -77,7 +77,7 @@ Nonce replay protection
 =======================
 
 Each challenge token contains a nonce that is stored in a
-TYPO3 cache (``SimpleFileBackend``) upon creation. During
+TYPO3 cache (``FileBackend``) upon creation. During
 verification:
 
 1. The nonce is looked up in the cache.
@@ -132,12 +132,27 @@ On successful authentication, the lockout counter is reset.
 User enumeration prevention
 ============================
 
-The login endpoints return identical error responses
-regardless of whether a username exists. Additionally,
-requests for non-existent users include a randomized delay
-(50--150ms via ``usleep(random_int(50000, 150000))``) to
-normalize response timing and prevent timing-based
-enumeration.
+The login endpoints return identical responses regardless of
+whether a username exists: an unknown username receives decoy
+credentials with the same shape and HTTP status as a real
+user's, derived deterministically from the username so
+repeated requests stay consistent. An existing user who has
+not registered a passkey yet receives the same decoys, since
+an empty credential list would otherwise prove the account
+exists.
+
+Response timing is normalized by padding **every**
+username-first response -- known and unknown alike -- to the
+same wall-clock budget (150ms) before returning. A delay on
+the unknown-user branch alone would be the signal rather than
+a mask.
+
+..  note::
+    Padding assumes the real work stays below the budget. On a
+    heavily loaded system a response that exceeds 150ms is
+    returned immediately and remains distinguishable, so
+    per-IP rate limiting stays the primary control against
+    bulk enumeration.
 
 The authentication service logs only hashed usernames
 (``hash('sha256', $username)``) for unknown user attempts.

@@ -115,6 +115,85 @@ final class LoginControllerTest extends TestCase
         self::assertSame('abc', $body['options']['challenge']);
     }
 
+    /**
+     * The enumeration oracle F7 closed: the unknown-username branch used to sleep
+     * 50-150ms while the known-username branch returned immediately, so the minimum
+     * round-trip classified any username.
+     *
+     * Both branches are asserted against the same absolute window rather than against
+     * each other, so neither can drift without failing — and a one-sided delay on
+     * either side breaks its own case.
+     */
+    #[Test]
+    public function optionsActionForKnownUsernameSpendsTheTimingBudget(): void
+    {
+        $this->stubAssertionOptionGeneration();
+        $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
+
+        self::assertTimingBudgetSpent($this->timeOptionsAction('admin'));
+    }
+
+    #[Test]
+    public function optionsActionForUnknownUsernameSpendsTheTimingBudget(): void
+    {
+        $this->stubAssertionOptionGeneration();
+        $this->setUpFindBeUser('nosuchuser', null);
+
+        self::assertTimingBudgetSpent($this->timeOptionsAction('nosuchuser'));
+    }
+
+    /**
+     * Assert an optionsAction run spent the padded budget.
+     *
+     * The floor is the security property: neither branch may answer before the budget,
+     * which is what makes them indistinguishable. The ceiling is only a sanity guard
+     * against a grossly wrong sleep and is kept far above the budget on purpose — a
+     * tight ceiling would flake on a loaded CI runner, where scheduling noise, not the
+     * controller, decides the last few milliseconds.
+     */
+    private static function assertTimingBudgetSpent(float $elapsedNs): void
+    {
+        $budgetNs = 150_000_000.0;
+
+        self::assertGreaterThan($budgetNs * 0.9, $elapsedNs, 'Response must not come back before the budget');
+        self::assertLessThan(2_000_000_000.0, $elapsedNs, 'Response must not sleep far beyond the budget');
+    }
+
+    /**
+     * Stub both option-generation paths so only the controller's own timing is measured.
+     */
+    private function stubAssertionOptionGeneration(): void
+    {
+        $options = PublicKeyCredentialRequestOptions::create(
+            challenge: \random_bytes(32),
+            rpId: 'example.com',
+        );
+
+        $this->webAuthnService
+            ->method('createAssertionOptions')
+            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_known'));
+        $this->webAuthnService
+            ->method('createDecoyAssertionOptions')
+            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_decoy'));
+        $this->webAuthnService
+            ->method('serializeRequestOptions')
+            ->willReturn('{"challenge":"abc","rpId":"example.com"}');
+    }
+
+    /**
+     * Run optionsAction for $username and return the elapsed nanoseconds.
+     */
+    private function timeOptionsAction(string $username): float
+    {
+        $startedAt = \hrtime(true);
+        $response = $this->subject->optionsAction($this->createJsonRequest(['username' => $username]));
+        $elapsed = (float) (\hrtime(true) - $startedAt);
+
+        self::assertSame(200, $response->getStatusCode());
+
+        return $elapsed;
+    }
+
     #[Test]
     public function optionsActionWithEmptyUsernameWhenDiscoverableDisabled(): void
     {
@@ -245,8 +324,29 @@ final class LoginControllerTest extends TestCase
             ->with('admin', self::anything());
 
         // A verified username-first login yields a single-use token, stored in
-        // the nonce cache, that the JS submits through the login form.
-        $this->loginTokenCache->expects(self::once())->method('set');
+        // the nonce cache, that the JS submits through the login form. The stored
+        // value carries its own expiry so redemption does not rely on the cache
+        // backend honouring the lifetime.
+        $issuedAt = \time();
+        $this->loginTokenCache
+            ->expects(self::once())
+            ->method('set')
+            ->with(
+                self::isType('string'),
+                self::callback(static function (mixed $value) use ($issuedAt): bool {
+                    self::assertIsString($value);
+                    $payload = \json_decode($value, true, 8, JSON_THROW_ON_ERROR);
+                    self::assertIsArray($payload);
+                    self::assertSame(42, $payload['uid'] ?? null);
+                    self::assertIsInt($payload['expiresAt'] ?? null);
+                    self::assertGreaterThan($issuedAt, $payload['expiresAt']);
+                    self::assertLessThanOrEqual($issuedAt + 120 + 2, $payload['expiresAt']);
+
+                    return true;
+                }),
+                [],
+                120,
+            );
 
         $response = $this->subject->verifyAction($request);
 
@@ -282,6 +382,42 @@ final class LoginControllerTest extends TestCase
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Authentication failed', $body['error']);
+    }
+
+    /**
+     * webauthn-lib's deserializer throws Webauthn\Exception\InvalidDataException,
+     * which extends \Exception and not \RuntimeException: it used to escape the
+     * controller as an uncaught 500 (leaking a stack trace with debug output on) and
+     * skipped the recordFailure() bookkeeping, so those attempts did not count
+     * towards rate limiting.
+     */
+    #[Test]
+    public function verifyActionMapsNonRuntimeExceptionsToTheGeneric401(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => 'admin',
+            'assertion' => ['id' => 'AQID', 'rawId' => 'AQID', 'type' => 'public-key', 'response' => []],
+            'challengeToken' => 'ct_abc123',
+        ]);
+        $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
+
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('verifyAssertionResponse')
+            ->willThrowException(new \Webauthn\Exception\InvalidDataException(
+                null,
+                'Invalid input',
+            ));
+
+        $this->rateLimiterService
+            ->expects(self::once())
+            ->method('recordFailure')
+            ->with('admin', self::anything());
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+        self::assertSame('Authentication failed', $this->decodeResponse($response)['error']);
     }
 
     #[Test]
