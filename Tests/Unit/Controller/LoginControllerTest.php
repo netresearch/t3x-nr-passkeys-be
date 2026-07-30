@@ -245,8 +245,29 @@ final class LoginControllerTest extends TestCase
             ->with('admin', self::anything());
 
         // A verified username-first login yields a single-use token, stored in
-        // the nonce cache, that the JS submits through the login form.
-        $this->loginTokenCache->expects(self::once())->method('set');
+        // the nonce cache, that the JS submits through the login form. The stored
+        // value carries its own expiry so redemption does not rely on the cache
+        // backend honouring the lifetime.
+        $issuedAt = \time();
+        $this->loginTokenCache
+            ->expects(self::once())
+            ->method('set')
+            ->with(
+                self::isType('string'),
+                self::callback(static function (mixed $value) use ($issuedAt): bool {
+                    self::assertIsString($value);
+                    $payload = \json_decode($value, true, 8, JSON_THROW_ON_ERROR);
+                    self::assertIsArray($payload);
+                    self::assertSame(42, $payload['uid'] ?? null);
+                    self::assertIsInt($payload['expiresAt'] ?? null);
+                    self::assertGreaterThan($issuedAt, $payload['expiresAt']);
+                    self::assertLessThanOrEqual($issuedAt + 120 + 2, $payload['expiresAt']);
+
+                    return true;
+                }),
+                [],
+                120,
+            );
 
         $response = $this->subject->verifyAction($request);
 

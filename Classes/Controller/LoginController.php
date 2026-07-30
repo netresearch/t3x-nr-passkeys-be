@@ -34,6 +34,13 @@ final class LoginController
      */
     private const AUTH_FAILED = 'Authentication failed';
 
+    /**
+     * Seconds a freshly issued login token stays redeemable. Enforced by
+     * PasskeyAuthenticationService against the expiresAt stored in the token value,
+     * so it does not depend on the cache backend implementing lifetimes.
+     */
+    private const LOGIN_TOKEN_TTL = 120;
+
     public function __construct(
         private readonly WebAuthnService $webAuthnService,
         private readonly ExtensionConfigurationService $configService,
@@ -264,16 +271,26 @@ final class LoginController
     }
 
     /**
-     * Store a single-use login token (120s TTL) mapping to the verified backend
-     * user and return it. The JS submits it through the login form; the auth
-     * service resolves + consumes it. The token proves a completed WebAuthn
-     * ceremony without re-spending the single-use challenge.
+     * Store a single-use login token mapping to the verified backend user and
+     * return it. The JS submits it through the login form; the auth service
+     * resolves + consumes it. The token proves a completed WebAuthn ceremony
+     * without re-spending the single-use challenge.
+     *
+     * The expiry is written INTO the cached value, not left to the cache TTL: this
+     * token authenticates a backend user, and a cache backend that ignores
+     * lifetimes would otherwise turn it into a permanent credential. The TTL is
+     * still passed so a compliant backend also drops the entry.
      */
     private function issueLoginToken(int $beUserUid): ResponseInterface
     {
         $token = \bin2hex(\random_bytes(32));
+        $payload = \json_encode(
+            ['uid' => $beUserUid, 'expiresAt' => \time() + self::LOGIN_TOKEN_TTL],
+            JSON_THROW_ON_ERROR,
+        );
+
         $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce');
-        $cache->set('passkey_login_' . $token, (string) $beUserUid, [], 120);
+        $cache->set('passkey_login_' . $token, $payload, [], self::LOGIN_TOKEN_TTL);
 
         return new JsonResponse(['status' => 'ok', 'loginToken' => $token]);
     }
