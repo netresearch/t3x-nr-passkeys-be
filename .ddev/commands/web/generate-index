@@ -57,6 +57,16 @@ if command -v git &> /dev/null && git rev-parse --is-inside-work-tree &> /dev/nu
     GIT_COMMIT_SHORT=$(git rev-parse --short HEAD 2>/dev/null || echo "0000000")
     GIT_COMMIT_MSG=$(git log -1 --pretty=%s 2>/dev/null | head -c 50 || echo "No commit")
 
+    # These values are spliced into the sed expressions below, so they are treated
+    # as untrusted: git permits "|" and ";" in a ref name, and an unescaped "|"
+    # terminates the s|…|…| replacement and lets the rest of the name be read as
+    # further sed commands. Restrict the ref-derived values to characters that
+    # cannot do that; the commit message keeps its escaping since it is free text.
+    GIT_BRANCH=$(printf '%s' "$GIT_BRANCH" | tr -cd 'A-Za-z0-9._/-' | cut -c1-100)
+    GIT_COMMIT_SHORT=$(printf '%s' "$GIT_COMMIT_SHORT" | tr -cd 'A-Za-z0-9' | cut -c1-40)
+    [ -n "$GIT_BRANCH" ] || GIT_BRANCH="main"
+    [ -n "$GIT_COMMIT_SHORT" ] || GIT_COMMIT_SHORT="0000000"
+
     # Escape special characters for sed
     GIT_COMMIT_MSG=$(echo "$GIT_COMMIT_MSG" | sed 's/[&/\]/\\&/g')
 fi
