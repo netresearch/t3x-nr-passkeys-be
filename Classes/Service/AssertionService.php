@@ -33,12 +33,12 @@ final class AssertionService
 {
     /**
      * Realistic credential-ID byte lengths. A single fixed length made every decoy
-     * recognisable: a 32-byte id is uncommon for real authenticators, which mostly
-     * emit 16 or 20 bytes.
+     * recognisable: real authenticators emit 16 or 20 bytes for platform credentials
+     * and commonly 32 or 64 for security keys.
      *
      * @var list<int>
      */
-    private const DECOY_ID_LENGTHS = [16, 20, 32];
+    private const DECOY_ID_LENGTHS = [16, 20, 32, 64];
 
     /**
      * Transport sets browsers actually report, plus the empty set real credentials
@@ -168,6 +168,10 @@ final class AssertionService
      * key, and no longer a fingerprint: the previous version always returned exactly
      * one 32-byte id with no transports, which no real response looks like.
      *
+     * The selectors and the id come from separate HMACs on purpose — see the comment
+     * at the derivation. Nothing an observer receives may let them recompute how that
+     * response was shaped, or the decoy identifies itself.
+     *
      * @return list<PublicKeyCredentialDescriptor>
      */
     private function buildDecoyDescriptors(string $username): array
@@ -179,24 +183,55 @@ final class AssertionService
             'nr_passkeys_be_decoy',
         );
 
-        $seed = \hash_hmac('sha256', $username, $derivedKey, true);
+        $seed = \hash_hmac('sha256', $username . '|count', $derivedKey, true);
         $count = 1 + (\ord($seed[0]) % 3);
 
         $descriptors = [];
         for ($index = 0; $index < $count; ++$index) {
-            $material = \hash_hmac('sha256', $username . '|' . $index, $derivedKey, true);
+            // Two independent derivations, and they must stay independent. The
+            // selectors decide how long the id is and which transports it claims; the
+            // id is what the caller actually receives. Taking both from one HMAC —
+            // publishing substr($material, 0, $length) after choosing $length from
+            // $material[0] — made every decoy verifiable from its own bytes: the
+            // caller could recompute DECOY_ID_LENGTHS[ord($id[0]) % n] and see it
+            // match, which no real credential does except by chance. Any response
+            // failing that check was then certainly a real, enrolled account, which is
+            // precisely the oracle these decoys exist to close.
+            $selectors = \hash_hmac('sha256', $username . '|' . $index . '|selectors', $derivedKey, true);
 
-            $length = self::DECOY_ID_LENGTHS[\ord($material[0]) % \count(self::DECOY_ID_LENGTHS)];
-            $transports = self::DECOY_TRANSPORT_SETS[\ord($material[1]) % \count(self::DECOY_TRANSPORT_SETS)];
+            $length = self::DECOY_ID_LENGTHS[\ord($selectors[0]) % \count(self::DECOY_ID_LENGTHS)];
+            $transports = self::DECOY_TRANSPORT_SETS[\ord($selectors[1]) % \count(self::DECOY_TRANSPORT_SETS)];
 
             $descriptors[] = PublicKeyCredentialDescriptor::create(
                 type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
-                id: \substr($material, 0, $length),
+                id: self::deriveDecoyId($derivedKey, $username . '|' . $index . '|id', $length),
                 transports: $transports,
             );
         }
 
         return $descriptors;
+    }
+
+    /**
+     * Derive a decoy credential id of the requested length.
+     *
+     * sha256 yields 32 bytes, so a 64-byte id needs a second block — and every block
+     * is its own keyed HMAC. Stretching by hashing the first block instead would make
+     * the tail computable from the head the caller already has, which is the same
+     * self-identifying defect one level down: `substr($id, 32) === sha256(substr($id, 0, 32) . '|1')`
+     * holds for every such decoy and for no real credential. Without the key, no byte
+     * of the result predicts any other.
+     */
+    private static function deriveDecoyId(string $derivedKey, string $label, int $length): string
+    {
+        $id = '';
+        $block = 0;
+        while (\strlen($id) < $length) {
+            $id .= \hash_hmac('sha256', $label . '|' . $block, $derivedKey, true);
+            ++$block;
+        }
+
+        return \substr($id, 0, $length);
     }
 
     /**

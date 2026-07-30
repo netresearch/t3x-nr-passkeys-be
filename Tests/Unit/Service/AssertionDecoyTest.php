@@ -21,6 +21,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 use Webauthn\PublicKeyCredentialDescriptor;
 
 /**
@@ -139,7 +140,7 @@ final class AssertionDecoyTest extends TestCase
 
         self::assertGreaterThan(1, \count($lengths), 'Decoy credential-ID length must not be fixed');
         foreach (\array_keys($lengths) as $length) {
-            self::assertContains($length, [16, 20, 32], 'Decoy IDs must use realistic byte lengths');
+            self::assertContains($length, [16, 20, 32, 64], 'Decoy IDs must use realistic byte lengths');
         }
     }
 
@@ -169,6 +170,107 @@ final class AssertionDecoyTest extends TestCase
         foreach (\array_keys($seen) as $transport) {
             self::assertContains($transport, ['internal', 'hybrid', 'usb', 'nfc']);
         }
+    }
+
+    /**
+     * The oracle the shape randomisation itself opened: the id length and transports
+     * were selected from the first two bytes of the same HMAC whose head was then
+     * published as the credential id. An unauthenticated caller could therefore
+     * recompute `strlen(id) === LENGTHS[ord(id[0]) % n]` and
+     * `transports === SETS[ord(id[1]) % m]` — relations that hold for every decoy and
+     * only by chance for a real credential, so any response failing them was certainly
+     * a real enrolled account.
+     *
+     * The selectors now come from a separate HMAC the caller never sees, so the
+     * relation must hold no more often than chance.
+     */
+    #[Test]
+    public function decoyIdDoesNotEncodeItsOwnLengthAndTransports(): void
+    {
+        // Read the real constants rather than restating them: they are public source,
+        // so an attacker uses exactly these, and a hardcoded copy would silently stop
+        // matching the implementation and make this test vacuous.
+        $reflection = new ReflectionClass(AssertionService::class);
+        /** @var list<int> $lengths */
+        $lengths = $reflection->getConstant('DECOY_ID_LENGTHS');
+        /** @var list<list<string>> $sets */
+        $sets = $reflection->getConstant('DECOY_TRANSPORT_SETS');
+
+        self::assertIsArray($lengths);
+        self::assertIsArray($sets);
+        self::assertNotSame([], $lengths);
+        self::assertNotSame([], $sets);
+
+        $total = 0;
+        $selfIdentifying = 0;
+
+        foreach (self::SAMPLE_USERNAMES as $username) {
+            foreach ($this->decoysFor($username) as $descriptor) {
+                ++$total;
+
+                // Exactly the test an attacker can run, using only what the endpoint
+                // returns: the raw credential id and the transports beside it.
+                $id = $descriptor->id;
+                $lengthMatches = \strlen($id) === $lengths[\ord($id[0]) % \count($lengths)];
+                $transportsMatch = $descriptor->transports === $sets[\ord($id[1]) % \count($sets)];
+
+                if ($lengthMatches && $transportsMatch) {
+                    ++$selfIdentifying;
+                }
+            }
+        }
+
+        self::assertGreaterThan(0, $total);
+
+        // Both relations holding is a 1-in-24 coincidence per descriptor once the
+        // derivations are independent; before the fix it was every single one.
+        self::assertLessThan(
+            $total / 2,
+            $selfIdentifying,
+            \sprintf(
+                'A decoy id must not encode its own shape: %d of %d descriptors are still self-identifying',
+                $selfIdentifying,
+                $total,
+            ),
+        );
+    }
+
+    /**
+     * The same defect one level down: an id longer than one sha256 block was first
+     * stretched by appending `sha256($material . '|1')` to `$material`, and the head
+     * of the id *is* `$material`. The tail was therefore computable from the published
+     * head with no key at all, so `substr($id, 32) === sha256(substr($id, 0, 32) . '|1')`
+     * identified every long decoy just as reliably as the shape relation did.
+     *
+     * Each block is now its own keyed HMAC, so no published byte predicts another.
+     */
+    #[Test]
+    public function longDecoyIdTailIsNotDerivableFromItsHead(): void
+    {
+        $longIds = 0;
+
+        foreach (self::SAMPLE_USERNAMES as $username) {
+            foreach ($this->decoysFor($username) as $descriptor) {
+                $id = $descriptor->id;
+                if (\strlen($id) <= 32) {
+                    continue;
+                }
+
+                ++$longIds;
+
+                self::assertNotSame(
+                    \substr($id, 32),
+                    \hash('sha256', \substr($id, 0, 32) . '|1', true),
+                    'A decoy id longer than one block must not let its tail be computed from its head',
+                );
+            }
+        }
+
+        self::assertGreaterThan(
+            0,
+            $longIds,
+            'The sample must contain ids longer than one sha256 block, or this proves nothing',
+        );
     }
 
     /**
