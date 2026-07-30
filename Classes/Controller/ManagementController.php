@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
+use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
@@ -52,6 +53,14 @@ final class ManagementController
             return $this->denySwitchUserMode('registration_options', $user->uid);
         }
 
+        return $this->buildRegistrationOptions($user);
+    }
+
+    /**
+     * Generate and serialize registration options for an authorized user.
+     */
+    private function buildRegistrationOptions(AuthenticatedUser $user): ResponseInterface
+    {
         try {
             $result = $this->webAuthnService->createRegistrationOptions(
                 beUserUid: $user->uid,

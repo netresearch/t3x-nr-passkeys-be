@@ -339,9 +339,34 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      */
     private function resolvePasskeyToken(): int
     {
+        $value = $this->fetchLoginTokenValue();
+        if ($value === null) {
+            return 0;
+        }
+
+        $payload = self::decodeLoginTokenPayload($value);
+        if ($payload === null || \time() > $payload['expiresAt']) {
+            $this->getLogger()->warning('Passkey login token rejected', [
+                'reason' => $payload === null ? 'unusable_payload' : 'expired',
+                'be_user_uid' => $payload['uid'] ?? null,
+            ]);
+            $this->consumePasskeyToken();
+
+            return 0;
+        }
+
+        return $payload['uid'];
+    }
+
+    /**
+     * Read the raw cached value for the presented login token, or null when no token
+     * was presented, the cache is unreachable, or the entry is gone.
+     */
+    private function fetchLoginTokenValue(): ?string
+    {
         $token = $this->extractLoginToken();
         if ($token === '') {
-            return 0;
+            return null;
         }
 
         try {
@@ -351,43 +376,37 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         } catch (Throwable $e) {
             $this->getLogger()->warning('Passkey token resolution failed', ['error' => $e->getMessage()]);
 
-            return 0;
+            return null;
         }
 
         // A cache miss returns false.
-        if (!\is_string($value)) {
-            return 0;
-        }
+        return \is_string($value) ? $value : null;
+    }
 
+    /**
+     * Decode a cached login-token value, or null when it is not the expected
+     * {"uid":…,"expiresAt":…} shape written by LoginController::issueLoginToken().
+     *
+     * @return array{uid: int, expiresAt: int}|null
+     */
+    private static function decodeLoginTokenPayload(string $value): ?array
+    {
         try {
             $payload = \json_decode($value, true, 8, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
-            $payload = null;
+            return null;
         }
 
-        $uid = \is_array($payload) && \is_numeric($payload['uid'] ?? null) ? (int) $payload['uid'] : 0;
-        $expiresAt = \is_array($payload) && \is_numeric($payload['expiresAt'] ?? null)
-            ? (int) $payload['expiresAt']
-            : 0;
-
-        if ($uid <= 0 || $expiresAt <= 0) {
-            $this->getLogger()->warning('Passkey login token has an unusable payload; rejecting');
-            $this->consumePasskeyToken();
-
-            return 0;
+        if (!\is_array($payload)) {
+            return null;
         }
 
-        if (\time() > $expiresAt) {
-            $this->getLogger()->warning('Expired passkey login token presented', [
-                'be_user_uid' => $uid,
-                'expiredAt' => $expiresAt,
-            ]);
-            $this->consumePasskeyToken();
+        $uid = \is_numeric($payload['uid'] ?? null) ? (int) $payload['uid'] : 0;
+        $expiresAt = \is_numeric($payload['expiresAt'] ?? null) ? (int) $payload['expiresAt'] : 0;
 
-            return 0;
-        }
-
-        return $uid;
+        return $uid > 0 && $expiresAt > 0
+            ? ['uid' => $uid, 'expiresAt' => $expiresAt]
+            : null;
     }
 
     /**
