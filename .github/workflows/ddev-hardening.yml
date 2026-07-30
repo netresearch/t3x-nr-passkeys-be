@@ -1,0 +1,40 @@
+# Guards the ref-name sanitization in the DDEV tooling.
+#
+# Deliberately a separate workflow rather than a job in checks.yml: that file is
+# byte-identical drift-enforced against netresearch/.github/templates/typo3-extension
+# (see .github/template.yaml), so a local job there would fail the drift check.
+# The drift check only walks template files, so this repo-local workflow is not
+# compared against anything.
+name: DDEV Hardening
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.ddev/**'
+      - 'Build/Scripts/test-ddev-git-info.sh'
+      - '.github/workflows/ddev-hardening.yml'
+  pull_request:
+    paths:
+      - '.ddev/**'
+      - 'Build/Scripts/test-ddev-git-info.sh'
+      - '.github/workflows/ddev-hardening.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  ref-name-sanitization:
+    name: Ref-name sanitization
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify DDEV hook sanitization
+        run: sh Build/Scripts/test-ddev-git-info.sh
