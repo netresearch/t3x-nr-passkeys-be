@@ -277,7 +277,13 @@ final class LoginController
                 challengeToken: $challengeToken,
                 beUserUid: $beUserUid,
             );
-        } catch (RuntimeException $e) {
+        } catch (Throwable $e) {
+            // Throwable, not RuntimeException: webauthn-lib's deserializer throws
+            // Webauthn\Exception\InvalidDataException, which extends \Exception, so a
+            // structurally invalid assertion object used to escape this catch and
+            // surface as an uncaught-exception 500 — skipping recordFailure() on the
+            // way out, and leaking paths when debug output is on.
+            //
             // Do not feed the cross-IP per-username lockout (passkey assertions are
             // unforgeable; counting them only enables an account-lockout DoS).
             $this->rateLimiterService->recordFailure($username, $ip, countUserLockout: false);
@@ -286,6 +292,7 @@ final class LoginController
                 'username_hash' => \hash('sha256', $username),
                 'ip' => $ip,
                 'error_code' => $e->getCode(),
+                'error_class' => \get_class($e),
             ]);
 
             return new JsonResponse(['error' => self::AUTH_FAILED], 401);

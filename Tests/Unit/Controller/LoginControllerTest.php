@@ -362,6 +362,42 @@ final class LoginControllerTest extends TestCase
         self::assertSame('Authentication failed', $body['error']);
     }
 
+    /**
+     * webauthn-lib's deserializer throws Webauthn\Exception\InvalidDataException,
+     * which extends \Exception and not \RuntimeException: it used to escape the
+     * controller as an uncaught 500 (leaking a stack trace with debug output on) and
+     * skipped the recordFailure() bookkeeping, so those attempts did not count
+     * towards rate limiting.
+     */
+    #[Test]
+    public function verifyActionMapsNonRuntimeExceptionsToTheGeneric401(): void
+    {
+        $request = $this->createJsonRequest([
+            'username' => 'admin',
+            'assertion' => ['id' => 'AQID', 'rawId' => 'AQID', 'type' => 'public-key', 'response' => []],
+            'challengeToken' => 'ct_abc123',
+        ]);
+        $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
+
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('verifyAssertionResponse')
+            ->willThrowException(new \Webauthn\Exception\InvalidDataException(
+                null,
+                'Invalid input',
+            ));
+
+        $this->rateLimiterService
+            ->expects(self::once())
+            ->method('recordFailure')
+            ->with('admin', self::anything());
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(401, $response->getStatusCode());
+        self::assertSame('Authentication failed', $this->decodeResponse($response)['error']);
+    }
+
     #[Test]
     public function verifyActionWithMissingFields(): void
     {
