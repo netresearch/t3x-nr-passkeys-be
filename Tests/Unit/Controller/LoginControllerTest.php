@@ -115,6 +115,63 @@ final class LoginControllerTest extends TestCase
         self::assertSame('abc', $body['options']['challenge']);
     }
 
+    /**
+     * The enumeration oracle F7 closed: the unknown-username branch used to sleep
+     * 50-150ms while the known-username branch returned immediately, so the minimum
+     * round-trip classified any username. Both branches must now spend the same
+     * wall-clock time.
+     */
+    #[Test]
+    public function optionsActionTakesTheSameTimeForKnownAndUnknownUsernames(): void
+    {
+        $options = PublicKeyCredentialRequestOptions::create(
+            challenge: \random_bytes(32),
+            rpId: 'example.com',
+        );
+        $this->webAuthnService
+            ->method('createAssertionOptions')
+            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_known'));
+        $this->webAuthnService
+            ->method('createDecoyAssertionOptions')
+            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_decoy'));
+        $this->webAuthnService
+            ->method('serializeRequestOptions')
+            ->willReturn('{"challenge":"abc","rpId":"example.com"}');
+
+        $this->setUpFindBeUserMap([
+            'admin' => ['uid' => 42, 'username' => 'admin'],
+            'nosuchuser' => null,
+        ]);
+
+        $knownNs = $this->timeOptionsAction('admin');
+        $unknownNs = $this->timeOptionsAction('nosuchuser');
+
+        // Both are padded to the same 150ms budget; allow generous slack for
+        // scheduling noise while still failing on the old 50-150ms one-sided delay.
+        $budgetNs = 150_000_000;
+        self::assertGreaterThan($budgetNs * 0.9, $knownNs, 'Known username must not answer faster than the budget');
+        self::assertGreaterThan($budgetNs * 0.9, $unknownNs);
+        self::assertLessThan(
+            $budgetNs * 0.5,
+            \abs($knownNs - $unknownNs),
+            'Known and unknown usernames must not differ measurably in response time',
+        );
+    }
+
+    /**
+     * Run optionsAction for $username and return the elapsed nanoseconds.
+     */
+    private function timeOptionsAction(string $username): float
+    {
+        $startedAt = \hrtime(true);
+        $response = $this->subject->optionsAction($this->createJsonRequest(['username' => $username]));
+        $elapsed = (float) (\hrtime(true) - $startedAt);
+
+        self::assertSame(200, $response->getStatusCode());
+
+        return $elapsed;
+    }
+
     #[Test]
     public function optionsActionWithEmptyUsernameWhenDiscoverableDisabled(): void
     {
@@ -758,6 +815,53 @@ final class LoginControllerTest extends TestCase
         $queryBuilder->method('where')->willReturnSelf();
         $queryBuilder->method('expr')->willReturn($expressionBuilder);
         $queryBuilder->method('createNamedParameter')->willReturn("'" . $username . "'");
+        $queryBuilder->method('executeQuery')->willReturn($result);
+
+        $this->connectionPool
+            ->method('getQueryBuilderForTable')
+            ->with('be_users')
+            ->willReturn($queryBuilder);
+    }
+
+    /**
+     * Like setUpFindBeUser(), but resolves several usernames in one test: the row is
+     * chosen by the username bound through createNamedParameter().
+     *
+     * @param array<string, array<string, mixed>|null> $usersByUsername
+     */
+    private function setUpFindBeUserMap(array $usersByUsername): void
+    {
+        $boundUsername = '';
+
+        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
+        $expressionBuilder->method('eq')->willReturn('1=1');
+
+        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result->method('fetchAssociative')->willReturnCallback(
+            /**
+             * @return array<string, mixed>|false
+             */
+            static function () use (&$boundUsername, $usersByUsername): array|false {
+                $row = \is_string($boundUsername) ? ($usersByUsername[$boundUsername] ?? null) : null;
+
+                return $row ?? false;
+            },
+        );
+
+        $queryBuilder = $this->createMock(QueryBuilder::class);
+        $queryBuilder->method('select')->willReturnSelf();
+        $queryBuilder->method('from')->willReturnSelf();
+        $queryBuilder->method('where')->willReturnSelf();
+        $queryBuilder->method('expr')->willReturn($expressionBuilder);
+        $queryBuilder->method('createNamedParameter')->willReturnCallback(
+            static function (mixed $value) use (&$boundUsername): string {
+                if (\is_string($value)) {
+                    $boundUsername = $value;
+                }
+
+                return "'" . (\is_scalar($value) ? (string) $value : '') . "'";
+            },
+        );
         $queryBuilder->method('executeQuery')->willReturn($result);
 
         $this->connectionPool
