@@ -77,7 +77,7 @@ Nonce replay protection
 =======================
 
 Each challenge token contains a nonce that is stored in a
-TYPO3 cache (``SimpleFileBackend``) upon creation. During
+TYPO3 cache (``FileBackend``) upon creation. During
 verification:
 
 1. The nonce is looked up in the cache.

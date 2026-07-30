@@ -60,10 +60,15 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1748450000] = [
     'class' => \Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanelElement::class,
 ];
 
-// Register cache for challenge nonces
+// Register cache for challenge nonces and single-use login tokens.
+// FileBackend, not SimpleFileBackend: the latter discards the lifetime passed to
+// set(), never checks expiry in get(), and its collectGarbage() is empty — so
+// nonces and login tokens lived forever and their files were never reclaimed.
+// Entries here are security-relevant (a login token authenticates a backend user),
+// so the backend must actually enforce the requested TTL.
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce'] ??= [];
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['backend'] ??=
-    \TYPO3\CMS\Core\Cache\Backend\SimpleFileBackend::class;
+    \TYPO3\CMS\Core\Cache\Backend\FileBackend::class;
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['options'] ??= [
     'defaultLifetime' => 300,
 ];

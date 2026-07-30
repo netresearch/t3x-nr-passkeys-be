@@ -90,8 +90,8 @@ Multi-server cache backends
 The extension uses two TYPO3 caches:
 
 -  ``nr_passkeys_be_nonce`` -- Stores single-use nonces for
-   challenge replay protection (default backend:
-   ``SimpleFileBackend``).
+   challenge replay protection and single-use login tokens
+   (default backend: ``FileBackend``).
 -  ``nr_passkeys_be_ratelimit`` -- Stores rate-limit counters
    and lockout flags (default backend: ``FileBackend``).
 
