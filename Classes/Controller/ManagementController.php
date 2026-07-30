@@ -102,7 +102,12 @@ final class ManagementController
         }
 
         $body = $this->getJsonBody($request);
-        $credentialJson = isset($body['credential']) ? \json_encode($body['credential'], JSON_THROW_ON_ERROR) : '';
+
+        $credentialJson = $this->encodeBodySection($body['credential'] ?? null);
+        if ($credentialJson === null) {
+            return new JsonResponse(['error' => 'Invalid request body'], 400);
+        }
+
         $rawToken = $body['challengeToken'] ?? '';
         $challengeToken = \is_string($rawToken) ? $rawToken : '';
         $rawLabel = $body['label'] ?? 'Passkey';

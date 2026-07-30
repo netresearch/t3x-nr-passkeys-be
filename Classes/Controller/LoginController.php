@@ -174,15 +174,19 @@ final class LoginController
         $username = isset($body['username']) && \is_scalar($body['username'])
             ? (string) $body['username']
             : '';
-        $assertion = isset($body['assertion']) && \is_array($body['assertion'])
-            ? \json_encode($body['assertion'], JSON_THROW_ON_ERROR)
-            : '';
+
+        // null means the body could not be encoded (malformed UTF-8 from a form-encoded
+        // request); this endpoint is public, so that must not escape as a 500.
+        $assertion = $this->encodeBodySection($body['assertion'] ?? null);
         $challengeToken = isset($body['challengeToken']) && \is_scalar($body['challengeToken'])
             ? (string) $body['challengeToken']
             : '';
 
-        if ($assertion === '' || $challengeToken === '') {
-            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        if ($assertion === null || $assertion === '' || $challengeToken === '') {
+            return new JsonResponse(
+                ['error' => $assertion === null ? 'Invalid request body' : 'Missing required fields'],
+                400,
+            );
         }
 
         $ip = $this->getRemoteAddress($request);

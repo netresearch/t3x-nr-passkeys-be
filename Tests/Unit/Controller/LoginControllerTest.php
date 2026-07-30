@@ -35,6 +35,8 @@ use Webauthn\PublicKeyCredentialRequestOptions;
 #[CoversClass(LoginController::class)]
 final class LoginControllerTest extends TestCase
 {
+    use FormRequestTrait;
+
     private LoginController $subject;
 
     private WebAuthnService&MockObject $webAuthnService;
@@ -418,6 +420,28 @@ final class LoginControllerTest extends TestCase
 
         self::assertSame(401, $response->getStatusCode());
         self::assertSame('Authentication failed', $this->decodeResponse($response)['error']);
+    }
+
+    /**
+     * A non-UTF-8 byte in the form-encoded assertion used to throw JsonException out
+     * of verifyAction — before any try/catch — so an unauthenticated request produced
+     * an uncaught-exception 500 instead of the endpoint's JSON error contract.
+     */
+    #[Test]
+    public function verifyActionRejectsNonUtf8BodyWithABadRequestResponse(): void
+    {
+        $request = $this->createFormRequest([
+            'username' => 'admin',
+            'assertion' => ['clientDataJSON' => "\xFF\xFE"],
+            'challengeToken' => 'ct_abc123',
+        ]);
+
+        $this->webAuthnService->expects(self::never())->method('verifyAssertionResponse');
+
+        $response = $this->subject->verifyAction($request);
+
+        self::assertSame(400, $response->getStatusCode());
+        self::assertSame('Invalid request body', $this->decodeResponse($response)['error']);
     }
 
     #[Test]
@@ -853,6 +877,7 @@ final class LoginControllerTest extends TestCase
 
         return $request;
     }
+
 
     /**
      * Set up the ConnectionPool mock to simulate finding (or not finding) a BE user.
