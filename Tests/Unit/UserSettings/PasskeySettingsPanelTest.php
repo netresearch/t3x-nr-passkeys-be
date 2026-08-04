@@ -26,11 +26,11 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 #[CoversClass(PasskeySettingsPanel::class)]
 final class PasskeySettingsPanelTest extends TestCase
 {
-    private MockObject $pageRenderer;
+    private PageRenderer&MockObject $pageRenderer;
 
-    private MockObject $credentialRepository;
+    private CredentialRepository&MockObject $credentialRepository;
 
-    private MockObject $uriBuilder;
+    private UriBuilder&MockObject $uriBuilder;
 
     private PasskeySettingsPanel $subject;
 

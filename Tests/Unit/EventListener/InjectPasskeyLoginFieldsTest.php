@@ -29,11 +29,11 @@ use TYPO3\CMS\Core\View\ViewInterface;
 #[CoversClass(InjectPasskeyLoginFields::class)]
 final class InjectPasskeyLoginFieldsTest extends TestCase
 {
-    private MockObject $configService;
+    private ExtensionConfigurationService&MockObject $configService;
 
-    private MockObject $pageRenderer;
+    private PageRenderer&MockObject $pageRenderer;
 
-    private MockObject $uriBuilder;
+    private UriBuilder&MockObject $uriBuilder;
 
     private InjectPasskeyLoginFields $subject;
 
