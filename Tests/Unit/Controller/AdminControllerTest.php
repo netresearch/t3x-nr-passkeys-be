@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Controller\AdminController;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
+use Netresearch\NrPasskeysBe\Tests\Unit\QueryBuilderMockTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -21,13 +22,16 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface;
 
 #[CoversClass(AdminController::class)]
 final class AdminControllerTest extends TestCase
 {
+    use QueryBuilderMockTrait;
+
     private AdminController $subject;
 
     private CredentialRepository&MockObject $credentialRepository;
@@ -158,11 +162,9 @@ final class AdminControllerTest extends TestCase
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin revoked passkey', self::callback(static function (array $context): bool {
-                return $context['admin_uid'] === 1
-                    && $context['be_user_uid'] === 42
-                    && $context['credential_uid'] === 10;
-            }));
+            ->with('Admin revoked passkey', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
+                && $context['be_user_uid'] === 42
+                && $context['credential_uid'] === 10));
 
         $response = $this->subject->removeAction($request);
 
@@ -363,11 +365,9 @@ final class AdminControllerTest extends TestCase
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin unlocked user account', self::callback(static function (array $context): bool {
-                return $context['admin_uid'] === 1
-                    && $context['be_user_uid'] === 42
-                    && $context['username'] === 'lockeduser';
-            }));
+            ->with('Admin unlocked user account', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
+                && $context['be_user_uid'] === 42
+                && $context['username'] === 'lockeduser'));
 
         $response = $this->subject->unlockAction($request);
 
@@ -425,7 +425,7 @@ final class AdminControllerTest extends TestCase
      */
     private function setUpAdminUser(int $uid, string $username, bool $isSystemMaintainer = false): void
     {
-        $backendUser = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = [
             'uid' => $uid,
             'username' => $username,
@@ -462,7 +462,7 @@ final class AdminControllerTest extends TestCase
      */
     private function setUpNonAdminUser(int $uid, string $username): void
     {
-        $backendUser = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = [
             'uid' => $uid,
             'username' => $username,
@@ -479,19 +479,7 @@ final class AdminControllerTest extends TestCase
      */
     private function setUpFindBeUserByUid(int $uid, ?array $userRow): void
     {
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
-        $result->method('fetchAssociative')->willReturn($userRow ?? false);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
-        $queryBuilder->method('executeQuery')->willReturn($result);
+        $queryBuilder = $this->createSingleRowQueryBuilder($uid, $userRow);
 
         $this->connectionPool
             ->method('getQueryBuilderForTable')
@@ -700,7 +688,7 @@ final class AdminControllerTest extends TestCase
     #[Test]
     public function requireAdminReturnsNullWhenUserDataIsNotArray(): void
     {
-        $backendUser = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = null; // not an array
         $backendUser->method('isAdmin')->willReturn(true);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -718,7 +706,7 @@ final class AdminControllerTest extends TestCase
     #[Test]
     public function requireAdminReturnsNullWhenUserHasNoUid(): void
     {
-        $backendUser = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['username' => 'admin']; // no uid
         $backendUser->method('isAdmin')->willReturn(true);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -832,11 +820,9 @@ final class AdminControllerTest extends TestCase
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin revoked all passkeys', self::callback(static function (array $context): bool {
-                return $context['admin_uid'] === 1
-                    && $context['be_user_uid'] === 42
-                    && $context['revoked_count'] === 2;
-            }));
+            ->with('Admin revoked all passkeys', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
+                && $context['be_user_uid'] === 42
+                && $context['revoked_count'] === 2));
 
         $response = $this->subject->revokeAllAction($request);
 
@@ -928,7 +914,7 @@ final class AdminControllerTest extends TestCase
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpGroupLookup(5, ['uid' => 5]);
 
-        $connection = $this->createMock(\TYPO3\CMS\Core\Database\Connection::class);
+        $connection = $this->createMock(Connection::class);
         $connection->expects(self::once())
             ->method('update')
             ->with('be_groups', ['passkey_enforcement' => 'encourage'], ['uid' => 5]);
@@ -946,11 +932,9 @@ final class AdminControllerTest extends TestCase
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin updated group enforcement', self::callback(static function (array $context): bool {
-                return $context['admin_uid'] === 1
-                    && $context['group_uid'] === 5
-                    && $context['enforcement'] === 'encourage';
-            }));
+            ->with('Admin updated group enforcement', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
+                && $context['group_uid'] === 5
+                && $context['enforcement'] === 'encourage'));
 
         $response = $this->subject->updateEnforcementAction($request);
 
@@ -1066,16 +1050,14 @@ final class AdminControllerTest extends TestCase
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
 
-        $connection = $this->createMock(\TYPO3\CMS\Core\Database\Connection::class);
+        $connection = $this->createMock(Connection::class);
         $connection->expects(self::once())
             ->method('update')
             ->with(
                 'be_users',
-                self::callback(static function (array $data): bool {
-                    return isset($data['passkey_nudge_until'])
-                        && \is_int($data['passkey_nudge_until'])
-                        && $data['passkey_nudge_until'] > \time();
-                }),
+                self::callback(static fn(array $data): bool => isset($data['passkey_nudge_until'])
+                    && \is_int($data['passkey_nudge_until'])
+                    && $data['passkey_nudge_until'] > \time()),
                 ['uid' => 42],
             );
 
@@ -1091,13 +1073,11 @@ final class AdminControllerTest extends TestCase
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin sent passkey reminder', self::callback(static function (array $context): bool {
-                return $context['admin_uid'] === 1
-                    && $context['be_user_uid'] === 42
-                    && $context['username'] === 'editor'
-                    && \is_int($context['nudge_until'])
-                    && $context['nudge_until'] > \time();
-            }));
+            ->with('Admin sent passkey reminder', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
+                && $context['be_user_uid'] === 42
+                && $context['username'] === 'editor'
+                && \is_int($context['nudge_until'])
+                && $context['nudge_until'] > \time()));
 
         $response = $this->subject->sendReminderAction($request);
 
@@ -1178,7 +1158,7 @@ final class AdminControllerTest extends TestCase
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
 
-        $connection = $this->createMock(\TYPO3\CMS\Core\Database\Connection::class);
+        $connection = $this->createMock(Connection::class);
         $connection->expects(self::once())
             ->method('update')
             ->with(
@@ -1199,11 +1179,9 @@ final class AdminControllerTest extends TestCase
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin cleared passkey nudge', self::callback(static function (array $context): bool {
-                return $context['admin_uid'] === 1
-                    && $context['be_user_uid'] === 42
-                    && $context['username'] === 'editor';
-            }));
+            ->with('Admin cleared passkey nudge', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
+                && $context['be_user_uid'] === 42
+                && $context['username'] === 'editor'));
 
         $response = $this->subject->clearNudgeAction($request);
 
@@ -1281,22 +1259,10 @@ final class AdminControllerTest extends TestCase
      */
     private function setUpGroupLookup(int $uid, ?array $groupRow): void
     {
-        $restrictions = $this->createMock(\TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface::class);
-
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
-        $result->method('fetchAssociative')->willReturn($groupRow ?? false);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
-        $queryBuilder->method('executeQuery')->willReturn($result);
-        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
+        $queryBuilder = $this->createSingleRowQueryBuilder($uid, $groupRow);
+        $queryBuilder->method('getRestrictions')->willReturn(
+            $this->createMock(QueryRestrictionContainerInterface::class),
+        );
 
         $this->connectionPool
             ->method('getQueryBuilderForTable')
@@ -1313,22 +1279,10 @@ final class AdminControllerTest extends TestCase
      */
     private function setUpFindActiveBeUserByUid(int $uid, ?array $userRow): void
     {
-        $restrictions = $this->createMock(\TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface::class);
-
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
-        $result->method('fetchAssociative')->willReturn($userRow ?? false);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
-        $queryBuilder->method('executeQuery')->willReturn($result);
-        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
+        $queryBuilder = $this->createSingleRowQueryBuilder($uid, $userRow);
+        $queryBuilder->method('getRestrictions')->willReturn(
+            $this->createMock(QueryRestrictionContainerInterface::class),
+        );
 
         $this->connectionPool
             ->method('getQueryBuilderForTable')
@@ -1341,7 +1295,7 @@ final class AdminControllerTest extends TestCase
      *
      * @return array<string, mixed>
      */
-    private function decodeResponse(\Psr\Http\Message\ResponseInterface $response): array
+    private function decodeResponse(ResponseInterface $response): array
     {
         $body = (string) $response->getBody();
         $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);

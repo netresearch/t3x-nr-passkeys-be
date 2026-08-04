@@ -210,11 +210,9 @@ final class EnforcementServiceTest extends TestCase
             ->method('update')
             ->with(
                 'be_users',
-                self::callback(static function (array $data): bool {
-                    return isset($data['passkey_grace_period_start'])
-                        && \is_int($data['passkey_grace_period_start'])
-                        && $data['passkey_grace_period_start'] > 0;
-                }),
+                self::callback(static fn(array $data): bool => isset($data['passkey_grace_period_start'])
+                    && \is_int($data['passkey_grace_period_start'])
+                    && $data['passkey_grace_period_start'] > 0),
                 ['uid' => 42],
             );
 

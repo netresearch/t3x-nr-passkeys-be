@@ -12,7 +12,10 @@ namespace Netresearch\NrPasskeysBe\Tests\Functional\Controller;
 use Netresearch\NrPasskeysBe\Controller\AdminController;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
@@ -37,10 +40,10 @@ final class AdminControllerTest extends FunctionalTestCase
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_be_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                     'nr_passkeys_be_ratelimit' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],
@@ -105,7 +108,7 @@ final class AdminControllerTest extends FunctionalTestCase
     /**
      * @return array<string, mixed>
      */
-    private function decodeJsonResponse(\Psr\Http\Message\ResponseInterface $response): array
+    private function decodeJsonResponse(ResponseInterface $response): array
     {
         $content = (string) $response->getBody();
         $data = \json_decode($content, true, 16, JSON_THROW_ON_ERROR);
@@ -196,7 +199,7 @@ final class AdminControllerTest extends FunctionalTestCase
         self::assertSame('ok', $data['status']);
 
         // Verify the credential is now revoked in the database
-        $queryBuilder = $this->get(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+        $queryBuilder = $this->get(ConnectionPool::class)
             ->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
         $queryBuilder->getRestrictions()->removeAll();
         $row = $queryBuilder
@@ -317,7 +320,7 @@ final class AdminControllerTest extends FunctionalTestCase
         self::assertSame(2, $data['revokedCount']);
 
         // Verify all active credentials are now revoked
-        $queryBuilder = $this->get(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+        $queryBuilder = $this->get(ConnectionPool::class)
             ->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
         $queryBuilder->getRestrictions()->removeAll();
         $activeCount = $queryBuilder
@@ -364,7 +367,7 @@ final class AdminControllerTest extends FunctionalTestCase
         self::assertSame('enforced', $data['enforcement']);
 
         // Verify the group enforcement was updated in database
-        $queryBuilder = $this->get(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+        $queryBuilder = $this->get(ConnectionPool::class)
             ->getQueryBuilderForTable('be_groups');
         $row = $queryBuilder
             ->select('passkey_enforcement')
@@ -442,7 +445,7 @@ final class AdminControllerTest extends FunctionalTestCase
         self::assertGreaterThanOrEqual($expectedMin, $data['nudgeUntil']);
 
         // Verify the nudge timestamp was set in database
-        $queryBuilder = $this->get(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+        $queryBuilder = $this->get(ConnectionPool::class)
             ->getQueryBuilderForTable('be_users');
         $row = $queryBuilder
             ->select('passkey_nudge_until')

@@ -27,11 +27,11 @@ use Webauthn\PublicKeyCredentialRequestOptions;
  * and {@see AssertionService}. This preserves the public surface used across the
  * extension; the ceremony detail lives in the dedicated services.
  */
-final class WebAuthnService
+final readonly class WebAuthnService
 {
     public function __construct(
-        private readonly AttestationService $attestationService,
-        private readonly AssertionService $assertionService,
+        private AttestationService $attestationService,
+        private AssertionService $assertionService,
     ) {}
 
     /**

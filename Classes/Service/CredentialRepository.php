@@ -13,17 +13,18 @@ use Doctrine\DBAL\ParameterType;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
 /**
  * Data access layer for WebAuthn passkey credentials (tx_nrpasskeysbe_credential).
  */
-final class CredentialRepository
+final readonly class CredentialRepository
 {
     private const TABLE = 'tx_nrpasskeysbe_credential';
 
     public function __construct(
-        private readonly ConnectionPool $connectionPool,
-        private readonly LoggerInterface $logger,
+        private ConnectionPool $connectionPool,
+        private LoggerInterface $logger,
     ) {}
 
     public function findByCredentialId(string $credentialId): ?Credential
@@ -74,7 +75,7 @@ final class CredentialRepository
             ->fetchAllAssociative();
 
         return \array_map(
-            static fn(array $row): Credential => Credential::fromArray($row),
+            Credential::fromArray(...),
             $rows,
         );
     }
@@ -232,7 +233,7 @@ final class CredentialRepository
             ->fetchAllAssociative();
 
         return \array_map(
-            static fn(array $row): Credential => Credential::fromArray($row),
+            Credential::fromArray(...),
             $rows,
         );
     }
@@ -264,7 +265,7 @@ final class CredentialRepository
         return Credential::fromArray($row);
     }
 
-    private function getQueryBuilder(): \TYPO3\CMS\Core\Database\Query\QueryBuilder
+    private function getQueryBuilder(): QueryBuilder
     {
         return $this->connectionPool->getQueryBuilderForTable(self::TABLE);
     }

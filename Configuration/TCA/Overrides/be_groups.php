@@ -7,7 +7,9 @@
 
 declare(strict_types=1);
 
-\defined('TYPO3') or die();
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
+\defined('TYPO3') || die();
 
 $tempColumns = [
     'passkey_enforcement' => [
@@ -38,9 +40,9 @@ $tempColumns = [
     ],
 ];
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns('be_groups', $tempColumns);
+ExtensionManagementUtility::addTCAcolumns('be_groups', $tempColumns);
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
+ExtensionManagementUtility::addToAllTCAtypes(
     'be_groups',
     '--div--;LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_db.xlf:be_groups.tab.passkeys,passkey_enforcement,passkey_grace_period_days',
 );

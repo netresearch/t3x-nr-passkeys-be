@@ -23,12 +23,12 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  * level, and combines it with grace-period and passkey-count information
  * into an EnforcementStatus snapshot.
  */
-final class EnforcementService
+final readonly class EnforcementService
 {
     public function __construct(
-        private readonly ConnectionPool $connectionPool,
-        private readonly CredentialRepository $credentialRepository,
-        private readonly LoggerInterface $logger,
+        private ConnectionPool $connectionPool,
+        private CredentialRepository $credentialRepository,
+        private LoggerInterface $logger,
     ) {}
 
     /**

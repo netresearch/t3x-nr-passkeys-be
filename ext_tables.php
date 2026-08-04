@@ -11,7 +11,7 @@ use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanel;
 use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
-\defined('TYPO3') or die();
+\defined('TYPO3') || die();
 
 // Register passkey management panel in User Settings (Setup module).
 // Must be in ext_tables.php because cms-setup/ext_tables.php initializes

@@ -17,6 +17,7 @@ use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Throwable;
 use TYPO3\CMS\Core\Authentication\AbstractAuthenticationService;
@@ -344,7 +345,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             return 0;
         }
 
-        $payload = self::decodeLoginTokenPayload($value);
+        $payload = $this->decodeLoginTokenPayload($value);
         if ($payload === null || \time() > $payload['expiresAt']) {
             $this->getLogger()->warning('Passkey login token rejected', [
                 'reason' => $payload === null ? 'unusable_payload' : 'expired',
@@ -389,7 +390,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      *
      * @return array{uid: int, expiresAt: int}|null
      */
-    private static function decodeLoginTokenPayload(string $value): ?array
+    private function decodeLoginTokenPayload(string $value): ?array
     {
         try {
             $payload = \json_decode($value, true, 8, JSON_THROW_ON_ERROR);
@@ -464,7 +465,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable('be_users');
 
-        $row = $queryBuilder
+        return $queryBuilder
             ->select('*')
             ->from('be_users')
             ->where(
@@ -477,8 +478,6 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             )
             ->executeQuery()
             ->fetchAssociative();
-
-        return $row !== false ? $row : false;
     }
 
     /**
@@ -518,7 +517,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
     private function getWebAuthnService(): WebAuthnService
     {
-        if ($this->webAuthnService === null) {
+        if (!$this->webAuthnService instanceof WebAuthnService) {
             $this->webAuthnService = GeneralUtility::makeInstance(WebAuthnService::class);
         }
 
@@ -527,7 +526,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
     private function getExtensionConfigService(): ExtensionConfigurationService
     {
-        if ($this->configService === null) {
+        if (!$this->configService instanceof ExtensionConfigurationService) {
             $this->configService = GeneralUtility::makeInstance(ExtensionConfigurationService::class);
         }
 
@@ -536,16 +535,16 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
     private function getRateLimiterService(): RateLimiterService
     {
-        if ($this->rateLimiterService === null) {
+        if (!$this->rateLimiterService instanceof RateLimiterService) {
             $this->rateLimiterService = GeneralUtility::makeInstance(RateLimiterService::class);
         }
 
         return $this->rateLimiterService;
     }
 
-    private function getLogger(): \Psr\Log\LoggerInterface
+    private function getLogger(): LoggerInterface
     {
-        if ($this->logger === null) {
+        if (!$this->logger instanceof LoggerInterface) {
             try {
                 $this->setLogger(GeneralUtility::makeInstance(LogManager::class)->getLogger(static::class));
             } catch (Throwable) {
@@ -553,7 +552,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             }
         }
 
-        \assert($this->logger instanceof \Psr\Log\LoggerInterface);
+        \assert($this->logger instanceof LoggerInterface);
 
         return $this->logger;
     }

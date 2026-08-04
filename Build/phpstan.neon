@@ -117,6 +117,18 @@ parameters:
         -
             message: '#should be contravariant with parameter#'
             reportUnmatched: false
+        # The system-maintainer list is coerced with the same expression TYPO3
+        # core uses in BackendUserAuthentication::isSystemMaintainer() and
+        # SystemMaintainerAllowanceCheck, so both lists resolve identically —
+        # any narrowing here (is_numeric/is_scalar) would make this check
+        # disagree with core's. PHPStan rejects it only because its intval()
+        # stub narrows the parameter that PHP itself declares as mixed, so
+        # intval(...) does not satisfy array_map's callable(mixed): mixed.
+        -
+            identifier: argument.type
+            message: '#\$callback of function array_map#'
+            path: %currentWorkingDirectory%/Classes/Form/Element/PasskeyInfoElement.php
+            reportUnmatched: false
         # IconSize enum does not exist in TYPO3 v12 (introduced in v13).
         # v12: getIcon() expects string; v13+: expects IconSize enum.
         # The enum_exists() runtime branch resolves correctly per-version,

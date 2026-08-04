@@ -13,6 +13,8 @@ use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -38,10 +40,10 @@ final class EnforcementServiceTest extends FunctionalTestCase
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_be_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                     'nr_passkeys_be_ratelimit' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],
@@ -147,7 +149,7 @@ final class EnforcementServiceTest extends FunctionalTestCase
 
         $this->subject->startGracePeriod(99);
 
-        $queryBuilder = $this->get(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+        $queryBuilder = $this->get(ConnectionPool::class)
             ->getQueryBuilderForTable('be_users');
         $queryBuilder->getRestrictions()->removeAll();
         $row = $queryBuilder

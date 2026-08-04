@@ -18,13 +18,13 @@ use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 /**
  * Per-endpoint rate limiting and per-account lockout using TYPO3 caching with atomic locking.
  */
-final class RateLimiterService
+final readonly class RateLimiterService
 {
     public function __construct(
-        private readonly FrontendInterface $rateLimitCache,
-        private readonly ExtensionConfigurationService $configService,
-        private readonly LockFactory $lockFactory,
-        private readonly LoggerInterface $logger,
+        private FrontendInterface $rateLimitCache,
+        private ExtensionConfigurationService $configService,
+        private LockFactory $lockFactory,
+        private LoggerInterface $logger,
     ) {}
 
     /**

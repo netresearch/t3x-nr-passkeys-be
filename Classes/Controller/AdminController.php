@@ -9,7 +9,10 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
+use Netresearch\NrPasskeysBe\Domain\Dto\AdminCredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
+use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Psr\Http\Message\ResponseInterface;
@@ -25,7 +28,7 @@ use TYPO3\CMS\Core\Http\JsonResponse;
  * Provides AJAX endpoints for listing, revoking, and unlocking passkeys,
  * updating group enforcement levels, and sending setup reminders.
  */
-final class AdminController
+final readonly class AdminController
 {
     use BackendUserTrait;
     use JsonBodyTrait;
@@ -35,10 +38,10 @@ final class AdminController
     private const ERROR_INSUFFICIENT_PRIVILEGES = 'Insufficient privileges to manage this user';
 
     public function __construct(
-        private readonly CredentialRepository $credentialRepository,
-        private readonly RateLimiterService $rateLimiterService,
-        private readonly ConnectionPool $connectionPool,
-        private readonly LoggerInterface $logger,
+        private CredentialRepository $credentialRepository,
+        private RateLimiterService $rateLimiterService,
+        private ConnectionPool $connectionPool,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -49,7 +52,7 @@ final class AdminController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -67,7 +70,7 @@ final class AdminController
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
         $list = \array_map(
-            static fn($cred) => $cred->toAdminCredentialInfo(),
+            static fn(Credential $cred): AdminCredentialInfo => $cred->toAdminCredentialInfo(),
             $credentials,
         );
 
@@ -87,7 +90,7 @@ final class AdminController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -107,7 +110,7 @@ final class AdminController
 
         // Verify the credential belongs to the specified user
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $beUserUid);
-        if ($credential === null) {
+        if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found for this user'], 404);
         }
 
@@ -131,7 +134,7 @@ final class AdminController
     public function unlockAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -154,7 +157,7 @@ final class AdminController
         $row = $queryBuilder
             ->select('uid', 'username')
             ->from('be_users')
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, \TYPO3\CMS\Core\Database\Connection::PARAM_INT)))
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
 
@@ -182,20 +185,13 @@ final class AdminController
     public function revokeAllAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-        $rawUid = $body['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
-
-        if ($beUserUid === 0) {
-            return new JsonResponse(['error' => 'Missing required fields'], 400);
-        }
-
-        if (!$this->isManagementAllowedFor($beUserUid)) {
-            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
+        $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+        if ($beUserUid instanceof ResponseInterface) {
+            return $beUserUid;
         }
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
@@ -226,7 +222,7 @@ final class AdminController
     public function updateEnforcementAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -292,38 +288,17 @@ final class AdminController
     public function sendReminderAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-
-        $rawUid = $body['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
-
-        if ($beUserUid === 0) {
-            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+        if ($beUserUid instanceof ResponseInterface) {
+            return $beUserUid;
         }
 
-        if (!$this->isManagementAllowedFor($beUserUid)) {
-            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
-        }
-
-        // Verify the user exists and is active
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
-        $queryBuilder->getRestrictions()->removeAll();
-        $row = $queryBuilder
-            ->select('uid', 'username')
-            ->from('be_users')
-            ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
-            )
-            ->executeQuery()
-            ->fetchAssociative();
-
-        if ($row === false) {
+        $row = $this->findActiveBackendUser($beUserUid);
+        if ($row === null) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
@@ -362,38 +337,17 @@ final class AdminController
     public function clearNudgeAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-
-        $rawUid = $body['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
-
-        if ($beUserUid === 0) {
-            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+        if ($beUserUid instanceof ResponseInterface) {
+            return $beUserUid;
         }
 
-        if (!$this->isManagementAllowedFor($beUserUid)) {
-            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
-        }
-
-        // Verify the user exists and is active
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
-        $queryBuilder->getRestrictions()->removeAll();
-        $row = $queryBuilder
-            ->select('uid', 'username')
-            ->from('be_users')
-            ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
-            )
-            ->executeQuery()
-            ->fetchAssociative();
-
-        if ($row === false) {
+        $row = $this->findActiveBackendUser($beUserUid);
+        if ($row === null) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
@@ -416,4 +370,56 @@ final class AdminController
         return new JsonResponse(['status' => 'ok']);
     }
 
+    /**
+     * Resolve the backend user an admin action targets, from the request body.
+     *
+     * Returns the uid, or the response to send when `beUserUid` is missing or
+     * when the acting admin may not manage that user. Only for the actions whose
+     * sole required field is `beUserUid`: where a second field is required too,
+     * its absence must still answer 400 before the privilege check answers 403.
+     *
+     * @param array<string, mixed> $body
+     */
+    private function resolveManagedBeUserUid(array $body): int|ResponseInterface
+    {
+        $rawUid = $body['beUserUid'] ?? null;
+        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+
+        if ($beUserUid === 0) {
+            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
+        }
+
+        return $beUserUid;
+    }
+
+    /**
+     * Look up a backend user that exists and is neither deleted nor disabled.
+     *
+     * Restrictions are removed so those two conditions are stated in the query
+     * rather than left to the default restriction set. Returns null when no such
+     * row exists.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function findActiveBackendUser(int $beUserUid): ?array
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
+        $queryBuilder->getRestrictions()->removeAll();
+        $row = $queryBuilder
+            ->select('uid', 'username')
+            ->from('be_users')
+            ->where(
+                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
+                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder->expr()->eq('disable', 0),
+            )
+            ->executeQuery()
+            ->fetchAssociative();
+
+        return $row === false ? null : $row;
+    }
 }

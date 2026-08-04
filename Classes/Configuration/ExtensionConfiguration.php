@@ -12,27 +12,27 @@ namespace Netresearch\NrPasskeysBe\Configuration;
 /**
  * Typed, immutable value object for the extension's configuration settings.
  */
-final class ExtensionConfiguration
+final readonly class ExtensionConfiguration
 {
     private const VALID_USER_VERIFICATION = ['required', 'preferred', 'discouraged'];
 
-    private readonly string $userVerification;
+    private string $userVerification;
 
     public function __construct(
-        private readonly string $rpId = '',
-        private readonly string $rpName = 'TYPO3 Backend',
-        private readonly string $origin = '',
-        private readonly int $challengeTtlSeconds = 120,
+        private string $rpId = '',
+        private string $rpName = 'TYPO3 Backend',
+        private string $origin = '',
+        private int $challengeTtlSeconds = 120,
         string $userVerification = 'required',
-        private readonly bool $discoverableLoginEnabled = true,
-        private readonly bool $disablePasswordLogin = false,
-        private readonly bool $skipMfaOnPasskeyAuth = true,
-        private readonly int $rateLimitMaxAttempts = 10,
-        private readonly int $rateLimitWindowSeconds = 300,
-        private readonly int $lockoutThreshold = 5,
-        private readonly int $lockoutUserThreshold = 15,
-        private readonly int $lockoutDurationSeconds = 900,
-        private readonly string $allowedAlgorithms = 'ES256',
+        private bool $discoverableLoginEnabled = true,
+        private bool $disablePasswordLogin = false,
+        private bool $skipMfaOnPasskeyAuth = true,
+        private int $rateLimitMaxAttempts = 10,
+        private int $rateLimitWindowSeconds = 300,
+        private int $lockoutThreshold = 5,
+        private int $lockoutUserThreshold = 15,
+        private int $lockoutDurationSeconds = 900,
+        private string $allowedAlgorithms = 'ES256',
     ) {
         $this->userVerification = \in_array($userVerification, self::VALID_USER_VERIFICATION, true)
             ? $userVerification
@@ -124,6 +124,6 @@ final class ExtensionConfiguration
      */
     public function getAllowedAlgorithmsList(): array
     {
-        return \array_map('trim', \explode(',', $this->allowedAlgorithms));
+        return \array_map(trim(...), \explode(',', $this->allowedAlgorithms));
     }
 }

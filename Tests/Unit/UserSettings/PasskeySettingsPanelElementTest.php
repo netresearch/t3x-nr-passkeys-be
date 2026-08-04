@@ -27,8 +27,11 @@ use TYPO3\CMS\Core\Page\PageRenderer;
 final class PasskeySettingsPanelElementTest extends TestCase
 {
     private CredentialRepository&MockObject $credentialRepository;
+
     private UriBuilder&MockObject $uriBuilder;
+
     private PageRenderer&MockObject $pageRenderer;
+
     private PasskeySettingsPanel $panel;
 
     protected function setUp(): void
@@ -46,9 +49,7 @@ final class PasskeySettingsPanelElementTest extends TestCase
         $this->uriBuilder = $this->createMock(UriBuilder::class);
         $this->uriBuilder
             ->method('buildUriFromRoute')
-            ->willReturnCallback(static function (string $routeName): Uri {
-                return new Uri('/typo3/ajax/passkeys/' . $routeName . '?token=test');
-            });
+            ->willReturnCallback(static fn(string $routeName): Uri => new Uri('/typo3/ajax/passkeys/' . $routeName . '?token=test'));
 
         $this->panel = new PasskeySettingsPanel();
 

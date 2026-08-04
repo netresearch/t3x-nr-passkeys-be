@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
+use Doctrine\DBAL\Result;
 use Error;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Controller\LoginController;
@@ -20,6 +21,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
@@ -30,6 +32,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Webauthn\Exception\InvalidDataException;
 use Webauthn\PublicKeyCredentialRequestOptions;
 
 #[CoversClass(LoginController::class)]
@@ -132,7 +135,7 @@ final class LoginControllerTest extends TestCase
         $this->stubAssertionOptionGeneration();
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
 
-        self::assertTimingBudgetSpent($this->timeOptionsAction('admin'));
+        $this->assertTimingBudgetSpent($this->timeOptionsAction('admin'));
     }
 
     #[Test]
@@ -141,7 +144,7 @@ final class LoginControllerTest extends TestCase
         $this->stubAssertionOptionGeneration();
         $this->setUpFindBeUser('nosuchuser', null);
 
-        self::assertTimingBudgetSpent($this->timeOptionsAction('nosuchuser'));
+        $this->assertTimingBudgetSpent($this->timeOptionsAction('nosuchuser'));
     }
 
     /**
@@ -153,7 +156,7 @@ final class LoginControllerTest extends TestCase
      * tight ceiling would flake on a loaded CI runner, where scheduling noise, not the
      * controller, decides the last few milliseconds.
      */
-    private static function assertTimingBudgetSpent(float $elapsedNs): void
+    private function assertTimingBudgetSpent(float $elapsedNs): void
     {
         $budgetNs = 150_000_000.0;
 
@@ -406,7 +409,7 @@ final class LoginControllerTest extends TestCase
         $this->webAuthnService
             ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->willThrowException(new \Webauthn\Exception\InvalidDataException(
+            ->willThrowException(new InvalidDataException(
                 null,
                 'Invalid input',
             ));
@@ -889,7 +892,7 @@ final class LoginControllerTest extends TestCase
         $expressionBuilder = $this->createMock(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('1=1');
 
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result = $this->createMock(Result::class);
         $result->method('fetchAssociative')->willReturn($userRow ?? false);
 
         $queryBuilder = $this->createMock(QueryBuilder::class);
@@ -911,7 +914,7 @@ final class LoginControllerTest extends TestCase
      *
      * @return array<string, mixed>
      */
-    private function decodeResponse(\Psr\Http\Message\ResponseInterface $response): array
+    private function decodeResponse(ResponseInterface $response): array
     {
         $body = (string) $response->getBody();
         $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);

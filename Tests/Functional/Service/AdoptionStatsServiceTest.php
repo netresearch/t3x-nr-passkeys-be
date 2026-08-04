@@ -9,9 +9,13 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Service;
 
+use Netresearch\NrPasskeysBe\Domain\Dto\GroupEnforcementInfo;
+use Netresearch\NrPasskeysBe\Domain\Dto\UserPasskeyStatus;
 use Netresearch\NrPasskeysBe\Service\AdoptionStatsService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
+use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -36,10 +40,10 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_be_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                     'nr_passkeys_be_ratelimit' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],
@@ -94,7 +98,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         // be_groups.csv has 3 groups: Editors (required), Content Managers (encourage), No Enforcement (off)
         self::assertCount(3, $stats->groups);
 
-        $groupTitles = \array_map(static fn($g) => $g->title, $stats->groups);
+        $groupTitles = \array_map(static fn(GroupEnforcementInfo $g): string => $g->title, $stats->groups);
         self::assertContains('Editors', $groupTitles);
         self::assertContains('Content Managers', $groupTitles);
         self::assertContains('No Enforcement', $groupTitles);
@@ -165,7 +169,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         // (Users 1 and 2 both have active credentials)
         self::assertCount(3, $stats->usersWithoutPasskeys);
 
-        $usernames = \array_map(static fn($u) => $u->username, $stats->usersWithoutPasskeys);
+        $usernames = \array_map(static fn(UserPasskeyStatus $u): string => $u->username, $stats->usersWithoutPasskeys);
         self::assertContains('adminuser', $usernames);
         self::assertContains('revokeadmin', $usernames);
         self::assertContains('testuser99', $usernames);
@@ -206,7 +210,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
     public function getStatsExcludesDeletedUsers(): void
     {
         // Add a deleted user to verify it's excluded
-        $connection = $this->get(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+        $connection = $this->get(ConnectionPool::class)
             ->getConnectionForTable('be_users');
         $connection->insert('be_users', [
             'uid' => 100,
@@ -223,7 +227,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
 
         // Deleted user should NOT be counted
         self::assertSame(5, $stats->totalUsers);
-        $usernames = \array_map(static fn($u) => $u->username, $stats->usersWithoutPasskeys);
+        $usernames = \array_map(static fn(UserPasskeyStatus $u): string => $u->username, $stats->usersWithoutPasskeys);
         self::assertNotContains('deleteduser', $usernames);
     }
 
@@ -231,7 +235,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
     public function getStatsExcludesDisabledUsers(): void
     {
         // Add a disabled user
-        $connection = $this->get(\TYPO3\CMS\Core\Database\ConnectionPool::class)
+        $connection = $this->get(ConnectionPool::class)
             ->getConnectionForTable('be_users');
         $connection->insert('be_users', [
             'uid' => 101,
@@ -258,7 +262,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         self::assertSame(3, $this->subject->countActiveCredentials());
 
         // A leftover active credential of a disabled user must not count
-        $connectionPool = $this->get(\TYPO3\CMS\Core\Database\ConnectionPool::class);
+        $connectionPool = $this->get(ConnectionPool::class);
         $connectionPool->getConnectionForTable('be_users')->insert('be_users', [
             'uid' => 102,
             'pid' => 0,

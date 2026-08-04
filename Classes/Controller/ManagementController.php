@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Controller;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
+use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
@@ -23,18 +25,18 @@ use Throwable;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\JsonResponse;
 
-final class ManagementController
+final readonly class ManagementController
 {
     use BackendUserTrait;
     use JsonBodyTrait;
     use TypeCastTrait;
 
     public function __construct(
-        private readonly WebAuthnService $webAuthnService,
-        private readonly CredentialRepository $credentialRepository,
-        private readonly ExtensionConfigurationService $configService,
-        private readonly EnforcementService $enforcementService,
-        private readonly LoggerInterface $logger,
+        private WebAuthnService $webAuthnService,
+        private CredentialRepository $credentialRepository,
+        private ExtensionConfigurationService $configService,
+        private EnforcementService $enforcementService,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -45,7 +47,7 @@ final class ManagementController
     public function registrationOptionsAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
-        if ($user === null) {
+        if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
@@ -93,7 +95,7 @@ final class ManagementController
     public function registrationVerifyAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
-        if ($user === null) {
+        if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
@@ -166,13 +168,13 @@ final class ManagementController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
-        if ($user === null) {
+        if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
         $credentials = $this->credentialRepository->findByBeUser($user->uid);
         $list = \array_map(
-            static fn($cred) => $cred->toCredentialInfo(),
+            static fn(Credential $cred): CredentialInfo => $cred->toCredentialInfo(),
             $credentials,
         );
 
@@ -231,7 +233,7 @@ final class ManagementController
     public function renameAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
-        if ($user === null) {
+        if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
@@ -255,7 +257,7 @@ final class ManagementController
 
         // Verify ownership
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $user->uid);
-        if ($credential === null) {
+        if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
@@ -279,7 +281,7 @@ final class ManagementController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
-        if ($user === null) {
+        if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
@@ -296,7 +298,7 @@ final class ManagementController
 
         // Verify ownership
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $user->uid);
-        if ($credential === null) {
+        if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 

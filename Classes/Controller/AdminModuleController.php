@@ -160,6 +160,7 @@ final class AdminModuleController
         if ($activeTab === 'dashboard') {
             $dashboardItem->setActive(true);
         }
+
         $menu->addMenuItem($dashboardItem);
 
         $helpItem = $this->createMenuItem($menu)
@@ -168,6 +169,7 @@ final class AdminModuleController
         if ($activeTab === 'help') {
             $helpItem->setActive(true);
         }
+
         $menu->addMenuItem($helpItem);
 
         $menuRegistry->addMenu($menu);
@@ -180,7 +182,7 @@ final class AdminModuleController
     private function createMenu(MenuRegistry $menuRegistry): Menu
     {
         $factory = $this->componentFactory();
-        if ($factory !== null) {
+        if ($factory instanceof ComponentFactory) {
             return $factory->createMenu();
         }
 
@@ -194,7 +196,7 @@ final class AdminModuleController
     private function createMenuItem(Menu $menu): MenuItem
     {
         $factory = $this->componentFactory();
-        if ($factory !== null) {
+        if ($factory instanceof ComponentFactory) {
             return $factory->createMenuItem();
         }
 
@@ -263,7 +265,7 @@ final class AdminModuleController
     private function createLinkButton(ButtonBar $buttonBar): LinkButton
     {
         $factory = $this->componentFactory();
-        if ($factory !== null) {
+        if ($factory instanceof ComponentFactory) {
             return $factory->createLinkButton();
         }
 

@@ -26,9 +26,13 @@ use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 final class ChallengeServiceTest extends TestCase
 {
     private FrontendInterface&MockObject $nonceCacheMock;
+
     private LockFactory&MockObject $lockFactoryMock;
+
     private ExtensionConfigurationService $configService;
+
     private LoggerInterface&MockObject $loggerMock;
+
     private ChallengeService $subject;
 
     protected function setUp(): void

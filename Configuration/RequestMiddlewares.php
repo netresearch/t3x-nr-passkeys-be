@@ -7,10 +7,13 @@
 
 declare(strict_types=1);
 
+use Netresearch\NrPasskeysBe\Middleware\PasskeySetupInterstitial;
+use Netresearch\NrPasskeysBe\Middleware\PublicRouteResolver;
+
 return [
     'backend' => [
         'netresearch/nr-passkeys-be/public-route-resolver' => [
-            'target' => \Netresearch\NrPasskeysBe\Middleware\PublicRouteResolver::class,
+            'target' => PublicRouteResolver::class,
             'after' => [
                 'typo3/cms-backend/backend-routing',
             ],
@@ -19,7 +22,7 @@ return [
             ],
         ],
         'netresearch/nr-passkeys-be/passkey-setup-interstitial' => [
-            'target' => \Netresearch\NrPasskeysBe\Middleware\PasskeySetupInterstitial::class,
+            'target' => PasskeySetupInterstitial::class,
             'after' => [
                 'typo3/cms-backend/authentication',
             ],

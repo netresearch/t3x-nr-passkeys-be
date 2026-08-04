@@ -15,18 +15,20 @@ use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 
-final class ExtensionConfigurationService
+final readonly class ExtensionConfigurationService
 {
     use TypeCastTrait;
-    private readonly \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration $config;
+
+    private \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration $config;
 
     public function __construct(
-        private readonly ExtensionConfiguration $extensionConfiguration,
+        private ExtensionConfiguration $extensionConfiguration,
     ) {
         $settings = $this->extensionConfiguration->get('nr_passkeys_be');
         if (!\is_array($settings)) {
             $settings = [];
         }
+
         $this->config = new \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration(
             rpId: self::stringVal($settings['rpId'] ?? null),
             rpName: self::stringVal($settings['rpName'] ?? null, 'TYPO3 Backend'),

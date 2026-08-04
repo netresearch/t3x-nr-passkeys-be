@@ -87,7 +87,7 @@ final class ExtLocalconfCacheTest extends TestCase
         self::assertNotSame(
             SimpleFileBackend::class,
             (new ReflectionMethod($backend, 'collectGarbage'))->getDeclaringClass()->getName(),
-            $backend . '::collectGarbage() must not be SimpleFileBackend\'s empty implementation',
+            $backend . "::collectGarbage() must not be SimpleFileBackend's empty implementation",
         );
         self::assertNotSame(
             SimpleFileBackend::class,

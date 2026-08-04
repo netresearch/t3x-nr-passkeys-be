@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Authentication;
 
+use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysBe\Authentication\PasskeyAuthenticationService;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
@@ -19,6 +20,7 @@ use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
+use Netresearch\NrPasskeysBe\Tests\Unit\QueryBuilderMockTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -26,6 +28,9 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Cache\CacheManager;
+use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
@@ -35,9 +40,11 @@ use Webauthn\CredentialRecord;
 #[CoversClass(PasskeyAuthenticationService::class)]
 final class PasskeyAuthenticationServiceTest extends TestCase
 {
+    use QueryBuilderMockTrait;
+
     private PasskeyAuthenticationService $subject;
 
-    private \TYPO3\CMS\Core\Authentication\BackendUserAuthentication&MockObject $pObj;
+    private BackendUserAuthentication&MockObject $pObj;
 
     private WebAuthnService&MockObject $webAuthnService;
 
@@ -88,7 +95,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $this->injectLogger($this->subject, $this->logger);
 
         // Set pObj (parent auth object) for session data access in passkey auth success path
-        $this->pObj = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $this->pObj = $this->createMock(BackendUserAuthentication::class);
         $this->pObj->method('getSessionData')->willReturn(null);
         $this->subject->pObj = $this->pObj;
     }
@@ -107,7 +114,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      *
      * @param array<string, mixed> $assertion
      */
-    private static function buildPasskeyUident(array $assertion, string $challengeToken = 'challenge-token-123'): string
+    private function buildPasskeyUident(array $assertion, string $challengeToken = 'challenge-token-123'): string
     {
         return \json_encode([
             '_type' => 'passkey',
@@ -120,7 +127,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      * Build a passkey_token payload JSON string as the JS puts into userident
      * after the /passkeys/login/verify endpoint returned a login token.
      */
-    private static function buildTokenUident(string $token): string
+    private function buildTokenUident(string $token): string
     {
         return \json_encode(['_type' => 'passkey_token', 'token' => $token], JSON_THROW_ON_ERROR);
     }
@@ -129,7 +136,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      * Build the cached login-token value as LoginController::issueLoginToken()
      * writes it. A negative $expiresIn produces an already-expired token.
      */
-    private static function buildTokenValue(int $uid, int $expiresIn = 120): string
+    private function buildTokenValue(int $uid, int $expiresIn = 120): string
     {
         return \json_encode(
             ['uid' => $uid, 'expiresAt' => \time() + $expiresIn],
@@ -143,13 +150,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      *
      * Returns the cache mock so a test can assert on remove().
      */
-    private function stubTokenCache(string $token, string|false $value): \TYPO3\CMS\Core\Cache\Frontend\FrontendInterface&MockObject
+    private function stubTokenCache(string $token, string|false $value): FrontendInterface&MockObject
     {
-        $cache = $this->createMock(\TYPO3\CMS\Core\Cache\Frontend\FrontendInterface::class);
+        $cache = $this->createMock(FrontendInterface::class);
         $cache->method('get')->with('passkey_login_' . $token)->willReturn($value);
-        $cacheManager = $this->createStub(\TYPO3\CMS\Core\Cache\CacheManager::class);
+        $cacheManager = $this->createStub(CacheManager::class);
         $cacheManager->method('getCache')->willReturn($cache);
-        GeneralUtility::setSingletonInstance(\TYPO3\CMS\Core\Cache\CacheManager::class, $cacheManager);
+        GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
 
         return $cache;
     }
@@ -159,10 +166,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAcceptsValidLoginToken(): void
     {
-        $this->stubTokenCache('tok123', self::buildTokenValue(42));
+        $this->stubTokenCache('tok123', $this->buildTokenValue(42));
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildTokenUident('tok123'),
+            'uident' => $this->buildTokenUident('tok123'),
         ];
 
         $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
@@ -177,12 +184,12 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserRejectsExpiredLoginTokenEvenWhenTheCacheStillReturnsIt(): void
     {
-        $cache = $this->stubTokenCache('tok123', self::buildTokenValue(42, -1));
+        $cache = $this->stubTokenCache('tok123', $this->buildTokenValue(42, -1));
         $cache->expects(self::atLeastOnce())->method('remove')->with('passkey_login_tok123');
 
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildTokenUident('tok123'),
+            'uident' => $this->buildTokenUident('tok123'),
         ];
 
         $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
@@ -199,7 +206,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildTokenUident('tok123'),
+            'uident' => $this->buildTokenUident('tok123'),
         ];
 
         $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
@@ -214,7 +221,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildTokenUident('tok123'),
+            'uident' => $this->buildTokenUident('tok123'),
         ];
 
         $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
@@ -227,10 +234,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         // Token maps to uid 99; authUser runs for uid 42 → must not accept it as
         // a passkey login (falls through to the password-enforcement path).
-        $this->stubTokenCache('tok123', self::buildTokenValue(99));
+        $this->stubTokenCache('tok123', $this->buildTokenValue(99));
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildTokenUident('tok123'),
+            'uident' => $this->buildTokenUident('tok123'),
         ];
 
         $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
@@ -244,7 +251,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $this->stubTokenCache('tok123', false);
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildTokenUident('tok123'),
+            'uident' => $this->buildTokenUident('tok123'),
         ];
 
         $result = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
@@ -260,7 +267,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
         $this->subject->login = [
             'uname' => 'admin',
-            'uident' => self::buildPasskeyUident(['valid' => 'assertion']),
+            'uident' => $this->buildPasskeyUident(['valid' => 'assertion']),
         ];
 
         $this->rateLimiterService
@@ -330,7 +337,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
 
-        $pObj = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $pObj = $this->createMock(BackendUserAuthentication::class);
         // Only the tx_nrpasskeysbe marker — never the 'mfa' key.
         $pObj
             ->expects(self::once())
@@ -340,7 +347,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         $subject->login = [
             'uname' => 'admin',
-            'uident' => self::buildPasskeyUident(['ok' => 'assertion']),
+            'uident' => $this->buildPasskeyUident(['ok' => 'assertion']),
         ];
 
         $result = $subject->authUser(['uid' => 42, 'username' => 'admin']);
@@ -353,7 +360,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = [
             'uname' => 'admin',
-            'uident' => self::buildPasskeyUident(['bad' => 'data']),
+            'uident' => $this->buildPasskeyUident(['bad' => 'data']),
         ];
 
         $this->webAuthnService
@@ -421,7 +428,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = [
             'uname' => 'admin',
-            'uident' => self::buildPasskeyUident(['bad' => 'data']),
+            'uident' => $this->buildPasskeyUident(['bad' => 'data']),
         ];
 
         $this->rateLimiterService
@@ -692,25 +699,12 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserBlocksPasswordWhenGroupEnforcementIsEnforcedAndUserHasPasskeys(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Enforced,
-                gracePeriodDays: 0,
-                gracePeriodStart: 0,
-                hasPasskeys: true,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Enforced,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: true,
+        ));
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger
@@ -736,26 +730,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserBlocksPasswordWhenGroupRequiredGracePeriodExpiredAndUserHasPasskeys(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
         // Grace period started 31 days ago with 30-day grace => expired
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Required,
-                gracePeriodDays: 30,
-                gracePeriodStart: \time() - (31 * 86_400),
-                hasPasskeys: true,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 30,
+            gracePeriodStart: \time() - (31 * 86_400),
+            hasPasskeys: true,
+        ));
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger
@@ -781,26 +762,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAllowsPasswordWhenGroupRequiredButGracePeriodStillActive(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
         // Grace period started 10 days ago with 30-day grace => still active
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Required,
-                gracePeriodDays: 30,
-                gracePeriodStart: \time() - (10 * 86_400),
-                hasPasskeys: true,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 30,
+            gracePeriodStart: \time() - (10 * 86_400),
+            hasPasskeys: true,
+        ));
 
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
@@ -820,26 +788,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAllowsPasswordWhenGroupEncourageAndUserHasPasskeys(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
         // Encourage level never blocks password login
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Encourage,
-                gracePeriodDays: 0,
-                gracePeriodStart: 0,
-                hasPasskeys: true,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Encourage,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: true,
+        ));
 
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
@@ -859,26 +814,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAllowsPasswordWhenGroupRequiredButUserHasNoPasskeys(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
         // Required enforcement but user has no passkeys yet — password must be allowed
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Required,
-                gracePeriodDays: 30,
-                gracePeriodStart: \time() - (31 * 86_400),
-                hasPasskeys: false,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 30,
+            gracePeriodStart: \time() - (31 * 86_400),
+            hasPasskeys: false,
+        ));
 
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
@@ -900,7 +842,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = [
             'uname' => 'testuser',
-            'uident' => self::buildPasskeyUident(['bad' => 'data']),
+            'uident' => $this->buildPasskeyUident(['bad' => 'data']),
         ];
 
         $this->webAuthnService
@@ -930,7 +872,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
         $this->subject->login = [
             'uname' => 'admin',
-            'uident' => self::buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
+            'uident' => $this->buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
         ];
 
         $this->webAuthnService
@@ -957,7 +899,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = [
             'uname' => 'locked_user',
-            'uident' => self::buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
+            'uident' => $this->buildPasskeyUident(['ok' => 'assertion'], 'token-abc'),
         ];
 
         $this->rateLimiterService
@@ -992,7 +934,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         $service->login = [
             'uname' => 'admin',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
         $this->injectLogger($service, $this->logger);
 
@@ -1039,7 +981,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
         $this->webAuthnService
@@ -1066,7 +1008,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
         // Policy gate must short-circuit before any credential resolution.
@@ -1082,7 +1024,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
         $this->webAuthnService
@@ -1105,7 +1047,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = [
             'uname' => '',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
         $this->webAuthnService
@@ -1130,7 +1072,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         $service->login = [
             'uname' => 'nonexistent',
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
         $this->injectLogger($service, $this->logger);
 
@@ -1174,7 +1116,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     public function getUserWithMissingUnameKeyAttemptsDiscoverableLogin(): void
     {
         $this->subject->login = [
-            'uident' => self::buildPasskeyUident(['assertion' => 'data'], 'token-123'),
+            'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123'),
         ];
 
         // Empty uname key defaults to '' which triggers discoverable flow
@@ -1306,10 +1248,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         $service->login = [
             'uname' => 'admin',
-            'uident' => self::buildPasskeyUident(['cached' => 'test'], 'cached-token'),
+            'uident' => $this->buildPasskeyUident(['cached' => 'test'], 'cached-token'),
         ];
         $this->injectLogger($service, $this->logger);
-        $service->pObj = $this->createMock(\TYPO3\CMS\Core\Authentication\BackendUserAuthentication::class);
+        $service->pObj = $this->createMock(BackendUserAuthentication::class);
 
         GeneralUtility::addInstance(ExtensionConfigurationService::class, $this->configService);
         GeneralUtility::addInstance(WebAuthnService::class, $this->webAuthnService);
@@ -1361,6 +1303,28 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     /**
+     * Register the two instances authUser() resolves for a group-enforcement decision:
+     * password login enabled at extension level, and the given per-group status.
+     */
+    private function addEnforcementStatus(EnforcementStatus $status): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configService = $this->createMock(ExtensionConfigurationService::class);
+        $configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
+
+        $enforcementService = $this->createMock(EnforcementService::class);
+        $enforcementService
+            ->expects(self::once())
+            ->method('getStatus')
+            ->willReturn($status);
+        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+    }
+
+    /**
      * Set up ConnectionPool mock for hasRegisteredPasskeys (credential count query).
      */
     private function setUpCredentialCount(int $beUserUid, int $count): void
@@ -1368,7 +1332,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $expressionBuilder = $this->createMock(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('1=1');
 
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
+        $result = $this->createMock(Result::class);
         $result->method('fetchOne')->willReturn($count);
 
         $queryBuilder = $this->createMock(QueryBuilder::class);
@@ -1395,19 +1359,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      */
     private function setUpFetchUserByUid(int $uid, ?array $userRow): void
     {
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(\Doctrine\DBAL\Result::class);
-        $result->method('fetchAssociative')->willReturn($userRow ?? false);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
-        $queryBuilder->method('executeQuery')->willReturn($result);
+        $queryBuilder = $this->createSingleRowQueryBuilder($uid, $userRow);
 
         $connectionPool = $this->createMock(ConnectionPool::class);
         $connectionPool
@@ -1428,6 +1380,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
                 $prop->setValue($service, $logger);
                 return;
             }
+
             $parent = $parent->getParentClass();
         }
     }

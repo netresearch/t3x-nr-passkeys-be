@@ -20,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
+use TYPO3\CMS\Backend\Routing\Route;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
@@ -33,6 +34,7 @@ use TYPO3\CMS\Core\Localization\Locale;
 final class PasskeySetupInterstitialTest extends TestCase
 {
     private EnforcementService&MockObject $enforcementService;
+
     private PasskeySetupInterstitial $subject;
 
     protected function setUp(): void
@@ -902,15 +904,9 @@ final class PasskeySetupInterstitialTest extends TestCase
         );
         $this->enforcementService->method('getStatus')->willReturn($status);
 
-        $route = $this->createMock(\TYPO3\CMS\Backend\Routing\Route::class);
+        $route = $this->createMock(Route::class);
         $route->method('getOption')
-            ->willReturnCallback(static function (string $option): mixed {
-                if ($option === '_identifier') {
-                    return null;
-                }
-
-                return null;
-            });
+            ->willReturnCallback(static fn(string $option): mixed => null);
 
         $request = $this->createMock(ServerRequestInterface::class);
         $request->method('getAttribute')
@@ -951,7 +947,7 @@ final class PasskeySetupInterstitialTest extends TestCase
             }
         };
 
-        $route = $this->createMock(\TYPO3\CMS\Backend\Routing\Route::class);
+        $route = $this->createMock(Route::class);
         $route->method('getOption')
             ->willReturnCallback(static function (string $option): mixed {
                 if ($option === '_identifier') {
@@ -1124,7 +1120,7 @@ final class PasskeySetupInterstitialTest extends TestCase
         string $method = 'GET',
         ?array $parsedBody = null,
     ): ServerRequestInterface&MockObject {
-        $route = $this->createMock(\TYPO3\CMS\Backend\Routing\Route::class);
+        $route = $this->createMock(Route::class);
         $route->method('getOption')
             ->willReturnCallback(static function (string $option) use ($routeIdentifier): mixed {
                 if ($option === '_identifier') {

@@ -20,7 +20,7 @@ use TYPO3\CMS\Dashboard\Widgets\ChartDataProviderInterface;
  * backend (be_users) always, frontend (fe_users) when nr_passkeys_fe is present.
  * Populations differ, so segments are NEVER summed into one ratio.
  */
-final class PasskeyAdoptionChartDataProvider implements ChartDataProviderInterface
+final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProviderInterface
 {
     use TranslationTrait;
 
@@ -43,7 +43,7 @@ final class PasskeyAdoptionChartDataProvider implements ChartDataProviderInterfa
      * @param iterable<PasskeyAdoptionStatsProviderInterface> $statsProviders
      */
     public function __construct(
-        private readonly iterable $statsProviders,
+        private iterable $statsProviders,
     ) {}
 
     /**

@@ -9,6 +9,11 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
 
+use CBOR\ByteStringObject;
+use CBOR\MapObject;
+use CBOR\NegativeIntegerObject;
+use CBOR\UnsignedIntegerObject;
+use Cose\Algorithm\Algorithm;
 use Cose\Algorithm\Manager as AlgorithmManager;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
@@ -31,10 +36,13 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use Symfony\Component\Uid\Uuid;
 use Throwable;
 use Webauthn\CredentialRecord;
 use Webauthn\PublicKeyCredentialCreationOptions;
+use Webauthn\PublicKeyCredentialDescriptor;
 use Webauthn\PublicKeyCredentialRequestOptions;
+use Webauthn\TrustPath\EmptyTrustPath;
 
 #[CoversClass(WebAuthnService::class)]
 #[CoversClass(AttestationService::class)]
@@ -43,12 +51,19 @@ use Webauthn\PublicKeyCredentialRequestOptions;
 final class WebAuthnServiceTest extends TestCase
 {
     private ExtensionConfigurationService&MockObject $configServiceMock;
+
     private ChallengeService&MockObject $challengeServiceMock;
+
     private CredentialRepository&MockObject $credentialRepositoryMock;
+
     private LoggerInterface&MockObject $loggerMock;
+
     private WebAuthnCeremonyFactory $ceremonyFactory;
+
     private AttestationService $attestationService;
+
     private AssertionService $assertionService;
+
     private WebAuthnService $subject;
 
     protected function setUp(): void
@@ -313,8 +328,8 @@ final class WebAuthnServiceTest extends TestCase
             type: 'public-key',
             transports: ['usb', 'nfc'],
             attestationType: 'none',
-            trustPath: new \Webauthn\TrustPath\EmptyTrustPath(),
-            aaguid: \Symfony\Component\Uid\Uuid::v4(),
+            trustPath: new EmptyTrustPath(),
+            aaguid: Uuid::v4(),
             credentialPublicKey: 'cose-public-key-data',
             userHandle: 'user-handle-hash',
             counter: 0,
@@ -323,15 +338,13 @@ final class WebAuthnServiceTest extends TestCase
         $this->credentialRepositoryMock
             ->expects(self::once())
             ->method('save')
-            ->with(self::callback(function (Credential $cred) use ($beUserUid, $label, $source): bool {
-                return $cred->getBeUser() === $beUserUid
-                    && $cred->getLabel() === $label
-                    && $cred->getCredentialId() === $source->publicKeyCredentialId
-                    && $cred->getPublicKeyCose() === $source->credentialPublicKey
-                    && $cred->getUserHandle() === $source->userHandle
-                    && $cred->getSignCount() === $source->counter
-                    && $cred->getAaguid() === $source->aaguid->toString();
-            }))
+            ->with(self::callback(fn(Credential $cred): bool => $cred->getBeUser() === $beUserUid
+                && $cred->getLabel() === $label
+                && $cred->getCredentialId() === $source->publicKeyCredentialId
+                && $cred->getPublicKeyCose() === $source->credentialPublicKey
+                && $cred->getUserHandle() === $source->userHandle
+                && $cred->getSignCount() === $source->counter
+                && $cred->getAaguid() === $source->aaguid->toString()))
             ->willReturn($expectedUid);
 
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
@@ -492,13 +505,13 @@ final class WebAuthnServiceTest extends TestCase
         $label = 'Security Key';
         $expectedUid = 55;
 
-        $uuid = \Symfony\Component\Uid\Uuid::v4();
+        $uuid = Uuid::v4();
         $source = CredentialRecord::create(
             publicKeyCredentialId: 'test-cred-id',
             type: 'public-key',
             transports: ['usb', 'ble', 'nfc'],
             attestationType: 'none',
-            trustPath: new \Webauthn\TrustPath\EmptyTrustPath(),
+            trustPath: new EmptyTrustPath(),
             aaguid: $uuid,
             credentialPublicKey: 'public-key-cose',
             userHandle: 'user-handle',
@@ -726,8 +739,8 @@ final class WebAuthnServiceTest extends TestCase
             type: 'public-key',
             transports: [],
             attestationType: 'none',
-            trustPath: new \Webauthn\TrustPath\EmptyTrustPath(),
-            aaguid: \Symfony\Component\Uid\Uuid::v4(),
+            trustPath: new EmptyTrustPath(),
+            aaguid: Uuid::v4(),
             credentialPublicKey: 'cose',
             userHandle: 'handle',
             counter: 42,
@@ -736,9 +749,7 @@ final class WebAuthnServiceTest extends TestCase
         $this->credentialRepositoryMock
             ->expects(self::once())
             ->method('save')
-            ->with(self::callback(function (Credential $cred): bool {
-                return $cred->getSignCount() === 42;
-            }))
+            ->with(self::callback(fn(Credential $cred): bool => $cred->getSignCount() === 42))
             ->willReturn(1);
 
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
@@ -959,8 +970,8 @@ final class WebAuthnServiceTest extends TestCase
             type: 'public-key',
             transports: [],
             attestationType: 'none',
-            trustPath: new \Webauthn\TrustPath\EmptyTrustPath(),
-            aaguid: \Symfony\Component\Uid\Uuid::v4(),
+            trustPath: new EmptyTrustPath(),
+            aaguid: Uuid::v4(),
             credentialPublicKey: 'cose',
             userHandle: 'handle',
             counter: 0,
@@ -969,9 +980,7 @@ final class WebAuthnServiceTest extends TestCase
         $this->credentialRepositoryMock
             ->expects(self::once())
             ->method('save')
-            ->with(self::callback(function (Credential $cred): bool {
-                return $cred->getTransports() === '[]';
-            }))
+            ->with(self::callback(fn(Credential $cred): bool => $cred->getTransports() === '[]'))
             ->willReturn(1);
 
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
@@ -1003,11 +1012,11 @@ final class WebAuthnServiceTest extends TestCase
         self::assertNotEmpty($result->options->allowCredentials);
         self::assertSame(
             \array_map(
-                static fn(\Webauthn\PublicKeyCredentialDescriptor $d): string => $d->id,
+                static fn(PublicKeyCredentialDescriptor $d): string => $d->id,
                 \array_values($this->subject->createDecoyAssertionOptions('user')->options->allowCredentials),
             ),
             \array_map(
-                static fn(\Webauthn\PublicKeyCredentialDescriptor $d): string => $d->id,
+                static fn(PublicKeyCredentialDescriptor $d): string => $d->id,
                 \array_values($result->options->allowCredentials),
             ),
         );
@@ -1145,12 +1154,12 @@ final class WebAuthnServiceTest extends TestCase
         $y = \str_pad($details['ec']['y'], 32, "\0", STR_PAD_LEFT);
 
         // Create COSE-encoded public key (EC2 / ES256)
-        $coseKey = \CBOR\MapObject::create()
-            ->add(\CBOR\UnsignedIntegerObject::create(1), \CBOR\UnsignedIntegerObject::create(2))
-            ->add(\CBOR\UnsignedIntegerObject::create(3), \CBOR\NegativeIntegerObject::create(-7))
-            ->add(\CBOR\NegativeIntegerObject::create(-1), \CBOR\UnsignedIntegerObject::create(1))
-            ->add(\CBOR\NegativeIntegerObject::create(-2), \CBOR\ByteStringObject::create($x))
-            ->add(\CBOR\NegativeIntegerObject::create(-3), \CBOR\ByteStringObject::create($y));
+        $coseKey = MapObject::create()
+            ->add(UnsignedIntegerObject::create(1), UnsignedIntegerObject::create(2))
+            ->add(UnsignedIntegerObject::create(3), NegativeIntegerObject::create(-7))
+            ->add(NegativeIntegerObject::create(-1), UnsignedIntegerObject::create(1))
+            ->add(NegativeIntegerObject::create(-2), ByteStringObject::create($x))
+            ->add(NegativeIntegerObject::create(-3), ByteStringObject::create($y));
         $publicKeyCose = (string) $coseKey;
 
         $credentialId = \random_bytes(32);
@@ -1202,11 +1211,11 @@ final class WebAuthnServiceTest extends TestCase
             beUser: $beUserUid,
             credentialId: $credentialId,
             publicKeyCose: $publicKeyCose,
-            transports: '[]',
-            label: 'Test Key',
             signCount: 0,
             userHandle: $userHandle,
-            aaguid: \Symfony\Component\Uid\Uuid::v4()->toString(),
+            aaguid: Uuid::v4()->toString(),
+            transports: '[]',
+            label: 'Test Key',
         );
 
         $this->credentialRepositoryMock
@@ -1292,12 +1301,12 @@ final class WebAuthnServiceTest extends TestCase
         $x = \str_pad($details['ec']['x'], 32, "\0", STR_PAD_LEFT);
         $y = \str_pad($details['ec']['y'], 32, "\0", STR_PAD_LEFT);
 
-        $coseKey = \CBOR\MapObject::create()
-            ->add(\CBOR\UnsignedIntegerObject::create(1), \CBOR\UnsignedIntegerObject::create(2))
-            ->add(\CBOR\UnsignedIntegerObject::create(3), \CBOR\NegativeIntegerObject::create(-7))
-            ->add(\CBOR\NegativeIntegerObject::create(-1), \CBOR\UnsignedIntegerObject::create(1))
-            ->add(\CBOR\NegativeIntegerObject::create(-2), \CBOR\ByteStringObject::create($x))
-            ->add(\CBOR\NegativeIntegerObject::create(-3), \CBOR\ByteStringObject::create($y));
+        $coseKey = MapObject::create()
+            ->add(UnsignedIntegerObject::create(1), UnsignedIntegerObject::create(2))
+            ->add(UnsignedIntegerObject::create(3), NegativeIntegerObject::create(-7))
+            ->add(NegativeIntegerObject::create(-1), UnsignedIntegerObject::create(1))
+            ->add(NegativeIntegerObject::create(-2), ByteStringObject::create($x))
+            ->add(NegativeIntegerObject::create(-3), ByteStringObject::create($y));
 
         return (string) $coseKey;
     }
@@ -1499,11 +1508,11 @@ final class WebAuthnServiceTest extends TestCase
             beUser: $beUserUid,
             credentialId: $credentialId,
             publicKeyCose: $wrongCoseKey,
-            transports: '[]',
-            label: 'Test Key',
             signCount: 0,
             userHandle: $userHandle,
-            aaguid: \Symfony\Component\Uid\Uuid::v4()->toString(),
+            aaguid: Uuid::v4()->toString(),
+            transports: '[]',
+            label: 'Test Key',
         );
 
         $this->credentialRepositoryMock
@@ -1551,7 +1560,7 @@ final class WebAuthnServiceTest extends TestCase
         // Verify all four algorithms are registered by checking their COSE identifiers
         // ES256 = -7, ES384 = -35, ES512 = -36, RS256 = -257
         $algorithms = \iterator_to_array($manager->all());
-        $identifiers = \array_map(static fn($algo) => $algo->identifier(), $algorithms);
+        $identifiers = \array_map(static fn(Algorithm $algo): int => $algo->identifier(), $algorithms);
         \sort($identifiers);
 
         self::assertContains(-7, $identifiers, 'ES256 (identifier -7) should be registered');
@@ -1569,11 +1578,11 @@ final class WebAuthnServiceTest extends TestCase
             beUser: 42,
             credentialId: 'cred-id-123',
             publicKeyCose: 'cose-public-key',
-            transports: '["usb"]',
-            label: 'Test Key',
             signCount: 5,
             userHandle: 'user-handle',
             aaguid: '',
+            transports: '["usb"]',
+            label: 'Test Key',
         );
 
         $reflection = new ReflectionMethod($this->assertionService, 'credentialToSource');
@@ -1606,11 +1615,11 @@ final class WebAuthnServiceTest extends TestCase
             beUser: 99,
             credentialId: 'cred-id-abc',
             publicKeyCose: 'cose-key',
-            transports: '[]',
-            label: 'Known Authenticator',
             signCount: 3,
             userHandle: 'handle-abc',
             aaguid: $fixedAaguid,
+            transports: '[]',
+            label: 'Known Authenticator',
         );
 
         $reflection = new ReflectionMethod($this->assertionService, 'credentialToSource');

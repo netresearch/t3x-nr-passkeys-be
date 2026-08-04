@@ -23,6 +23,7 @@ use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Localization\Locale;
 
 /**
  * Intercepts backend requests to enforce passkey setup when required.
@@ -31,7 +32,7 @@ use TYPO3\CMS\Core\Localization\LanguageService;
  * when their enforcement policy demands it and they have none yet.
  * Supports grace periods and session-based skip for dismissible prompts.
  */
-final class PasskeySetupInterstitial implements MiddlewareInterface
+final readonly class PasskeySetupInterstitial implements MiddlewareInterface
 {
     use TranslationTrait;
 
@@ -80,9 +81,9 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
     ];
 
     public function __construct(
-        private readonly EnforcementService $enforcementService,
-        private readonly UriBuilder $uriBuilder,
-        private readonly LoggerInterface $logger,
+        private EnforcementService $enforcementService,
+        private UriBuilder $uriBuilder,
+        private LoggerInterface $logger,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -298,7 +299,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
         $escapedSetupUrl = \htmlspecialchars($setupUrl, ENT_QUOTES, 'UTF-8');
 
         $title = $this->translate('interstitial.title', 'Set up your passkey');
-        $description = $this->translate('interstitial.description', 'Passkeys provide a more secure and convenient way to sign in without passwords. They use your device\'s built-in biometric sensors or security keys to verify your identity, making your account resistant to phishing attacks.');
+        $description = $this->translate('interstitial.description', "Passkeys provide a more secure and convenient way to sign in without passwords. They use your device's built-in biometric sensors or security keys to verify your identity, making your account resistant to phishing attacks.");
         $setupLabel = $this->translate('interstitial.button.setup', 'Set up now');
 
         if ($remainingDays > 0 && $canSkip) {
@@ -321,6 +322,7 @@ final class PasskeySetupInterstitial implements MiddlewareInterface
             } else {
                 $skipLabel = $this->translate('interstitial.button.skip', 'Skip for now');
             }
+
             $escapedSkipLabel = \htmlspecialchars($skipLabel, ENT_QUOTES, 'UTF-8');
 
             $skipButton = <<<HTML
@@ -336,13 +338,14 @@ HTML;
         $lang = $GLOBALS['LANG'] ?? null;
         if ($lang instanceof LanguageService) {
             $locale = $lang->getLocale();
-            if ($locale !== null) {
+            if ($locale instanceof Locale) {
                 $langCode = $locale->getLanguageCode();
                 if ($langCode !== '') {
                     $htmlLang = $langCode;
                 }
             }
         }
+
         $escapedHtmlLang = \htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8');
         $escapedColorScheme = \htmlspecialchars($colorScheme, ENT_QUOTES, 'UTF-8');
 
