@@ -184,3 +184,7 @@ Makefile                  -> make up (dev), make ci (checks), make test-e2e, mak
 
 ## When Instructions Conflict
 Nearest AGENTS.md wins. User prompts override files.
+
+## Commit Signing
+
+Signed commits are required: `git commit -S --signoff`. The `require-signed-commits` ruleset on the default branch rejects unsigned commits at merge time, and the DCO check additionally requires the `Signed-off-by` trailer. Quickest setup is SSH signing — register your SSH key as a *signing key* on your GitHub account, then `git config gpg.format ssh && git config user.signingkey ~/.ssh/<key>.pub`.
