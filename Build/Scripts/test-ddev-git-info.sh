@@ -33,17 +33,20 @@ SANITIZER="tr -cd 'A-Za-z0-9._/-'"
 failures=0
 
 fail() {
-    printf 'FAIL: %s\n' "$1" >&2
+    reason="$1"
+    printf 'FAIL: %s\n' "$reason" >&2
     failures=$((failures + 1))
 }
 
 pass() {
-    printf 'ok: %s\n' "$1"
+    reason="$1"
+    printf 'ok: %s\n' "$reason"
 }
 
 # Apply exactly the sanitization the sources apply.
 sanitize() {
-    printf '%s' "$1" | tr -cd 'A-Za-z0-9._/-' | cut -c1-100
+    raw_value="$1"
+    printf '%s' "$raw_value" | tr -cd 'A-Za-z0-9._/-' | cut -c1-100
 }
 
 # --- 1. The sources still sanitize -------------------------------------------
