@@ -7,6 +7,10 @@
 
 declare(strict_types=1);
 
+use DG\BypassFinals;
+use TYPO3\CMS\Core\Core\ApplicationContext;
+use TYPO3\CMS\Core\Core\Environment;
+
 /**
  * PHPUnit bootstrap that enables bypass-finals before autoloading.
  *
@@ -24,13 +28,13 @@ if (!\defined('LF')) {
 
 require __DIR__ . '/../.Build/vendor/autoload.php';
 
-DG\BypassFinals::enable();
+BypassFinals::enable();
 
 // NormalizedParams::createFromServerParams() reads Environment::getCurrentScript()
 // and getPublicPath(); initialize Environment so the fallback path works in tests.
 $projectPath = \dirname(__DIR__);
-\TYPO3\CMS\Core\Core\Environment::initialize(
-    new \TYPO3\CMS\Core\Core\ApplicationContext('Testing'),
+Environment::initialize(
+    new ApplicationContext('Testing'),
     true,
     true,
     $projectPath,

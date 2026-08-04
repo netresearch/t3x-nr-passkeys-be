@@ -29,7 +29,7 @@ use Webauthn\PublicKeyCredentialUserEntity;
  * WebAuthn attestation (registration) ceremony: building creation options,
  * verifying the browser's attestation response, and persisting the credential.
  */
-final class AttestationService
+final readonly class AttestationService
 {
     private const ALGORITHM_MAP = [
         'ES256' => -7,
@@ -39,11 +39,11 @@ final class AttestationService
     ];
 
     public function __construct(
-        private readonly ExtensionConfigurationService $configService,
-        private readonly ChallengeService $challengeService,
-        private readonly CredentialRepository $credentialRepository,
-        private readonly LoggerInterface $logger,
-        private readonly WebAuthnCeremonyFactory $ceremonyFactory,
+        private ExtensionConfigurationService $configService,
+        private ChallengeService $challengeService,
+        private CredentialRepository $credentialRepository,
+        private LoggerInterface $logger,
+        private WebAuthnCeremonyFactory $ceremonyFactory,
     ) {}
 
     /**

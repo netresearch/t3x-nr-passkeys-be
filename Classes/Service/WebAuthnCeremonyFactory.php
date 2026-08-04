@@ -40,7 +40,7 @@ final class WebAuthnCeremonyFactory
 
     public function getSerializer(): SerializerInterface
     {
-        if ($this->serializer === null) {
+        if (!$this->serializer instanceof SerializerInterface) {
             $attestationManager = $this->createAttestationStatementSupportManager();
             $factory = new WebauthnSerializerFactory($attestationManager);
             $this->serializer = $factory->create();

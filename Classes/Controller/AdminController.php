@@ -9,7 +9,10 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
+use Netresearch\NrPasskeysBe\Domain\Dto\AdminCredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
+use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Psr\Http\Message\ResponseInterface;
@@ -25,7 +28,7 @@ use TYPO3\CMS\Core\Http\JsonResponse;
  * Provides AJAX endpoints for listing, revoking, and unlocking passkeys,
  * updating group enforcement levels, and sending setup reminders.
  */
-final class AdminController
+final readonly class AdminController
 {
     use BackendUserTrait;
     use JsonBodyTrait;
@@ -35,10 +38,10 @@ final class AdminController
     private const ERROR_INSUFFICIENT_PRIVILEGES = 'Insufficient privileges to manage this user';
 
     public function __construct(
-        private readonly CredentialRepository $credentialRepository,
-        private readonly RateLimiterService $rateLimiterService,
-        private readonly ConnectionPool $connectionPool,
-        private readonly LoggerInterface $logger,
+        private CredentialRepository $credentialRepository,
+        private RateLimiterService $rateLimiterService,
+        private ConnectionPool $connectionPool,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -49,7 +52,7 @@ final class AdminController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -67,7 +70,7 @@ final class AdminController
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
         $list = \array_map(
-            static fn($cred) => $cred->toAdminCredentialInfo(),
+            static fn(Credential $cred): AdminCredentialInfo => $cred->toAdminCredentialInfo(),
             $credentials,
         );
 
@@ -87,7 +90,7 @@ final class AdminController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -107,7 +110,7 @@ final class AdminController
 
         // Verify the credential belongs to the specified user
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $beUserUid);
-        if ($credential === null) {
+        if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found for this user'], 404);
         }
 
@@ -131,7 +134,7 @@ final class AdminController
     public function unlockAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -154,7 +157,7 @@ final class AdminController
         $row = $queryBuilder
             ->select('uid', 'username')
             ->from('be_users')
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, \TYPO3\CMS\Core\Database\Connection::PARAM_INT)))
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
 
@@ -182,7 +185,7 @@ final class AdminController
     public function revokeAllAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -226,7 +229,7 @@ final class AdminController
     public function updateEnforcementAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -292,7 +295,7 @@ final class AdminController
     public function sendReminderAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
@@ -362,7 +365,7 @@ final class AdminController
     public function clearNudgeAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
-        if ($admin === null) {
+        if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 

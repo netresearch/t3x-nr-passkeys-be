@@ -23,6 +23,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
@@ -1206,7 +1207,7 @@ final class ManagementControllerTest extends TestCase
      *
      * @return array<string, mixed>
      */
-    private function decodeResponse(\Psr\Http\Message\ResponseInterface $response): array
+    private function decodeResponse(ResponseInterface $response): array
     {
         $body = (string) $response->getBody();
         $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);

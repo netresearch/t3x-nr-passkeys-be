@@ -93,10 +93,6 @@ final readonly class EnforcementStatus
             return false;
         }
 
-        if ($this->level === EnforcementLevel::Required && $this->isGracePeriodExpired($currentTime)) {
-            return false;
-        }
-
-        return true;
+        return $this->level !== EnforcementLevel::Required || !$this->isGracePeriodExpired($currentTime);
     }
 }

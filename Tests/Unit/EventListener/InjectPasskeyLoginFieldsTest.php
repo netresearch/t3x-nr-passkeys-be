@@ -14,6 +14,7 @@ use Netresearch\NrPasskeysBe\EventListener\InjectPasskeyLoginFields;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use ReflectionMethod;
@@ -28,9 +29,12 @@ use TYPO3\CMS\Core\View\ViewInterface;
 #[CoversClass(InjectPasskeyLoginFields::class)]
 final class InjectPasskeyLoginFieldsTest extends TestCase
 {
-    private ExtensionConfigurationService $configService;
-    private PageRenderer $pageRenderer;
-    private UriBuilder $uriBuilder;
+    private MockObject $configService;
+
+    private MockObject $pageRenderer;
+
+    private MockObject $uriBuilder;
+
     private InjectPasskeyLoginFields $subject;
 
     protected function setUp(): void
@@ -176,6 +180,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                     // Extract and decode JSON from the JS assignment
                     $jsonPart = \str_replace('window.NrPasskeysBeConfig = ', '', $code);
                     $jsonPart = \rtrim($jsonPart, ';');
+
                     $decoded = \json_decode($jsonPart, true);
                     self::assertIsArray($decoded);
                     self::assertSame('/typo3/passkeys/login/options', $decoded['loginOptionsUrl']);
@@ -237,6 +242,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                 self::callback(static function (string $code): bool {
                     $jsonPart = \str_replace('window.NrPasskeysBeConfig = ', '', $code);
                     $jsonPart = \rtrim($jsonPart, ';');
+
                     $decoded = \json_decode($jsonPart, true);
                     self::assertSame('fallback.example.com', $decoded['rpId']);
                     return true;
@@ -261,6 +267,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                 self::callback(static function (string $code): bool {
                     $jsonPart = \str_replace('window.NrPasskeysBeConfig = ', '', $code);
                     $jsonPart = \rtrim($jsonPart, ';');
+
                     $decoded = \json_decode($jsonPart, true);
                     self::assertSame('https://custom-origin.example.com', $decoded['origin']);
                     return true;
@@ -285,6 +292,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                 self::callback(static function (string $code): bool {
                     $jsonPart = \str_replace('window.NrPasskeysBeConfig = ', '', $code);
                     $jsonPart = \rtrim($jsonPart, ';');
+
                     $decoded = \json_decode($jsonPart, true);
                     self::assertFalse($decoded['discoverableEnabled']);
                     return true;
@@ -309,6 +317,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                 self::callback(static function (string $code): bool {
                     $jsonPart = \str_replace('window.NrPasskeysBeConfig = ', '', $code);
                     $jsonPart = \rtrim($jsonPart, ';');
+
                     $decoded = \json_decode($jsonPart, true);
                     self::assertSame('/typo3/passkeys/login/options', $decoded['loginOptionsUrl']);
                     return true;

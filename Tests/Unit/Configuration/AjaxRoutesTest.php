@@ -39,7 +39,7 @@ final class AjaxRoutesTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private static function routes(): array
+    private function routes(): array
     {
         if (self::$routes === null) {
             $routes = require_once \dirname(__DIR__, 3) . '/Configuration/Backend/AjaxRoutes.php';
@@ -73,7 +73,7 @@ final class AjaxRoutesTest extends TestCase
     #[DataProvider('writeRouteProvider')]
     public function writeRouteRequiresSudoMode(string $identifier): void
     {
-        $routes = self::routes();
+        $routes = $this->routes();
         self::assertArrayHasKey($identifier, $routes);
 
         $route = $routes[$identifier];
@@ -94,8 +94,12 @@ final class AjaxRoutesTest extends TestCase
     public function everyPostRouteRequiresSudoMode(): void
     {
         $missing = [];
-        foreach (self::routes() as $identifier => $route) {
-            if (!\is_array($route) || !\in_array('POST', (array) ($route['methods'] ?? []), true)) {
+        foreach ($this->routes() as $identifier => $route) {
+            if (!\is_array($route)) {
+                continue;
+            }
+
+            if (!\in_array('POST', (array) ($route['methods'] ?? []), true)) {
                 continue;
             }
 
@@ -114,7 +118,7 @@ final class AjaxRoutesTest extends TestCase
     #[Test]
     public function readRoutesAreNotGated(): void
     {
-        $routes = self::routes();
+        $routes = $this->routes();
 
         foreach (['passkeys_manage_list', 'passkeys_admin_list', 'passkeys_enforcement_status'] as $identifier) {
             self::assertArrayHasKey($identifier, $routes);

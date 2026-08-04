@@ -18,13 +18,13 @@ use TYPO3\CMS\Dashboard\Widgets\NumberWithIconDataProviderInterface;
  * homogeneous, so a combined count is meaningful; the segment breakdown is
  * carried by the widget subtitle. Degrades to backend-only automatically.
  */
-final class PasskeyCredentialsCountDataProvider implements NumberWithIconDataProviderInterface
+final readonly class PasskeyCredentialsCountDataProvider implements NumberWithIconDataProviderInterface
 {
     /**
      * @param iterable<PasskeyAdoptionStatsProviderInterface> $statsProviders
      */
     public function __construct(
-        private readonly iterable $statsProviders,
+        private iterable $statsProviders,
     ) {}
 
     public function getNumber(): int

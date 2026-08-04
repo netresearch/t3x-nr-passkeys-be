@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Fuzz;
 
+use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -36,7 +37,7 @@ final class ChallengeTokenFuzzTest extends TestCase
         $cache->method('get')->willReturn('valid');
 
         $configService = $this->createMock(ExtensionConfigurationService::class);
-        $config = new \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration(
+        $config = new ExtensionConfiguration(
             challengeTtlSeconds: 120,
         );
         $configService->method('getConfiguration')->willReturn($config);

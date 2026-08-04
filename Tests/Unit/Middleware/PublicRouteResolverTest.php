@@ -40,12 +40,10 @@ final class PublicRouteResolverTest extends TestCase
     {
         $route = $this->createMock(Route::class);
         $route->method('getOption')
-            ->willReturnCallback(static function (string $option): mixed {
-                return match ($option) {
-                    'access' => 'public',
-                    '_identifier' => 'passkeys_login_options',
-                    default => null,
-                };
+            ->willReturnCallback(static fn(string $option): mixed => match ($option) {
+                'access' => 'public',
+                '_identifier' => 'passkeys_login_options',
+                default => null,
             });
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -95,12 +93,10 @@ final class PublicRouteResolverTest extends TestCase
     {
         $route = $this->createMock(Route::class);
         $route->method('getOption')
-            ->willReturnCallback(static function (string $option): mixed {
-                return match ($option) {
-                    'access' => 'something_else',
-                    '_identifier' => 'passkeys_login_options',
-                    default => null,
-                };
+            ->willReturnCallback(static fn(string $option): mixed => match ($option) {
+                'access' => 'something_else',
+                '_identifier' => 'passkeys_login_options',
+                default => null,
             });
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -127,12 +123,10 @@ final class PublicRouteResolverTest extends TestCase
     {
         $route = $this->createMock(Route::class);
         $route->method('getOption')
-            ->willReturnCallback(static function (string $option): mixed {
-                return match ($option) {
-                    'access' => 'public',
-                    '_identifier' => 'main',
-                    default => null,
-                };
+            ->willReturnCallback(static fn(string $option): mixed => match ($option) {
+                'access' => 'public',
+                '_identifier' => 'main',
+                default => null,
             });
 
         $request = $this->createMock(ServerRequestInterface::class);
@@ -159,12 +153,10 @@ final class PublicRouteResolverTest extends TestCase
     {
         $route = $this->createMock(Route::class);
         $route->method('getOption')
-            ->willReturnCallback(static function (string $option): mixed {
-                return match ($option) {
-                    'access' => 'public',
-                    '_identifier' => null,
-                    default => null,
-                };
+            ->willReturnCallback(static fn(string $option): mixed => match ($option) {
+                'access' => 'public',
+                '_identifier' => null,
+                default => null,
             });
 
         $request = $this->createMock(ServerRequestInterface::class);

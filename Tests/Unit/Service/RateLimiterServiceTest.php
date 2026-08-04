@@ -26,10 +26,15 @@ use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 final class RateLimiterServiceTest extends TestCase
 {
     private FrontendInterface&MockObject $rateLimitCacheMock;
+
     private ExtensionConfigurationService $configService;
+
     private LockFactory&MockObject $lockFactoryMock;
+
     private LockingStrategyInterface&MockObject $lockerMock;
+
     private LoggerInterface&MockObject $loggerMock;
+
     private RateLimiterService $subject;
 
     protected function setUp(): void
@@ -267,9 +272,11 @@ final class RateLimiterServiceTest extends TestCase
                 if ($key === $ipKey) {
                     return '2';
                 }
+
                 if ($key === $userKey) {
                     return '10';
                 }
+
                 return false;
             });
 
@@ -338,9 +345,7 @@ final class RateLimiterServiceTest extends TestCase
             ->with(
                 self::isType('string'),
                 '3',
-                self::callback(static function (array $tags): bool {
-                    return \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_');
-                }),
+                self::callback(static fn(array $tags): bool => \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_')),
                 900,
             );
 
@@ -356,9 +361,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->expects(self::exactly(2))
             ->method('remove')
-            ->with(self::callback(static function (string $key) use ($ipKey, $userKey): bool {
-                return $key === $ipKey || $key === $userKey;
-            }));
+            ->with(self::callback(static fn(string $key): bool => $key === $ipKey || $key === $userKey));
 
         $this->subject->recordSuccess('admin', '192.168.1.1');
     }
@@ -428,7 +431,6 @@ final class RateLimiterServiceTest extends TestCase
 
         $expectedIpKey = 'lo_' . \hash('sha256', 'user@example.com|2001:db8::1');
         $expectedUserKey = 'lou_' . \hash('sha256', 'user@example.com');
-        $expectedTag = 'lockout_' . \hash('sha256', 'user@example.com');
 
         $setCalls = [];
         $this->rateLimitCacheMock
@@ -517,9 +519,7 @@ final class RateLimiterServiceTest extends TestCase
             ->with(
                 self::isType('string'),
                 '2',
-                self::callback(static function (array $tags): bool {
-                    return \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_');
-                }),
+                self::callback(static fn(array $tags): bool => \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_')),
                 900,
             );
 

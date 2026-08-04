@@ -7,8 +7,11 @@
 
 declare(strict_types=1);
 
+use DG\BypassFinals;
+use TYPO3\TestingFramework\Core\Testbase;
+
 (static function (): void {
-    $testbase = new \TYPO3\TestingFramework\Core\Testbase();
+    $testbase = new Testbase();
     $testbase->defineOriginalRootPath();
     $testbase->createDirectory(ORIGINAL_ROOT . 'typo3temp/var/tests');
     $testbase->createDirectory(ORIGINAL_ROOT . 'typo3temp/var/transient');
@@ -17,4 +20,4 @@ declare(strict_types=1);
 // Strip the "final" keyword at runtime so PHPUnit can double classes like
 // WebAuthnService (final for production safety) in functional tests. This
 // matches the unit-test bootstrap behaviour.
-DG\BypassFinals::enable();
+BypassFinals::enable();

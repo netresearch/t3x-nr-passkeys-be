@@ -18,15 +18,15 @@ use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 /**
  * Manages HMAC-signed, single-use, time-limited WebAuthn challenge tokens.
  */
-final class ChallengeService
+final readonly class ChallengeService
 {
     private const HMAC_ALGO = 'sha256';
 
     public function __construct(
-        private readonly FrontendInterface $nonceCache,
-        private readonly ExtensionConfigurationService $configService,
-        private readonly LockFactory $lockFactory,
-        private readonly LoggerInterface $logger,
+        private FrontendInterface $nonceCache,
+        private ExtensionConfigurationService $configService,
+        private LockFactory $lockFactory,
+        private LoggerInterface $logger,
     ) {}
 
     public function generateChallenge(): string

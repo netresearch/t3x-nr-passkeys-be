@@ -7,10 +7,16 @@
 
 declare(strict_types=1);
 
+use TYPO3\CMS\Core\Log\LogLevel;
+use TYPO3\CMS\Core\Log\Writer\FileWriter;
+use TYPO3\CMS\Core\Core\Environment;
+use Netresearch\NrPasskeysBe\Form\Element\PasskeyInfoElement;
+use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanelElement;
+use TYPO3\CMS\Core\Cache\Backend\FileBackend;
 use Netresearch\NrPasskeysBe\Authentication\PasskeyAuthenticationService;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
-defined('TYPO3') or die();
+defined('TYPO3') || die();
 
 // Register passkey authentication service with priority 80 (higher than SaltedPasswordService at 50)
 ExtensionManagementUtility::addService(
@@ -39,9 +45,9 @@ ExtensionManagementUtility::addService(
 // in containerized setups, the directory is often not writable by the PHP
 // user — an unwritable FileWriter throws and takes down every request that
 // logs a warning.
-$GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfiguration'][\TYPO3\CMS\Core\Log\LogLevel::WARNING] ??= [
-    \TYPO3\CMS\Core\Log\Writer\FileWriter::class => [
-        'logFile' => \TYPO3\CMS\Core\Core\Environment::getVarPath() . '/log/passkey_auth.log',
+$GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfiguration'][LogLevel::WARNING] ??= [
+    FileWriter::class => [
+        'logFile' => Environment::getVarPath() . '/log/passkey_auth.log',
     ],
 ];
 
@@ -49,7 +55,7 @@ $GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfigu
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1739000000] = [
     'nodeName' => 'passkeyInfo',
     'priority' => 40,
-    'class' => \Netresearch\NrPasskeysBe\Form\Element\PasskeyInfoElement::class,
+    'class' => PasskeyInfoElement::class,
 ];
 
 // Register FormEngine render type for the passkey management panel in User Settings (TYPO3 14+).
@@ -57,7 +63,7 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1739000000] = [
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1748450000] = [
     'nodeName' => 'nrPasskeySettingsPanel',
     'priority' => 40,
-    'class' => \Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanelElement::class,
+    'class' => PasskeySettingsPanelElement::class,
 ];
 
 // Register cache for challenge nonces and single-use login tokens.
@@ -68,7 +74,7 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1748450000] = [
 // so the backend must actually enforce the requested TTL.
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce'] ??= [];
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['backend'] ??=
-    \TYPO3\CMS\Core\Cache\Backend\FileBackend::class;
+    FileBackend::class;
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['options'] ??= [
     'defaultLifetime' => 300,
 ];
@@ -76,7 +82,7 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkey
 // Register cache for rate limiting (FileBackend required for flushByTag support)
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_ratelimit'] ??= [];
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_ratelimit']['backend'] ??=
-    \TYPO3\CMS\Core\Cache\Backend\FileBackend::class;
+    FileBackend::class;
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_ratelimit']['options'] ??= [
     'defaultLifetime' => 600,
 ];

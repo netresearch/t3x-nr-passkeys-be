@@ -17,7 +17,7 @@ use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
-use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration as Typo3ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -48,10 +48,10 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_be_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                     'nr_passkeys_be_ratelimit' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],

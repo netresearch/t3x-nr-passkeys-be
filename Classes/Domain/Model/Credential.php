@@ -19,6 +19,7 @@ use Netresearch\NrPasskeysBe\Utility\TypeCastTrait;
 final class Credential
 {
     use TypeCastTrait;
+
     public function __construct(
         private int $uid = 0,
         private int $pid = 0,
@@ -136,7 +137,7 @@ final class Credential
             return [];
         }
 
-        return \array_values(\array_filter($decoded, '\is_string'));
+        return \array_values(\array_filter($decoded, \is_string(...)));
     }
 
     /**

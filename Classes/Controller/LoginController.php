@@ -23,7 +23,7 @@ use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
-final class LoginController
+final readonly class LoginController
 {
     use JsonBodyTrait;
 
@@ -55,11 +55,11 @@ final class LoginController
     private const TIMING_BUDGET_NS = 150_000_000;
 
     public function __construct(
-        private readonly WebAuthnService $webAuthnService,
-        private readonly ExtensionConfigurationService $configService,
-        private readonly RateLimiterService $rateLimiterService,
-        private readonly ConnectionPool $connectionPool,
-        private readonly LoggerInterface $logger,
+        private WebAuthnService $webAuthnService,
+        private ExtensionConfigurationService $configService,
+        private RateLimiterService $rateLimiterService,
+        private ConnectionPool $connectionPool,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -296,7 +296,7 @@ final class LoginController
                 'username_hash' => \hash('sha256', $username),
                 'ip' => $ip,
                 'error_code' => $e->getCode(),
-                'error_class' => \get_class($e),
+                'error_class' => $e::class,
             ]);
 
             return new JsonResponse(['error' => self::AUTH_FAILED], 401);

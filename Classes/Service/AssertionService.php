@@ -29,7 +29,7 @@ use Webauthn\TrustPath\EmptyTrustPath;
  * username-first, discoverable, and decoy login variants, resolving the backend
  * user from a discoverable assertion, and verifying the browser's assertion response.
  */
-final class AssertionService
+final readonly class AssertionService
 {
     /**
      * Realistic credential-ID byte lengths. A single fixed length made every decoy
@@ -56,11 +56,11 @@ final class AssertionService
     ];
 
     public function __construct(
-        private readonly ExtensionConfigurationService $configService,
-        private readonly ChallengeService $challengeService,
-        private readonly CredentialRepository $credentialRepository,
-        private readonly LoggerInterface $logger,
-        private readonly WebAuthnCeremonyFactory $ceremonyFactory,
+        private ExtensionConfigurationService $configService,
+        private ChallengeService $challengeService,
+        private CredentialRepository $credentialRepository,
+        private LoggerInterface $logger,
+        private WebAuthnCeremonyFactory $ceremonyFactory,
     ) {}
 
     /**
@@ -204,7 +204,7 @@ final class AssertionService
 
             $descriptors[] = PublicKeyCredentialDescriptor::create(
                 type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
-                id: self::deriveDecoyId($derivedKey, $username . '|' . $index . '|id', $length),
+                id: $this->deriveDecoyId($derivedKey, $username . '|' . $index . '|id', $length),
                 transports: $transports,
             );
         }
@@ -222,7 +222,7 @@ final class AssertionService
      * holds for every such decoy and for no real credential. Without the key, no byte
      * of the result predicts any other.
      */
-    private static function deriveDecoyId(string $derivedKey, string $label, int $length): string
+    private function deriveDecoyId(string $derivedKey, string $label, int $length): string
     {
         $id = '';
         $block = 0;
@@ -254,7 +254,7 @@ final class AssertionService
             }
 
             $credential = $this->credentialRepository->findByCredentialId($publicKeyCredential->rawId);
-            if ($credential === null || $credential->isRevoked()) {
+            if (!$credential instanceof Credential || $credential->isRevoked()) {
                 return null;
             }
 
@@ -297,7 +297,7 @@ final class AssertionService
         $credentialId = $publicKeyCredential->rawId;
         $credential = $this->credentialRepository->findByCredentialId($credentialId);
 
-        if ($credential === null) {
+        if (!$credential instanceof Credential) {
             $this->logger->warning('Assertion with unknown credential ID', [
                 'be_user_uid' => $beUserUid,
             ]);

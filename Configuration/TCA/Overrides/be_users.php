@@ -7,7 +7,9 @@
 
 declare(strict_types=1);
 
-\defined('TYPO3') or die();
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
+\defined('TYPO3') || die();
 
 $tempColumns = [
     'passkeys' => [
@@ -20,10 +22,10 @@ $tempColumns = [
     ],
 ];
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns('be_users', $tempColumns);
+ExtensionManagementUtility::addTCAcolumns('be_users', $tempColumns);
 
 // Add passkeys field after mfa in be_users form
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
+ExtensionManagementUtility::addToAllTCAtypes(
     'be_users',
     'passkeys',
     '',

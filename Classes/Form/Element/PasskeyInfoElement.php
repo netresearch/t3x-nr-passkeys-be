@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Form\Element;
 
+use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use TYPO3\CMS\Backend\Form\Element\AbstractFormElement;
 use TYPO3\CMS\Core\Page\JavaScriptModuleInstruction;
@@ -78,7 +79,7 @@ class PasskeyInfoElement extends AbstractFormElement
             $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
             $systemMaintainers = \is_array($sysConf) ? ($sysConf['systemMaintainers'] ?? []) : [];
             if (\is_array($systemMaintainers) && $systemMaintainers !== []) {
-                $systemMaintainerIds = \array_map('\intval', $systemMaintainers);
+                $systemMaintainerIds = \array_map(\intval(...), $systemMaintainers);
                 $targetIsSystemMaintainer = \in_array($userId, $systemMaintainerIds, true);
                 if ($targetIsSystemMaintainer && !$currentBackendUser->isSystemMaintainer()) {
                     $isManagementAllowed = false;
@@ -89,7 +90,7 @@ class PasskeyInfoElement extends AbstractFormElement
         $credentials = $this->credentialRepository->findAllByBeUser($userId);
         $activeCount = \count(\array_filter(
             $credentials,
-            static fn(\Netresearch\NrPasskeysBe\Domain\Model\Credential $credential): bool => !$credential->isRevoked(),
+            static fn(Credential $credential): bool => !$credential->isRevoked(),
         ));
 
         $enabledLabel = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled');
@@ -166,6 +167,7 @@ class PasskeyInfoElement extends AbstractFormElement
 
                 $childHtml[] = '</li>';
             }
+
             $childHtml[] = '</ul>';
         }
 

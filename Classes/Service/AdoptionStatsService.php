@@ -20,10 +20,12 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
  * Aggregates user counts, per-group enforcement details, and identifies
  * users who have not yet registered passkeys.
  */
-final class AdoptionStatsService
+final readonly class AdoptionStatsService
 {
     private const TABLE_USERS = 'be_users';
+
     private const TABLE_CREDENTIALS = 'tx_nrpasskeysbe_credential';
+
     private const TABLE_GROUPS = 'be_groups';
 
     /**
@@ -34,8 +36,8 @@ final class AdoptionStatsService
     public const USERS_WITHOUT_PASSKEYS_LIMIT = 500;
 
     public function __construct(
-        private readonly ConnectionPool $connectionPool,
-        private readonly EnforcementService $enforcementService,
+        private ConnectionPool $connectionPool,
+        private EnforcementService $enforcementService,
     ) {}
 
     /**
@@ -424,7 +426,7 @@ final class AdoptionStatsService
             return '';
         }
 
-        $uids = \array_filter(\array_map('trim', \explode(',', $uidList)));
+        $uids = \array_filter(\array_map(trim(...), \explode(',', $uidList)));
         $titles = [];
 
         foreach ($uids as $uid) {

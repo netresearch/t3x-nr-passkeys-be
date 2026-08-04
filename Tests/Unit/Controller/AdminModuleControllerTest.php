@@ -158,21 +158,19 @@ final class AdminModuleControllerTest extends TestCase
 
         $moduleTemplate->expects(self::once())
             ->method('assignMultiple')
-            ->with(self::callback(static function (array $variables): bool {
-                return $variables['totalUsers'] === 10
-                    && $variables['usersWithPasskeys'] === 6
-                    && $variables['adoptionPercentage'] === 60.0
-                    && $variables['groups'] === []
-                    && $variables['usersWithoutPasskeys'] === []
-                    && \is_array($variables['enforcementLevels'])
-                    && isset($variables['enforcementLevels']['off'])
-                    && isset($variables['enforcementLevels']['encourage'])
-                    && isset($variables['enforcementLevels']['required'])
-                    && isset($variables['enforcementLevels']['enforced'])
-                    && \array_key_exists('helpUrl', $variables)
-                    && \array_key_exists('configRpId', $variables)
-                    && \array_key_exists('isNewInstallation', $variables);
-            }));
+            ->with(self::callback(static fn(array $variables): bool => $variables['totalUsers'] === 10
+                && $variables['usersWithPasskeys'] === 6
+                && $variables['adoptionPercentage'] === 60.0
+                && $variables['groups'] === []
+                && $variables['usersWithoutPasskeys'] === []
+                && \is_array($variables['enforcementLevels'])
+                && isset($variables['enforcementLevels']['off'])
+                && isset($variables['enforcementLevels']['encourage'])
+                && isset($variables['enforcementLevels']['required'])
+                && isset($variables['enforcementLevels']['enforced'])
+                && \array_key_exists('helpUrl', $variables)
+                && \array_key_exists('configRpId', $variables)
+                && \array_key_exists('isNewInstallation', $variables)));
 
         $expectedResponse = new HtmlResponse('<html></html>');
         $moduleTemplate->expects(self::once())

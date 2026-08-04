@@ -183,6 +183,7 @@ final class JsonBodyTraitTest extends TestCase
         for ($i = 0; $i < 18; $i++) {
             $nested .= '{"a":';
         }
+
         $nested .= '"v"';
         for ($i = 0; $i < 19; $i++) {
             $nested .= '}';

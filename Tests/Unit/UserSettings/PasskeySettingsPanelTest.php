@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanel;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
@@ -25,9 +26,12 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 #[CoversClass(PasskeySettingsPanel::class)]
 final class PasskeySettingsPanelTest extends TestCase
 {
-    private PageRenderer $pageRenderer;
-    private CredentialRepository $credentialRepository;
-    private UriBuilder $uriBuilder;
+    private MockObject $pageRenderer;
+
+    private MockObject $credentialRepository;
+
+    private MockObject $uriBuilder;
+
     private PasskeySettingsPanel $subject;
 
     protected function setUp(): void

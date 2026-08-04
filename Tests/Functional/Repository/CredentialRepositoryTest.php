@@ -13,6 +13,8 @@ use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Cache\Backend\NullBackend;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 #[CoversClass(CredentialRepository::class)]
@@ -31,10 +33,10 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             'caching' => [
                 'cacheConfigurations' => [
                     'nr_passkeys_be_nonce' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                     'nr_passkeys_be_ratelimit' => [
-                        'backend' => \TYPO3\CMS\Core\Cache\Backend\NullBackend::class,
+                        'backend' => NullBackend::class,
                     ],
                 ],
             ],
@@ -262,7 +264,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
         $row = $queryBuilder
             ->select('*')
             ->from('tx_nrpasskeysbe_credential')
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, \TYPO3\CMS\Core\Database\Connection::PARAM_INT)))
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
 
