@@ -9,11 +9,11 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
-use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysBe\Controller\AdminController;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
+use Netresearch\NrPasskeysBe\Tests\Unit\QueryBuilderMockTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -25,13 +25,13 @@ use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
-use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
-use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface;
 
 #[CoversClass(AdminController::class)]
 final class AdminControllerTest extends TestCase
 {
+    use QueryBuilderMockTrait;
+
     private AdminController $subject;
 
     private CredentialRepository&MockObject $credentialRepository;
@@ -479,19 +479,7 @@ final class AdminControllerTest extends TestCase
      */
     private function setUpFindBeUserByUid(int $uid, ?array $userRow): void
     {
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(Result::class);
-        $result->method('fetchAssociative')->willReturn($userRow ?? false);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
-        $queryBuilder->method('executeQuery')->willReturn($result);
+        $queryBuilder = $this->createSingleRowQueryBuilder($uid, $userRow);
 
         $this->connectionPool
             ->method('getQueryBuilderForTable')
@@ -1271,22 +1259,10 @@ final class AdminControllerTest extends TestCase
      */
     private function setUpGroupLookup(int $uid, ?array $groupRow): void
     {
-        $restrictions = $this->createMock(QueryRestrictionContainerInterface::class);
-
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(Result::class);
-        $result->method('fetchAssociative')->willReturn($groupRow ?? false);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
-        $queryBuilder->method('executeQuery')->willReturn($result);
-        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
+        $queryBuilder = $this->createSingleRowQueryBuilder($uid, $groupRow);
+        $queryBuilder->method('getRestrictions')->willReturn(
+            $this->createMock(QueryRestrictionContainerInterface::class),
+        );
 
         $this->connectionPool
             ->method('getQueryBuilderForTable')
@@ -1303,22 +1279,10 @@ final class AdminControllerTest extends TestCase
      */
     private function setUpFindActiveBeUserByUid(int $uid, ?array $userRow): void
     {
-        $restrictions = $this->createMock(QueryRestrictionContainerInterface::class);
-
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(Result::class);
-        $result->method('fetchAssociative')->willReturn($userRow ?? false);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
-        $queryBuilder->method('executeQuery')->willReturn($result);
-        $queryBuilder->method('getRestrictions')->willReturn($restrictions);
+        $queryBuilder = $this->createSingleRowQueryBuilder($uid, $userRow);
+        $queryBuilder->method('getRestrictions')->willReturn(
+            $this->createMock(QueryRestrictionContainerInterface::class),
+        );
 
         $this->connectionPool
             ->method('getQueryBuilderForTable')

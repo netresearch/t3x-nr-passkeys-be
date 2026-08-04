@@ -35,16 +35,51 @@ final class PublicRouteResolverTest extends TestCase
         $this->subject = new PublicRouteResolver($this->dispatcher);
     }
 
-    #[Test]
-    public function dispatchesPublicPasskeyLoginRoute(): void
+    /**
+     * A backend route reporting the given `access` and `_identifier` options.
+     */
+    private function createRoute(mixed $access, mixed $identifier): Route&MockObject
     {
         $route = $this->createMock(Route::class);
         $route->method('getOption')
             ->willReturnCallback(static fn(string $option): mixed => match ($option) {
-                'access' => 'public',
-                '_identifier' => 'passkeys_login_options',
+                'access' => $access,
+                '_identifier' => $identifier,
                 default => null,
             });
+
+        return $route;
+    }
+
+    /**
+     * Assert the request is handed to the next handler untouched, and that the
+     * middleware dispatches nothing itself.
+     */
+    private function assertPassesThrough(?Route $route): void
+    {
+        $request = $this->createMock(ServerRequestInterface::class);
+        $request->method('getAttribute')
+            ->with('route')
+            ->willReturn($route);
+
+        $expectedResponse = $this->createMock(ResponseInterface::class);
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::once())
+            ->method('handle')
+            ->with($request)
+            ->willReturn($expectedResponse);
+
+        $this->dispatcher->expects(self::never())->method('dispatch');
+
+        $response = $this->subject->process($request, $handler);
+
+        self::assertSame($expectedResponse, $response);
+    }
+
+    #[Test]
+    public function dispatchesPublicPasskeyLoginRoute(): void
+    {
+        $route = $this->createRoute('public', 'passkeys_login_options');
 
         $request = $this->createMock(ServerRequestInterface::class);
         $request->method('getAttribute')
@@ -69,112 +104,24 @@ final class PublicRouteResolverTest extends TestCase
     #[Test]
     public function passesThroughWhenRouteIsNull(): void
     {
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
-            ->with('route')
-            ->willReturn(null);
-
-        $expectedResponse = $this->createMock(ResponseInterface::class);
-        $handler = $this->createMock(RequestHandlerInterface::class);
-        $handler->expects(self::once())
-            ->method('handle')
-            ->with($request)
-            ->willReturn($expectedResponse);
-
-        $this->dispatcher->expects(self::never())->method('dispatch');
-
-        $response = $this->subject->process($request, $handler);
-
-        self::assertSame($expectedResponse, $response);
+        $this->assertPassesThrough(null);
     }
 
     #[Test]
     public function passesThroughWhenRouteIsNotPublic(): void
     {
-        $route = $this->createMock(Route::class);
-        $route->method('getOption')
-            ->willReturnCallback(static fn(string $option): mixed => match ($option) {
-                'access' => 'something_else',
-                '_identifier' => 'passkeys_login_options',
-                default => null,
-            });
-
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
-            ->with('route')
-            ->willReturn($route);
-
-        $expectedResponse = $this->createMock(ResponseInterface::class);
-        $handler = $this->createMock(RequestHandlerInterface::class);
-        $handler->expects(self::once())
-            ->method('handle')
-            ->with($request)
-            ->willReturn($expectedResponse);
-
-        $this->dispatcher->expects(self::never())->method('dispatch');
-
-        $response = $this->subject->process($request, $handler);
-
-        self::assertSame($expectedResponse, $response);
+        $this->assertPassesThrough($this->createRoute('something_else', 'passkeys_login_options'));
     }
 
     #[Test]
     public function passesThroughWhenIdentifierDoesNotMatchPrefix(): void
     {
-        $route = $this->createMock(Route::class);
-        $route->method('getOption')
-            ->willReturnCallback(static fn(string $option): mixed => match ($option) {
-                'access' => 'public',
-                '_identifier' => 'main',
-                default => null,
-            });
-
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
-            ->with('route')
-            ->willReturn($route);
-
-        $expectedResponse = $this->createMock(ResponseInterface::class);
-        $handler = $this->createMock(RequestHandlerInterface::class);
-        $handler->expects(self::once())
-            ->method('handle')
-            ->with($request)
-            ->willReturn($expectedResponse);
-
-        $this->dispatcher->expects(self::never())->method('dispatch');
-
-        $response = $this->subject->process($request, $handler);
-
-        self::assertSame($expectedResponse, $response);
+        $this->assertPassesThrough($this->createRoute('public', 'main'));
     }
 
     #[Test]
     public function passesThroughWhenIdentifierIsNotString(): void
     {
-        $route = $this->createMock(Route::class);
-        $route->method('getOption')
-            ->willReturnCallback(static fn(string $option): mixed => match ($option) {
-                'access' => 'public',
-                '_identifier' => null,
-                default => null,
-            });
-
-        $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
-            ->with('route')
-            ->willReturn($route);
-
-        $expectedResponse = $this->createMock(ResponseInterface::class);
-        $handler = $this->createMock(RequestHandlerInterface::class);
-        $handler->expects(self::once())
-            ->method('handle')
-            ->with($request)
-            ->willReturn($expectedResponse);
-
-        $this->dispatcher->expects(self::never())->method('dispatch');
-
-        $response = $this->subject->process($request, $handler);
-
-        self::assertSame($expectedResponse, $response);
+        $this->assertPassesThrough($this->createRoute('public', null));
     }
 }

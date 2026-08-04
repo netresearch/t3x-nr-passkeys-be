@@ -20,6 +20,7 @@ use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
+use Netresearch\NrPasskeysBe\Tests\Unit\QueryBuilderMockTrait;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -39,6 +40,8 @@ use Webauthn\CredentialRecord;
 #[CoversClass(PasskeyAuthenticationService::class)]
 final class PasskeyAuthenticationServiceTest extends TestCase
 {
+    use QueryBuilderMockTrait;
+
     private PasskeyAuthenticationService $subject;
 
     private BackendUserAuthentication&MockObject $pObj;
@@ -696,25 +699,12 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserBlocksPasswordWhenGroupEnforcementIsEnforcedAndUserHasPasskeys(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Enforced,
-                gracePeriodDays: 0,
-                gracePeriodStart: 0,
-                hasPasskeys: true,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Enforced,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: true,
+        ));
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger
@@ -740,26 +730,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserBlocksPasswordWhenGroupRequiredGracePeriodExpiredAndUserHasPasskeys(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
         // Grace period started 31 days ago with 30-day grace => expired
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Required,
-                gracePeriodDays: 30,
-                gracePeriodStart: \time() - (31 * 86_400),
-                hasPasskeys: true,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 30,
+            gracePeriodStart: \time() - (31 * 86_400),
+            hasPasskeys: true,
+        ));
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger
@@ -785,26 +762,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAllowsPasswordWhenGroupRequiredButGracePeriodStillActive(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
         // Grace period started 10 days ago with 30-day grace => still active
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Required,
-                gracePeriodDays: 30,
-                gracePeriodStart: \time() - (10 * 86_400),
-                hasPasskeys: true,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 30,
+            gracePeriodStart: \time() - (10 * 86_400),
+            hasPasskeys: true,
+        ));
 
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
@@ -824,26 +788,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAllowsPasswordWhenGroupEncourageAndUserHasPasskeys(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
         // Encourage level never blocks password login
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Encourage,
-                gracePeriodDays: 0,
-                gracePeriodStart: 0,
-                hasPasskeys: true,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Encourage,
+            gracePeriodDays: 0,
+            gracePeriodStart: 0,
+            hasPasskeys: true,
+        ));
 
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
@@ -863,26 +814,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAllowsPasswordWhenGroupRequiredButUserHasNoPasskeys(): void
     {
-        GeneralUtility::purgeInstances();
-
-        $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
-
         // Required enforcement but user has no passkeys yet — password must be allowed
-        $enforcementService = $this->createMock(EnforcementService::class);
-        $enforcementService
-            ->expects(self::once())
-            ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Required,
-                gracePeriodDays: 30,
-                gracePeriodStart: \time() - (31 * 86_400),
-                hasPasskeys: false,
-            ));
-        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+        $this->addEnforcementStatus(new EnforcementStatus(
+            level: EnforcementLevel::Required,
+            gracePeriodDays: 30,
+            gracePeriodStart: \time() - (31 * 86_400),
+            hasPasskeys: false,
+        ));
 
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
@@ -1365,6 +1303,28 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     /**
+     * Register the two instances authUser() resolves for a group-enforcement decision:
+     * password login enabled at extension level, and the given per-group status.
+     */
+    private function addEnforcementStatus(EnforcementStatus $status): void
+    {
+        GeneralUtility::purgeInstances();
+
+        $configService = $this->createMock(ExtensionConfigurationService::class);
+        $configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration(disablePasswordLogin: false));
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
+
+        $enforcementService = $this->createMock(EnforcementService::class);
+        $enforcementService
+            ->expects(self::once())
+            ->method('getStatus')
+            ->willReturn($status);
+        GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
+    }
+
+    /**
      * Set up ConnectionPool mock for hasRegisteredPasskeys (credential count query).
      */
     private function setUpCredentialCount(int $beUserUid, int $count): void
@@ -1399,19 +1359,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      */
     private function setUpFetchUserByUid(int $uid, ?array $userRow): void
     {
-        $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
-
-        $result = $this->createMock(Result::class);
-        $result->method('fetchAssociative')->willReturn($userRow ?? false);
-
-        $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
-        $queryBuilder->method('executeQuery')->willReturn($result);
+        $queryBuilder = $this->createSingleRowQueryBuilder($uid, $userRow);
 
         $connectionPool = $this->createMock(ConnectionPool::class);
         $connectionPool

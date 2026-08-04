@@ -189,16 +189,9 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-        $rawUid = $body['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
-
-        if ($beUserUid === 0) {
-            return new JsonResponse(['error' => 'Missing required fields'], 400);
-        }
-
-        if (!$this->isManagementAllowedFor($beUserUid)) {
-            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
+        $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+        if ($beUserUid instanceof ResponseInterface) {
+            return $beUserUid;
         }
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
@@ -299,34 +292,13 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-
-        $rawUid = $body['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
-
-        if ($beUserUid === 0) {
-            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+        if ($beUserUid instanceof ResponseInterface) {
+            return $beUserUid;
         }
 
-        if (!$this->isManagementAllowedFor($beUserUid)) {
-            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
-        }
-
-        // Verify the user exists and is active
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
-        $queryBuilder->getRestrictions()->removeAll();
-        $row = $queryBuilder
-            ->select('uid', 'username')
-            ->from('be_users')
-            ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
-            )
-            ->executeQuery()
-            ->fetchAssociative();
-
-        if ($row === false) {
+        $row = $this->findActiveBackendUser($beUserUid);
+        if ($row === null) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
@@ -369,34 +341,13 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-
-        $rawUid = $body['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
-
-        if ($beUserUid === 0) {
-            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+        if ($beUserUid instanceof ResponseInterface) {
+            return $beUserUid;
         }
 
-        if (!$this->isManagementAllowedFor($beUserUid)) {
-            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
-        }
-
-        // Verify the user exists and is active
-        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
-        $queryBuilder->getRestrictions()->removeAll();
-        $row = $queryBuilder
-            ->select('uid', 'username')
-            ->from('be_users')
-            ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
-            )
-            ->executeQuery()
-            ->fetchAssociative();
-
-        if ($row === false) {
+        $row = $this->findActiveBackendUser($beUserUid);
+        if ($row === null) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
@@ -419,4 +370,56 @@ final readonly class AdminController
         return new JsonResponse(['status' => 'ok']);
     }
 
+    /**
+     * Resolve the backend user an admin action targets, from the request body.
+     *
+     * Returns the uid, or the response to send when `beUserUid` is missing or
+     * when the acting admin may not manage that user. Only for the actions whose
+     * sole required field is `beUserUid`: where a second field is required too,
+     * its absence must still answer 400 before the privilege check answers 403.
+     *
+     * @param array<string, mixed> $body
+     */
+    private function resolveManagedBeUserUid(array $body): int|ResponseInterface
+    {
+        $rawUid = $body['beUserUid'] ?? null;
+        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+
+        if ($beUserUid === 0) {
+            return new JsonResponse(['error' => 'Missing required fields'], 400);
+        }
+
+        if (!$this->isManagementAllowedFor($beUserUid)) {
+            return new JsonResponse(['error' => self::ERROR_INSUFFICIENT_PRIVILEGES], 403);
+        }
+
+        return $beUserUid;
+    }
+
+    /**
+     * Look up a backend user that exists and is neither deleted nor disabled.
+     *
+     * Restrictions are removed so those two conditions are stated in the query
+     * rather than left to the default restriction set. Returns null when no such
+     * row exists.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function findActiveBackendUser(int $beUserUid): ?array
+    {
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
+        $queryBuilder->getRestrictions()->removeAll();
+        $row = $queryBuilder
+            ->select('uid', 'username')
+            ->from('be_users')
+            ->where(
+                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
+                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder->expr()->eq('disable', 0),
+            )
+            ->executeQuery()
+            ->fetchAssociative();
+
+        return $row === false ? null : $row;
+    }
 }
