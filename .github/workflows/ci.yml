@@ -25,7 +25,7 @@ jobs:
       run-rector: true
       run-functional-tests: true
       functional-test-db: 'mysql'
-      upload-coverage: false
+      upload-coverage: true
       remove-dev-deps: '[{"dep":"netresearch/typo3-ci-workflows","only-for":"^13.4|^14.3"}]'
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
