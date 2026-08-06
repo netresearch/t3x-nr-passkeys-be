@@ -207,7 +207,13 @@ test.describe('Passkey Onboarding Banner (mocked enforcement)', () => {
         expect(desc).toContain('phishing');
 
         const learnMore = frame.locator('.passkey-banner-description a');
-        await expect(learnMore).toHaveAttribute('href', /docs\.typo3\.org/);
+        // Exact value, not a substring match: an unanchored /docs\.typo3\.org/
+        // also passes for https://evil.example/docs.typo3.org/, so it asserted
+        // far less than it appeared to.
+        await expect(learnMore).toHaveAttribute(
+            'href',
+            'https://docs.typo3.org/p/netresearch/nr-passkeys-be/main/en-us/',
+        );
         await expect(learnMore).toHaveAttribute('target', '_blank');
 
         const help = await frame.locator('.passkey-banner-help').textContent();
