@@ -467,6 +467,12 @@
             <trans-unit id="js.manage.never" resname="js.manage.never">
                 <source>Never</source>
             </trans-unit>
+            <trans-unit id="js.manage.notDiscoverable" resname="js.manage.notDiscoverable">
+                <source>No autofill</source>
+            </trans-unit>
+            <trans-unit id="js.manage.notDiscoverable.title" resname="js.manage.notDiscoverable.title">
+                <source>This passkey is not stored as a discoverable credential, so it cannot be offered in the username field. Use the passkey button, or register it again to get autofill.</source>
+            </trans-unit>
             <trans-unit id="js.manage.rename" resname="js.manage.rename">
                 <source>Rename</source>
             </trans-unit>

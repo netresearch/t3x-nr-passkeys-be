@@ -10,10 +10,13 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Service;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use Webauthn\AuthenticationExtensions\AuthenticationExtension;
+use Webauthn\AuthenticationExtensions\AuthenticationExtensions;
 use Webauthn\AuthenticatorAttestationResponse;
 use Webauthn\AuthenticatorAttestationResponseValidator;
 use Webauthn\AuthenticatorSelectionCriteria;
@@ -85,6 +88,16 @@ final readonly class AttestationService
             residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
         );
 
+        // credProps asks the authenticator to report whether it actually created a
+        // discoverable (resident) credential. residentKey PREFERRED lets it decline
+        // silently, and a non-discoverable passkey can never appear in the browser's
+        // autofill menu — without this the extension cannot tell the difference, and
+        // the user is left wondering why one passkey is offered there and another is
+        // not. The answer arrives client-side via getClientExtensionResults().
+        $extensions = AuthenticationExtensions::create([
+            AuthenticationExtension::create('credProps', true),
+        ]);
+
         $options = PublicKeyCredentialCreationOptions::create(
             rp: $rp,
             user: $user,
@@ -94,6 +107,7 @@ final readonly class AttestationService
             attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
             excludeCredentials: $excludeCredentials,
             timeout: 60000,
+            extensions: $extensions,
         );
 
         return new RegistrationOptions(
@@ -191,6 +205,7 @@ final readonly class AttestationService
         CredentialRecord $source,
         int $beUserUid,
         string $label,
+        CredentialDiscoverability $discoverable = CredentialDiscoverability::Unknown,
     ): Credential {
         $credential = new Credential(
             beUser: $beUserUid,
@@ -200,6 +215,7 @@ final readonly class AttestationService
             userHandle: $source->userHandle,
             aaguid: $source->aaguid->toString(),
             transports: \json_encode($source->transports, JSON_THROW_ON_ERROR),
+            discoverable: $discoverable,
             label: $label,
         );
 

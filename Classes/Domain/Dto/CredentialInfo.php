@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Domain\Dto;
 
 use JsonSerializable;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 
 /**
  * Read-only projection of a credential for user-facing API responses.
@@ -22,10 +23,11 @@ final readonly class CredentialInfo implements JsonSerializable
         public int $createdAt,
         public int $lastUsedAt,
         public bool $isRevoked,
+        public CredentialDiscoverability $discoverability = CredentialDiscoverability::Unknown,
     ) {}
 
     /**
-     * @return array{uid: int, label: string, createdAt: int, lastUsedAt: int, isRevoked: bool}
+     * @return array{uid: int, label: string, createdAt: int, lastUsedAt: int, isRevoked: bool, discoverable: bool|null}
      */
     public function jsonSerialize(): array
     {
@@ -35,6 +37,9 @@ final readonly class CredentialInfo implements JsonSerializable
             'createdAt' => $this->createdAt,
             'lastUsedAt' => $this->lastUsedAt,
             'isRevoked' => $this->isRevoked,
+            'discoverable' => $this->discoverability->toDatabaseValue() === null
+                ? null
+                : $this->discoverability === CredentialDiscoverability::Discoverable,
         ];
     }
 }

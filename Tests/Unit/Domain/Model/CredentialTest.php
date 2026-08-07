@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\Domain\Model;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\AdminCredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -287,6 +288,7 @@ final class CredentialTest extends TestCase
             'user_handle' => 'handle-abc',
             'aaguid' => '00000000-0000-0000-0000-000000000001',
             'transports' => '["usb"]',
+            'discoverable' => null,
             'label' => 'Test Key',
             'created_at' => 1700000000,
             'last_used_at' => 1700001000,
@@ -443,7 +445,7 @@ final class CredentialTest extends TestCase
     }
 
     #[Test]
-    public function toCredentialInfoHasExactlyFiveProperties(): void
+    public function toCredentialInfoHasExactlySixProperties(): void
     {
         $credential = new Credential(uid: 1, label: 'Test');
         $info = $credential->toCredentialInfo();
@@ -451,12 +453,44 @@ final class CredentialTest extends TestCase
         self::assertInstanceOf(CredentialInfo::class, $info);
 
         $serialized = $info->jsonSerialize();
-        self::assertCount(5, $serialized);
+        self::assertCount(6, $serialized);
         self::assertArrayHasKey('uid', $serialized);
         self::assertArrayHasKey('label', $serialized);
         self::assertArrayHasKey('createdAt', $serialized);
         self::assertArrayHasKey('lastUsedAt', $serialized);
         self::assertArrayHasKey('isRevoked', $serialized);
+        self::assertArrayHasKey('discoverable', $serialized);
+    }
+
+    #[Test]
+    public function credentialInfoReportsDiscoverabilityAsTristate(): void
+    {
+        // The management UI only warns on a positive "not discoverable"; an
+        // authenticator that stayed silent must not be reported as limited.
+        $unknown = (new Credential(uid: 1, label: 'Test'))->toCredentialInfo();
+        self::assertNull($unknown->jsonSerialize()['discoverable']);
+
+        $yes = (new Credential(uid: 2, discoverable: CredentialDiscoverability::Discoverable, label: 'Test'))
+            ->toCredentialInfo();
+        self::assertTrue($yes->jsonSerialize()['discoverable']);
+
+        $no = (new Credential(uid: 3, discoverable: CredentialDiscoverability::NotDiscoverable, label: 'Test'))
+            ->toCredentialInfo();
+        self::assertFalse($no->jsonSerialize()['discoverable']);
+    }
+
+    #[Test]
+    public function discoverabilityRoundTripsThroughTheDatabaseColumn(): void
+    {
+        foreach ([
+            [null, CredentialDiscoverability::Unknown],
+            [1, CredentialDiscoverability::Discoverable],
+            [0, CredentialDiscoverability::NotDiscoverable],
+        ] as [$column, $expected]) {
+            $credential = Credential::fromArray(['discoverable' => $column]);
+            self::assertSame($expected, $credential->getDiscoverability());
+            self::assertSame($column, $credential->toArray()['discoverable']);
+        }
     }
 
     #[Test]
