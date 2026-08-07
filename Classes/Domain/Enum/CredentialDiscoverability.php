@@ -62,11 +62,18 @@ enum CredentialDiscoverability: string
     }
 
     /**
-     * True only when the authenticator positively reported a non-discoverable
-     * credential — the one case worth telling the user about.
+     * Tri-state for API responses: true discoverable, false not, null unknown.
+     *
+     * The client warns only on false. Collapsing "unknown" into false there
+     * would tell users their passkey cannot do autofill when nobody ever
+     * established that.
      */
-    public function isKnownUnusableForAutofill(): bool
+    public function toJsonValue(): ?bool
     {
-        return $this === self::NotDiscoverable;
+        return match ($this) {
+            self::Discoverable => true,
+            self::NotDiscoverable => false,
+            self::Unknown => null,
+        };
     }
 }

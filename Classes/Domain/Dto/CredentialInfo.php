@@ -37,9 +37,7 @@ final readonly class CredentialInfo implements JsonSerializable
             'createdAt' => $this->createdAt,
             'lastUsedAt' => $this->lastUsedAt,
             'isRevoked' => $this->isRevoked,
-            'discoverable' => $this->discoverability->toDatabaseValue() === null
-                ? null
-                : $this->discoverability === CredentialDiscoverability::Discoverable,
+            'discoverable' => $this->discoverability->toJsonValue(),
         ];
     }
 }
