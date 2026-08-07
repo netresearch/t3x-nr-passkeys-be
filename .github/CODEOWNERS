@@ -3,17 +3,17 @@
 # Documentation: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # Default owners for everything in the repo
-* @netresearch/typo3-team
+* @netresearch/typo3
 
 # Core source code requires team review
-/Classes/ @netresearch/typo3-team
+/Classes/ @netresearch/typo3
 
 # CI/CD and security-sensitive files require maintainer approval
-/.github/ @netresearch/typo3-team
-/.github/workflows/ @netresearch/typo3-team
+/.github/ @netresearch/typo3
+/.github/workflows/ @netresearch/typo3
 
 # Security policy
-/SECURITY.md @netresearch/typo3-team
+/SECURITY.md @netresearch/typo3
 
 # Tests
-/Tests/ @netresearch/typo3-team
+/Tests/ @netresearch/typo3
