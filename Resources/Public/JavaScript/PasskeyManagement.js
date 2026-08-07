@@ -140,6 +140,23 @@ class PasskeyManagement {
       labelSpan.dataset.uid = cred.uid;
       labelSpan.addEventListener('dblclick', () => this.startRename(labelSpan, cred.uid));
       labelCell.appendChild(labelSpan);
+
+      // A non-discoverable passkey works on the button, but the browser can
+      // never offer it in the username field's autofill menu — say so here
+      // rather than leaving the user to wonder why one passkey appears there
+      // and another does not. `null` means the authenticator never reported,
+      // which is not the same as "not discoverable" and stays unmarked.
+      if (cred.discoverable === false) {
+        const hint = document.createElement('span');
+        hint.className = 'badge bg-secondary ms-2';
+        hint.textContent = this.translate('js.manage.notDiscoverable', 'No autofill');
+        hint.title = this.translate(
+          'js.manage.notDiscoverable.title',
+          'This passkey is not stored as a discoverable credential, so it cannot be offered in the username field. Use the passkey button, or register it again to get autofill.',
+        );
+        labelCell.appendChild(hint);
+      }
+
       row.appendChild(labelCell);
 
       // Created date cell
@@ -229,13 +246,31 @@ class PasskeyManagement {
         credentialResponse.response.transports = credential.response.getTransports();
       }
 
+      // credProps.rk says whether the authenticator stored a discoverable
+      // credential. It travels outside the attestation object, so the server
+      // cannot read it from the response — it has to be forwarded. Undefined
+      // when the authenticator stayed silent; that stays undefined rather than
+      // being turned into false, because "did not say" is not "did not".
+      let discoverable;
+      if (typeof credential.getClientExtensionResults === 'function') {
+        const extensionResults = credential.getClientExtensionResults() || {};
+        if (extensionResults.credProps && typeof extensionResults.credProps.rk === 'boolean') {
+          discoverable = extensionResults.credProps.rk;
+        }
+      }
+
+      const verifyPayload = {
+        credential: credentialResponse,
+        challengeToken: challengeToken,
+        label: label || 'Passkey',
+      };
+      if (typeof discoverable === 'boolean') {
+        verifyPayload.discoverable = discoverable;
+      }
+
       const verifyResponse = await new AjaxRequest(this.registerVerifyUrl)
         .addMiddleware(sudoModeInterceptor)
-        .post({
-          credential: credentialResponse,
-          challengeToken: challengeToken,
-          label: label || 'Passkey',
-        });
+        .post(verifyPayload);
       const verifyData = await verifyResponse.resolve();
       if (verifyData.status === 'ok') {
         Notification.success(

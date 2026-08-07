@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Domain\Model;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\AdminCredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 use Netresearch\NrPasskeysBe\Utility\TypeCastTrait;
 
 /**
@@ -30,6 +31,7 @@ final class Credential
         private string $userHandle = '',
         private string $aaguid = '',
         private string $transports = '[]',
+        private CredentialDiscoverability $discoverable = CredentialDiscoverability::Unknown,
         private string $label = '',
         private int $createdAt = 0,
         private int $lastUsedAt = 0,
@@ -120,6 +122,17 @@ final class Credential
     public function getTransports(): string
     {
         return $this->transports;
+    }
+
+    /**
+     * Whether the authenticator reported a discoverable (resident) credential.
+     * Unknown covers credentials registered before this was recorded and
+     * authenticators that stayed silent. Only a discoverable credential can be
+     * offered in the browser's autofill menu (conditional UI).
+     */
+    public function getDiscoverability(): CredentialDiscoverability
+    {
+        return $this->discoverable;
     }
 
     public function setTransports(string $transports): void
@@ -218,6 +231,7 @@ final class Credential
             'user_handle' => $this->userHandle,
             'aaguid' => $this->aaguid,
             'transports' => $this->transports,
+            'discoverable' => $this->discoverable->toDatabaseValue(),
             'label' => $this->label,
             'created_at' => $this->createdAt,
             'last_used_at' => $this->lastUsedAt,
@@ -241,6 +255,7 @@ final class Credential
             userHandle: self::stringVal($data['user_handle'] ?? null),
             aaguid: self::stringVal($data['aaguid'] ?? null),
             transports: self::stringVal($data['transports'] ?? null, '[]'),
+            discoverable: CredentialDiscoverability::fromDatabaseValue($data['discoverable'] ?? null),
             label: self::stringVal($data['label'] ?? null),
             createdAt: self::intVal($data['created_at'] ?? null),
             lastUsedAt: self::intVal($data['last_used_at'] ?? null),
@@ -257,6 +272,7 @@ final class Credential
             createdAt: $this->createdAt,
             lastUsedAt: $this->lastUsedAt,
             isRevoked: $this->isRevoked(),
+            discoverability: $this->discoverable,
         );
     }
 

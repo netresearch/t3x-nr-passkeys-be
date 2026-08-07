@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Service;
 use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
 use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
 use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use RuntimeException;
 use Webauthn\CredentialRecord;
@@ -115,8 +116,9 @@ final readonly class WebAuthnService
         CredentialRecord $source,
         int $beUserUid,
         string $label,
+        CredentialDiscoverability $discoverable = CredentialDiscoverability::Unknown,
     ): Credential {
-        return $this->attestationService->storeCredential($source, $beUserUid, $label);
+        return $this->attestationService->storeCredential($source, $beUserUid, $label, $discoverable);
     }
 
     /**

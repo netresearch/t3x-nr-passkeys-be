@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Controller;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
@@ -115,6 +116,12 @@ final readonly class ManagementController
         $rawLabel = $body['label'] ?? 'Passkey';
         $label = \is_string($rawLabel) ? $rawLabel : 'Passkey';
 
+        // credProps.rk, forwarded by the browser from getClientExtensionResults().
+        // Absent whenever the authenticator stayed silent, which stays null rather
+        // than being guessed — "not reported" and "not discoverable" are different
+        // answers, and only the second one is worth warning about.
+        $discoverable = CredentialDiscoverability::fromClientExtensionResult($body['discoverable'] ?? null);
+
         if ($credentialJson === '' || $challengeToken === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
@@ -138,6 +145,7 @@ final readonly class ManagementController
                 source: $source,
                 beUserUid: $user->uid,
                 label: $label,
+                discoverable: $discoverable,
             );
 
             $this->logger->info('Passkey registered', [

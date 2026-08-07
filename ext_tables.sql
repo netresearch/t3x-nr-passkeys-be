@@ -6,6 +6,10 @@ CREATE TABLE tx_nrpasskeysbe_credential (
     user_handle varbinary(64) DEFAULT NULL,
     aaguid char(36) DEFAULT NULL,
     transports text DEFAULT NULL,
+    -- credProps.rk from registration: 1 discoverable, 0 not, NULL unknown
+    -- (registered before this was recorded, or authenticator stayed silent).
+    -- A non-discoverable passkey cannot appear in the browser's autofill menu.
+    discoverable tinyint(1) DEFAULT NULL,
     label varchar(128) NOT NULL DEFAULT '',
     created_at int(11) unsigned NOT NULL DEFAULT 0,
     last_used_at int(11) unsigned NOT NULL DEFAULT 0,
