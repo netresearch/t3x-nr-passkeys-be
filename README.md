@@ -50,7 +50,9 @@
 ## Features
 
 - **Primary authentication** -- Passkeys replace passwords, not just augment them
-- **Discoverable login** -- Optional username-less login via resident credentials
+- **Discoverable login** -- Optional username-less login via resident credentials, including
+  WebAuthn Conditional UI: the browser offers the passkey directly in the username
+  field's autofill menu, so returning users never touch the passkey button
 - **Per-group enforcement** -- 4 levels (Off, Encourage, Required, Enforced) with configurable grace periods for gradual rollout
 - **Onboarding banner** -- Dismissible banner with passkey explanation, docs link, and administrator contact for encouraged users
 - **Setup interstitial** -- PSR-15 middleware prompts users to register passkeys after login (skippable during grace period)
@@ -118,7 +120,7 @@ Extension settings are available in **Admin Tools > Settings > Extension Configu
 | `rpName` | `TYPO3 Backend` | Display name shown during passkey registration |
 | `origin` | *(auto-detect)* | Full origin URL (e.g., `https://example.com`) |
 | `challengeTtlSeconds` | `120` | Challenge token lifetime in seconds |
-| `discoverableLoginEnabled` | `true` | Allow username-less login via resident credentials |
+| `discoverableLoginEnabled` | `true` | Allow username-less login via resident credentials. Also switches WebAuthn Conditional UI, the passkey entry in the username field's autofill menu |
 | `disablePasswordLogin` | `false` | Block password login for users with registered passkeys |
 | `rateLimitMaxAttempts` | `10` | Requests per IP per endpoint before rate limiting |
 | `rateLimitWindowSeconds` | `300` | Rate limit window duration in seconds |

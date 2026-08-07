@@ -46,6 +46,11 @@ final readonly class InjectPasskeyLoginFields
             'rpId' => $this->configService->getEffectiveRpId(),
             'origin' => $this->configService->getEffectiveOrigin(),
             'discoverableEnabled' => $config->isDiscoverableLoginEnabled(),
+            // The conditional-UI (autofill) ceremony holds its challenge from
+            // page load until the user picks a passkey, which can be far later
+            // than the challenge lives. PasskeyLogin.js re-arms the ceremony
+            // with a fresh challenge before that happens, so it needs the TTL.
+            'challengeTtlSeconds' => $config->getChallengeTtlSeconds(),
             // Server-translated UI labels for PasskeyLogin.js (the login screen is
             // pre-authentication, so labels are injected here rather than via
             // addInlineLanguageLabelFile/TYPO3.lang). JS keeps English fallbacks.

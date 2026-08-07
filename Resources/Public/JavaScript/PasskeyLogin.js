@@ -26,6 +26,12 @@ const PASSKEY_ICON = '<svg xmlns="http://www.w3.org/2000/svg" height="20" ' +
   '28.5-11.5T780-440q0-17-11.5-28.5T740-480q-17 0-28.5 11.5T700-440q0 ' +
   '17 11.5 28.5T740-400Z"/></svg>';
 
+// How long after submitting an assertion a fresh load of the login page still
+// counts as "that assertion was rejected". A rejected login redirects back
+// within seconds; anything later is a new visit — typically after logging out
+// of a session that the passkey opened successfully.
+const FAILED_ATTEMPT_WINDOW_MS = 60000;
+
 function init() {
   const config = window.NrPasskeysBeConfig;
   if (!config || !config.loginOptionsUrl) return;
@@ -75,6 +81,20 @@ function init() {
   // explicit button click can cancel it first (only one credentials.get() may
   // be in flight at a time).
   let conditionalAbort = null;
+  // Guards against two ceremonies being armed at once (a re-arm racing the
+  // refresh timer), and lets a late-settling ceremony recognise that it has
+  // been superseded.
+  let conditionalGeneration = 0;
+  let conditionalRefreshTimer = null;
+  // Set once the login form is submitted: the page is leaving, so no further
+  // ceremony may be armed.
+  let navigatingAway = false;
+  // A conditional ceremony is armed with a challenge and only consumed when the
+  // user picks a passkey from the autofill menu — arbitrarily later. The server
+  // rejects the assertion once the challenge has expired, so the ceremony is
+  // re-armed with a fresh one at half the TTL, well before that happens.
+  const challengeTtlMs = Math.max(30, Number(config.challengeTtlSeconds) || 120) * 1000;
+  const conditionalRefreshMs = Math.floor(challengeTtlMs / 2);
 
   if (loginBtn) {
     loginBtn.addEventListener('click', handlePasskeyLogin);
@@ -90,6 +110,46 @@ function init() {
     startConditionalLogin();
   }
 
+  /**
+   * Cancel the armed conditional ceremony, if any, and stop its refresh timer.
+   * Safe to call when nothing is armed.
+   */
+  function stopConditionalLogin() {
+    conditionalGeneration++;
+    if (conditionalRefreshTimer !== null) {
+      clearTimeout(conditionalRefreshTimer);
+      conditionalRefreshTimer = null;
+    }
+    if (conditionalAbort) {
+      conditionalAbort.abort();
+      conditionalAbort = null;
+    }
+  }
+
+  /**
+   * Re-arm the conditional ceremony with a fresh challenge.
+   *
+   * Aborting an armed ceremony closes an open autofill menu, so a refresh is
+   * deferred while the username field has focus: the user may be looking at the
+   * menu right now. The ceremony is instead re-armed when the field loses focus.
+   */
+  function scheduleConditionalRefresh() {
+    if (conditionalRefreshTimer !== null) {
+      clearTimeout(conditionalRefreshTimer);
+    }
+    conditionalRefreshTimer = setTimeout(function () {
+      conditionalRefreshTimer = null;
+      if (document.activeElement === usernameInput) {
+        usernameInput.addEventListener('blur', function onBlur() {
+          usernameInput.removeEventListener('blur', onBlur);
+          startConditionalLogin();
+        });
+        return;
+      }
+      startConditionalLogin();
+    }, conditionalRefreshMs);
+  }
+
   async function startConditionalLogin() {
     let available = false;
     try {
@@ -98,6 +158,11 @@ function init() {
       return;
     }
     if (!available) return;
+
+    // Supersede whatever is armed: only one credentials.get() may be in flight,
+    // and a stale ceremony would keep offering an expired challenge.
+    stopConditionalLogin();
+    const generation = conditionalGeneration;
 
     // Advertise WebAuthn autofill on the standard username field without
     // clobbering an existing autocomplete token.
@@ -109,43 +174,87 @@ function init() {
     // Prefetch discoverable assertion options quietly: a 429/rate-limit or any
     // error here must NOT surface on page load — the explicit button remains.
     const optionsData = await fetchAssertionOptions('', true);
-    if (!optionsData) return;
+    if (!optionsData || generation !== conditionalGeneration) return;
 
     const publicKeyOptions = buildPublicKeyOptions(optionsData.options);
-    conditionalAbort = new AbortController();
+    const abort = new AbortController();
+    conditionalAbort = abort;
+    scheduleConditionalRefresh();
     try {
       const assertion = await navigator.credentials.get({
         publicKey: publicKeyOptions,
         mediation: 'conditional',
-        signal: conditionalAbort.signal,
+        signal: abort.signal,
       });
+      if (generation !== conditionalGeneration) return;
       conditionalAbort = null;
       // Discoverable login: username stays empty; the server resolves the user
       // from the credential ID.
       await verifyAndSubmit(encodeAssertion(assertion), optionsData.options, optionsData.challengeToken, '');
+      // verifyAndSubmit navigates away on success. Reaching this line means the
+      // assertion was rejected, and the ceremony this passkey came from is spent
+      // — without re-arming, the autofill menu would offer no passkeys at all
+      // for the rest of the page's life.
+      if (generation === conditionalGeneration) rearmConditionalLogin();
     } catch (err) {
+      if (generation !== conditionalGeneration) return;
       conditionalAbort = null;
       // Abort (explicit button took over) and NotAllowedError (user dismissed
       // the autofill) are normal for conditional UI — stay silent.
       if (err.name !== 'AbortError' && err.name !== 'NotAllowedError') {
         console.error('Passkey conditional login error:', err);
       }
+      // An abort means something else deliberately took over and will decide
+      // what happens next; every other outcome leaves the autofill unarmed.
+      if (err.name !== 'AbortError') rearmConditionalLogin();
     }
   }
 
+  /**
+   * Record that a passkey assertion is being submitted, so the next load of the
+   * login page can tell a rejected assertion from an ordinary visit. The value
+   * is the submission time — see checkForFailedPasskeyLogin().
+   */
+  function markPasskeyAttempt() {
+    try {
+      sessionStorage.setItem('nr_passkey_attempt', String(Date.now()));
+    } catch (e) {
+      // sessionStorage may be unavailable
+    }
+  }
+
+  /**
+   * Show the passkey-specific error when the login page loads again right after
+   * an assertion was submitted.
+   *
+   * The marker cannot say on its own whether the login failed: it is written
+   * before the form is submitted, and a SUCCESSFUL login navigates into the
+   * backend and leaves it behind. Logging out then loads the login page with the
+   * marker still set, which used to report a failure for a login that had
+   * worked. The submission time settles it — a rejected assertion comes back
+   * within seconds, whereas a session that reaches logout has lasted longer.
+   */
   function checkForFailedPasskeyLogin() {
     try {
-      if (sessionStorage.getItem('nr_passkey_attempt')) {
-        sessionStorage.removeItem('nr_passkey_attempt');
-        // Still on the login page after a passkey submission = auth failed.
-        // TYPO3 does a POST-Redirect-GET after failed login, so the generic
-        // error div (#t3-login-error) may not be present on the redirected page.
-        showError(L.errorVerifyFailed || 'Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.');
-        // Hide generic TYPO3 error if it exists
-        const typo3Error = document.getElementById('t3-login-error');
-        if (typo3Error) {
-          typo3Error.style.display = 'none';
-        }
+      const marker = sessionStorage.getItem('nr_passkey_attempt');
+      if (marker === null) return;
+      sessionStorage.removeItem('nr_passkey_attempt');
+
+      const submittedAt = Number(marker);
+      if (!Number.isFinite(submittedAt) || Date.now() - submittedAt > FAILED_ATTEMPT_WINDOW_MS) {
+        // Stale marker from a session that succeeded (or from before this
+        // extension wrote timestamps) — the visit is ordinary, say nothing.
+        return;
+      }
+
+      // Still on the login page seconds after a passkey submission = auth failed.
+      // TYPO3 does a POST-Redirect-GET after failed login, so the generic
+      // error div (#t3-login-error) may not be present on the redirected page.
+      showError(L.errorVerifyFailed || 'Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.');
+      // Hide generic TYPO3 error if it exists
+      const typo3Error = document.getElementById('t3-login-error');
+      if (typo3Error) {
+        typo3Error.style.display = 'none';
       }
     } catch (e) {
       // sessionStorage may be unavailable
@@ -156,15 +265,13 @@ function init() {
     hideError();
     // Cancel a pending conditional get() first — only one credentials.get()
     // ceremony may run at a time.
-    if (conditionalAbort) {
-      conditionalAbort.abort();
-      conditionalAbort = null;
-    }
+    stopConditionalLogin();
     const username = usernameInput ? usernameInput.value.trim() : '';
 
     if (!username && !config.discoverableEnabled) {
       showError(L.errorUsernameRequired || 'Please enter your username.');
       if (usernameInput) usernameInput.focus();
+      rearmConditionalLogin();
       return;
     }
 
@@ -176,6 +283,7 @@ function init() {
       if (!optionsData) {
         // fetchAssertionOptions already surfaced the error to the user
         setLoading(false);
+        rearmConditionalLogin();
         return;
       }
 
@@ -186,10 +294,28 @@ function init() {
       // Step 3: Verify server-side, then submit the resulting login token.
       const credentialResponse = encodeAssertion(assertion);
       await verifyAndSubmit(credentialResponse, optionsData.options, optionsData.challengeToken, username);
+      // Success navigates away; returning here means the assertion was rejected
+      // and the autofill needs a working ceremony again.
+      rearmConditionalLogin();
     } catch (err) {
       setLoading(false);
       handleAuthError(err);
+      rearmConditionalLogin();
     }
+  }
+
+  /**
+   * Put the autofill ceremony back in place after the explicit button flow
+   * cancelled it and then failed. Skipped once the form is on its way out, so
+   * a ceremony is never started into an unloading page.
+   */
+  function rearmConditionalLogin() {
+    if (navigatingAway) return;
+    if (!config.discoverableEnabled || !usernameInput
+        || typeof PublicKeyCredential.isConditionalMediationAvailable !== 'function') {
+      return;
+    }
+    startConditionalLogin();
   }
 
   /**
@@ -263,7 +389,9 @@ function init() {
     if (usernameInput) {
       usernameInput.value = username;
     }
-    try { sessionStorage.setItem('nr_passkey_attempt', '1'); } catch (e) { /* ignore */ }
+    markPasskeyAttempt();
+    navigatingAway = true;
+    stopConditionalLogin();
     loginForm.submit();
   }
 
@@ -412,7 +540,9 @@ function init() {
 
     // Flag this as a passkey attempt so we can show a specific error
     // if the server-side verification fails and the page reloads
-    try { sessionStorage.setItem('nr_passkey_attempt', '1'); } catch (e) { /* ignore */ }
+    markPasskeyAttempt();
+    navigatingAway = true;
+    stopConditionalLogin();
 
     loginForm.submit();
   }
