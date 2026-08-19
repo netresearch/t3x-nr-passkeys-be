@@ -1,4 +1,4 @@
-<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-03-27 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-08-19 -->
 
 # AGENTS.md -- Classes
 
@@ -22,6 +22,7 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 | `Domain/Dto/GroupEnforcementInfo.php` | User group's enforcement configuration |
 | `Domain/Dto/UserPasskeyStatus.php` | Backend user's passkey registration status |
 | `Domain/Enum/EnforcementLevel.php` | Off, Encourage, Required, Enforced (backed string enum) |
+| `Domain/Enum/CredentialDiscoverability.php` | Discoverability classification of a stored credential (backed enum) |
 | `Domain/Model/Credential.php` | Plain PHP entity with `fromArray()`/`toArray()`, soft delete + revocation |
 | `EventListener/InjectPasskeyLoginFields.php` | PSR-14: injects passkey fields into standard login form |
 | `EventListener/InjectPasskeyBanner.php` | PSR-14: injects adoption banner for Encourage enforcement |
@@ -29,6 +30,9 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 | `Middleware/PasskeySetupInterstitial.php` | PSR-15: blocks navigation until passkey registered (Required level) |
 | `Middleware/PublicRouteResolver.php` | PSR-15: resolves public (unauthenticated) routes |
 | `Service/WebAuthnService.php` | Core WebAuthn ceremony logic (attestation + assertion) |
+| `Service/AttestationService.php` | Registration ceremony (creating a passkey) |
+| `Service/AssertionService.php` | Authentication ceremony (verifying a passkey) |
+| `Service/WebAuthnCeremonyFactory.php` | Builds webauthn-lib ceremony objects |
 | `Service/ChallengeService.php` | HMAC-signed challenge tokens with nonce replay protection |
 | `Service/CredentialRepository.php` | Database CRUD via TYPO3 QueryBuilder |
 | `Service/RateLimiterService.php` | Per-endpoint rate limiting + account lockout |
@@ -37,13 +41,19 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 | `Service/ExtensionConfigurationService.php` | Reads extension configuration + centralized encryptionKey access |
 | `Utility/TypeCastTrait.php` | Shared type coercion helpers: intVal(mixed), stringVal(mixed) |
 | `UserSettings/PasskeySettingsPanel.php` | User settings panel (uses `callUserFunction`, no DI) |
+| `Command/RecoveryCommand.php` | CLI recovery command (Symfony Console) |
+| `Widgets/` | Dashboard widgets + data providers; registered on TYPO3 v14.3+ only via guarded `Configuration/Services.Dashboard.php` |
 
-## Golden Samples (follow these patterns)
+## Examples (golden samples -- follow these patterns)
 | Pattern | Reference |
 |---------|-----------|
 | Service with DI | `Service/ChallengeService.php` |
 | Controller with JSON | `Controller/LoginController.php` |
 | Auth service (no DI) | `Authentication/PasskeyAuthenticationService.php` |
+
+## Setup
+- `composer install` (tooling lands in `.Build/`; binaries in `.Build/bin/`)
+- Architecture rules in `Tests/Architecture/ArchitectureTest.php` (phpat) run as part of `composer ci:test:php:phpstan` -- see `docs/ARCHITECTURE.md`
 
 ## Code style & conventions
 - **PER-CS3.0** via php-cs-fixer (not PSR-12)
@@ -84,3 +94,9 @@ TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-
 - [ ] TCA changes have matching SQL in `ext_tables.sql`
 - [ ] No deprecated TYPO3 APIs
 - [ ] Tested on TYPO3 ^12.4, ^13.4, and ^14.3
+
+## When stuck
+- Layering questions: `docs/ARCHITECTURE.md` + `Tests/Architecture/ArchitectureTest.php` (phpat rules are the enforced truth)
+- WebAuthn semantics: `web-auth/webauthn-lib` sources in `.Build/vendor/web-auth/`
+- TYPO3 API questions: prefer the version-lowest API that works on ^12.4 (see cross-version suppressions in `Build/phpstan.neon`)
+- Root `AGENTS.md` for project-wide rules and commands

@@ -1,9 +1,9 @@
-<!-- FOR AI AGENTS - Scoped to Documentation/ -->
-<!-- Last updated: 2026-03-02 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-08-19 -->
 
-# Documentation AGENTS.md
+# AGENTS.md -- Documentation
 
-**Scope:** TYPO3 extension documentation following docs.typo3.org standards.
+## Overview
+TYPO3 extension documentation following docs.typo3.org standards (reStructuredText rendered by render-guides).
 
 ## Structure
 
@@ -31,7 +31,7 @@ Documentation/
   Changelog/Index.rst                -> Version history
 ```
 
-## Standards
+## Code style & standards
 
 - **Format**: reStructuredText (.rst)
 - **Encoding**: UTF-8, LF line endings, 4-space indentation
@@ -42,7 +42,11 @@ Documentation/
 - **Cross-references**: Use `:ref:` labels, not file paths
 - **TYPO3 directives**: `.. confval::`, `.. versionadded::`, `.. deprecated::`, `.. note::`, `.. tip::`
 
-## Rendering
+## Setup
+- Rendering needs Docker (render-guides image) or a running DDEV environment (`make docs` / `ddev docs`)
+- No other toolchain: RST files are edited in place
+
+## Build & rendering
 
 ```bash
 # Local rendering via DDEV
@@ -71,3 +75,25 @@ Output goes to `Documentation-GENERATED-temp/` (gitignored).
 - Keep README.md and Documentation/ in sync (config names, feature list, API endpoints)
 - Use `.. confval::` for configuration settings, `:guilabel:` for UI elements
 - Route paths in docs are relative to `/typo3/` (see DeveloperGuide note)
+
+## Security
+- Use placeholder values in examples (`example.com`, `your-encryption-key`) -- never real hosts, keys, or credentials
+- The documented dev credentials in DeploymentScenarios/Onboarding.rst are DDEV-local only; never present them as production defaults
+
+## PR checklist
+- [ ] Rendering succeeds (see Build & rendering) with no new warnings
+- [ ] New config options documented with `.. confval::` and mirrored in README.md
+- [ ] New features carry `.. versionadded::`
+- [ ] Cross-references use `:ref:` labels, not file paths
+
+## Examples (golden samples)
+| Pattern | Reference |
+|---------|-----------|
+| Config reference page | `Configuration/Index.rst` (confval directives) |
+| Admin guide page | `Administration/Enforcement.rst` |
+| Entry point / toctree | `Index.rst` |
+
+## When stuck
+- TYPO3 docs syntax: https://docs.typo3.org/m/typo3/docs-how-to-document/main/en-us/
+- Render failures: check `guides.xml` first (strict `configure` step rejects invalid attributes)
+- Root `AGENTS.md` for project-wide rules
