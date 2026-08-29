@@ -46,7 +46,7 @@ Resources/
 
 ## Build & tests
 - JS unit tests: `npm run test:js` (jsdom); coverage: `npm run test:js:coverage`
-- Template/JS changes that affect login or banner flows: run `Build/Scripts/runTests.sh e2e`
+- Template/JS changes that affect login or banner flows: run `Build/Scripts/runTests.sh -s e2e`
 - XLIFF changes: keep IDs in sync across all `locallang*.xlf` consumers (Fluid + PHP `TranslationTrait`)
 
 ## Conventions

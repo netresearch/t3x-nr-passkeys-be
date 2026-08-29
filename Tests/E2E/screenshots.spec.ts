@@ -2,7 +2,12 @@ import { test, Page } from '@playwright/test';
 
 const ADMIN_USER = process.env.TYPO3_ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.TYPO3_ADMIN_PASS || 'Joh316!!';
-const SCREENSHOT_DIR = 'Documentation/Images';
+// Not Documentation/Images by default: this spec runs as part of the ordinary
+// suite, and writing there means every e2e run rewrites four committed
+// documentation images with pictures of a throwaway test instance — a failing
+// run left the login page's 500 in the repository. Regenerate the real ones
+// deliberately: SCREENSHOT_DIR=Documentation/Images npx playwright test screenshots
+const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || '.Build/screenshots';
 
 async function loginAsAdmin(page: Page): Promise<boolean> {
     await page.goto('/typo3/login');
