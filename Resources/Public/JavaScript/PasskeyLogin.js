@@ -110,6 +110,7 @@ function init() {
   // still works.
   const conditionalRetryDelaysMs = [0, 500, 2000, 8000];
   let conditionalRetries = 0;
+  let conditionalRetryTimer = null;
 
   if (loginBtn) {
     loginBtn.addEventListener('click', handlePasskeyLogin);
@@ -127,8 +128,10 @@ function init() {
     // run of attempts, in case whatever made the earlier ones fail is gone —
     // a security key that was plugged in since, for instance.
     usernameInput.addEventListener('input', function () {
-      if (conditionalRetries === 0 || conditionalAbort !== null) return;
+      if (conditionalRetries === 0) return;
       conditionalRetries = 0;
+      // Something is armed already; it gets the fresh budget when it ends.
+      if (conditionalAbort !== null) return;
       rearmConditionalLogin();
     });
   }
@@ -142,6 +145,13 @@ function init() {
     if (conditionalRefreshTimer !== null) {
       clearTimeout(conditionalRefreshTimer);
       conditionalRefreshTimer = null;
+    }
+    // A pending retry has to go too: without this it wakes up inside whatever
+    // took over — the explicit button, most importantly — and starts a second
+    // credentials.get(), which the browser refuses while one is in flight.
+    if (conditionalRetryTimer !== null) {
+      clearTimeout(conditionalRetryTimer);
+      conditionalRetryTimer = null;
     }
     if (conditionalAbort) {
       conditionalAbort.abort();
@@ -360,7 +370,8 @@ function init() {
       startConditionalLogin();
       return;
     }
-    setTimeout(function () {
+    conditionalRetryTimer = setTimeout(function () {
+      conditionalRetryTimer = null;
       if (navigatingAway) return;
       startConditionalLogin();
     }, delay);

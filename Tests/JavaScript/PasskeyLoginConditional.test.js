@@ -205,6 +205,43 @@ describe('conditional UI ceremony', () => {
         vi.useRealTimers();
     });
 
+    it('drops a pending retry when the explicit button takes over', async () => {
+        // Only one credentials.get() may be in flight. A retry that was already
+        // scheduled must not wake up inside the ceremony the button started.
+        vi.useFakeTimers();
+        const get = installWebAuthnStub(async (options) => {
+            if (options.mediation === 'conditional') {
+                const error = new Error('dismissed');
+                error.name = 'NotAllowedError';
+                throw error;
+            }
+            // The explicit ceremony: never settles, so it stays "in flight"
+            // exactly as it would while the user is looking at the prompt.
+            return new Promise(() => {});
+        });
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => assertionOptionsResponse(),
+        })));
+
+        await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
+        // The immediate retry has run and failed; the next one is queued behind
+        // a delay.
+        await vi.advanceTimersByTimeAsync(0);
+        const conditionalCalls = () =>
+            get.mock.calls.filter((c) => c[0].mediation === 'conditional').length;
+        const before = conditionalCalls();
+        expect(before).toBeGreaterThan(0);
+
+        document.getElementById('t3-username').value = 'admin';
+        document.getElementById('passkey-login-btn').click();
+        await vi.advanceTimersByTimeAsync(30000);
+
+        expect(conditionalCalls()).toBe(before);
+        vi.useRealTimers();
+    });
+
     it('stops and stays quiet when the browser does not do discoverable credentials', async () => {
         // Headless Chromium without an authenticator answers exactly this, and
         // so does any browser that cannot serve resident credentials. It is a
