@@ -1,4 +1,5 @@
-import { test, Page } from '@playwright/test';
+import { Page } from '@playwright/test';
+import { test } from './fixtures';
 
 const ADMIN_USER = process.env.TYPO3_ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.TYPO3_ADMIN_PASS || 'Joh316!!';

@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * E2E tests for API endpoint behavior - input validation, error handling, admin endpoints.

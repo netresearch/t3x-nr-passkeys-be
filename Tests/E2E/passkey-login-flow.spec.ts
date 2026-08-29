@@ -1,4 +1,5 @@
-import { test, expect, Page, CDPSession } from '@playwright/test';
+import { Page, CDPSession } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * E2E tests for the full passkey login flow using a CDP Virtual Authenticator.
@@ -512,7 +513,12 @@ test.describe('Passkey Login - Error Handling', () => {
 
         const error = page.locator('#passkey-error');
         await expect(error).toBeVisible({ timeout: 5000 });
-        await expect(error).toContainText(/failed|error|too many attempts/i);
+        // For an unknown user the server answers with decoy options instead of
+        // saying so, which is the point — a caller cannot tell existing
+        // usernames from invented ones. The ceremony therefore fails in the
+        // browser the same way a cancelled one does, and that is the message
+        // the user sees.
+        await expect(error).toContainText(/failed|error|too many attempts|cancelled or no passkey found/i);
 
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
@@ -566,7 +572,12 @@ test.describe('Passkey Login - Failed Attempt Error Display', () => {
                 challengeToken: 'fake-token',
             });
 
-            sessionStorage.setItem('nr_passkey_attempt', '1');
+            // The marker carries the submission time. PasskeyLogin.js ignores a
+            // legacy value without one — a bare '1', which is what this test
+            // used to plant, so it was asserting against a path the module
+            // deliberately does not take (see the vitest case "ignores a legacy
+            // marker that carries no timestamp").
+            sessionStorage.setItem('nr_passkey_attempt', String(Date.now()));
         });
 
         await Promise.all([
