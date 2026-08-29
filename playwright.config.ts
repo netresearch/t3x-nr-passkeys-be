@@ -30,12 +30,16 @@ const targetUrl = new URL(target);
  * which browserType.launch() rejects outright.
  *
  * The instance sees Host: typo3.localhost, so the extension's rpId and origin
- * have to name it too — Build/Scripts/runTests.conf writes both.
+ * have to name it too — Build/Scripts/runTests.conf writes both, and the same
+ * file sets E2E_SECURE_ALIAS_HOST. Only that variable turns the rewrite on: a
+ * target given through TYPO3_BASE_URL keeps its own host, which a name-based
+ * vhost needs to answer at all.
  */
-const SECURE_ALIAS_HOST = 'typo3.localhost';
+const SECURE_ALIAS_HOST = process.env.E2E_SECURE_ALIAS_HOST;
 const isTrustedOrigin = targetUrl.protocol === 'https:'
     || ['localhost', '127.0.0.1', '[::1]'].includes(targetUrl.hostname)
     || targetUrl.hostname.endsWith('.localhost');
+const useSecureAlias = !!SECURE_ALIAS_HOST && !isTrustedOrigin;
 
 export default defineConfig({
     testDir: './Tests/E2E',
@@ -49,11 +53,11 @@ export default defineConfig({
     timeout: 30_000,
 
     use: {
-        baseURL: isTrustedOrigin ? target : `http://${SECURE_ALIAS_HOST}`,
+        baseURL: useSecureAlias ? `http://${SECURE_ALIAS_HOST}` : target,
         launchOptions: {
-            args: isTrustedOrigin
-                ? []
-                : [`--host-resolver-rules=MAP ${SECURE_ALIAS_HOST} ${targetUrl.host}`],
+            args: useSecureAlias
+                ? [`--host-resolver-rules=MAP ${SECURE_ALIAS_HOST} ${targetUrl.host}`]
+                : [],
         },
         ignoreHTTPSErrors: true,
         trace: 'on-first-retry',
