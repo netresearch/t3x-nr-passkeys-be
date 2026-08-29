@@ -124,8 +124,8 @@ test-js-coverage: ## Run JavaScript unit tests with coverage
 	npm run test:js:coverage
 
 .PHONY: test-e2e
-test-e2e: ## Run E2E tests (PHP built-in server + MySQL via Docker)
-	./Build/Scripts/runTests.sh e2e
+test-e2e: ## Run E2E tests (installs its own TYPO3 in containers)
+	./Build/Scripts/runTests.sh -s e2e
 
 .PHONY: test-e2e-headed
 test-e2e-headed: ## Run E2E tests in headed browser (requires running TYPO3 instance)

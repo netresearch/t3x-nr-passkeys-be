@@ -45,10 +45,10 @@ Tests/
 | Fuzz tests | `composer ci:test:php:fuzz` | May flake due to random data |
 | Functional tests | `composer ci:test:php:functional` | MySQL required (CI only) |
 | JS tests | `npm run test:js` | Fast, DOM testing with jsdom |
-| E2E tests | `Build/Scripts/runTests.sh e2e` | PHP built-in server + MySQL |
+| E2E tests | `Build/Scripts/runTests.sh -s e2e` | Installs its own TYPO3 in containers |
 | Mutation testing | `composer ci:mutation` | MSI >= 80%, covered-MSI >= 80% |
 
-**IMPORTANT**: E2E tests do NOT use DDEV. Use `Build/Scripts/runTests.sh e2e` (there is currently no CI e2e workflow).
+**IMPORTANT**: E2E tests do NOT use DDEV. Use `Build/Scripts/runTests.sh -s e2e` (there is currently no CI e2e workflow). It brings up MariaDB, a Composer-installed TYPO3 13 with this extension, PHP-FPM and Apache, and drives them from a Playwright container; `E2E_TYPO3_VERSION=14` selects the other supported major, and `TYPO3_BASE_URL=…` points the same specs at an instance that already runs. The instance lands in `.Build/e2e-typo3` and is kept there when the suite fails.
 
 ## Conventions
 - Use `#[Test]` attribute and `#[DataProvider('name')]` (not annotations)

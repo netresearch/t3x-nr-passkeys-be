@@ -15,9 +15,15 @@ import * as fs from 'fs';
 export default function globalSetup(): void {
     // Try to clear rate limit cache via filesystem first (works in CI and local)
     const projectRoot = path.resolve(__dirname, '../..');
+    // .Build/e2e-typo3 is where `runTests.sh -s e2e` installs the instance, and
+    // the directory is mounted into the Playwright container under the same
+    // path. The two entries below it are the pre-v12 and composer layouts of a
+    // TYPO3 that lives in the repository itself, which is what the DDEV setup
+    // and an external TYPO3_BASE_URL target may still use.
     const cacheDirs = [
-        path.join(projectRoot, '.Build/web/var/cache/data/nr_passkeys_be_ratelimit'),
-        path.join(projectRoot, '.Build/web/typo3temp/var/cache/data/nr_passkeys_be_ratelimit'),
+        path.join(projectRoot, '.Build/e2e-typo3/var/cache/data/nr_passkeys_be_ratelimit'),
+        path.join(projectRoot, '.Build/Web/typo3temp/var/cache/data/nr_passkeys_be_ratelimit'),
+        path.join(projectRoot, 'var/cache/data/nr_passkeys_be_ratelimit'),
     ];
 
     let cleared = false;

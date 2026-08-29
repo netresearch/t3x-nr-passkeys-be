@@ -24,7 +24,7 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 - Every job in a caller grants exactly the reusable's permission contract; `permissions: {}` at workflow level
 - Any job added to `checks.yml` MUST also be added to its `gate.needs` list -- a job missing there can fail without blocking a merge (silent coverage loss)
 - Branch rulesets require the stable gate names (`ci / All CI checks`, `All security checks`), never per-matrix job names: matrix/PR-only job contexts never materialize on a `merge_group` ref and would stall the merge queue until timeout
-- E2E tests have NO workflow here at present; they run locally via `Build/Scripts/runTests.sh e2e`. **NEVER use DDEV in CI.**
+- E2E tests have NO workflow here at present; they run locally via `Build/Scripts/runTests.sh -s e2e`, which installs its own TYPO3 in containers. **NEVER use DDEV in CI.**
 - Mutation testing runs in CI inside the `fuzz` reusable (thresholds MSI >= 80%, covered-MSI >= 80%, from `Build/infection.json5`)
 
 ## Conventions

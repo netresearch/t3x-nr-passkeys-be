@@ -8,7 +8,7 @@ import { test, expect, Page } from '@playwright/test';
  * tokenized URLs from TYPO3.settings.ajaxUrls after logging in.
  *
  * Prerequisites:
- *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh e2e` or TYPO3_BASE_URL)
+ *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh -s e2e` or TYPO3_BASE_URL)
  *
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later

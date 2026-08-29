@@ -12,7 +12,7 @@ import { test, expect, Page } from '@playwright/test';
  * and will pass once the DI issue is resolved.
  *
  * Prerequisites:
- *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh e2e` or TYPO3_BASE_URL)
+ *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh -s e2e` or TYPO3_BASE_URL)
  *   - Admin user: admin / Joh316!!
  *
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
