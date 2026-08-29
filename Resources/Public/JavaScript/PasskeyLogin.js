@@ -235,18 +235,24 @@ function init() {
     } catch (err) {
       if (generation !== conditionalGeneration) return;
       conditionalAbort = null;
-      // Abort (explicit button took over), NotAllowedError (user dismissed the
-      // autofill) and NotSupportedError (the browser does not do discoverable
-      // credentials) are normal outcomes for conditional UI — stay silent.
-      if (err.name !== 'AbortError' && err.name !== 'NotAllowedError'
-          && err.name !== 'NotSupportedError') {
+      // NotSupportedError is the browser saying it will never serve this
+      // ceremony — no discoverable credentials here. Asking again only repeats
+      // the answer, and the refresh timer armed a few lines above this would do
+      // exactly that once a minute for as long as the page is open, so it has
+      // to go too. Silent: this is a capability, not a fault.
+      if (err.name === 'NotSupportedError') {
+        stopConditionalLogin();
+        return;
+      }
+      // Abort (the explicit button took over) and NotAllowedError (the user
+      // dismissed the autofill) are the other normal outcomes — also silent.
+      if (err.name !== 'AbortError' && err.name !== 'NotAllowedError') {
         console.error('Passkey conditional login error:', err);
       }
       // An abort means something else deliberately took over and will decide
-      // what happens next. NotSupportedError is the browser saying it will
-      // never serve this ceremony, so re-arming only repeats the answer. Every
-      // other outcome leaves the autofill unarmed and worth another try.
-      if (err.name !== 'AbortError' && err.name !== 'NotSupportedError') {
+      // what happens next. Every other outcome leaves the autofill unarmed and
+      // worth another try.
+      if (err.name !== 'AbortError') {
         rearmConditionalLogin();
       }
     }

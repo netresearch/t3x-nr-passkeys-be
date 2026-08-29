@@ -264,7 +264,10 @@ describe('conditional UI ceremony', () => {
         })));
 
         await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
-        await vi.advanceTimersByTimeAsync(30000);
+        // Well past the 60 s challenge refresh, which is armed before the
+        // ceremony runs and would otherwise ask again once a minute for as long
+        // as the page stays open.
+        await vi.advanceTimersByTimeAsync(300000);
 
         expect(get).toHaveBeenCalledTimes(1);
         expect(errors).toEqual([]);
