@@ -205,6 +205,40 @@ describe('conditional UI ceremony', () => {
         vi.useRealTimers();
     });
 
+    it('abandons a ceremony whose availability check outlived its turn', async () => {
+        // The availability check is awaited before the ceremony records which
+        // generation it belongs to. A retry callback has already cleared its own
+        // timer by then, so nothing can cancel it — the explicit button can take
+        // over during that await, and the continuation must not arm a
+        // conditional ceremony inside it.
+        let releaseAvailability;
+        const availability = new Promise((resolve) => {
+            releaseAvailability = resolve;
+        });
+        const get = installWebAuthnStub(() => new Promise(() => {}));
+        window.PublicKeyCredential.isConditionalMediationAvailable = vi.fn(() => availability);
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => assertionOptionsResponse(),
+        })));
+
+        await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
+        await settle();
+        expect(get).not.toHaveBeenCalled();
+
+        // The button takes over while the availability check is still pending.
+        document.getElementById('t3-username').value = 'admin';
+        document.getElementById('passkey-login-btn').click();
+        await settle();
+
+        releaseAvailability(true);
+        await settle(20);
+
+        const conditionalCalls = get.mock.calls.filter((c) => c[0].mediation === 'conditional');
+        expect(conditionalCalls).toHaveLength(0);
+    });
+
     it('drops a pending retry when the explicit button takes over', async () => {
         // Only one credentials.get() may be in flight. A retry that was already
         // scheduled must not wake up inside the ceremony the button started.

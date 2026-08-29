@@ -184,6 +184,12 @@ function init() {
   }
 
   async function startConditionalLogin() {
+    // Read before the first await. A retry timer has already fired by the time
+    // its callback runs here, so stopConditionalLogin() can no longer cancel
+    // this — the explicit button can take over while the availability check is
+    // still pending, and without this check the continuation would then start a
+    // second credentials.get() inside the ceremony that took over.
+    const entryGeneration = conditionalGeneration;
     let available = false;
     try {
       available = await PublicKeyCredential.isConditionalMediationAvailable();
@@ -191,6 +197,7 @@ function init() {
       return;
     }
     if (!available) return;
+    if (navigatingAway || entryGeneration !== conditionalGeneration) return;
 
     // Supersede whatever is armed: only one credentials.get() may be in flight,
     // and a stale ceremony would keep offering an expired challenge.
