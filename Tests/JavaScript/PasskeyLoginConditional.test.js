@@ -205,6 +205,36 @@ describe('conditional UI ceremony', () => {
         vi.useRealTimers();
     });
 
+    it('stops and stays quiet when the browser does not do discoverable credentials', async () => {
+        // Headless Chromium without an authenticator answers exactly this, and
+        // so does any browser that cannot serve resident credentials. It is a
+        // statement about the browser, not a fault: no console noise, and no
+        // point asking again.
+        vi.useFakeTimers();
+        const errors = [];
+        const consoleError = vi.spyOn(console, 'error').mockImplementation((...args) => {
+            errors.push(args.join(' '));
+        });
+        const get = installWebAuthnStub(async () => {
+            const error = new Error("Resident credentials or empty 'allowCredentials' lists are not supported at this time.");
+            error.name = 'NotSupportedError';
+            throw error;
+        });
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => assertionOptionsResponse(),
+        })));
+
+        await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
+        await vi.advanceTimersByTimeAsync(30000);
+
+        expect(get).toHaveBeenCalledTimes(1);
+        expect(errors).toEqual([]);
+        consoleError.mockRestore();
+        vi.useRealTimers();
+    });
+
     it('lets typing in the username field start a fresh run of attempts', async () => {
         vi.useFakeTimers();
         const get = installWebAuthnStub(async () => {
