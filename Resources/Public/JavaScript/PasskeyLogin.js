@@ -95,6 +95,21 @@ function init() {
   // re-armed with a fresh one at half the TTL, well before that happens.
   const challengeTtlMs = Math.max(30, Number(config.challengeTtlSeconds) || 120) * 1000;
   const conditionalRefreshMs = Math.floor(challengeTtlMs / 2);
+  // Re-arming after a ceremony ended must not become a request loop. A browser
+  // that rejects conditional mediation the moment it is asked — no authenticator
+  // attached, WebAuthn disabled by policy, the user dismissing the autofill —
+  // otherwise has the page fetch fresh options as fast as the server answers
+  // them. Measured before this guard: 39 297 requests to /passkeys/login/options
+  // from one page in four minutes, bounded by nothing but the extension's own
+  // rate limiter (see issue #129).
+  //
+  // The first re-arm stays immediate: after a passkey the server rejected, the
+  // autofill menu has to offer its passkeys again right away. Each further
+  // attempt without a ceremony in between waits longer, and after the last one
+  // the autofill stays down — the explicit passkey button is unaffected and
+  // still works.
+  const conditionalRetryDelaysMs = [0, 500, 2000, 8000];
+  let conditionalRetries = 0;
 
   if (loginBtn) {
     loginBtn.addEventListener('click', handlePasskeyLogin);
@@ -108,6 +123,14 @@ function init() {
   if (config.discoverableEnabled && usernameInput
       && typeof PublicKeyCredential.isConditionalMediationAvailable === 'function') {
     startConditionalLogin();
+    // Typing is the user saying they are still here. Give the autofill another
+    // run of attempts, in case whatever made the earlier ones fail is gone —
+    // a security key that was plugged in since, for instance.
+    usernameInput.addEventListener('input', function () {
+      if (conditionalRetries === 0 || conditionalAbort !== null) return;
+      conditionalRetries = 0;
+      rearmConditionalLogin();
+    });
   }
 
   /**
@@ -188,6 +211,9 @@ function init() {
       });
       if (generation !== conditionalGeneration) return;
       conditionalAbort = null;
+      // A ceremony that got as far as returning a credential is evidence that
+      // the browser can serve this page: the retry budget starts over.
+      conditionalRetries = 0;
       // Discoverable login: username stays empty; the server resolves the user
       // from the credential ID.
       await verifyAndSubmit(encodeAssertion(assertion), optionsData.options, optionsData.challengeToken, '');
@@ -315,7 +341,23 @@ function init() {
         || typeof PublicKeyCredential.isConditionalMediationAvailable !== 'function') {
       return;
     }
-    startConditionalLogin();
+
+    const delay = conditionalRetryDelaysMs[conditionalRetries];
+    if (delay === undefined) {
+      // Out of attempts. Nothing here recovers on its own, so stop asking; the
+      // next thing the user does — typing in the username field — starts over.
+      return;
+    }
+    conditionalRetries += 1;
+
+    if (delay === 0) {
+      startConditionalLogin();
+      return;
+    }
+    setTimeout(function () {
+      if (navigatingAway) return;
+      startConditionalLogin();
+    }, delay);
   }
 
   /**
