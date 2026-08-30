@@ -512,7 +512,16 @@ test.describe('Passkey Login - Error Handling', () => {
         await loginBtn.click();
 
         const error = page.locator('#passkey-error');
-        await expect(error).toBeVisible({ timeout: 5000 });
+        // Ten seconds, matching "shows error when WebAuthn ceremony fails"
+        // below, because the wait is on the same thing: the CDP virtual
+        // authenticator rejecting a credential it does not have. It usually
+        // answers in well under a second and sometimes takes longer than five,
+        // which failed this test in about half of the full-suite runs while
+        // the file on its own passed six times out of six. The page snapshot
+        // from a failure says it plainly — the button still reads
+        // "Authenticating…" and is disabled, so the ceremony had not returned
+        // yet and no error was due.
+        await expect(error).toBeVisible({ timeout: 10000 });
         // For an unknown user the server answers with decoy options instead of
         // saying so, which is the point — a caller cannot tell existing
         // usernames from invented ones. The ceremony therefore fails in the
