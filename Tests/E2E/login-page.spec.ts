@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * E2E tests for the passkey login integration in the standard TYPO3 login form.

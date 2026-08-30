@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { APIResponse, Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * E2E tests for user settings passkey management.
@@ -48,6 +49,16 @@ async function getAjaxUrl(page: Page, routeKey: string): Promise<string | null> 
     return page.evaluate((key: string) => {
         return (window as any).TYPO3?.settings?.ajaxUrls?.[key] ?? null;
     }, routeKey);
+}
+
+/**
+ * POST an empty body to the registration-options route.
+ */
+async function requestRegistrationOptions(page: Page, url: string): Promise<APIResponse> {
+    return page.request.post(url, {
+        headers: { 'Content-Type': 'application/json' },
+        data: {},
+    });
 }
 
 test.describe('User Settings - Page & JS', () => {
@@ -128,7 +139,7 @@ test.describe('Passkey Management API (authenticated)', () => {
         expect(Array.isArray(data.credentials)).toBe(true);
     });
 
-    test('registration options returns challenge data', async ({ page }) => {
+    test('registration options requires sudo mode', async ({ page }) => {
         await page.goto('/typo3');
         await page.waitForLoadState('networkidle');
         await page.waitForTimeout(1000);
@@ -136,10 +147,36 @@ test.describe('Passkey Management API (authenticated)', () => {
         const optionsUrl = await getAjaxUrl(page, 'passkeys_manage_registration_options');
         expect(optionsUrl).toBeTruthy();
 
-        const response = await page.request.post(optionsUrl!, {
-            headers: { 'Content-Type': 'application/json' },
-            data: {},
+        const response = await requestRegistrationOptions(page, optionsUrl!);
+
+        // The route declares sudoMode in Configuration/Backend/AjaxRoutes.php:
+        // enrolling a credential must not be reachable from a session someone
+        // walked away from. TYPO3's SudoModeInterceptor answers 422 and hands
+        // back the URI that takes the step-up.
+        expect(response.status()).toBe(422);
+        const initialization = (await response.json()).sudoModeInitialization;
+        expect(initialization?.verifyActionUri).toBeTruthy();
+    });
+
+    test('registration options returns challenge data after the step-up', async ({ page }) => {
+        await page.goto('/typo3');
+        await page.waitForLoadState('networkidle');
+        await page.waitForTimeout(1000);
+
+        const optionsUrl = await getAjaxUrl(page, 'passkeys_manage_registration_options');
+        expect(optionsUrl).toBeTruthy();
+
+        const challenged = await requestRegistrationOptions(page, optionsUrl!);
+        expect(challenged.status()).toBe(422);
+
+        const { verifyActionUri } = (await challenged.json()).sudoModeInitialization;
+        const verified = await page.request.post(verifyActionUri, {
+            form: { password: ADMIN_PASS },
         });
+        expect(verified.status()).toBe(200);
+        expect((await verified.json()).message).toBe('accessGranted');
+
+        const response = await requestRegistrationOptions(page, optionsUrl!);
 
         expect(response.status()).toBe(200);
         const data = await response.json();

@@ -1,4 +1,5 @@
-import { test, expect, Page, CDPSession } from '@playwright/test';
+import { Page, CDPSession } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 /**
  * E2E coverage for the skipMfaOnPasskeyAuth feature.
