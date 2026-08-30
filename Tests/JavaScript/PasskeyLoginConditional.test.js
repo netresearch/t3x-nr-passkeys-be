@@ -165,6 +165,174 @@ describe('conditional UI ceremony', () => {
         expect(optionsCalls.length).toBeGreaterThanOrEqual(2);
     });
 
+    it('gives up re-arming when every ceremony fails at once', async () => {
+        // A browser that rejects conditional mediation the moment it is asked —
+        // no authenticator attached, WebAuthn blocked by policy, the autofill
+        // dismissed — used to have the page ask for fresh options as fast as the
+        // server could answer: 39 297 requests to /passkeys/login/options in one
+        // four-minute e2e run (#129). The retries are bounded now.
+        vi.useFakeTimers();
+        let attempts = 0;
+        const get = installWebAuthnStub(async () => {
+            attempts += 1;
+            // Escape hatch so an unbounded implementation fails this test
+            // instead of hanging it: AbortError is the one outcome that does
+            // not re-arm.
+            const error = new Error('rejected');
+            error.name = attempts > 40 ? 'AbortError' : 'NotAllowedError';
+            throw error;
+        });
+        const fetchMock = vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => assertionOptionsResponse(),
+        }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
+        // Past every backoff step (0, 500, 2000, 8000 ms) and short of the 60 s
+        // challenge refresh, which is a separate, time-based re-arm.
+        await vi.advanceTimersByTimeAsync(30000);
+
+        const optionsCalls = () => fetchMock.mock.calls.filter((c) => String(c[0]) === OPTIONS_URL);
+        expect(optionsCalls().length).toBeLessThanOrEqual(5);
+        expect(get.mock.calls.length).toBeLessThanOrEqual(5);
+
+        // What is left afterwards is the refresh timer alone: one attempt per
+        // minute, not one per round trip.
+        await vi.advanceTimersByTimeAsync(300000);
+        expect(optionsCalls().length).toBeLessThanOrEqual(11);
+        vi.useRealTimers();
+    });
+
+    it('abandons a ceremony whose availability check outlived its turn', async () => {
+        // The availability check is awaited before the ceremony records which
+        // generation it belongs to. A retry callback has already cleared its own
+        // timer by then, so nothing can cancel it — the explicit button can take
+        // over during that await, and the continuation must not arm a
+        // conditional ceremony inside it.
+        let releaseAvailability;
+        const availability = new Promise((resolve) => {
+            releaseAvailability = resolve;
+        });
+        const get = installWebAuthnStub(() => new Promise(() => {}));
+        window.PublicKeyCredential.isConditionalMediationAvailable = vi.fn(() => availability);
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => assertionOptionsResponse(),
+        })));
+
+        await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
+        await settle();
+        expect(get).not.toHaveBeenCalled();
+
+        // The button takes over while the availability check is still pending.
+        document.getElementById('t3-username').value = 'admin';
+        document.getElementById('passkey-login-btn').click();
+        await settle();
+
+        releaseAvailability(true);
+        await settle(20);
+
+        const conditionalCalls = get.mock.calls.filter((c) => c[0].mediation === 'conditional');
+        expect(conditionalCalls).toHaveLength(0);
+    });
+
+    it('drops a pending retry when the explicit button takes over', async () => {
+        // Only one credentials.get() may be in flight. A retry that was already
+        // scheduled must not wake up inside the ceremony the button started.
+        vi.useFakeTimers();
+        const get = installWebAuthnStub(async (options) => {
+            if (options.mediation === 'conditional') {
+                const error = new Error('dismissed');
+                error.name = 'NotAllowedError';
+                throw error;
+            }
+            // The explicit ceremony: never settles, so it stays "in flight"
+            // exactly as it would while the user is looking at the prompt.
+            return new Promise(() => {});
+        });
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => assertionOptionsResponse(),
+        })));
+
+        await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
+        // The immediate retry has run and failed; the next one is queued behind
+        // a delay.
+        await vi.advanceTimersByTimeAsync(0);
+        const conditionalCalls = () =>
+            get.mock.calls.filter((c) => c[0].mediation === 'conditional').length;
+        const before = conditionalCalls();
+        expect(before).toBeGreaterThan(0);
+
+        document.getElementById('t3-username').value = 'admin';
+        document.getElementById('passkey-login-btn').click();
+        await vi.advanceTimersByTimeAsync(30000);
+
+        expect(conditionalCalls()).toBe(before);
+        vi.useRealTimers();
+    });
+
+    it('stops and stays quiet when the browser does not do discoverable credentials', async () => {
+        // Headless Chromium without an authenticator answers exactly this, and
+        // so does any browser that cannot serve resident credentials. It is a
+        // statement about the browser, not a fault: no console noise, and no
+        // point asking again.
+        vi.useFakeTimers();
+        const errors = [];
+        const consoleError = vi.spyOn(console, 'error').mockImplementation((...args) => {
+            errors.push(args.join(' '));
+        });
+        const get = installWebAuthnStub(async () => {
+            const error = new Error("Resident credentials or empty 'allowCredentials' lists are not supported at this time.");
+            error.name = 'NotSupportedError';
+            throw error;
+        });
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => assertionOptionsResponse(),
+        })));
+
+        await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
+        // Well past the 60 s challenge refresh, which is armed before the
+        // ceremony runs and would otherwise ask again once a minute for as long
+        // as the page stays open.
+        await vi.advanceTimersByTimeAsync(300000);
+
+        expect(get).toHaveBeenCalledTimes(1);
+        expect(errors).toEqual([]);
+        consoleError.mockRestore();
+        vi.useRealTimers();
+    });
+
+    it('lets typing in the username field start a fresh run of attempts', async () => {
+        vi.useFakeTimers();
+        const get = installWebAuthnStub(async () => {
+            const error = new Error('rejected');
+            error.name = 'NotAllowedError';
+            throw error;
+        });
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            json: async () => assertionOptionsResponse(),
+        })));
+
+        await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
+        await vi.advanceTimersByTimeAsync(120000);
+        const exhausted = get.mock.calls.length;
+
+        document.getElementById('t3-username').dispatchEvent(new Event('input'));
+        await vi.advanceTimersByTimeAsync(120000);
+
+        expect(get.mock.calls.length).toBeGreaterThan(exhausted);
+        vi.useRealTimers();
+    });
+
     it('refreshes the challenge before it expires while the field is unfocused', async () => {
         vi.useFakeTimers();
         // Never settles: models the ceremony waiting for the user to pick.

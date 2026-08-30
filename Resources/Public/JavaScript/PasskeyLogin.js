@@ -95,6 +95,22 @@ function init() {
   // re-armed with a fresh one at half the TTL, well before that happens.
   const challengeTtlMs = Math.max(30, Number(config.challengeTtlSeconds) || 120) * 1000;
   const conditionalRefreshMs = Math.floor(challengeTtlMs / 2);
+  // Re-arming after a ceremony ended must not become a request loop. A browser
+  // that rejects conditional mediation the moment it is asked — no authenticator
+  // attached, WebAuthn disabled by policy, the user dismissing the autofill —
+  // otherwise has the page fetch fresh options as fast as the server answers
+  // them. Measured before this guard: 39 297 requests to /passkeys/login/options
+  // from one page in four minutes, bounded by nothing but the extension's own
+  // rate limiter (see issue #129).
+  //
+  // The first re-arm stays immediate: after a passkey the server rejected, the
+  // autofill menu has to offer its passkeys again right away. Each further
+  // attempt without a ceremony in between waits longer, and after the last one
+  // the autofill stays down — the explicit passkey button is unaffected and
+  // still works.
+  const conditionalRetryDelaysMs = [0, 500, 2000, 8000];
+  let conditionalRetries = 0;
+  let conditionalRetryTimer = null;
 
   if (loginBtn) {
     loginBtn.addEventListener('click', handlePasskeyLogin);
@@ -108,6 +124,16 @@ function init() {
   if (config.discoverableEnabled && usernameInput
       && typeof PublicKeyCredential.isConditionalMediationAvailable === 'function') {
     startConditionalLogin();
+    // Typing is the user saying they are still here. Give the autofill another
+    // run of attempts, in case whatever made the earlier ones fail is gone —
+    // a security key that was plugged in since, for instance.
+    usernameInput.addEventListener('input', function () {
+      if (conditionalRetries === 0) return;
+      conditionalRetries = 0;
+      // Something is armed already; it gets the fresh budget when it ends.
+      if (conditionalAbort !== null) return;
+      rearmConditionalLogin();
+    });
   }
 
   /**
@@ -119,6 +145,13 @@ function init() {
     if (conditionalRefreshTimer !== null) {
       clearTimeout(conditionalRefreshTimer);
       conditionalRefreshTimer = null;
+    }
+    // A pending retry has to go too: without this it wakes up inside whatever
+    // took over — the explicit button, most importantly — and starts a second
+    // credentials.get(), which the browser refuses while one is in flight.
+    if (conditionalRetryTimer !== null) {
+      clearTimeout(conditionalRetryTimer);
+      conditionalRetryTimer = null;
     }
     if (conditionalAbort) {
       conditionalAbort.abort();
@@ -158,6 +191,13 @@ function init() {
       return;
     }
     if (!available) return;
+    // A retry timer has already fired by the time its callback runs here, so
+    // stopConditionalLogin() can no longer cancel this one. The explicit button
+    // can therefore take over while the availability check above is still
+    // pending, and arming a conditional ceremony inside the one the button
+    // started would give the browser two credentials.get() at once. The button
+    // is disabled for exactly as long as its ceremony runs.
+    if (navigatingAway || (loginBtn && loginBtn.disabled)) return;
 
     // Supersede whatever is armed: only one credentials.get() may be in flight,
     // and a stale ceremony would keep offering an expired challenge.
@@ -188,6 +228,9 @@ function init() {
       });
       if (generation !== conditionalGeneration) return;
       conditionalAbort = null;
+      // A ceremony that got as far as returning a credential is evidence that
+      // the browser can serve this page: the retry budget starts over.
+      conditionalRetries = 0;
       // Discoverable login: username stays empty; the server resolves the user
       // from the credential ID.
       await verifyAndSubmit(encodeAssertion(assertion), optionsData.options, optionsData.challengeToken, '');
@@ -199,14 +242,26 @@ function init() {
     } catch (err) {
       if (generation !== conditionalGeneration) return;
       conditionalAbort = null;
-      // Abort (explicit button took over) and NotAllowedError (user dismissed
-      // the autofill) are normal for conditional UI — stay silent.
+      // NotSupportedError is the browser saying it will never serve this
+      // ceremony — no discoverable credentials here. Asking again only repeats
+      // the answer, and the refresh timer armed a few lines above this would do
+      // exactly that once a minute for as long as the page is open, so it has
+      // to go too. Silent: this is a capability, not a fault.
+      if (err.name === 'NotSupportedError') {
+        stopConditionalLogin();
+        return;
+      }
+      // Abort (the explicit button took over) and NotAllowedError (the user
+      // dismissed the autofill) are the other normal outcomes — also silent.
       if (err.name !== 'AbortError' && err.name !== 'NotAllowedError') {
         console.error('Passkey conditional login error:', err);
       }
       // An abort means something else deliberately took over and will decide
-      // what happens next; every other outcome leaves the autofill unarmed.
-      if (err.name !== 'AbortError') rearmConditionalLogin();
+      // what happens next. Every other outcome leaves the autofill unarmed and
+      // worth another try.
+      if (err.name !== 'AbortError') {
+        rearmConditionalLogin();
+      }
     }
   }
 
@@ -315,7 +370,24 @@ function init() {
         || typeof PublicKeyCredential.isConditionalMediationAvailable !== 'function') {
       return;
     }
-    startConditionalLogin();
+
+    const delay = conditionalRetryDelaysMs[conditionalRetries];
+    if (delay === undefined) {
+      // Out of attempts. Nothing here recovers on its own, so stop asking; the
+      // next thing the user does — typing in the username field — starts over.
+      return;
+    }
+    conditionalRetries += 1;
+
+    if (delay === 0) {
+      startConditionalLogin();
+      return;
+    }
+    conditionalRetryTimer = setTimeout(function () {
+      conditionalRetryTimer = null;
+      if (navigatingAway) return;
+      startConditionalLogin();
+    }, delay);
   }
 
   /**
