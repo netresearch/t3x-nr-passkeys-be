@@ -14,6 +14,10 @@ return (new PhpCsFixer\Config())
         '@PER-CS3.0:risky' => true,
         'array_syntax' => ['syntax' => 'short'],
         'declare_strict_types' => true,
+        // @PER-CS3.0 has no opinion on the space before the parentheses, so `declare
+        // (strict_types=1);` passes the gate. Hand-written code does not produce it, but
+        // anything generated or rewritten through an AST does, and then stays that way.
+        'declare_parentheses' => true,
         'global_namespace_import' => [
             'import_classes' => true,
             'import_constants' => false,
