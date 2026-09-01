@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -87,7 +88,9 @@ final readonly class AssertionService
             challenge: $challenge,
             rpId: $rpId,
             allowCredentials: $allowCredentials,
-            userVerification: $this->configService->getConfiguration()->getUserVerification(),
+            userVerification: $this->configService
+                ->getConfiguration()
+                ->getUserVerification(),
             timeout: 60000,
         );
 
@@ -106,7 +109,9 @@ final readonly class AssertionService
             challenge: $challenge,
             rpId: $rpId,
             allowCredentials: [],
-            userVerification: $this->configService->getConfiguration()->getUserVerification(),
+            userVerification: $this->configService
+                ->getConfiguration()
+                ->getUserVerification(),
             timeout: 60000,
         );
 
@@ -133,7 +138,9 @@ final readonly class AssertionService
             challenge: $challenge,
             rpId: $rpId,
             allowCredentials: $this->buildDecoyDescriptors($username),
-            userVerification: $this->configService->getConfiguration()->getUserVerification(),
+            userVerification: $this->configService
+                ->getConfiguration()
+                ->getUserVerification(),
             timeout: 60000,
         );
 
@@ -218,7 +225,9 @@ final readonly class AssertionService
     public function findBeUserUidFromAssertion(string $responseJson): ?int
     {
         try {
-            $publicKeyCredential = $this->ceremonyFactory->getSerializer()->deserialize($responseJson, PublicKeyCredential::class, 'json');
+            $publicKeyCredential = $this->ceremonyFactory
+                ->getSerializer()
+                ->deserialize($responseJson, PublicKeyCredential::class, 'json');
 
             if (!$publicKeyCredential instanceof PublicKeyCredential) {
                 return null;
@@ -245,8 +254,11 @@ final readonly class AssertionService
     {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
         $rpId = $this->configService->getEffectiveRpId();
+
         // Deserialize the browser response
-        $publicKeyCredential = $this->ceremonyFactory->getSerializer()->deserialize($responseJson, PublicKeyCredential::class, 'json');
+        $publicKeyCredential = $this->ceremonyFactory
+            ->getSerializer()
+            ->deserialize($responseJson, PublicKeyCredential::class, 'json');
 
         if (!$publicKeyCredential instanceof PublicKeyCredential) {
             throw new RuntimeException('Failed to deserialize assertion response', 1700000030);
@@ -285,7 +297,9 @@ final readonly class AssertionService
         $requestOptions = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
-            userVerification: $this->configService->getConfiguration()->getUserVerification(),
+            userVerification: $this->configService
+                ->getConfiguration()
+                ->getUserVerification(),
         );
         $factory = $this->ceremonyFactory->createCeremonyFactory();
         $ceremonyManager = $factory->requestCeremony();
@@ -300,14 +314,20 @@ final readonly class AssertionService
                 userHandle: $credential->getUserHandle() !== '' ? $credential->getUserHandle() : null,
             );
         } catch (Throwable $e) {
-            $this->logger->error('Passkey assertion verification failed', ['be_user_uid' => $beUserUid, 'error' => $e->getMessage()]);
+            $this->logger->error(
+                'Passkey assertion verification failed',
+                ['be_user_uid' => $beUserUid, 'error' => $e->getMessage()],
+            );
 
             throw new RuntimeException('Assertion verification failed: ' . $e->getMessage(), 1700000035, $e);
         }
 
         $this->credentialRepository->updateSignCount($credential->getUid(), $updatedSource->counter);
         $this->credentialRepository->updateLastUsed($credential->getUid());
-        $this->logger->info('Passkey login successful', ['be_user_uid' => $beUserUid, 'credential_uid' => $credential->getUid()]);
+        $this->logger->info(
+            'Passkey login successful',
+            ['be_user_uid' => $beUserUid, 'credential_uid' => $credential->getUid()],
+        );
 
         return new VerifiedAssertion(credential: $credential, source: $updatedSource);
     }
@@ -317,7 +337,9 @@ final readonly class AssertionService
      */
     public function serializeRequestOptions(PublicKeyCredentialRequestOptions $options): string
     {
-        return $this->ceremonyFactory->getSerializer()->serialize($options, 'json');
+        return $this->ceremonyFactory
+            ->getSerializer()
+            ->serialize($options, 'json');
     }
 
     private function credentialToSource(Credential $credential): CredentialRecord

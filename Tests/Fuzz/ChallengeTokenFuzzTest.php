@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Fuzz;
@@ -30,17 +31,31 @@ final class ChallengeTokenFuzzTest extends TestCase
         $encryptionKey = 'fuzz-test-encryption-key-' . \bin2hex(\random_bytes(16));
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $encryptionKey;
         $cache = $this->createMock(FrontendInterface::class);
-        $cache->method('has')->willReturn(true);
-        $cache->method('get')->willReturn('valid');
+        $cache
+            ->method('has')
+            ->willReturn(true);
+        $cache
+            ->method('get')
+            ->willReturn('valid');
         $configService = $this->createMock(ExtensionConfigurationService::class);
         $config = new ExtensionConfiguration(challengeTtlSeconds: 120);
-        $configService->method('getConfiguration')->willReturn($config);
-        $configService->method('getEncryptionKey')->willReturn($encryptionKey);
+        $configService
+            ->method('getConfiguration')
+            ->willReturn($config);
+        $configService
+            ->method('getEncryptionKey')
+            ->willReturn($encryptionKey);
         $lockFactory = $this->createMock(LockFactory::class);
         $locker = $this->createMock(LockingStrategyInterface::class);
-        $locker->method('acquire')->willReturn(true);
-        $locker->method('release')->willReturn(true);
-        $lockFactory->method('createLocker')->willReturn($locker);
+        $locker
+            ->method('acquire')
+            ->willReturn(true);
+        $locker
+            ->method('release')
+            ->willReturn(true);
+        $lockFactory
+            ->method('createLocker')
+            ->willReturn($locker);
         $this->challengeService = new ChallengeService($cache, $configService, $lockFactory, $this->createMock(LoggerInterface::class));
     }
 
@@ -127,6 +142,7 @@ final class ChallengeTokenFuzzTest extends TestCase
     {
         $challenge = $this->challengeService->generateChallenge();
         $token = $this->challengeService->createChallengeToken($challenge);
+
         // Try bit-flipping each byte of the token
         $tokenBytes = $token;
 
@@ -136,6 +152,7 @@ final class ChallengeTokenFuzzTest extends TestCase
 
             try {
                 $this->challengeService->verifyChallengeToken($modified);
+
                 // If it doesn't throw, the modification was in padding - that's ok
                 // as long as the underlying data validation catches it
             } catch (RuntimeException) {

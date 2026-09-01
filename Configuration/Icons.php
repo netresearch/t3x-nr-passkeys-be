@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 use TYPO3\CMS\Core\Imaging\IconProvider\SvgIconProvider;
 use TYPO3\CMS\Core\Information\Typo3Version;
@@ -21,5 +22,8 @@ return [
     // Purpose-specific icons for the unified dashboard widgets, so they no
     // longer borrow the module icon and are distinguishable in the picker.
     'passkeys-adoption' => ['provider' => SvgIconProvider::class, 'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/widget-adoption.svg'],
-    'passkeys-credentials' => ['provider' => SvgIconProvider::class, 'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/widget-credentials.svg'],
+    'passkeys-credentials' => [
+        'provider' => SvgIconProvider::class,
+        'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/widget-credentials.svg',
+    ],
 ];

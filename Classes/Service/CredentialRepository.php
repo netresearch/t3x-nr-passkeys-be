@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -30,14 +31,18 @@ final readonly class CredentialRepository
             ->select('*')
             ->from(self::TABLE)
             ->where(
-                $queryBuilder->expr()->eq(
-                    'credential_id',
-                    // credential_id is varbinary; bind as BINARY so the value matches
-                    // regardless of DB engine. On SQLite a string-bound param is a TEXT
-                    // storage class and never equals the BLOB the value is stored as.
-                    $queryBuilder->createNamedParameter($credentialId, ParameterType::BINARY),
-                ),
-                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq(
+                        'credential_id',
+                        // credential_id is varbinary; bind as BINARY so the value matches
+                        // regardless of DB engine. On SQLite a string-bound param is a TEXT
+                        // storage class and never equals the BLOB the value is stored as.
+                        $queryBuilder->createNamedParameter($credentialId, ParameterType::BINARY),
+                    ),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
             )
             ->executeQuery()
             ->fetchAssociative();
@@ -59,9 +64,16 @@ final readonly class CredentialRepository
             ->select('*')
             ->from(self::TABLE)
             ->where(
-                $queryBuilder->expr()->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('revoked_at', 0),
+                $queryBuilder
+                    ->expr(
+                    )
+                    ->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('revoked_at', 0),
             )
             ->orderBy('created_at', 'DESC')
             ->executeQuery()
@@ -79,6 +91,7 @@ final readonly class CredentialRepository
         $data['tstamp'] = $now;
         $data['crdate'] = $now;
         $data['created_at'] = $now;
+
         // Bind the binary columns by their schema type so the stored storage class
         // matches what findByCredentialId() queries with (cross-DB; see SQLite note there).
         $connection->insert(
@@ -91,7 +104,10 @@ final readonly class CredentialRepository
             ],
         );
         $uid = (int) $connection->lastInsertId();
-        $this->logger->info('Passkey credential created', ['credentialUid' => $uid, 'beUser' => $credential->getBeUser()]);
+        $this->logger->info(
+            'Passkey credential created',
+            ['credentialUid' => $uid, 'beUser' => $credential->getBeUser()],
+        );
 
         return $uid;
     }
@@ -127,8 +143,15 @@ final readonly class CredentialRepository
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
         $now = \time();
-        $connection->update(self::TABLE, ['revoked_at' => $now, 'revoked_by' => $adminUid, 'tstamp' => $now], ['uid' => $uid]);
-        $this->logger->warning('Passkey credential revoked', ['credentialUid' => $uid, 'revokedByAdminUid' => $adminUid]);
+        $connection->update(
+            self::TABLE,
+            ['revoked_at' => $now, 'revoked_by' => $adminUid, 'tstamp' => $now],
+            ['uid' => $uid],
+        );
+        $this->logger->warning(
+            'Passkey credential revoked',
+            ['credentialUid' => $uid, 'revokedByAdminUid' => $adminUid],
+        );
     }
 
     public function countByBeUser(int $beUserUid): int
@@ -138,9 +161,16 @@ final readonly class CredentialRepository
             ->count('uid')
             ->from(self::TABLE)
             ->where(
-                $queryBuilder->expr()->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('revoked_at', 0),
+                $queryBuilder
+                    ->expr(
+                    )
+                    ->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('revoked_at', 0),
             )
             ->executeQuery()
             ->fetchOne();
@@ -158,8 +188,13 @@ final readonly class CredentialRepository
             ->select('*')
             ->from(self::TABLE)
             ->where(
-                $queryBuilder->expr()->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
-                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder
+                    ->expr(
+                    )
+                    ->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
             )
             ->orderBy('created_at', 'DESC')
             ->executeQuery()
@@ -175,9 +210,16 @@ final readonly class CredentialRepository
             ->select('*')
             ->from(self::TABLE)
             ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER)),
-                $queryBuilder->expr()->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
-                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('uid', $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER)),
+                $queryBuilder
+                    ->expr(
+                    )
+                    ->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
             )
             ->executeQuery()
             ->fetchAssociative();

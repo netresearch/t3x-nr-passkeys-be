@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\UserSettings;
@@ -84,7 +85,10 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
         }
 
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyManagement.js');
-        $this->pageRenderer->addInlineLanguageLabelFile('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
+        $this->pageRenderer->addInlineLanguageLabelFile(
+            'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+            'js.',
+        );
         $passkeyCount = $this->credentialRepository->countByBeUser($userId);
         $urls = [
             'list' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),

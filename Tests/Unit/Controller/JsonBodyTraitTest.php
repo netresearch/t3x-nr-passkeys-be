@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
@@ -43,9 +44,14 @@ final class JsonBodyTraitTest extends TestCase
     {
         $data = ['username' => 'admin', 'password' => 'secret'];
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn($data);
+        $request
+            ->method('getParsedBody')
+            ->willReturn($data);
+
         // getBody() should never be called when getParsedBody() returns an array
-        $request->expects(self::never())->method('getBody');
+        $request
+            ->expects(self::never())
+            ->method('getBody');
         $result = $this->subject->callGetJsonBody($request);
         self::assertSame($data, $result);
     }
@@ -55,10 +61,16 @@ final class JsonBodyTraitTest extends TestCase
     {
         $data = ['action' => 'register', 'token' => 'abc123'];
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn(null);
+        $request
+            ->method('getParsedBody')
+            ->willReturn(null);
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
-        $request->method('getBody')->willReturn($stream);
+        $stream
+            ->method('__toString')
+            ->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
         $result = $this->subject->callGetJsonBody($request);
         self::assertSame($data, $result);
     }
@@ -67,10 +79,16 @@ final class JsonBodyTraitTest extends TestCase
     public function returnsEmptyArrayForEmptyBody(): void
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn(null);
+        $request
+            ->method('getParsedBody')
+            ->willReturn(null);
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn('');
-        $request->method('getBody')->willReturn($stream);
+        $stream
+            ->method('__toString')
+            ->willReturn('');
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
         $result = $this->subject->callGetJsonBody($request);
         self::assertSame([], $result);
     }
@@ -79,10 +97,16 @@ final class JsonBodyTraitTest extends TestCase
     public function returnsEmptyArrayForInvalidJson(): void
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn(null);
+        $request
+            ->method('getParsedBody')
+            ->willReturn(null);
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn('{not valid json!!!');
-        $request->method('getBody')->willReturn($stream);
+        $stream
+            ->method('__toString')
+            ->willReturn('{not valid json!!!');
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
         $result = $this->subject->callGetJsonBody($request);
         self::assertSame([], $result);
     }
@@ -91,10 +115,16 @@ final class JsonBodyTraitTest extends TestCase
     public function returnsEmptyArrayForNonArrayJson(): void
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn(null);
+        $request
+            ->method('getParsedBody')
+            ->willReturn(null);
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn('"just a string"');
-        $request->method('getBody')->willReturn($stream);
+        $stream
+            ->method('__toString')
+            ->willReturn('"just a string"');
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
         $result = $this->subject->callGetJsonBody($request);
         self::assertSame([], $result);
     }
@@ -103,11 +133,19 @@ final class JsonBodyTraitTest extends TestCase
     public function returnsEmptyArrayForNumericJson(): void
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn(null);
-        $request->method('getHeaderLine')->willReturn('');
+        $request
+            ->method('getParsedBody')
+            ->willReturn(null);
+        $request
+            ->method('getHeaderLine')
+            ->willReturn('');
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn('42');
-        $request->method('getBody')->willReturn($stream);
+        $stream
+            ->method('__toString')
+            ->willReturn('42');
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
         $result = $this->subject->callGetJsonBody($request);
         self::assertSame([], $result);
     }
@@ -116,13 +154,18 @@ final class JsonBodyTraitTest extends TestCase
     public function returnsEmptyArrayForNonJsonContentType(): void
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn(null);
+        $request
+            ->method('getParsedBody')
+            ->willReturn(null);
         $request
             ->method('getHeaderLine')
             ->with('Content-Type')
             ->willReturn('text/plain');
+
         // Body should not be read when Content-Type is not JSON
-        $request->expects(self::never())->method('getBody');
+        $request
+            ->expects(self::never())
+            ->method('getBody');
         $result = $this->subject->callGetJsonBody($request);
         self::assertSame([], $result);
     }
@@ -132,14 +175,20 @@ final class JsonBodyTraitTest extends TestCase
     {
         $data = ['key' => 'value'];
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn(null);
+        $request
+            ->method('getParsedBody')
+            ->willReturn(null);
         $request
             ->method('getHeaderLine')
             ->with('Content-Type')
             ->willReturn('application/json; charset=utf-8');
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
-        $request->method('getBody')->willReturn($stream);
+        $stream
+            ->method('__toString')
+            ->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
         $result = $this->subject->callGetJsonBody($request);
         self::assertSame($data, $result);
     }
@@ -148,8 +197,13 @@ final class JsonBodyTraitTest extends TestCase
     public function rejectsDeeplyNestedJson(): void
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn(null);
-        $request->method('getHeaderLine')->willReturn('');
+        $request
+            ->method('getParsedBody')
+            ->willReturn(null);
+        $request
+            ->method('getHeaderLine')
+            ->willReturn('');
+
         // Create JSON nested 20 levels deep (exceeds depth limit of 16)
         $nested = '{"a":';
 
@@ -164,8 +218,12 @@ final class JsonBodyTraitTest extends TestCase
         }
 
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn($nested);
-        $request->method('getBody')->willReturn($stream);
+        $stream
+            ->method('__toString')
+            ->willReturn($nested);
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
         $result = $this->subject->callGetJsonBody($request);
         self::assertSame([], $result);
     }

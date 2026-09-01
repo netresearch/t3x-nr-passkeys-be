@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Domain\Model;
@@ -229,6 +230,7 @@ final class CredentialTest extends TestCase
     {
         $credential = new Credential();
         $credential->setTransportsArray([2 => 'ble', 5 => 'nfc']);
+
         // array_values re-indexes keys, so the JSON should be a list
         self::assertSame('["ble","nfc"]', $credential->getTransports());
     }
@@ -414,7 +416,13 @@ final class CredentialTest extends TestCase
     #[Test]
     public function toCredentialInfoReflectsRevokedState(): void
     {
-        $credential = new Credential(uid: 1, label: 'Revoked Key', createdAt: 1700000000, lastUsedAt: 1700001000, revokedAt: 1700002000);
+        $credential = new Credential(
+            uid: 1,
+            label: 'Revoked Key',
+            createdAt: 1700000000,
+            lastUsedAt: 1700001000,
+            revokedAt: 1700002000,
+        );
         $info = $credential->toCredentialInfo();
         self::assertInstanceOf(CredentialInfo::class, $info);
         self::assertTrue($info->isRevoked);
@@ -443,9 +451,17 @@ final class CredentialTest extends TestCase
         // authenticator that stayed silent must not be reported as limited.
         $unknown = (new Credential(uid: 1, label: 'Test'))->toCredentialInfo();
         self::assertNull($unknown->jsonSerialize()['discoverable']);
-        $yes = (new Credential(uid: 2, discoverable: CredentialDiscoverability::Discoverable, label: 'Test'))->toCredentialInfo();
+        $yes = (new Credential(
+            uid: 2,
+            discoverable: CredentialDiscoverability::Discoverable,
+            label: 'Test',
+        ))->toCredentialInfo();
         self::assertTrue($yes->jsonSerialize()['discoverable']);
-        $no = (new Credential(uid: 3, discoverable: CredentialDiscoverability::NotDiscoverable, label: 'Test'))->toCredentialInfo();
+        $no = (new Credential(
+            uid: 3,
+            discoverable: CredentialDiscoverability::NotDiscoverable,
+            label: 'Test',
+        ))->toCredentialInfo();
         self::assertFalse($no->jsonSerialize()['discoverable']);
     }
 
@@ -496,7 +512,14 @@ final class CredentialTest extends TestCase
     #[Test]
     public function toAdminCredentialInfoIncludesRevocationDetailsWhenNotRevoked(): void
     {
-        $credential = new Credential(uid: 1, label: 'Active Key', createdAt: 1700000000, lastUsedAt: 1700001000, revokedAt: 0, revokedBy: 0);
+        $credential = new Credential(
+            uid: 1,
+            label: 'Active Key',
+            createdAt: 1700000000,
+            lastUsedAt: 1700001000,
+            revokedAt: 0,
+            revokedBy: 0,
+        );
         $info = $credential->toAdminCredentialInfo();
         self::assertInstanceOf(AdminCredentialInfo::class, $info);
         self::assertFalse($info->isRevoked);

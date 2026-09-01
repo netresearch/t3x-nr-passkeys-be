@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Architecture;
@@ -84,7 +85,8 @@ final class ArchitectureTest
 
     public function test_route_resolver_does_not_depend_on_business_logic(): Rule
     {
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::classname(self::NS . 'Middleware\PublicRouteResolver'))
             ->shouldNot()
             ->dependOn()
@@ -163,7 +165,8 @@ final class ArchitectureTest
     // ─── Finality enforcement ────────────────────────────────────────
     public function test_all_services_are_final(): Rule
     {
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'Service'))
             ->should()
             ->beFinal()
@@ -172,7 +175,8 @@ final class ArchitectureTest
 
     public function test_all_controllers_are_final(): Rule
     {
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'Controller'))
             ->excluding(Selector::isInterface())
             ->should()
@@ -182,7 +186,8 @@ final class ArchitectureTest
 
     public function test_all_dtos_are_final(): Rule
     {
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'Domain\Dto'))
             ->should()
             ->beFinal()
@@ -191,7 +196,8 @@ final class ArchitectureTest
 
     public function test_domain_models_are_final(): Rule
     {
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'Domain\Model'))
             ->should()
             ->beFinal()
@@ -200,7 +206,8 @@ final class ArchitectureTest
 
     public function test_configuration_is_final(): Rule
     {
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'Configuration'))
             ->should()
             ->beFinal()
@@ -209,7 +216,8 @@ final class ArchitectureTest
 
     public function test_middleware_is_final(): Rule
     {
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'Middleware'))
             ->should()
             ->beFinal()
@@ -218,7 +226,8 @@ final class ArchitectureTest
 
     public function test_event_listeners_are_final(): Rule
     {
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'EventListener'))
             ->should()
             ->beFinal()
@@ -227,7 +236,8 @@ final class ArchitectureTest
 
     public function test_user_settings_is_final(): Rule
     {
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'UserSettings'))
             ->should()
             ->beFinal()
@@ -239,7 +249,8 @@ final class ArchitectureTest
         // PasskeyAuthenticationService is the one documented exception — it extends the
         // TYPO3 AbstractAuthenticationService base class and is wired into the auth
         // chain. Any *other* class added here must still be final.
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'Authentication'))
             ->excluding(Selector::classname(self::NS . 'Authentication\PasskeyAuthenticationService'))
             ->should()
@@ -251,7 +262,8 @@ final class ArchitectureTest
     {
         // PasskeyInfoElement is the one documented exception — it extends the FormEngine
         // AbstractFormElement base class. Any *other* class added here must still be final.
-        return PHPat::rule()
+        return PHPat::rule(
+        )
             ->classes(Selector::inNamespace(self::NS . 'Form'))
             ->excluding(Selector::classname(self::NS . 'Form\Element\PasskeyInfoElement'))
             ->should()

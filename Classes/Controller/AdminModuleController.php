@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
@@ -114,7 +115,10 @@ final class AdminModuleController
             ],
         );
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyDashboard.js');
-        $this->pageRenderer->addInlineLanguageLabelFile('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
+        $this->pageRenderer->addInlineLanguageLabelFile(
+            'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+            'js.',
+        );
 
         return $moduleTemplate->renderResponse('AdminModule/Dashboard');
     }
@@ -125,10 +129,14 @@ final class AdminModuleController
     public function helpAction(ServerRequestInterface $request): ResponseInterface
     {
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
-        $moduleTemplate->setTitle($this->translate('module.title', 'Passkey Management') . ' – ' . $this->translate('module.help', 'Help'));
+        $moduleTemplate->setTitle(
+            $this->translate('module.title', 'Passkey Management') . ' – ' . $this->translate('module.help', 'Help'),
+        );
         $this->buildDocHeaderMenu($moduleTemplate, 'help');
         $this->addHelpButton($moduleTemplate);
-        $moduleTemplate->assignMultiple(['dashboardUrl' => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys')]);
+        $moduleTemplate->assignMultiple(
+            ['dashboardUrl' => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys')],
+        );
 
         return $moduleTemplate->renderResponse('AdminModule/Help');
     }
@@ -138,11 +146,15 @@ final class AdminModuleController
      */
     private function buildDocHeaderMenu(ModuleTemplate $moduleTemplate, string $activeTab): void
     {
-        $menuRegistry = $moduleTemplate->getDocHeaderComponent()->getMenuRegistry();
+        $menuRegistry = $moduleTemplate
+            ->getDocHeaderComponent()
+            ->getMenuRegistry();
         $menu = $this->createMenu($menuRegistry);
         $menu->setIdentifier('PasskeyManagementMenu');
         $dashboardItem = $this
-            ->createMenuItem($menu)
+            ->createMenuItem(
+                $menu,
+            )
             ->setTitle($this->translate('module.dashboard', 'Dashboard'))
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys'));
 
@@ -152,7 +164,9 @@ final class AdminModuleController
 
         $menu->addMenuItem($dashboardItem);
         $helpItem = $this
-            ->createMenuItem($menu)
+            ->createMenuItem(
+                $menu,
+            )
             ->setTitle($this->translate('module.help', 'Help'))
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'));
 
@@ -236,13 +250,20 @@ final class AdminModuleController
      */
     private function addHelpButton(ModuleTemplate $moduleTemplate): void
     {
-        $buttonBar = $moduleTemplate->getDocHeaderComponent()->getButtonBar();
+        $buttonBar = $moduleTemplate
+            ->getDocHeaderComponent()
+            ->getButtonBar();
         $helpButton = $this
-            ->createLinkButton($buttonBar)
+            ->createLinkButton(
+                $buttonBar,
+            )
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'))
             ->setTitle($this->translate('module.help', 'Help'))
             ->setIcon(
-                $this->iconFactory->getIcon('actions-question-circle', ...\enum_exists(IconSize::class) ? [IconSize::SMALL] : ['small']),
+                $this->iconFactory->getIcon(
+                    'actions-question-circle',
+                    ...\enum_exists(IconSize::class) ? [IconSize::SMALL] : ['small'],
+                ),
             )
             ->setShowLabelText(false);
         $buttonBar->addButton($helpButton, ButtonBar::BUTTON_POSITION_RIGHT, 1);

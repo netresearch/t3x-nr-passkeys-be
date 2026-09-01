@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\EventListener;
@@ -29,6 +30,7 @@ final readonly class InjectPasskeyLoginFields
     public function __invoke(ModifyPageLayoutOnLoginProviderSelectionEvent $event): void
     {
         $config = $this->configService->getConfiguration();
+
         // The backend login screen ships the importmap (JavaScriptModules.php), so the
         // login module can be loaded as an ES module. window.NrPasskeysBeConfig is set
         // below via a classic inline script, which runs before the deferred module — so

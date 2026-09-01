@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Middleware;
@@ -144,7 +145,10 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
                 // Invalid nonce — fall through to re-render the interstitial
                 $serverParams = $request->getServerParams();
                 $clientIp = \is_string($serverParams['REMOTE_ADDR'] ?? null) ? $serverParams['REMOTE_ADDR'] : 'unknown';
-                $this->logger->warning('CSRF nonce validation failed on passkey setup skip form', ['ip' => $clientIp, 'beUserUid' => $uid]);
+                $this->logger->warning(
+                    'CSRF nonce validation failed on passkey setup skip form',
+                    ['ip' => $clientIp, 'beUserUid' => $uid],
+                );
             }
         }
 
@@ -286,6 +290,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         $canSkip = $status->canSkip();
         $escapedBackendPath = \htmlspecialchars($backendPath, ENT_QUOTES, 'UTF-8');
         $escapedNonce = \htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8');
+
         // Link to the real User Settings module (identifier "user_setup") where the
         // passkey registration panel is rendered. The module is exempt from this
         // middleware (see EXEMPT_ROUTE_PREFIXES) so the user can actually reach it.

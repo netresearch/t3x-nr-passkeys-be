@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -115,9 +116,15 @@ final readonly class EnforcementService
         // are applied automatically by TYPO3's QueryBuilder, which is exactly what we need
         // for be_groups (respects deleted, hidden, starttime, endtime).
         return $queryBuilder
-            ->select('uid', 'passkey_enforcement', 'passkey_grace_period_days')
+            ->select(
+                'uid',
+                'passkey_enforcement',
+                'passkey_grace_period_days',
+            )
             ->from('be_groups')
-            ->where($queryBuilder->expr()->in('uid', $queryBuilder->createNamedParameter($groupUids, ArrayParameterType::INTEGER)))
+            ->where($queryBuilder
+                    ->expr()
+                    ->in('uid', $queryBuilder->createNamedParameter($groupUids, ArrayParameterType::INTEGER)))
             ->executeQuery()
             ->fetchAllAssociative();
     }

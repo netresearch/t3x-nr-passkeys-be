@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -49,7 +50,9 @@ final readonly class AttestationService
     public function createRegistrationOptions(int $beUserUid, string $username, string $displayName): RegistrationOptions
     {
         $rpId = $this->configService->getEffectiveRpId();
-        $rpName = $this->configService->getConfiguration()->getRpName();
+        $rpName = $this->configService
+            ->getConfiguration()
+            ->getRpName();
         $rp = PublicKeyCredentialRpEntity::create(name: $rpName, id: $rpId);
         $userHandle = $this->createUserHandle($beUserUid);
         $user = PublicKeyCredentialUserEntity::create(name: $username, id: $userHandle, displayName: $displayName);
@@ -65,9 +68,12 @@ final readonly class AttestationService
             $existingCredentials,
         );
         $authenticatorSelection = AuthenticatorSelectionCriteria::create(
-            userVerification: $this->configService->getConfiguration()->getUserVerification(),
+            userVerification: $this->configService
+                ->getConfiguration()
+                ->getUserVerification(),
             residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
         );
+
         // credProps asks the authenticator to report whether it actually created a
         // discoverable (resident) credential. residentKey PREFERRED lets it decline
         // silently, and a non-discoverable passkey can never appear in the browser's
@@ -102,7 +108,9 @@ final readonly class AttestationService
     {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
         $rpId = $this->configService->getEffectiveRpId();
-        $rpName = $this->configService->getConfiguration()->getRpName();
+        $rpName = $this->configService
+            ->getConfiguration()
+            ->getRpName();
         $userHandle = $this->createUserHandle($beUserUid);
         $rp = PublicKeyCredentialRpEntity::create(name: $rpName, id: $rpId);
         $user = PublicKeyCredentialUserEntity::create(name: $username, id: $userHandle, displayName: $displayName);
@@ -113,8 +121,11 @@ final readonly class AttestationService
             pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
             attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
         );
+
         // Deserialize the browser response
-        $publicKeyCredential = $this->ceremonyFactory->getSerializer()->deserialize($responseJson, PublicKeyCredential::class, 'json');
+        $publicKeyCredential = $this->ceremonyFactory
+            ->getSerializer()
+            ->deserialize($responseJson, PublicKeyCredential::class, 'json');
 
         if (!$publicKeyCredential instanceof PublicKeyCredential) {
             throw new RuntimeException('Failed to deserialize credential response', 1700000020);
@@ -137,7 +148,10 @@ final readonly class AttestationService
                 host: $rpId,
             );
         } catch (Throwable $e) {
-            $this->logger->error('Passkey registration verification failed', ['be_user_uid' => $beUserUid, 'error' => $e->getMessage()]);
+            $this->logger->error(
+                'Passkey registration verification failed',
+                ['be_user_uid' => $beUserUid, 'error' => $e->getMessage()],
+            );
 
             throw new RuntimeException('Registration verification failed: ' . $e->getMessage(), 1700000022, $e);
         }
@@ -178,7 +192,9 @@ final readonly class AttestationService
      */
     public function serializeCreationOptions(PublicKeyCredentialCreationOptions $options): string
     {
-        return $this->ceremonyFactory->getSerializer()->serialize($options, 'json');
+        return $this->ceremonyFactory
+            ->getSerializer()
+            ->serialize($options, 'json');
     }
 
     /**
@@ -186,7 +202,9 @@ final readonly class AttestationService
      */
     private function getPublicKeyCredentialParameters(): array
     {
-        $algorithms = $this->configService->getConfiguration()->getAllowedAlgorithmsList();
+        $algorithms = $this->configService
+            ->getConfiguration()
+            ->getAllowedAlgorithmsList();
         $params = [];
 
         foreach ($algorithms as $algo) {

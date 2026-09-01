@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Command;
@@ -50,7 +51,9 @@ final class RecoveryCommandTest extends TestCase
     #[Test]
     public function returnsInvalidWhenNoActionRequested(): void
     {
-        $this->rateLimiterService->expects(self::never())->method('resetLockout');
+        $this->rateLimiterService
+            ->expects(self::never())
+            ->method('resetLockout');
         $exitCode = $this->tester->execute([]);
         self::assertSame(Command::INVALID, $exitCode);
         self::assertStringContainsString('Nothing to do', $this->tester->getDisplay());

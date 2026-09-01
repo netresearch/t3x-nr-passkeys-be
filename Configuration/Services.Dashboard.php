@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 use Netresearch\NrPasskeysBe\Widgets\AdminOnlyDoughnutChartWidget;
 use Netresearch\NrPasskeysBe\Widgets\AdminOnlyNumberWithIconWidget;
@@ -52,15 +53,20 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->autowire()
         ->autoconfigure()
         ->private();
+
     // Data providers consume the cross-extension stats-provider collection.
     // Made public so the DI smoke test (Tests/Functional) can resolve them
     // and assert the tagged_iterator yields exactly the registered providers.
     $services
-        ->set(PasskeyAdoptionChartDataProvider::class)
+        ->set(
+            PasskeyAdoptionChartDataProvider::class,
+        )
         ->public()
         ->arg('$statsProviders', tagged_iterator('nr_passkeys_be.adoption_stats_provider'));
     $services
-        ->set(PasskeyCredentialsCountDataProvider::class)
+        ->set(
+            PasskeyCredentialsCountDataProvider::class,
+        )
         ->public()
         ->arg('$statsProviders', tagged_iterator('nr_passkeys_be.adoption_stats_provider'));
     $adminOnlySupported = \interface_exists(AdminOnlyWidgetInterface::class);

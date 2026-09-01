@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
@@ -37,7 +38,11 @@ final class EnforcementServiceTest extends TestCase
         parent::setUp();
         $this->connectionPool = $this->createMock(ConnectionPool::class);
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
-        $this->subject = new EnforcementService($this->connectionPool, $this->credentialRepository, $this->createMock(LoggerInterface::class));
+        $this->subject = new EnforcementService(
+            $this->connectionPool,
+            $this->credentialRepository,
+            $this->createMock(LoggerInterface::class),
+        );
     }
 
     #[Test]
@@ -111,6 +116,7 @@ final class EnforcementServiceTest extends TestCase
             ->willReturn(0);
         $status = $this->subject->getStatus($userRow);
         self::assertSame(EnforcementLevel::Enforced, $status->level);
+
         // Enforced level always has grace period zeroed
         self::assertSame(0, $status->gracePeriodDays);
     }
@@ -131,6 +137,7 @@ final class EnforcementServiceTest extends TestCase
             ->with(8)
             ->willReturn(0);
         $status = $this->subject->getStatus($userRow);
+
         // 'bogus_value' is treated as Off (severity 0), so 'encourage' (severity 1) wins
         self::assertSame(EnforcementLevel::Encourage, $status->level);
         self::assertSame(5, $status->gracePeriodDays);
@@ -165,7 +172,9 @@ final class EnforcementServiceTest extends TestCase
                 ['uid' => 42],
             );
         $this->connectionPool
-            ->expects(self::once())
+            ->expects(
+                self::once(),
+            )
             ->method('getConnectionForTable')
             ->with('be_users')
             ->willReturn($connection);
@@ -213,16 +222,34 @@ final class EnforcementServiceTest extends TestCase
     private function setUpGroupQuery(array $groupRows): void
     {
         $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('in')->willReturn('1=1');
+        $expressionBuilder
+            ->method('in')
+            ->willReturn('1=1');
         $result = $this->createMock(Result::class);
-        $result->method('fetchAllAssociative')->willReturn($groupRows);
+        $result
+            ->method('fetchAllAssociative')
+            ->willReturn($groupRows);
         $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturnCallback(static fn(mixed $value): string => \is_array($value) ? \implode(',', $value) : (string) $value);
-        $queryBuilder->method('executeQuery')->willReturn($result);
+        $queryBuilder
+            ->method('select')
+            ->willReturnSelf();
+        $queryBuilder
+            ->method('from')
+            ->willReturnSelf();
+        $queryBuilder
+            ->method('where')
+            ->willReturnSelf();
+        $queryBuilder
+            ->method('expr')
+            ->willReturn($expressionBuilder);
+        $queryBuilder
+            ->method(
+                'createNamedParameter',
+            )
+            ->willReturnCallback(static fn(mixed $value): string => \is_array($value) ? \implode(',', $value) : (string) $value);
+        $queryBuilder
+            ->method('executeQuery')
+            ->willReturn($result);
         $this->connectionPool
             ->method('getQueryBuilderForTable')
             ->with('be_groups')

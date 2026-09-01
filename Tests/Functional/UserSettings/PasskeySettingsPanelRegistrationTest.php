@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\UserSettings;
@@ -48,6 +49,7 @@ final class PasskeySettingsPanelRegistrationTest extends FunctionalTestCase
     public function nodeFactoryResolvesPasskeySettingsPanelRenderType(): void
     {
         $nodeFactory = GeneralUtility::makeInstance(NodeFactory::class);
+
         // create() instantiates and calls setData() but does not call render(),
         // so a minimal data array carrying only the renderType is sufficient.
         $node = $nodeFactory->create(['renderType' => 'nrPasskeySettingsPanel']);

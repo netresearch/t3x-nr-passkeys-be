@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
@@ -41,11 +42,18 @@ final class ChallengeServiceTest extends TestCase
         $this->nonceCacheMock = $this->createMock(FrontendInterface::class);
         $this->lockFactoryMock = $this->createMock(LockFactory::class);
         $this->configService = $this->createConfigService(['challengeTtlSeconds' => 120]);
+
         // Default: lock factory returns a no-op locker
         $lockerMock = $this->createMock(LockingStrategyInterface::class);
-        $lockerMock->method('acquire')->willReturn(true);
-        $lockerMock->method('release')->willReturn(true);
-        $this->lockFactoryMock->method('createLocker')->willReturn($lockerMock);
+        $lockerMock
+            ->method('acquire')
+            ->willReturn(true);
+        $lockerMock
+            ->method('release')
+            ->willReturn(true);
+        $this->lockFactoryMock
+            ->method('createLocker')
+            ->willReturn($lockerMock);
         $this->loggerMock = $this->createMock(LoggerInterface::class);
         $this->subject = new ChallengeService($this->nonceCacheMock, $this->configService, $this->lockFactoryMock, $this->loggerMock);
     }
@@ -91,26 +99,34 @@ final class ChallengeServiceTest extends TestCase
     public function createChallengeTokenReturnsBase64EncodedString(): void
     {
         $this->nonceCacheMock
-            ->expects(self::once())
+            ->expects(
+                self::once(),
+            )
             ->method('set')
             ->with(self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'), 'valid', [], 180);
         $challenge = \random_bytes(32);
         $token = $this->subject->createChallengeToken($challenge);
+
         // Must be valid base64
         $decoded = \base64_decode($token, true);
         self::assertNotFalse($decoded, 'Token must be valid base64');
+
         // Decoded token has format: base64(challenge)|expiresAt|nonce|hmac
         $parts = \explode('|', $decoded);
         self::assertCount(4, $parts, 'Decoded token must have 4 pipe-separated parts');
+
         // First part is base64-encoded challenge
         $restoredChallenge = \base64_decode($parts[0], true);
         self::assertSame($challenge, $restoredChallenge);
+
         // Second part is an integer timestamp in the future
         $expiresAt = (int) $parts[1];
         self::assertGreaterThan(\time(), $expiresAt);
         self::assertLessThanOrEqual(\time() + 120, $expiresAt);
+
         // Third part is a hex nonce (32 hex chars = 16 bytes)
         self::assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $parts[2]);
+
         // Fourth part is the HMAC (sha256 produces 64 hex chars)
         self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $parts[3]);
     }
@@ -119,12 +135,18 @@ final class ChallengeServiceTest extends TestCase
     public function verifyChallengeTokenWithValidToken(): void
     {
         $challenge = \random_bytes(32);
+
         // createChallengeToken stores the nonce
         $this->nonceCacheMock->method('set');
         $token = $this->subject->createChallengeToken($challenge);
+
         // verifyChallengeToken checks nonce existence via get() and removes it
-        $this->nonceCacheMock->method('get')->willReturn('valid');
-        $this->nonceCacheMock->expects(self::once())->method('remove');
+        $this->nonceCacheMock
+            ->method('get')
+            ->willReturn('valid');
+        $this->nonceCacheMock
+            ->expects(self::once())
+            ->method('remove');
         $result = $this->subject->verifyChallengeToken($token);
         self::assertSame($challenge, $result);
     }
@@ -137,6 +159,7 @@ final class ChallengeServiceTest extends TestCase
         $service = new ChallengeService($this->nonceCacheMock, $configService, $this->lockFactoryMock, $this->loggerMock);
         $challenge = \random_bytes(32);
         $token = $service->createChallengeToken($challenge);
+
         // The HMAC is still valid, but the expiry timestamp is in the past
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000004);
@@ -149,10 +172,12 @@ final class ChallengeServiceTest extends TestCase
     {
         $challenge = \random_bytes(32);
         $token = $this->subject->createChallengeToken($challenge);
+
         // Decode the token, tamper with it, re-encode
         $decoded = \base64_decode($token, true);
         self::assertNotFalse($decoded);
         $parts = \explode('|', $decoded);
+
         // Tamper with the challenge portion
         $parts[0] = \base64_encode(\random_bytes(32));
         $tampered = \base64_encode(\implode('|', $parts));
@@ -167,8 +192,11 @@ final class ChallengeServiceTest extends TestCase
     {
         $challenge = \random_bytes(32);
         $token = $this->subject->createChallengeToken($challenge);
+
         // Nonce is NOT in cache (already consumed or expired) -- get() returns false
-        $this->nonceCacheMock->method('get')->willReturn(false);
+        $this->nonceCacheMock
+            ->method('get')
+            ->willReturn(false);
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000005);
         $this->expectExceptionMessage('Challenge nonce already used or expired');
@@ -243,6 +271,7 @@ final class ChallengeServiceTest extends TestCase
         $challenge = \random_bytes(32);
         $this->nonceCacheMock->method('set');
         $token = $this->subject->createChallengeToken($challenge);
+
         // Now remove the encryption key
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = '';
         $this->expectException(RuntimeException::class);
@@ -256,6 +285,7 @@ final class ChallengeServiceTest extends TestCase
         // Craft a token with invalid base64 in the challenge portion
         $expiresAt = \time() + 120;
         $nonce = \bin2hex(\random_bytes(16));
+
         // Use a string that looks like base64 but decodes to something that makes
         // the inner base64_decode fail (not valid base64 in strict mode).
         // The challenge portion needs to not be valid strict base64.
@@ -264,8 +294,11 @@ final class ChallengeServiceTest extends TestCase
         $key = $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'];
         $signingKey = \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_challenge');
         $hmac = \hash_hmac('sha256', $payload, $signingKey);
+
         // Store a valid nonce
-        $this->nonceCacheMock->method('get')->willReturn('valid');
+        $this->nonceCacheMock
+            ->method('get')
+            ->willReturn('valid');
         $token = \base64_encode($payload . '|' . $hmac);
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000006);
@@ -277,7 +310,9 @@ final class ChallengeServiceTest extends TestCase
     public function createChallengeTokenStoredNonceWithCorrectTtlBuffer(): void
     {
         $this->nonceCacheMock
-            ->expects(self::once())
+            ->expects(
+                self::once(),
+            )
             ->method('set')
             ->with(self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'), 'valid', [], 180);
         $this->subject->createChallengeToken(\random_bytes(32));
@@ -287,8 +322,10 @@ final class ChallengeServiceTest extends TestCase
     public function generateChallengeReturnsRawBytes(): void
     {
         $challenge = $this->subject->generateChallenge();
+
         // Should be raw bytes, not hex or base64
         self::assertSame(32, \strlen($challenge));
+
         // Raw bytes may contain non-printable characters
         self::assertIsString($challenge);
     }
@@ -299,9 +336,13 @@ final class ChallengeServiceTest extends TestCase
         $challenge = \random_bytes(32);
         $this->nonceCacheMock->method('set');
         $token = $this->subject->createChallengeToken($challenge);
-        $this->nonceCacheMock->method('get')->willReturn('valid');
         $this->nonceCacheMock
-            ->expects(self::once())
+            ->method('get')
+            ->willReturn('valid');
+        $this->nonceCacheMock
+            ->expects(
+                self::once(),
+            )
             ->method('remove')
             ->with(self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'));
         $this->subject->verifyChallengeToken($token);
@@ -313,11 +354,16 @@ final class ChallengeServiceTest extends TestCase
         $challenge = \random_bytes(32);
         $this->nonceCacheMock->method('set');
         $token = $this->subject->createChallengeToken($challenge);
+
         // Replace lock factory with one that fails to acquire
         $failingLocker = $this->createMock(LockingStrategyInterface::class);
-        $failingLocker->method('acquire')->willReturn(false);
+        $failingLocker
+            ->method('acquire')
+            ->willReturn(false);
         $failingLockFactory = $this->createMock(LockFactory::class);
-        $failingLockFactory->method('createLocker')->willReturn($failingLocker);
+        $failingLockFactory
+            ->method('createLocker')
+            ->willReturn($failingLocker);
         $service = new ChallengeService($this->nonceCacheMock, $this->configService, $failingLockFactory, $this->loggerMock);
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000007);
@@ -342,6 +388,7 @@ final class ChallengeServiceTest extends TestCase
         $challenge = \random_bytes(32);
         $token1 = $this->subject->createChallengeToken($challenge);
         $token2 = $this->subject->createChallengeToken($challenge);
+
         // Tokens should differ because nonces are random
         self::assertNotSame($token1, $token2);
     }

@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit;
@@ -33,16 +34,32 @@ trait QueryBuilderMockTrait
     private function createSingleRowQueryBuilder(int $uid, ?array $row): QueryBuilder&MockObject
     {
         $expressionBuilder = $this->createMock(ExpressionBuilder::class);
-        $expressionBuilder->method('eq')->willReturn('1=1');
+        $expressionBuilder
+            ->method('eq')
+            ->willReturn('1=1');
         $result = $this->createMock(Result::class);
-        $result->method('fetchAssociative')->willReturn($row ?? false);
+        $result
+            ->method('fetchAssociative')
+            ->willReturn($row ?? false);
         $queryBuilder = $this->createMock(QueryBuilder::class);
-        $queryBuilder->method('select')->willReturnSelf();
-        $queryBuilder->method('from')->willReturnSelf();
-        $queryBuilder->method('where')->willReturnSelf();
-        $queryBuilder->method('expr')->willReturn($expressionBuilder);
-        $queryBuilder->method('createNamedParameter')->willReturn((string) $uid);
-        $queryBuilder->method('executeQuery')->willReturn($result);
+        $queryBuilder
+            ->method('select')
+            ->willReturnSelf();
+        $queryBuilder
+            ->method('from')
+            ->willReturnSelf();
+        $queryBuilder
+            ->method('where')
+            ->willReturnSelf();
+        $queryBuilder
+            ->method('expr')
+            ->willReturn($expressionBuilder);
+        $queryBuilder
+            ->method('createNamedParameter')
+            ->willReturn((string) $uid);
+        $queryBuilder
+            ->method('executeQuery')
+            ->willReturn($result);
 
         return $queryBuilder;
     }

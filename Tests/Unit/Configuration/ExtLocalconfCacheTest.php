@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Configuration;
@@ -42,6 +43,7 @@ final class ExtLocalconfCacheTest extends TestCase
         }
 
         $GLOBALS['TYPO3_CONF_VARS'] = [];
+
         // ext_localconf.php registers the auth service as a side effect; only the
         // resulting cache configuration matters here. Each test method runs in its own
         // process (see the class attributes), so a single include per process is
@@ -76,16 +78,21 @@ final class ExtLocalconfCacheTest extends TestCase
         self::assertIsArray($nonce);
         $backend = $nonce['backend'] ?? null;
         self::assertIsString($backend);
+
         // The chosen backend must implement expiry itself rather than inheriting
         // SimpleFileBackend's no-op behaviour.
         self::assertNotSame(
             SimpleFileBackend::class,
-            (new ReflectionMethod($backend, 'collectGarbage'))->getDeclaringClass()->getName(),
+            (new ReflectionMethod($backend, 'collectGarbage'))
+                ->getDeclaringClass()
+                ->getName(),
             $backend . "::collectGarbage() must not be SimpleFileBackend's empty implementation",
         );
         self::assertNotSame(
             SimpleFileBackend::class,
-            (new ReflectionMethod($backend, 'get'))->getDeclaringClass()->getName(),
+            (new ReflectionMethod($backend, 'get'))
+                ->getDeclaringClass()
+                ->getName(),
             $backend . '::get() must check expiry',
         );
     }

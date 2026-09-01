@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Command;
@@ -41,7 +42,12 @@ final class RecoveryCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('list', null, InputOption::VALUE_NONE, 'List all backend user groups and their passkey enforcement level')
+            ->addOption(
+                'list',
+                null,
+                InputOption::VALUE_NONE,
+                'List all backend user groups and their passkey enforcement level',
+            )
             ->addOption(
                 'disable-group',
                 null,
@@ -97,11 +103,20 @@ final class RecoveryCommand extends Command
     private function listGroups(SymfonyStyle $io): void
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_GROUPS);
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $rows = $queryBuilder
-            ->select('uid', 'title', 'passkey_enforcement', 'passkey_grace_period_days')
+            ->select(
+                'uid',
+                'title',
+                'passkey_enforcement',
+                'passkey_grace_period_days',
+            )
             ->from(self::TABLE_GROUPS)
-            ->where($queryBuilder->expr()->eq('deleted', 0))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0))
             ->orderBy('uid')
             ->executeQuery()
             ->fetchAllAssociative();
@@ -138,8 +153,12 @@ final class RecoveryCommand extends Command
      */
     private function disableEnforcementForAllGroups(): int
     {
-        $queryBuilder = $this->connectionPool->getConnectionForTable(self::TABLE_GROUPS)->createQueryBuilder();
-        $queryBuilder->update(self::TABLE_GROUPS)->set('passkey_enforcement', 'off');
+        $queryBuilder = $this->connectionPool
+            ->getConnectionForTable(self::TABLE_GROUPS)
+            ->createQueryBuilder();
+        $queryBuilder
+            ->update(self::TABLE_GROUPS)
+            ->set('passkey_enforcement', 'off');
 
         return $queryBuilder->executeStatement();
     }

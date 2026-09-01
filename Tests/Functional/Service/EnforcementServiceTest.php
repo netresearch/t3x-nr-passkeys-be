@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Service;
@@ -73,6 +74,7 @@ final class EnforcementServiceTest extends FunctionalTestCase
         self::assertSame(EnforcementLevel::Required, $status->level);
         self::assertSame(14, $status->gracePeriodDays);
         self::assertTrue($status->hasPasskeys);
+
         // User 1 has active credentials
     }
 
@@ -85,6 +87,7 @@ final class EnforcementServiceTest extends FunctionalTestCase
         $status = $this->subject->getStatus($userRow);
         self::assertSame(EnforcementLevel::Required, $status->level);
         self::assertTrue($status->hasPasskeys);
+
         // User 2 has active credential
     }
 
@@ -96,6 +99,7 @@ final class EnforcementServiceTest extends FunctionalTestCase
         $status = $this->subject->getStatus($userRow);
         self::assertSame(EnforcementLevel::Off, $status->level);
         self::assertFalse($status->hasPasskeys);
+
         // User 99 has no credentials
     }
 
@@ -132,12 +136,20 @@ final class EnforcementServiceTest extends FunctionalTestCase
     {
         $beforeTime = \time();
         $this->subject->startGracePeriod(99);
-        $queryBuilder = $this->get(ConnectionPool::class)->getQueryBuilderForTable('be_users');
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder = $this
+            ->get(ConnectionPool::class)
+            ->getQueryBuilderForTable('be_users');
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $row = $queryBuilder
-            ->select('passkey_grace_period_start')
+            ->select(
+                'passkey_grace_period_start',
+            )
             ->from('be_users')
-            ->where($queryBuilder->expr()->eq('uid', 99))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('uid', 99))
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);

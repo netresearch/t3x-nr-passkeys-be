@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Widgets;
@@ -46,6 +47,7 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
         self::assertInstanceOf(BackendPasskeyAdoptionStatsProvider::class, $provider);
         $stats = $provider->getAudienceStats();
         self::assertSame('backend', $stats->audienceKey);
+
         // be_users.csv: 5 active users; credential fixture: 2 distinct users
         // with active credentials, 3 active credentials of active users.
         self::assertSame(5, $stats->totalActiveUsers);
@@ -58,6 +60,7 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
     {
         $provider = $this->get(PasskeyCredentialsCountDataProvider::class);
         self::assertInstanceOf(PasskeyCredentialsCountDataProvider::class, $provider);
+
         // Exactly the backend segment (3), never double-counted (would be 6
         // if the provider were tagged twice via autoconfigure + explicit tag).
         self::assertSame(3, $provider->getNumber());
@@ -69,6 +72,7 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
         $provider = $this->get(PasskeyAdoptionChartDataProvider::class);
         self::assertInstanceOf(PasskeyAdoptionChartDataProvider::class, $provider);
         $chartData = $provider->getChartData();
+
         // One provider in the iterator => one dataset (backend green/orange).
         self::assertCount(1, $chartData['datasets']);
         self::assertSame(['#4c7e3a', '#ff8700'], $chartData['datasets'][0]['backgroundColor']);

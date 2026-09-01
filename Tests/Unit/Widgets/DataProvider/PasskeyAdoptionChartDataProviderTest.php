@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Widgets\DataProvider;
@@ -25,6 +26,7 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         // No LanguageService in unit context — the trait falls back to
         // the English default labels / ucfirst() segment labels.
         unset($GLOBALS['LANG']);
@@ -41,7 +43,9 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
     #[Test]
     public function singleBackendSegmentProducesOneDatasetWithPaletteAndSplit(): void
     {
-        $chartData = $this->subject([$this->statsProvider(new PasskeyAudienceStats('backend', 10, 6, 12))])->getChartData();
+        $chartData = $this
+            ->subject([$this->statsProvider(new PasskeyAudienceStats('backend', 10, 6, 12))])
+            ->getChartData();
         self::assertSame(['With passkeys', 'Without passkeys'], $chartData['labels']);
         self::assertCount(1, $chartData['datasets']);
         self::assertSame('Backend', $chartData['datasets'][0]['label']);
@@ -53,12 +57,14 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
     public function segmentsAreOrderedByAudienceKeyRegardlessOfRegistrationOrder(): void
     {
         // Registered frontend-first; output must be backend-then-frontend.
-        $chartData = $this->subject(
-            [
-                $this->statsProvider(new PasskeyAudienceStats('frontend', 20, 5, 7)),
-                $this->statsProvider(new PasskeyAudienceStats('backend', 10, 6, 12)),
-            ],
-        )->getChartData();
+        $chartData = $this
+            ->subject(
+                [
+                    $this->statsProvider(new PasskeyAudienceStats('frontend', 20, 5, 7)),
+                    $this->statsProvider(new PasskeyAudienceStats('backend', 10, 6, 12)),
+                ],
+            )
+            ->getChartData();
         self::assertCount(2, $chartData['datasets']);
         self::assertSame('Backend', $chartData['datasets'][0]['label']);
         self::assertSame(['#4c7e3a', '#ff8700'], $chartData['datasets'][0]['backgroundColor']);
@@ -73,14 +79,18 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
     {
         // More passkey users than total cannot happen with consistent data,
         // but the widget must never render a negative segment.
-        $chartData = $this->subject([$this->statsProvider(new PasskeyAudienceStats('backend', 2, 5, 3))])->getChartData();
+        $chartData = $this
+            ->subject([$this->statsProvider(new PasskeyAudienceStats('backend', 2, 5, 3))])
+            ->getChartData();
         self::assertSame([5, 0], $chartData['datasets'][0]['data']);
     }
 
     #[Test]
     public function unknownAudienceKeyFallsBackToDefaultColorsAndUcfirstLabel(): void
     {
-        $chartData = $this->subject([$this->statsProvider(new PasskeyAudienceStats('service', 4, 1, 2))])->getChartData();
+        $chartData = $this
+            ->subject([$this->statsProvider(new PasskeyAudienceStats('service', 4, 1, 2))])
+            ->getChartData();
         self::assertCount(1, $chartData['datasets']);
         self::assertSame('Service', $chartData['datasets'][0]['label']);
         self::assertSame(['#4c7e3a', '#ff8700'], $chartData['datasets'][0]['backgroundColor']);
@@ -89,7 +99,9 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
     #[Test]
     public function emptyProviderCollectionYieldsNoDatasetsButKeepsLabels(): void
     {
-        $chartData = $this->subject([])->getChartData();
+        $chartData = $this
+            ->subject([])
+            ->getChartData();
         self::assertSame(['With passkeys', 'Without passkeys'], $chartData['labels']);
         self::assertSame([], $chartData['datasets']);
     }
@@ -98,16 +110,20 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
     public function labelsAndSegmentUseTranslationsWhenLanguageServiceIsAvailable(): void
     {
         $languageService = $this->createMock(LanguageService::class);
-        $languageService->method('sL')->willReturnCallback(
-            static fn(string $key): string => match ($key) {
-                'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:widget.adoption.label.with_passkeys' => 'Mit Passkeys',
-                'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:widget.adoption.label.without_passkeys' => 'Ohne Passkeys',
-                'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:widget.adoption.segment.backend' => 'Backend-Nutzer',
-                default => '',
-            },
-        );
+        $languageService
+            ->method('sL')
+            ->willReturnCallback(
+                static fn(string $key): string => match ($key) {
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:widget.adoption.label.with_passkeys' => 'Mit Passkeys',
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:widget.adoption.label.without_passkeys' => 'Ohne Passkeys',
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:widget.adoption.segment.backend' => 'Backend-Nutzer',
+                    default => '',
+                },
+            );
         $GLOBALS['LANG'] = $languageService;
-        $chartData = $this->subject([$this->statsProvider(new PasskeyAudienceStats('backend', 1, 1, 1))])->getChartData();
+        $chartData = $this
+            ->subject([$this->statsProvider(new PasskeyAudienceStats('backend', 1, 1, 1))])
+            ->getChartData();
         self::assertSame(['Mit Passkeys', 'Ohne Passkeys'], $chartData['labels']);
         self::assertSame('Backend-Nutzer', $chartData['datasets'][0]['label']);
     }

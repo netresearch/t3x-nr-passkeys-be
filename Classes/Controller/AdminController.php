@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
@@ -149,9 +150,14 @@ final readonly class AdminController
         // Validate that beUserUid matches the given username to ensure audit log integrity
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
         $row = $queryBuilder
-            ->select('uid', 'username')
+            ->select(
+                'uid',
+                'username',
+            )
             ->from('be_users')
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
 
@@ -238,13 +244,19 @@ final readonly class AdminController
 
         // Verify the group exists
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_groups');
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $row = $queryBuilder
             ->select('uid')
             ->from('be_groups')
             ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($groupUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('uid', $queryBuilder->createNamedParameter($groupUid, Connection::PARAM_INT)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
             )
             ->executeQuery()
             ->fetchAssociative();
@@ -390,14 +402,22 @@ final readonly class AdminController
     private function findActiveBackendUser(int $beUserUid): ?array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $row = $queryBuilder
             ->select('uid', 'username')
             ->from('be_users')
             ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('disable', 0),
             )
             ->executeQuery()
             ->fetchAssociative();

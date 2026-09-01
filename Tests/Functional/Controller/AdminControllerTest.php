@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Controller;
@@ -63,7 +64,9 @@ final class AdminControllerTest extends FunctionalTestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'username' => 'adminuser', 'realName' => 'Admin User'];
-        $backendUser->method('isAdmin')->willReturn(true);
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(true);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
@@ -71,7 +74,9 @@ final class AdminControllerTest extends FunctionalTestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'username' => 'testuser1', 'realName' => 'Test User'];
-        $backendUser->method('isAdmin')->willReturn(false);
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
@@ -108,6 +113,7 @@ final class AdminControllerTest extends FunctionalTestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(1, $data['beUserUid']);
         self::assertIsArray($data['credentials']);
+
         // User 1 has 2 active + 1 revoked (findAllByBeUser includes revoked, not deleted)
         self::assertSame(3, $data['count']);
     }
@@ -161,13 +167,23 @@ final class AdminControllerTest extends FunctionalTestCase
         $data = $this->decodeJsonResponse($response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $data['status']);
+
         // Verify the credential is now revoked in the database
-        $queryBuilder = $this->get(ConnectionPool::class)->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder = $this
+            ->get(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $row = $queryBuilder
-            ->select('revoked_at', 'revoked_by')
+            ->select(
+                'revoked_at',
+                'revoked_by',
+            )
             ->from('tx_nrpasskeysbe_credential')
-            ->where($queryBuilder->expr()->eq('uid', 1))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('uid', 1))
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);
@@ -179,6 +195,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function removeActionRejects404ForWrongUser(): void
     {
         $this->setUpAdminUser();
+
         // Credential 5 belongs to user 2, not user 1
         $request = $this->createPostRequest('/passkeys/admin/remove', ['beUserUid' => 1, 'credentialUid' => 5]);
         $response = $this->subject->removeAction($request);
@@ -243,18 +260,30 @@ final class AdminControllerTest extends FunctionalTestCase
         $data = $this->decodeJsonResponse($response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $data['status']);
+
         // User 1 has 2 active credentials (uid 1, 2) — uid 3 already revoked
         self::assertSame(2, $data['revokedCount']);
+
         // Verify all active credentials are now revoked
-        $queryBuilder = $this->get(ConnectionPool::class)->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder = $this
+            ->get(ConnectionPool::class)
+            ->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $activeCount = $queryBuilder
             ->count('*')
             ->from('tx_nrpasskeysbe_credential')
             ->where(
-                $queryBuilder->expr()->eq('be_user', 1),
-                $queryBuilder->expr()->eq('revoked_at', 0),
-                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('be_user', 1),
+                $queryBuilder
+                    ->expr()
+                    ->eq('revoked_at', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
             )
             ->executeQuery()
             ->fetchOne();
@@ -281,12 +310,19 @@ final class AdminControllerTest extends FunctionalTestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $data['status']);
         self::assertSame('enforced', $data['enforcement']);
+
         // Verify the group enforcement was updated in database
-        $queryBuilder = $this->get(ConnectionPool::class)->getQueryBuilderForTable('be_groups');
+        $queryBuilder = $this
+            ->get(ConnectionPool::class)
+            ->getQueryBuilderForTable('be_groups');
         $row = $queryBuilder
-            ->select('passkey_enforcement')
+            ->select(
+                'passkey_enforcement',
+            )
             ->from('be_groups')
-            ->where($queryBuilder->expr()->eq('uid', 3))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('uid', 3))
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);
@@ -297,7 +333,10 @@ final class AdminControllerTest extends FunctionalTestCase
     public function updateEnforcementActionRejects400ForInvalidLevel(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/update-enforcement', ['groupUid' => 1, 'enforcement' => 'invalid-level']);
+        $request = $this->createPostRequest(
+            '/passkeys/admin/update-enforcement',
+            ['groupUid' => 1, 'enforcement' => 'invalid-level'],
+        );
         $response = $this->subject->updateEnforcementAction($request);
         self::assertSame(400, $response->getStatusCode());
     }
@@ -306,7 +345,10 @@ final class AdminControllerTest extends FunctionalTestCase
     public function updateEnforcementActionRejects404ForNonexistentGroup(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/update-enforcement', ['groupUid' => 9999, 'enforcement' => 'encourage']);
+        $request = $this->createPostRequest(
+            '/passkeys/admin/update-enforcement',
+            ['groupUid' => 9999, 'enforcement' => 'encourage'],
+        );
         $response = $this->subject->updateEnforcementAction($request);
         self::assertSame(404, $response->getStatusCode());
     }
@@ -332,15 +374,23 @@ final class AdminControllerTest extends FunctionalTestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $data['status']);
         self::assertArrayHasKey('nudgeUntil', $data);
+
         // Nudge should be 14 days in the future
         $expectedMin = $beforeTime + 14 * 86400;
         self::assertGreaterThanOrEqual($expectedMin, $data['nudgeUntil']);
+
         // Verify the nudge timestamp was set in database
-        $queryBuilder = $this->get(ConnectionPool::class)->getQueryBuilderForTable('be_users');
+        $queryBuilder = $this
+            ->get(ConnectionPool::class)
+            ->getQueryBuilderForTable('be_users');
         $row = $queryBuilder
-            ->select('passkey_nudge_until')
+            ->select(
+                'passkey_nudge_until',
+            )
             ->from('be_users')
-            ->where($queryBuilder->expr()->eq('uid', 1))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('uid', 1))
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);

@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
@@ -46,7 +47,9 @@ final class TranslationTraitTest extends TestCase
     {
         $langMock = $this->createMock(LanguageService::class);
         $langMock
-            ->method('sL')
+            ->method(
+                'sL',
+            )
             ->with('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:some.key')
             ->willReturn('Translated value');
         $GLOBALS['LANG'] = $langMock;
@@ -82,7 +85,9 @@ final class TranslationTraitTest extends TestCase
     public function translateReturnsFallbackWhenTranslationIsEmpty(): void
     {
         $langMock = $this->createMock(LanguageService::class);
-        $langMock->method('sL')->willReturn('');
+        $langMock
+            ->method('sL')
+            ->willReturn('');
         $GLOBALS['LANG'] = $langMock;
         $result = $this->subject->callTranslate('missing.key', 'My fallback');
         self::assertSame('My fallback', $result);
@@ -93,7 +98,9 @@ final class TranslationTraitTest extends TestCase
     {
         $langMock = $this->createMock(LanguageService::class);
         $langMock
-            ->expects(self::once())
+            ->expects(
+                self::once(),
+            )
             ->method('sL')
             ->with('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:flash.success')
             ->willReturn('Success');
@@ -106,7 +113,9 @@ final class TranslationTraitTest extends TestCase
     {
         $langMock = $this->createMock(LanguageService::class);
         $langMock
-            ->expects(self::once())
+            ->expects(
+                self::once(),
+            )
             ->method('sL')
             ->with('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:')
             ->willReturn('');

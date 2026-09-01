@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
@@ -75,7 +76,9 @@ final readonly class LoginController
 
         // Discoverable (usernameless) login
         if ($username === '') {
-            if (!$this->configService->getConfiguration()->isDiscoverableLoginEnabled()) {
+            if (!$this->configService
+                ->getConfiguration()
+                ->isDiscoverableLoginEnabled()) {
                 return new JsonResponse(['error' => 'Username is required'], 400);
             }
 
@@ -131,7 +134,10 @@ final readonly class LoginController
                 ],
             );
         } catch (Throwable $e) {
-            $this->logger->error('Failed to generate assertion options', ['decoy' => $beUserUid === null, 'error' => $e->getMessage()]);
+            $this->logger->error(
+                'Failed to generate assertion options',
+                ['decoy' => $beUserUid === null, 'error' => $e->getMessage()],
+            );
             $response = new JsonResponse(['error' => 'Internal error'], 500);
         }
 
@@ -161,6 +167,7 @@ final readonly class LoginController
     {
         $body = $this->getJsonBody($request);
         $username = isset($body['username']) && \is_scalar($body['username']) ? (string) $body['username'] : '';
+
         // null means the body could not be encoded (malformed UTF-8 from a form-encoded
         // request); this endpoint is public, so that must not escape as a 500.
         $assertion = $this->encodeBodySection($body['assertion'] ?? null);
@@ -191,7 +198,9 @@ final readonly class LoginController
      */
     private function verifyDiscoverable(string $assertion, string $challengeToken, string $ip): ResponseInterface
     {
-        if (!$this->configService->getConfiguration()->isDiscoverableLoginEnabled()) {
+        if (!$this->configService
+            ->getConfiguration()
+            ->isDiscoverableLoginEnabled()) {
             return new JsonResponse(['error' => 'Username is required'], 400);
         }
 
@@ -259,7 +268,11 @@ final readonly class LoginController
     private function verifyAndIssueToken(string $assertion, string $challengeToken, int $beUserUid, string $username, string $ip): ResponseInterface
     {
         try {
-            $this->webAuthnService->verifyAssertionResponse(responseJson: $assertion, challengeToken: $challengeToken, beUserUid: $beUserUid);
+            $this->webAuthnService->verifyAssertionResponse(
+                responseJson: $assertion,
+                challengeToken: $challengeToken,
+                beUserUid: $beUserUid,
+            );
         } catch (Throwable $e) {
             // Throwable, not RuntimeException: webauthn-lib's deserializer throws
             // Webauthn\Exception\InvalidDataException, which extends \Exception, so a
@@ -335,9 +348,15 @@ final readonly class LoginController
             ->select('uid')
             ->from('be_users')
             ->where(
-                $queryBuilder->expr()->eq('username', $queryBuilder->createNamedParameter($username)),
-                $queryBuilder->expr()->eq('disable', 0),
-                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('username', $queryBuilder->createNamedParameter($username)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('disable', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
             )
             ->executeQuery()
             ->fetchAssociative();

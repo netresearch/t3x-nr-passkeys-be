@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Repository;
@@ -196,7 +197,13 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function deleteSoftDeletesCredential(): void
     {
-        $credential = new Credential(pid: 0, beUser: 1, credentialId: 'cred-to-delete', publicKeyCose: 'cose-data', label: 'To Delete');
+        $credential = new Credential(
+            pid: 0,
+            beUser: 1,
+            credentialId: 'cred-to-delete',
+            publicKeyCose: 'cose-data',
+            label: 'To Delete',
+        );
         $uid = $this->repository->save($credential);
         $this->repository->delete($uid);
         $found = $this->repository->findByCredentialId('cred-to-delete');
@@ -206,16 +213,31 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function deletePreservesRecordInDatabase(): void
     {
-        $credential = new Credential(pid: 0, beUser: 1, credentialId: 'cred-soft-delete', publicKeyCose: 'cose-data', label: 'Soft Delete');
+        $credential = new Credential(
+            pid: 0,
+            beUser: 1,
+            credentialId: 'cred-soft-delete',
+            publicKeyCose: 'cose-data',
+            label: 'Soft Delete',
+        );
         $uid = $this->repository->save($credential);
         $this->repository->delete($uid);
+
         // Query with restrictions removed to see deleted records
-        $queryBuilder = $this->getConnectionPool()->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder = $this
+            ->getConnectionPool()
+            ->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $row = $queryBuilder
-            ->select('*')
+            ->select(
+                '*',
+            )
             ->from('tx_nrpasskeysbe_credential')
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
         self::assertNotFalse($row);
@@ -225,13 +247,21 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function revokeSetsRevokedAtAndRevokedBy(): void
     {
-        $credential = new Credential(pid: 0, beUser: 1, credentialId: 'cred-to-revoke', publicKeyCose: 'cose-data', label: 'To Revoke');
+        $credential = new Credential(
+            pid: 0,
+            beUser: 1,
+            credentialId: 'cred-to-revoke',
+            publicKeyCose: 'cose-data',
+            label: 'To Revoke',
+        );
         $uid = $this->repository->save($credential);
         $adminUid = 42;
         $beforeRevoke = \time();
         $this->repository->revoke($uid, $adminUid);
         $afterRevoke = \time();
-        $connection = $this->getConnectionPool()->getConnectionForTable('tx_nrpasskeysbe_credential');
+        $connection = $this
+            ->getConnectionPool()
+            ->getConnectionForTable('tx_nrpasskeysbe_credential');
         $result = $connection->select(['*'], 'tx_nrpasskeysbe_credential', ['uid' => $uid]);
         $row = $result->fetchAssociative();
         self::assertNotFalse($row);
@@ -244,7 +274,13 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function revokeExcludesCredentialFromFindByBeUser(): void
     {
-        $credential = new Credential(pid: 0, beUser: 10, credentialId: 'cred-revoke-exclude', publicKeyCose: 'cose-data', label: 'Revoke Exclude');
+        $credential = new Credential(
+            pid: 0,
+            beUser: 10,
+            credentialId: 'cred-revoke-exclude',
+            publicKeyCose: 'cose-data',
+            label: 'Revoke Exclude',
+        );
         $uid = $this->repository->save($credential);
         $countBefore = $this->repository->countByBeUser(10);
         self::assertSame(1, $countBefore);
@@ -258,7 +294,13 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function updateLastUsedUpdatesTimestamp(): void
     {
-        $credential = new Credential(pid: 0, beUser: 1, credentialId: 'cred-update-last-used', publicKeyCose: 'cose-data', label: 'Update Last Used');
+        $credential = new Credential(
+            pid: 0,
+            beUser: 1,
+            credentialId: 'cred-update-last-used',
+            publicKeyCose: 'cose-data',
+            label: 'Update Last Used',
+        );
         $uid = $this->repository->save($credential);
         $beforeUpdate = \time();
         $this->repository->updateLastUsed($uid);
@@ -291,7 +333,13 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     #[Test]
     public function updateLabelUpdatesLabelValue(): void
     {
-        $credential = new Credential(pid: 0, beUser: 1, credentialId: 'cred-update-label', publicKeyCose: 'cose-data', label: 'Original Label');
+        $credential = new Credential(
+            pid: 0,
+            beUser: 1,
+            credentialId: 'cred-update-label',
+            publicKeyCose: 'cose-data',
+            label: 'Original Label',
+        );
         $uid = $this->repository->save($credential);
         $newLabel = 'Updated Label';
         $this->repository->updateLabel($uid, $newLabel);
@@ -337,7 +385,11 @@ final class CredentialRepositoryTest extends FunctionalTestCase
         $all = $this->repository->findAllByBeUser(1);
 
         for ($i = 0; $i < \count($all) - 1; $i++) {
-            self::assertGreaterThanOrEqual($all[$i + 1]->getCreatedAt(), $all[$i]->getCreatedAt(), 'Credentials should be ordered by created_at DESC');
+            self::assertGreaterThanOrEqual(
+                $all[$i + 1]->getCreatedAt(),
+                $all[$i]->getCreatedAt(),
+                'Credentials should be ordered by created_at DESC',
+            );
         }
     }
 }

@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Middleware;
@@ -39,13 +40,15 @@ final class PublicRouteResolverTest extends TestCase
     private function createRoute(mixed $access, mixed $identifier): Route&MockObject
     {
         $route = $this->createMock(Route::class);
-        $route->method('getOption')->willReturnCallback(
-            static fn(string $option): mixed => match ($option) {
-                'access' => $access,
-                '_identifier' => $identifier,
-                default => null,
-            },
-        );
+        $route
+            ->method('getOption')
+            ->willReturnCallback(
+                static fn(string $option): mixed => match ($option) {
+                    'access' => $access,
+                    '_identifier' => $identifier,
+                    default => null,
+                },
+            );
 
         return $route;
     }
@@ -68,7 +71,9 @@ final class PublicRouteResolverTest extends TestCase
             ->method('handle')
             ->with($request)
             ->willReturn($expectedResponse);
-        $this->dispatcher->expects(self::never())->method('dispatch');
+        $this->dispatcher
+            ->expects(self::never())
+            ->method('dispatch');
         $response = $this->subject->process($request, $handler);
         self::assertSame($expectedResponse, $response);
     }
@@ -89,7 +94,9 @@ final class PublicRouteResolverTest extends TestCase
             ->with($request)
             ->willReturn($expectedResponse);
         $handler = $this->createMock(RequestHandlerInterface::class);
-        $handler->expects(self::never())->method('handle');
+        $handler
+            ->expects(self::never())
+            ->method('handle');
         $response = $this->subject->process($request, $handler);
         self::assertSame($expectedResponse, $response);
     }

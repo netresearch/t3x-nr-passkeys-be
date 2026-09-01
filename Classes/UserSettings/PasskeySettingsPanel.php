@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\UserSettings;
@@ -97,9 +98,15 @@ final class PasskeySettingsPanel
         $createdLabel = $this->translate('manage.label.created', 'Created');
         $lastUsedLabel = $this->translate('manage.label.lastUsed', 'Last Used');
         $actionsLabel = $this->translate('manage.label.actions', 'Actions');
-        $singleKeyWarning = $this->translate('manage.warning.singleKey', 'You only have one passkey registered. Consider adding a backup passkey.');
+        $singleKeyWarning = $this->translate(
+            'manage.warning.singleKey',
+            'You only have one passkey registered. Consider adding a backup passkey.',
+        );
         $noPasskeys = $this->translate('manage.noPasskeys', 'No passkeys registered yet.');
-        $nameHelp = $this->translate('manage.label.name.help', 'A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").');
+        $nameHelp = $this->translate(
+            'manage.label.name.help',
+            'A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").',
+        );
         $countBadgeClass = match (true) {
             $passkeyCount === 0 => 'badge-warning',
             $passkeyCount === 1 => 'badge-info',

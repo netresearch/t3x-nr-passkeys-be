@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 return [
@@ -53,5 +54,7 @@ return [
             'config' => ['type' => 'select', 'renderType' => 'selectSingle', 'foreign_table' => 'be_users', 'readOnly' => true],
         ],
     ],
-    'types' => ['0' => ['showitem' => 'be_user, credential_id, label, sign_count, created_at, last_used_at, revoked_at, revoked_by']],
+    'types' => [
+        '0' => ['showitem' => 'be_user, credential_id, label, sign_count, created_at, last_used_at, revoked_at, revoked_by'],
+    ],
 ];

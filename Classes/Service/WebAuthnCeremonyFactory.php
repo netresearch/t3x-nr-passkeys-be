@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -67,7 +68,9 @@ final class WebAuthnCeremonyFactory
 
     private function createAlgorithmManager(): AlgorithmManager
     {
-        $algorithms = $this->configService->getConfiguration()->getAllowedAlgorithmsList();
+        $algorithms = $this->configService
+            ->getConfiguration()
+            ->getAllowedAlgorithmsList();
         $manager = AlgorithmManager::create();
 
         foreach ($algorithms as $algo) {

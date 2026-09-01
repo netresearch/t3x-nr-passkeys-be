@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 use DG\BypassFinals;
 use TYPO3\CMS\Core\Core\ApplicationContext;
@@ -25,6 +26,7 @@ if (!\defined('LF')) {
 
 require __DIR__ . '/../.Build/vendor/autoload.php';
 BypassFinals::enable();
+
 // NormalizedParams::createFromServerParams() reads Environment::getCurrentScript()
 // and getPublicPath(); initialize Environment so the fallback path works in tests.
 $projectPath = \dirname(__DIR__);

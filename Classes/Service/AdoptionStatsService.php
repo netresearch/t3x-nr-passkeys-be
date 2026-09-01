@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -45,6 +46,7 @@ final readonly class AdoptionStatsService
         $usersWithPasskeys = $this->countUsersWithPasskeys();
         [$groups, $groupTitleMap] = $this->getGroupStats();
         $usersWithoutPasskeys = $this->getUsersWithoutPasskeys($groupTitleMap);
+
         // The query fetches one extra row past the cap so we can tell the UI the
         // list was truncated rather than silently showing only the first N (ADMIN-4).
         $truncated = \count($usersWithoutPasskeys) > self::USERS_WITHOUT_PASSKEYS_LIMIT;
@@ -71,11 +73,19 @@ final readonly class AdoptionStatsService
     public function countTotalActiveUsers(): int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $result = $queryBuilder
-            ->count('uid')
+            ->count(
+                'uid',
+            )
             ->from(self::TABLE_USERS)
-            ->where($queryBuilder->expr()->eq('deleted', 0), $queryBuilder->expr()->eq('disable', 0))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0), $queryBuilder
+                    ->expr()
+                    ->eq('disable', 0))
             ->executeQuery()
             ->fetchOne();
 
@@ -91,11 +101,19 @@ final readonly class AdoptionStatsService
     public function countUsersWithPasskeys(): int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_CREDENTIALS);
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $result = $queryBuilder
-            ->addSelectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('be_user') . ') AS cnt')
+            ->addSelectLiteral(
+                'COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('be_user') . ') AS cnt',
+            )
             ->from(self::TABLE_CREDENTIALS)
-            ->where($queryBuilder->expr()->eq('deleted', 0), $queryBuilder->expr()->eq('revoked_at', 0))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0), $queryBuilder
+                    ->expr()
+                    ->eq('revoked_at', 0))
             ->executeQuery()
             ->fetchOne();
 
@@ -114,7 +132,9 @@ final readonly class AdoptionStatsService
     public function countActiveCredentials(): int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_CREDENTIALS);
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $result = $queryBuilder
             ->count(self::TABLE_CREDENTIALS . '.uid')
             ->from(self::TABLE_CREDENTIALS)
@@ -122,13 +142,23 @@ final readonly class AdoptionStatsService
                 self::TABLE_CREDENTIALS,
                 self::TABLE_USERS,
                 'u',
-                $queryBuilder->expr()->eq(self::TABLE_CREDENTIALS . '.be_user', $queryBuilder->quoteIdentifier('u.uid')),
+                $queryBuilder
+                    ->expr()
+                    ->eq(self::TABLE_CREDENTIALS . '.be_user', $queryBuilder->quoteIdentifier('u.uid')),
             )
             ->where(
-                $queryBuilder->expr()->eq(self::TABLE_CREDENTIALS . '.deleted', 0),
-                $queryBuilder->expr()->eq(self::TABLE_CREDENTIALS . '.revoked_at', 0),
-                $queryBuilder->expr()->eq('u.deleted', 0),
-                $queryBuilder->expr()->eq('u.disable', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq(self::TABLE_CREDENTIALS . '.deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq(self::TABLE_CREDENTIALS . '.revoked_at', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('u.deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('u.disable', 0),
             )
             ->executeQuery()
             ->fetchOne();
@@ -146,11 +176,20 @@ final readonly class AdoptionStatsService
     private function getGroupStats(): array
     {
         $groupQueryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_GROUPS);
-        $groupQueryBuilder->getRestrictions()->removeAll();
+        $groupQueryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $groups = $groupQueryBuilder
-            ->select('uid', 'title', 'passkey_enforcement', 'passkey_grace_period_days')
+            ->select(
+                'uid',
+                'title',
+                'passkey_enforcement',
+                'passkey_grace_period_days',
+            )
             ->from(self::TABLE_GROUPS)
-            ->where($groupQueryBuilder->expr()->eq('deleted', 0))
+            ->where($groupQueryBuilder
+                    ->expr()
+                    ->eq('deleted', 0))
             ->executeQuery()
             ->fetchAllAssociative();
         $groupUids = [];
@@ -211,11 +250,19 @@ final readonly class AdoptionStatsService
         }
 
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $rows = $queryBuilder
-            ->select('usergroup')
+            ->select(
+                'usergroup',
+            )
             ->from(self::TABLE_USERS)
-            ->where($queryBuilder->expr()->eq('deleted', 0), $queryBuilder->expr()->eq('disable', 0))
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0), $queryBuilder
+                    ->expr()
+                    ->eq('disable', 0))
             ->executeQuery()
             ->fetchAllAssociative();
 
@@ -236,7 +283,9 @@ final readonly class AdoptionStatsService
         }
 
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $rows = $queryBuilder
             ->select(self::TABLE_USERS . '.usergroup')
             ->from(self::TABLE_USERS)
@@ -244,13 +293,23 @@ final readonly class AdoptionStatsService
                 self::TABLE_USERS,
                 self::TABLE_CREDENTIALS,
                 'c',
-                $queryBuilder->expr()->eq('c.be_user', $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid')),
+                $queryBuilder
+                    ->expr()
+                    ->eq('c.be_user', $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid')),
             )
             ->where(
-                $queryBuilder->expr()->eq(self::TABLE_USERS . '.deleted', 0),
-                $queryBuilder->expr()->eq(self::TABLE_USERS . '.disable', 0),
-                $queryBuilder->expr()->eq('c.deleted', 0),
-                $queryBuilder->expr()->eq('c.revoked_at', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq(self::TABLE_USERS . '.deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq(self::TABLE_USERS . '.disable', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('c.deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('c.revoked_at', 0),
             )
             ->groupBy(self::TABLE_USERS . '.uid', self::TABLE_USERS . '.usergroup')
             ->executeQuery()
@@ -304,7 +363,9 @@ final readonly class AdoptionStatsService
     private function getUsersWithoutPasskeys(array $groupTitleMap): array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $rows = $queryBuilder
             ->select(
                 self::TABLE_USERS . '.uid',
@@ -319,16 +380,30 @@ final readonly class AdoptionStatsService
                 self::TABLE_USERS,
                 self::TABLE_CREDENTIALS,
                 'c',
-                (string) $queryBuilder->expr()->and(
-                    $queryBuilder->expr()->eq('c.be_user', $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid')),
-                    $queryBuilder->expr()->eq('c.deleted', 0),
-                    $queryBuilder->expr()->eq('c.revoked_at', 0),
-                ),
+                (string) $queryBuilder
+                    ->expr()
+                    ->and(
+                        $queryBuilder
+                            ->expr()
+                            ->eq('c.be_user', $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid')),
+                        $queryBuilder
+                            ->expr()
+                            ->eq('c.deleted', 0),
+                        $queryBuilder
+                            ->expr()
+                            ->eq('c.revoked_at', 0),
+                    ),
             )
             ->where(
-                $queryBuilder->expr()->eq(self::TABLE_USERS . '.deleted', 0),
-                $queryBuilder->expr()->eq(self::TABLE_USERS . '.disable', 0),
-                $queryBuilder->expr()->isNull('c.uid'),
+                $queryBuilder
+                    ->expr()
+                    ->eq(self::TABLE_USERS . '.deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq(self::TABLE_USERS . '.disable', 0),
+                $queryBuilder
+                    ->expr()
+                    ->isNull('c.uid'),
             )
             ->setMaxResults(self::USERS_WITHOUT_PASSKEYS_LIMIT + 1)
             ->executeQuery()

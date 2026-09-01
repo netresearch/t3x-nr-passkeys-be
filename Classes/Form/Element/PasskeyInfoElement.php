@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Form\Element;
@@ -65,6 +66,7 @@ class PasskeyInfoElement extends AbstractFormElement
         $currentBackendUser = $this->getBackendUser();
         $lang = $this->getLanguageService();
         $isAdmin = $currentBackendUser->isAdmin();
+
         // System maintainer protection: only system maintainers can manage other system maintainers' passkeys.
         // Check the system maintainers list directly to avoid instantiating a BackendUserAuthentication
         // (which requires a database connection for setBeUserByUid).
@@ -115,20 +117,30 @@ class PasskeyInfoElement extends AbstractFormElement
 
                 if ($isRevoked) {
                     $childHtml[] = '<span class="badge badge-danger">' . \htmlspecialchars(
-                        $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.revoked'),
+                        $lang->sL(
+                            'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.revoked',
+                        ),
                     ) . '</span>';
                 } else {
                     $childHtml[] = '<span class="badge badge-success">' . \htmlspecialchars(
-                        $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.active'),
+                        $lang->sL(
+                            'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.active',
+                        ),
                     ) . '</span>';
                 }
 
                 // Metadata
                 $createdAt = $credential->getCreatedAt();
                 $lastUsedAt = $credential->getLastUsedAt();
-                $createdLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.created'));
-                $lastUsedLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.lastUsed'));
-                $neverLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.never'));
+                $createdLabel = \htmlspecialchars(
+                    $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.created'),
+                );
+                $lastUsedLabel = \htmlspecialchars(
+                    $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.lastUsed'),
+                );
+                $neverLabel = \htmlspecialchars(
+                    $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.never'),
+                );
                 $childHtml[] = '<br><small class="text-body-secondary">';
                 $childHtml[] = $createdLabel . ': ' . ($createdAt > 0 ? \htmlspecialchars($this->formatTimestamp($createdAt)) : $neverLabel);
                 $childHtml[] = ' &middot; ' . $lastUsedLabel . ': ' . ($lastUsedAt > 0 ? \htmlspecialchars($this->formatTimestamp($lastUsedAt)) : $neverLabel);
@@ -146,8 +158,14 @@ class PasskeyInfoElement extends AbstractFormElement
                             'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke.confirm.text',
                         ),
                     );
-                    $revokeLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke'));
-                    $cancelLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.cancel'));
+                    $revokeLabel = \htmlspecialchars(
+                        $lang->sL(
+                            'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke',
+                        ),
+                    );
+                    $cancelLabel = \htmlspecialchars(
+                        $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.cancel'),
+                    );
                     $childHtml[] = '<button type="button"';
                     $childHtml[] = ' class="btn btn-default btn-sm float-end t3js-passkey-revoke-button"';
                     $childHtml[] = ' data-credential-uid="' . $credUid . '"';
@@ -176,14 +194,21 @@ class PasskeyInfoElement extends AbstractFormElement
 
         if ($isManagementAllowed) {
             $revokeAllTitle = \htmlspecialchars(
-                $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.title'),
+                $lang->sL(
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.title',
+                ),
             );
             $revokeAllText = \htmlspecialchars(
-                $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.text'),
+                $lang->sL(
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.text',
+                ),
             );
-            $revokeAllLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll'));
+            $revokeAllLabel = \htmlspecialchars(
+                $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll'),
+            );
             $cancelLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.cancel'));
             $html[] = '<div class="form-wizards-item-bottom">';
+
             // "Revoke all passkeys" button
             $html[] = '<button type="button"';
             $html[] = ' class="t3js-passkey-revoke-all-button btn btn-danger mt-2 ' . ($activeCount === 0 ? 'disabled" disabled="disabled' : '') . '"';
@@ -194,14 +219,21 @@ class PasskeyInfoElement extends AbstractFormElement
             $html[] = '>';
             $html[] = $revokeAllLabel;
             $html[] = '</button>';
+
             // "Unlock account" button
             $unlockTitle = \htmlspecialchars(
-                $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.title'),
+                $lang->sL(
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.title',
+                ),
             );
             $unlockText = \htmlspecialchars(
-                $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.text'),
+                $lang->sL(
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.text',
+                ),
             );
-            $unlockLabel = \htmlspecialchars($lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock'));
+            $unlockLabel = \htmlspecialchars(
+                $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock'),
+            );
             $html[] = '<button type="button"';
             $html[] = ' class="t3js-passkey-unlock-button btn btn-default btn-sm mt-2 ms-2"';
             $html[] = ' data-confirmation-title="' . $unlockTitle . '"';

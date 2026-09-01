@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Fuzz;
@@ -123,7 +124,12 @@ final class EnforcementFuzzTest extends TestCase
             $gracePeriodDays = \random_int(0, 3650);
             $currentTime = \random_int(0, PHP_INT_MAX >> 2);
             $level = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
-            $status = new EnforcementStatus(level: $level, gracePeriodDays: $gracePeriodDays, gracePeriodStart: 0, hasPasskeys: (bool) \random_int(0, 1));
+            $status = new EnforcementStatus(
+                level: $level,
+                gracePeriodDays: $gracePeriodDays,
+                gracePeriodStart: 0,
+                hasPasskeys: (bool) \random_int(0, 1),
+            );
             self::assertFalse(
                 $status->isGracePeriodExpired($currentTime),
                 'isGracePeriodExpired() should be false when gracePeriodStart is 0',
@@ -173,13 +179,30 @@ final class EnforcementFuzzTest extends TestCase
             $a = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
             $b = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
             $strictest = EnforcementLevel::strictest($a, $b);
-            self::assertGreaterThanOrEqual($a->severity(), $strictest->severity(), 'strictest() returned a level with lower severity than input $a');
-            self::assertGreaterThanOrEqual($b->severity(), $strictest->severity(), 'strictest() returned a level with lower severity than input $b');
+            self::assertGreaterThanOrEqual(
+                $a->severity(),
+                $strictest->severity(),
+                'strictest() returned a level with lower severity than input $a',
+            );
+            self::assertGreaterThanOrEqual(
+                $b->severity(),
+                $strictest->severity(),
+                'strictest() returned a level with lower severity than input $b',
+            );
+
             // strictest should be one of the two inputs
-            self::assertTrue($strictest === $a || $strictest === $b, 'strictest() returned a level that is neither input');
+            self::assertTrue(
+                $strictest === $a || $strictest === $b,
+                'strictest() returned a level that is neither input',
+            );
+
             // Commutative: strictest(a, b) should have same severity as strictest(b, a)
             $reversed = EnforcementLevel::strictest($b, $a);
-            self::assertSame($strictest->severity(), $reversed->severity(), 'strictest() is not commutative in severity');
+            self::assertSame(
+                $strictest->severity(),
+                $reversed->severity(),
+                'strictest() is not commutative in severity',
+            );
         }
     }
 
@@ -189,7 +212,12 @@ final class EnforcementFuzzTest extends TestCase
         for ($i = 0; $i < 100; $i++) {
             $totalUsers = \random_int(0, 1000000);
             $usersWithPasskeys = \random_int(0, $totalUsers);
-            $stats = new AdoptionStats(totalUsers: $totalUsers, usersWithPasskeys: $usersWithPasskeys, groups: [], usersWithoutPasskeys: []);
+            $stats = new AdoptionStats(
+                totalUsers: $totalUsers,
+                usersWithPasskeys: $usersWithPasskeys,
+                groups: [],
+                usersWithoutPasskeys: [],
+            );
             $percentage = $stats->adoptionPercentage();
             self::assertIsFloat($percentage);
             self::assertGreaterThanOrEqual(0.0, $percentage, 'adoptionPercentage() returned a negative value');
@@ -218,11 +246,19 @@ final class EnforcementFuzzTest extends TestCase
             );
             $percentage = $info->adoptionPercentage();
             self::assertIsFloat($percentage);
-            self::assertGreaterThanOrEqual(0.0, $percentage, 'GroupEnforcementInfo::adoptionPercentage() returned a negative value');
+            self::assertGreaterThanOrEqual(
+                0.0,
+                $percentage,
+                'GroupEnforcementInfo::adoptionPercentage() returned a negative value',
+            );
             self::assertLessThanOrEqual(100.0, $percentage, 'GroupEnforcementInfo::adoptionPercentage() exceeded 100.0');
 
             if ($totalUsers === 0) {
-                self::assertSame(0.0, $percentage, 'GroupEnforcementInfo::adoptionPercentage() should be 0.0 when totalUsers is 0');
+                self::assertSame(
+                    0.0,
+                    $percentage,
+                    'GroupEnforcementInfo::adoptionPercentage() should be 0.0 when totalUsers is 0',
+                );
             }
 
             // Verify JSON serialization does not throw

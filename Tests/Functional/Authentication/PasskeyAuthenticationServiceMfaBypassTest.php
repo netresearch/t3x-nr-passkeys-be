@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Authentication;
@@ -107,6 +108,7 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         $service->pObj = $backendUser;
         $service->login = ['uname' => 'adminuser', 'uident' => 'regularPassword123'];
         $result = $service->authUser($backendUser->user ?? []);
+
         // No passkey payload → auth passes through to the next service.
         self::assertSame(100, $result);
         self::assertNull(
@@ -137,13 +139,16 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         $credential = new Credential(uid: 10, beUser: 5, label: 'Functional Test Key');
         $verified = new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class));
         $webAuthnService = $this->createMock(WebAuthnService::class);
-        $webAuthnService->method('verifyAssertionResponse')->willReturn($verified);
+        $webAuthnService
+            ->method('verifyAssertionResponse')
+            ->willReturn($verified);
         GeneralUtility::addInstance(WebAuthnService::class, $webAuthnService);
     }
 
     private function stubRateLimiterService(): void
     {
         $rateLimiterService = $this->createMock(RateLimiterService::class);
+
         // All methods are stubbed (void-ish), no explicit setup needed.
         GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
     }

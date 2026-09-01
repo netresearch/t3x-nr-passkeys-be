@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -35,11 +36,14 @@ final readonly class ChallengeService
 
     public function createChallengeToken(string $challenge): string
     {
-        $ttl = $this->configService->getConfiguration()->getChallengeTtlSeconds();
+        $ttl = $this->configService
+            ->getConfiguration()
+            ->getChallengeTtlSeconds();
         $expiresAt = \time() + $ttl;
         $nonce = \bin2hex(\random_bytes(16));
         $payload = \base64_encode($challenge) . '|' . $expiresAt . '|' . $nonce;
         $hmac = \hash_hmac(self::HMAC_ALGO, $payload, $this->getSigningKey());
+
         // Store nonce in cache to ensure single-use
         $this->nonceCache->set($this->getNonceCacheKey($nonce), 'valid', [], $ttl + 60);
 
@@ -64,6 +68,7 @@ final readonly class ChallengeService
         }
 
         [$challengeB64, $expiresAtStr, $nonce, $hmac] = $parts;
+
         // Verify HMAC (constant-time comparison)
         $payload = $challengeB64 . '|' . $expiresAtStr . '|' . $nonce;
         $expectedHmac = \hash_hmac(self::HMAC_ALGO, $payload, $this->getSigningKey());
@@ -92,7 +97,10 @@ final readonly class ChallengeService
         // Atomic nonce invalidation: lock ensures only one concurrent request
         // can consume a given nonce, preventing replay via TOCTOU race.
         $nonceCacheKey = $this->getNonceCacheKey($nonce);
-        $locker = $this->lockFactory->createLocker('passkey_nonce_' . $nonceCacheKey, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
+        $locker = $this->lockFactory->createLocker(
+            'passkey_nonce_' . $nonceCacheKey,
+            LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE,
+        );
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
             $this->logger->error('Failed to acquire nonce lock', ['nonceCacheKey' => $nonceCacheKey]);

@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
@@ -22,6 +23,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         // A strict (non-empty, non-".*") trustedHostsPattern so the host-derivation
         // tests reach the Host fallback without tripping the fail-closed guard.
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '(^|\.)example\.(org|com)$';
@@ -64,6 +66,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
         self::assertSame('required', $config->getUserVerification());
         self::assertTrue($config->isDiscoverableLoginEnabled());
         self::assertFalse($config->isDisablePasswordLogin());
+
         // Defensive fallback: when the settings key is absent, the service
         // returns false so an unconfigured install never silently bypasses
         // TYPO3 MFA. The "on-by-default" behaviour for fresh installs comes
@@ -118,6 +121,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     {
         $service = $this->createService(null);
         $config = $service->getConfiguration();
+
         // Should fall back to all defaults
         self::assertSame('', $config->getRpId());
         self::assertSame('TYPO3 Backend', $config->getRpName());
@@ -204,6 +208,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
         $_SERVER['HTTP_HOST'] = 'host.example.com';
         GeneralUtility::flushInternalRuntimeCaches();
         $service = $this->createService(['rpId' => 'rpid.example.com', 'origin' => '']);
+
         // Origin should come from HTTP_HOST, not rpId
         self::assertSame('https://host.example.com', $service->getEffectiveOrigin());
     }

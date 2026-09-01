@@ -4,6 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Domain\Dto;
@@ -21,7 +22,14 @@ final class AdoptionStatsTest extends TestCase
     #[Test]
     public function constructorSetsProperties(): void
     {
-        $group = new GroupEnforcementInfo(uid: 1, title: 'Editors', enforcement: 'required', gracePeriodDays: 14, totalUsers: 10, usersWithPasskeys: 5);
+        $group = new GroupEnforcementInfo(
+            uid: 1,
+            title: 'Editors',
+            enforcement: 'required',
+            gracePeriodDays: 14,
+            totalUsers: 10,
+            usersWithPasskeys: 5,
+        );
         $user = new UserPasskeyStatus(
             uid: 42,
             username: 'jdoe',
