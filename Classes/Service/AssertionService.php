@@ -324,6 +324,7 @@ final readonly class AssertionService
 
         $this->credentialRepository->updateSignCount($credential->getUid(), $updatedSource->counter);
         $this->credentialRepository->updateLastUsed($credential->getUid());
+
         $this->logger->info(
             'Passkey login successful',
             ['be_user_uid' => $beUserUid, 'credential_uid' => $credential->getUid()],

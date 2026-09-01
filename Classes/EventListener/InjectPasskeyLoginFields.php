@@ -39,6 +39,7 @@ final readonly class InjectPasskeyLoginFields
         // injected login UI adapts to the light and dark login screens.
         $this->pageRenderer->addCssFile('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyLogin.js');
+
         $passkeyConfig = [
             'loginOptionsUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_options'),
             'loginVerifyUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_verify'),

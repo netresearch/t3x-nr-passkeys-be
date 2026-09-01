@@ -151,6 +151,7 @@ final class AdminModuleController
             ->getMenuRegistry();
         $menu = $this->createMenu($menuRegistry);
         $menu->setIdentifier('PasskeyManagementMenu');
+
         $dashboardItem = $this
             ->createMenuItem($menu)
             ->setTitle($this->translate('module.dashboard', 'Dashboard'))

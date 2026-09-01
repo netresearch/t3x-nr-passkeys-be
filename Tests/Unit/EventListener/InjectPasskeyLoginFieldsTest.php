@@ -177,6 +177,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                         // Extract and decode JSON from the JS assignment
                         $jsonPart = \str_replace('window.NrPasskeysBeConfig = ', '', $code);
                         $jsonPart = \rtrim($jsonPart, ';');
+
                         $decoded = \json_decode($jsonPart, true);
                         self::assertIsArray($decoded);
                         self::assertSame('/typo3/passkeys/login/options', $decoded['loginOptionsUrl']);
