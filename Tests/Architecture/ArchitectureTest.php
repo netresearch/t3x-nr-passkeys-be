@@ -85,8 +85,7 @@ final class ArchitectureTest
 
     public function test_route_resolver_does_not_depend_on_business_logic(): Rule
     {
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::classname(self::NS . 'Middleware\PublicRouteResolver'))
             ->shouldNot()
             ->dependOn()
@@ -176,13 +175,14 @@ final class ArchitectureTest
 
     public function test_all_controllers_are_final(): Rule
     {
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Controller'))
             ->excluding(Selector::isInterface())
             ->should()
             ->beFinal()
-            ->because('Controllers are leaf classes — composition over inheritance');
+            ->because(
+                'Controllers are leaf classes — composition over inheritance',
+            );
     }
 
     public function test_all_dtos_are_final(): Rule

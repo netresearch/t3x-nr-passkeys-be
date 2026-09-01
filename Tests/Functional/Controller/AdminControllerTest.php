@@ -317,11 +317,9 @@ final class AdminControllerTest extends FunctionalTestCase
         $row = $queryBuilder
             ->select('passkey_enforcement')
             ->from('be_groups')
-            ->where(
-                $queryBuilder
-                    ->expr()
-                    ->eq('uid', 3),
-            )
+            ->where($queryBuilder
+                ->expr()
+                ->eq('uid', 3))
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);
@@ -385,11 +383,9 @@ final class AdminControllerTest extends FunctionalTestCase
         $row = $queryBuilder
             ->select('passkey_nudge_until')
             ->from('be_users')
-            ->where(
-                $queryBuilder
-                    ->expr()
-                    ->eq('uid', 1),
-            )
+            ->where($queryBuilder
+                ->expr()
+                ->eq('uid', 1))
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);

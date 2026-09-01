@@ -27,7 +27,10 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
  * or an account locked out by failed attempts. Run on the server, no backend login
  * required.
  */
-#[AsCommand(name: 'passkeys:recovery', description: 'Emergency recovery: list/disable passkey enforcement and reset login lockouts from the CLI.')]
+#[AsCommand(
+    name: 'passkeys:recovery',
+    description: 'Emergency recovery: list/disable passkey enforcement and reset login lockouts from the CLI.',
+)]
 final class RecoveryCommand extends Command
 {
     use TypeCastTrait;
