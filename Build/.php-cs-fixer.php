@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Netresearch\Typo3CiWorkflows\Fixer\BlankLineAfterControlStructureFixer;
+use Netresearch\Typo3CiWorkflows\Fixer\BlankLineBeforeCommentFixer;
 use Netresearch\Typo3CiWorkflows\Fixer\BreakLongMethodChainFixer;
 
 $finder = (new PhpCsFixer\Finder())
@@ -16,6 +17,7 @@ return (new PhpCsFixer\Config())
     // there: reflowing a code base is a decision each project makes for itself.
     ->registerCustomFixers([
         new BlankLineAfterControlStructureFixer(),
+        new BlankLineBeforeCommentFixer(),
         new BreakLongMethodChainFixer(),
     ])
     ->setRules([
@@ -38,11 +40,24 @@ return (new PhpCsFixer\Config())
         // this code keeps most consistently — 232 of 247 places, against 37 %
         // for the blank line before an `if` that the shipped rule enforces.
         'Netresearch/blank_line_after_control_structure' => true,
-        // Every call of a chain on its own line from three calls on. Nothing in
+        // Before a comment on a line of its own — 274 of 309 places here, 89 %.
+        // `blank_line_before_statement` covers docblocks; a `//` comment is not
+        // a statement, and no shipped fixer writes in front of one.
+        'Netresearch/blank_line_before_comment' => true,
+        // Every call of a chain on its own line from two calls on. Nothing in
         // php-cs-fixer breaks a line, so a chain written on one line stays on
         // one line however long it grows once code is generated.
-        'Netresearch/break_long_method_chain' => ['minimum_links' => 3],
+        'Netresearch/break_long_method_chain' => ['minimum_links' => 2],
         'declare_strict_types' => true,
+        // The file header, and the blank lines around it. Without this the
+        // header is a plain comment, the line between it and `declare` belongs
+        // to no rule, and a re-print drops it.
+        'header_comment' => [
+            'header'       => "Copyright (c) 2025-2026 Netresearch DTT GmbH\nSPDX-License-Identifier: GPL-2.0-or-later",
+            'comment_type' => 'comment',
+            'location'     => 'after_open',
+            'separate'     => 'both',
+        ],
         // @PER-CS3.0 has no opinion on the space before the parentheses, so `declare
         // (strict_types=1);` passes the gate. Hand-written code does not produce it, but
         // anything generated or rewritten through an AST does, and then stays that way.
