@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Domain\Dto;
@@ -38,7 +37,7 @@ final readonly class GroupEnforcementInfo implements JsonSerializable
             return 0.0;
         }
 
-        return \round(($this->usersWithPasskeys / $this->totalUsers) * 100, 1);
+        return \round($this->usersWithPasskeys / $this->totalUsers * 100, 1);
     }
 
     /**

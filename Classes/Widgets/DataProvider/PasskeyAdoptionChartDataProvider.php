@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Widgets\DataProvider;
@@ -30,8 +29,9 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
      * @var array<string, array{string, string}>
      */
     private const AUDIENCE_COLORS = [
-        'backend'  => ['#4c7e3a', '#ff8700'], // green / orange (current BE palette)
-        'frontend' => ['#2f99a4', '#c83c5a'], // brand teal / magenta — distinct hue family
+        'backend' => ['#4c7e3a', '#ff8700'],
+        // green / orange (current BE palette)
+        'frontend' => ['#2f99a4', '#c83c5a'],
     ];
 
     /**
@@ -42,9 +42,7 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
     /**
      * @param iterable<PasskeyAdoptionStatsProviderInterface> $statsProviders
      */
-    public function __construct(
-        private iterable $statsProviders,
-    ) {}
+    public function __construct(private iterable $statsProviders) {}
 
     /**
      * @return array{labels: list<string>, datasets: list<array{label: string, backgroundColor: list<string>, data: list<int>}>}
@@ -62,18 +60,14 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
             $segments,
             static fn(PasskeyAudienceStats $a, PasskeyAudienceStats $b): int => \strcmp($a->audienceKey, $b->audienceKey),
         );
-
         $datasets = [];
 
         foreach ($segments as $segment) {
             $colors = self::AUDIENCE_COLORS[$segment->audienceKey] ?? self::FALLBACK_COLORS;
             $datasets[] = [
-                'label' => $this->translate(
-                    'widget.adoption.segment.' . $segment->audienceKey,
-                    \ucfirst($segment->audienceKey),
-                ),
+                'label' => $this->translate('widget.adoption.segment.' . $segment->audienceKey, \ucfirst($segment->audienceKey)),
                 'backgroundColor' => [$colors[0], $colors[1]],
-                'data'            => [$segment->usersWithPasskeys, $segment->usersWithoutPasskeys()],
+                'data' => [$segment->usersWithPasskeys, $segment->usersWithoutPasskeys()],
             ];
         }
 

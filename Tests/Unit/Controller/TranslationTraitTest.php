@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
@@ -26,7 +25,6 @@ final class TranslationTraitTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->subject = new class {
             use TranslationTrait;
 
@@ -51,11 +49,8 @@ final class TranslationTraitTest extends TestCase
             ->method('sL')
             ->with('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:some.key')
             ->willReturn('Translated value');
-
         $GLOBALS['LANG'] = $langMock;
-
         $result = $this->subject->callTranslate('some.key', 'Fallback value');
-
         self::assertSame('Translated value', $result);
     }
 
@@ -63,9 +58,7 @@ final class TranslationTraitTest extends TestCase
     public function translateReturnsFallbackWhenLanguageServiceIsUnavailable(): void
     {
         unset($GLOBALS['LANG']);
-
         $result = $this->subject->callTranslate('some.key', 'Fallback value');
-
         self::assertSame('Fallback value', $result);
     }
 
@@ -73,9 +66,7 @@ final class TranslationTraitTest extends TestCase
     public function translateReturnsFallbackWhenGlobalsLangIsNotLanguageService(): void
     {
         $GLOBALS['LANG'] = 'not-a-language-service-object';
-
         $result = $this->subject->callTranslate('some.key', 'Fallback value');
-
         self::assertSame('Fallback value', $result);
     }
 
@@ -83,9 +74,7 @@ final class TranslationTraitTest extends TestCase
     public function translateReturnsFallbackWhenGlobalsLangIsNull(): void
     {
         $GLOBALS['LANG'] = null;
-
         $result = $this->subject->callTranslate('some.key', 'Fallback value');
-
         self::assertSame('Fallback value', $result);
     }
 
@@ -93,14 +82,9 @@ final class TranslationTraitTest extends TestCase
     public function translateReturnsFallbackWhenTranslationIsEmpty(): void
     {
         $langMock = $this->createMock(LanguageService::class);
-        $langMock
-            ->method('sL')
-            ->willReturn('');
-
+        $langMock->method('sL')->willReturn('');
         $GLOBALS['LANG'] = $langMock;
-
         $result = $this->subject->callTranslate('missing.key', 'My fallback');
-
         self::assertSame('My fallback', $result);
     }
 
@@ -113,9 +97,7 @@ final class TranslationTraitTest extends TestCase
             ->method('sL')
             ->with('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:flash.success')
             ->willReturn('Success');
-
         $GLOBALS['LANG'] = $langMock;
-
         $this->subject->callTranslate('flash.success', 'Success fallback');
     }
 
@@ -128,11 +110,8 @@ final class TranslationTraitTest extends TestCase
             ->method('sL')
             ->with('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:')
             ->willReturn('');
-
         $GLOBALS['LANG'] = $langMock;
-
         $result = $this->subject->callTranslate('', 'empty key fallback');
-
         self::assertSame('empty key fallback', $result);
     }
 }

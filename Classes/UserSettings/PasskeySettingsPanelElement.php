@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\UserSettings;
@@ -57,7 +56,6 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
     {
         /** @var array<string, mixed> $resultArray */
         $resultArray = $this->initializeResultArray();
-
         $backendUser = $GLOBALS['BE_USER'] ?? null;
 
         if (!$backendUser instanceof BackendUserAuthentication) {
@@ -72,10 +70,8 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
         }
 
         $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
-        $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
-            ? $sysConf['encryptionKey']
-            : '';
+        $sysConf = \is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
+        $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null) ? $sysConf['encryptionKey'] : '';
 
         if (\strlen($encryptionKey) < 32) {
             $warning = $this->translate(
@@ -88,21 +84,15 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
         }
 
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyManagement.js');
-        $this->pageRenderer->addInlineLanguageLabelFile(
-            'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
-            'js.',
-        );
-
+        $this->pageRenderer->addInlineLanguageLabelFile('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
         $passkeyCount = $this->credentialRepository->countByBeUser($userId);
-
         $urls = [
-            'list'            => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
+            'list' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
             'registerOptions' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_options'),
-            'registerVerify'  => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_verify'),
-            'rename'          => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_rename'),
-            'remove'          => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_remove'),
+            'registerVerify' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_verify'),
+            'rename' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_rename'),
+            'remove' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_remove'),
         ];
-
         $resultArray['html'] = $this->panel->buildHtml($passkeyCount, $urls);
 
         return $resultArray;

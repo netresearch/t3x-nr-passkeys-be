@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Domain\Dto;
@@ -24,12 +23,7 @@ final class VerifiedAssertionTest extends TestCase
     {
         $credential = new Credential(uid: 1, beUser: 42, label: 'Test Key');
         $source = $this->createMock(CredentialRecord::class);
-
-        $dto = new VerifiedAssertion(
-            credential: $credential,
-            source: $source,
-        );
-
+        $dto = new VerifiedAssertion(credential: $credential, source: $source);
         self::assertSame($credential, $dto->credential);
         self::assertSame($source, $dto->source);
     }

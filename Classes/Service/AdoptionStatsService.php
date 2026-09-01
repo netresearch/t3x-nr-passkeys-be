@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -35,10 +34,7 @@ final readonly class AdoptionStatsService
      */
     public const USERS_WITHOUT_PASSKEYS_LIMIT = 500;
 
-    public function __construct(
-        private ConnectionPool $connectionPool,
-        private EnforcementService $enforcementService,
-    ) {}
+    public function __construct(private ConnectionPool $connectionPool, private EnforcementService $enforcementService) {}
 
     /**
      * Compute the current passkey adoption statistics.
@@ -49,7 +45,6 @@ final readonly class AdoptionStatsService
         $usersWithPasskeys = $this->countUsersWithPasskeys();
         [$groups, $groupTitleMap] = $this->getGroupStats();
         $usersWithoutPasskeys = $this->getUsersWithoutPasskeys($groupTitleMap);
-
         // The query fetches one extra row past the cap so we can tell the UI the
         // list was truncated rather than silently showing only the first N (ADMIN-4).
         $truncated = \count($usersWithoutPasskeys) > self::USERS_WITHOUT_PASSKEYS_LIMIT;
@@ -77,14 +72,10 @@ final readonly class AdoptionStatsService
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
         $queryBuilder->getRestrictions()->removeAll();
-
         $result = $queryBuilder
             ->count('uid')
             ->from(self::TABLE_USERS)
-            ->where(
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
-            )
+            ->where($queryBuilder->expr()->eq('deleted', 0), $queryBuilder->expr()->eq('disable', 0))
             ->executeQuery()
             ->fetchOne();
 
@@ -101,14 +92,10 @@ final readonly class AdoptionStatsService
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_CREDENTIALS);
         $queryBuilder->getRestrictions()->removeAll();
-
         $result = $queryBuilder
             ->addSelectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('be_user') . ') AS cnt')
             ->from(self::TABLE_CREDENTIALS)
-            ->where(
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('revoked_at', 0),
-            )
+            ->where($queryBuilder->expr()->eq('deleted', 0), $queryBuilder->expr()->eq('revoked_at', 0))
             ->executeQuery()
             ->fetchOne();
 
@@ -128,7 +115,6 @@ final readonly class AdoptionStatsService
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_CREDENTIALS);
         $queryBuilder->getRestrictions()->removeAll();
-
         $result = $queryBuilder
             ->count(self::TABLE_CREDENTIALS . '.uid')
             ->from(self::TABLE_CREDENTIALS)
@@ -136,10 +122,7 @@ final readonly class AdoptionStatsService
                 self::TABLE_CREDENTIALS,
                 self::TABLE_USERS,
                 'u',
-                $queryBuilder->expr()->eq(
-                    self::TABLE_CREDENTIALS . '.be_user',
-                    $queryBuilder->quoteIdentifier('u.uid'),
-                ),
+                $queryBuilder->expr()->eq(self::TABLE_CREDENTIALS . '.be_user', $queryBuilder->quoteIdentifier('u.uid')),
             )
             ->where(
                 $queryBuilder->expr()->eq(self::TABLE_CREDENTIALS . '.deleted', 0),
@@ -164,16 +147,12 @@ final readonly class AdoptionStatsService
     {
         $groupQueryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_GROUPS);
         $groupQueryBuilder->getRestrictions()->removeAll();
-
         $groups = $groupQueryBuilder
             ->select('uid', 'title', 'passkey_enforcement', 'passkey_grace_period_days')
             ->from(self::TABLE_GROUPS)
-            ->where(
-                $groupQueryBuilder->expr()->eq('deleted', 0),
-            )
+            ->where($groupQueryBuilder->expr()->eq('deleted', 0))
             ->executeQuery()
             ->fetchAllAssociative();
-
         $groupUids = [];
         $titleMap = [];
 
@@ -191,22 +170,17 @@ final readonly class AdoptionStatsService
         // Batch-fetch user counts per group (avoids N+1 queries)
         $totalCountMap = $this->countUsersPerGroup($groupUids);
         $passkeyCountMap = $this->countUsersWithPasskeysPerGroup($groupUids);
-
         $result = [];
 
         foreach ($groups as $group) {
             $uidValue = $group['uid'] ?? 0;
             $groupUid = \is_numeric($uidValue) ? (int) $uidValue : 0;
-
             $titleValue = $group['title'] ?? '';
             $title = \is_string($titleValue) ? $titleValue : '';
-
             $enforcementValue = $group['passkey_enforcement'] ?? 'off';
             $enforcement = \is_string($enforcementValue) ? $enforcementValue : 'off';
-
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
             $gracePeriodDays = \is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
-
             $result[] = new GroupEnforcementInfo(
                 uid: $groupUid,
                 title: $title,
@@ -238,14 +212,10 @@ final readonly class AdoptionStatsService
 
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
         $queryBuilder->getRestrictions()->removeAll();
-
         $rows = $queryBuilder
             ->select('usergroup')
             ->from(self::TABLE_USERS)
-            ->where(
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
-            )
+            ->where($queryBuilder->expr()->eq('deleted', 0), $queryBuilder->expr()->eq('disable', 0))
             ->executeQuery()
             ->fetchAllAssociative();
 
@@ -267,7 +237,6 @@ final readonly class AdoptionStatsService
 
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
         $queryBuilder->getRestrictions()->removeAll();
-
         $rows = $queryBuilder
             ->select(self::TABLE_USERS . '.usergroup')
             ->from(self::TABLE_USERS)
@@ -275,10 +244,7 @@ final readonly class AdoptionStatsService
                 self::TABLE_USERS,
                 self::TABLE_CREDENTIALS,
                 'c',
-                $queryBuilder->expr()->eq(
-                    'c.be_user',
-                    $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid'),
-                ),
+                $queryBuilder->expr()->eq('c.be_user', $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid')),
             )
             ->where(
                 $queryBuilder->expr()->eq(self::TABLE_USERS . '.deleted', 0),
@@ -339,7 +305,6 @@ final readonly class AdoptionStatsService
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_USERS);
         $queryBuilder->getRestrictions()->removeAll();
-
         $rows = $queryBuilder
             ->select(
                 self::TABLE_USERS . '.uid',
@@ -355,10 +320,7 @@ final readonly class AdoptionStatsService
                 self::TABLE_CREDENTIALS,
                 'c',
                 (string) $queryBuilder->expr()->and(
-                    $queryBuilder->expr()->eq(
-                        'c.be_user',
-                        $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid'),
-                    ),
+                    $queryBuilder->expr()->eq('c.be_user', $queryBuilder->quoteIdentifier(self::TABLE_USERS . '.uid')),
                     $queryBuilder->expr()->eq('c.deleted', 0),
                     $queryBuilder->expr()->eq('c.revoked_at', 0),
                 ),
@@ -371,37 +333,24 @@ final readonly class AdoptionStatsService
             ->setMaxResults(self::USERS_WITHOUT_PASSKEYS_LIMIT + 1)
             ->executeQuery()
             ->fetchAllAssociative();
-
         $result = [];
 
         foreach ($rows as $row) {
             $uidValue = $row['uid'] ?? 0;
             $uid = \is_numeric($uidValue) ? (int) $uidValue : 0;
-
             $usergroupValue = $row['usergroup'] ?? '';
             $usergroup = \is_string($usergroupValue) ? $usergroupValue : '';
-
             $graceStartValue = $row['passkey_grace_period_start'] ?? 0;
             $graceStart = \is_numeric($graceStartValue) ? (int) $graceStartValue : 0;
-
             $usernameValue = $row['username'] ?? '';
             $username = \is_string($usernameValue) ? $usernameValue : '';
-
             $realNameValue = $row['realName'] ?? '';
             $realName = \is_string($realNameValue) ? $realNameValue : '';
-
-            $userRow = [
-                'uid' => $uid,
-                'usergroup' => $usergroup,
-                'passkey_grace_period_start' => $graceStart,
-            ];
-
+            $userRow = ['uid' => $uid, 'usergroup' => $usergroup, 'passkey_grace_period_start' => $graceStart];
             $status = $this->enforcementService->getStatus($userRow);
             $groupTitles = $this->resolveGroupTitles($usergroup, $groupTitleMap);
-
             $nudgeUntilValue = $row['passkey_nudge_until'] ?? 0;
             $nudgeUntil = \is_numeric($nudgeUntilValue) ? (int) $nudgeUntilValue : 0;
-
             $result[] = new UserPasskeyStatus(
                 uid: $uid,
                 username: $username,

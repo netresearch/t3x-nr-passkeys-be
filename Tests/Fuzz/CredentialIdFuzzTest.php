@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Fuzz;
@@ -76,7 +75,6 @@ final class CredentialIdFuzzTest extends TestCase
     {
         // Should not throw - just create a Credential with coerced values
         $credential = Credential::fromArray($data);
-
         self::assertInstanceOf(Credential::class, $credential);
         self::assertIsInt($credential->getUid());
         self::assertIsInt($credential->getBeUser());
@@ -90,12 +88,10 @@ final class CredentialIdFuzzTest extends TestCase
     {
         $credential = Credential::fromArray($data);
         $array = $credential->toArray();
-
         self::assertIsArray($array);
         self::assertArrayHasKey('uid', $array);
         self::assertArrayHasKey('be_user', $array);
         self::assertArrayHasKey('credential_id', $array);
-
         // Round-trip
         $credential2 = Credential::fromArray($array);
         self::assertSame($credential->getUid(), $credential2->getUid());
@@ -105,20 +101,11 @@ final class CredentialIdFuzzTest extends TestCase
     #[Test]
     public function transportsArrayHandlesMalformedJson(): void
     {
-        $testCases = [
-            'not json',
-            '{broken',
-            '42',
-            'true',
-            'null',
-            '',
-            '{"object": true}',
-        ];
+        $testCases = ['not json', '{broken', '42', 'true', 'null', '', '{"object": true}'];
 
         foreach ($testCases as $transport) {
             $credential = new Credential(transports: $transport);
             $result = $credential->getTransportsArray();
-
             // Should return an array (possibly empty) without throwing
             self::assertIsArray($result);
         }
@@ -139,10 +126,8 @@ final class CredentialIdFuzzTest extends TestCase
             createdAt: \time(),
             lastUsedAt: \time(),
         );
-
         $info = $credential->toCredentialInfo();
         $serialized = $info->jsonSerialize();
-
         // Must NOT contain sensitive fields
         self::assertArrayNotHasKey('credentialId', $serialized);
         self::assertArrayNotHasKey('credential_id', $serialized);
@@ -153,7 +138,6 @@ final class CredentialIdFuzzTest extends TestCase
         self::assertArrayNotHasKey('beUser', $serialized);
         self::assertArrayNotHasKey('be_user', $serialized);
         self::assertArrayNotHasKey('aaguid', $serialized);
-
         // Must contain only safe fields
         self::assertArrayHasKey('uid', $serialized);
         self::assertArrayHasKey('label', $serialized);

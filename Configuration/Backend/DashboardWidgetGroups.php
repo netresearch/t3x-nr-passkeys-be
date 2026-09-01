@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 /*
@@ -13,7 +12,5 @@ declare(strict_types=1);
  * installed.
  */
 return [
-    'nrpasskeys' => [
-        'title' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget_group.nrpasskeys',
-    ],
+    'nrpasskeys' => ['title' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget_group.nrpasskeys'],
 ];

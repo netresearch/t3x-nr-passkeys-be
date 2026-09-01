@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\EventListener;
@@ -30,7 +29,6 @@ final readonly class InjectPasskeyLoginFields
     public function __invoke(ModifyPageLayoutOnLoginProviderSelectionEvent $event): void
     {
         $config = $this->configService->getConfiguration();
-
         // The backend login screen ships the importmap (JavaScriptModules.php), so the
         // login module can be loaded as an ES module. window.NrPasskeysBeConfig is set
         // below via a classic inline script, which runs before the deferred module — so
@@ -39,7 +37,6 @@ final readonly class InjectPasskeyLoginFields
         // injected login UI adapts to the light and dark login screens.
         $this->pageRenderer->addCssFile('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyLogin.js');
-
         $passkeyConfig = [
             'loginOptionsUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_options'),
             'loginVerifyUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_verify'),
@@ -63,17 +60,22 @@ final readonly class InjectPasskeyLoginFields
                 'errorLocked' => $this->translate('login.error.locked', 'Account temporarily locked. Please contact your administrator.'),
                 'errorGeneric' => $this->translate('login.error.generic', 'Authentication failed. Please try again.'),
                 'errorCancelled' => $this->translate('login.error.cancelled', 'Authentication was cancelled.'),
-                'errorNotAllowed' => $this->translate('login.error.notAllowed', 'Authentication was cancelled or no passkey found for this site. Have you registered a passkey?'),
+                'errorNotAllowed' => $this->translate(
+                    'login.error.notAllowed',
+                    'Authentication was cancelled or no passkey found for this site. Have you registered a passkey?',
+                ),
                 'errorSecurity' => $this->translate('login.error.security', 'Security error. Please check your connection.'),
                 'errorUsernameRequired' => $this->translate('login.error.usernameRequired', 'Please enter your username.'),
-                'errorVerifyFailed' => $this->translate('login.error.verifyFailed', 'Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.'),
+                'errorVerifyFailed' => $this->translate(
+                    'login.error.verifyFailed',
+                    'Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.',
+                ),
                 'dividerOr' => $this->translate('login.divider.or', 'or'),
                 'helpTitle' => $this->translate('login.help.title', 'What are passkeys?'),
                 'helpContent' => $this->translate('login.help.content', 'Passkeys are a modern replacement for passwords.'),
                 'helpLearnMore' => $this->translate('login.help.learnMore', 'Learn more about passkeys'),
             ],
         ];
-
         $this->pageRenderer->addJsInlineCode(
             'nr-passkeys-be-config',
             'window.NrPasskeysBeConfig = ' . \json_encode($passkeyConfig, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP) . ';',

@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Command;
@@ -31,12 +30,9 @@ final class RecoveryCommandTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->connectionPool = $this->createMock(ConnectionPool::class);
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
-        $this->tester = new CommandTester(
-            new RecoveryCommand($this->connectionPool, $this->rateLimiterService),
-        );
+        $this->tester = new CommandTester(new RecoveryCommand($this->connectionPool, $this->rateLimiterService));
     }
 
     #[Test]
@@ -46,9 +42,7 @@ final class RecoveryCommandTest extends TestCase
             ->expects(self::once())
             ->method('resetLockout')
             ->with('admin');
-
         $exitCode = $this->tester->execute(['--unlock' => 'admin']);
-
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertStringContainsString('Login lockout reset', $this->tester->getDisplay());
     }
@@ -57,9 +51,7 @@ final class RecoveryCommandTest extends TestCase
     public function returnsInvalidWhenNoActionRequested(): void
     {
         $this->rateLimiterService->expects(self::never())->method('resetLockout');
-
         $exitCode = $this->tester->execute([]);
-
         self::assertSame(Command::INVALID, $exitCode);
         self::assertStringContainsString('Nothing to do', $this->tester->getDisplay());
     }

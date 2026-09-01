@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Domain\Dto;
@@ -25,12 +24,7 @@ final readonly class EnforcementStatus
      * @param int              $gracePeriodStart Unix timestamp when grace period started (0 = not started)
      * @param bool             $hasPasskeys     Whether the user has registered passkeys
      */
-    public function __construct(
-        public EnforcementLevel $level,
-        public int $gracePeriodDays,
-        public int $gracePeriodStart,
-        public bool $hasPasskeys,
-    ) {}
+    public function __construct(public EnforcementLevel $level, public int $gracePeriodDays, public int $gracePeriodStart, public bool $hasPasskeys) {}
 
     /**
      * Number of days remaining in the grace period.
@@ -46,7 +40,7 @@ final readonly class EnforcementStatus
 
         $now = $currentTime > 0 ? $currentTime : \time();
         $elapsedSeconds = $now - $this->gracePeriodStart;
-        $elapsedDays = (int) \floor($elapsedSeconds / 86_400);
+        $elapsedDays = (int) \floor($elapsedSeconds / 86400);
         $remaining = $this->gracePeriodDays - $elapsedDays;
 
         return \max(0, $remaining);

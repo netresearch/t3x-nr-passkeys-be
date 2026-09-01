@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Middleware;
@@ -40,15 +39,10 @@ final class PasskeySetupInterstitialTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->enforcementService = $this->createMock(EnforcementService::class);
         $uriBuilder = $this->createMock(UriBuilder::class);
         $uriBuilder->method('buildUriFromRoute')->willReturn(new Uri('/typo3/module/user/setup'));
-        $this->subject = new PasskeySetupInterstitial(
-            $this->enforcementService,
-            $uriBuilder,
-            $this->createMock(LoggerInterface::class),
-        );
+        $this->subject = new PasskeySetupInterstitial($this->enforcementService, $uriBuilder, $this->createMock(LoggerInterface::class));
     }
 
     protected function tearDown(): void
@@ -61,15 +55,12 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughWhenNoBeUser(): void
     {
         unset($GLOBALS['BE_USER']);
-
         $request = $this->createMockRequest();
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -77,15 +68,12 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughWhenBeUserHasNoUid(): void
     {
         $this->setUpBackendUser(0);
-
         $request = $this->createMockRequest();
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -93,23 +81,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughWhenEnforcementIsOff(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Off,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -121,17 +100,13 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughInSwitchUserModeEvenWhenSetupIsRequired(): void
     {
         $this->setUpBackendUser(1, switchUserOriginalUid: 7);
-
         $this->enforcementService->expects(self::never())->method('getStatus');
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -139,23 +114,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughWhenUserHasPasskeys(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: 0,
-            hasPasskeys: true,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: 0, hasPasskeys: true);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -163,23 +129,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptEnrollmentAjaxRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('ajax_passkeys_manage_list');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -187,24 +144,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function doesNotExemptStateChangingCoreAjaxRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Enforced,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Enforced, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         // ajax_record_process is the DataHandler save endpoint; an
         // enforced-but-unenrolled user must be blocked from it, not exempted.
         $request = $this->createMockRequest('ajax_record_process');
         $handler = $this->createMockHandler();
-
         $handler->expects(self::never())->method('handle');
-
         $response = $this->subject->process($request, $handler);
-
         self::assertInstanceOf(HtmlResponse::class, $response);
     }
 
@@ -212,13 +159,7 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptCoreAuthAjaxRoutes(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Enforced,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Enforced, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
 
         // The login/logout/MFA AJAX routes must stay exempt so an enforced user can
@@ -226,12 +167,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         foreach (['ajax_login', 'ajax_logout', 'ajax_mfa'] as $identifier) {
             $request = $this->createMockRequest($identifier);
             $handler = $this->createMockHandler();
-
             $handler
                 ->expects(self::once())
                 ->method('handle')
                 ->with($request);
-
             $this->subject->process($request, $handler);
         }
     }
@@ -240,23 +179,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptUserSetupRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('user_setup');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -264,23 +194,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptLogoutRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('logout');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -288,23 +209,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptPasskeysManageRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('passkeys_manage_list');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -312,23 +224,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptPasskeysLoginRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('passkeys_login_options');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -336,23 +239,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptMfaRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('mfa');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -360,22 +254,12 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function returnsHtmlResponseWhenEnforcementRequiredAndNoPasskeys(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $handler->expects(self::never())->method('handle');
-
         $response = $this->subject->process($request, $handler);
-
         self::assertInstanceOf(HtmlResponse::class, $response);
         self::assertSame(200, $response->getStatusCode());
     }
@@ -384,20 +268,11 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialContainsSetupHeading(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringContainsString('Set up your passkey', $body);
     }
@@ -406,20 +281,11 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialContainsSetupNowLink(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringContainsString('/typo3/module/user/setup', $body);
         self::assertStringContainsString('Set up now', $body);
@@ -429,7 +295,6 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialUsesSchemeAwarePalette(): void
     {
         $body = $this->renderInterstitialBody();
-
         // Adapts to light AND dark schemes instead of a hardcoded dark palette
         self::assertStringContainsString('color-scheme: light dark', $body);
         self::assertStringContainsString('data-color-scheme="auto"', $body);
@@ -443,7 +308,6 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialHonorsUserDarkColorScheme(): void
     {
         $body = $this->renderInterstitialBody(['colorScheme' => 'dark']);
-
         self::assertStringContainsString('data-color-scheme="dark"', $body);
     }
 
@@ -459,12 +323,9 @@ final class PasskeySetupInterstitialTest extends TestCase
         $backendUser = $GLOBALS['BE_USER'];
         self::assertInstanceOf(BackendUserAuthentication::class, $backendUser);
         $backendUser->uc = $uc;
-        $this->enforcementService->method('getStatus')->willReturn(new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        ));
+        $this->enforcementService->method('getStatus')->willReturn(
+            new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false),
+        );
 
         return (string) $this->subject->process($this->createMockRequest('main'), $this->createMockHandler())->getBody();
     }
@@ -473,20 +334,11 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialShowsSkipButtonWhenCanSkip(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringContainsString('passkey_setup_skip', $body);
         self::assertStringContainsString('passkey_setup_nonce', $body);
@@ -497,20 +349,11 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialHidesSkipButtonWhenCannotSkip(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Enforced,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Enforced, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringNotContainsString('passkey_setup_skip', $body);
         self::assertStringNotContainsString('Skip for now', $body);
@@ -520,21 +363,13 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialShowsGracePeriodCountdown(): void
     {
         $this->setUpBackendUser(1);
-
-        $gracePeriodStart = \time() - (2 * 86_400); // started 2 days ago
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: $gracePeriodStart,
-            hasPasskeys: false,
-        );
+        $gracePeriodStart = \time() - 2 * 86400;
+        // started 2 days ago
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: $gracePeriodStart, hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringContainsString('12 days remaining', $body);
     }
@@ -543,21 +378,13 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialShowsRequiredMessageWhenGracePeriodExpired(): void
     {
         $this->setUpBackendUser(1);
-
-        $gracePeriodStart = \time() - (30 * 86_400); // started 30 days ago
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Enforced,
-            gracePeriodDays: 14,
-            gracePeriodStart: $gracePeriodStart,
-            hasPasskeys: false,
-        );
+        $gracePeriodStart = \time() - 30 * 86400;
+        // started 30 days ago
+        $status = new EnforcementStatus(level: EnforcementLevel::Enforced, gracePeriodDays: 14, gracePeriodStart: $gracePeriodStart, hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringContainsString('Passkey setup is now required', $body);
     }
@@ -566,29 +393,19 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function startsGracePeriodOnFirstIntercept(): void
     {
         $this->setUpBackendUser(42);
-
         // gracePeriodStart=0 triggers startGracePeriod; middleware constructs
         // the updated status directly instead of re-querying
-        $initialStatus = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
-
+        $initialStatus = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService
             ->expects(self::once())
             ->method('getStatus')
             ->willReturn($initialStatus);
-
         $this->enforcementService
             ->expects(self::once())
             ->method('startGracePeriod')
             ->with(42);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $this->subject->process($request, $handler);
     }
 
@@ -602,23 +419,14 @@ final class PasskeySetupInterstitialTest extends TestCase
             ->with('tx_nrpasskeysbe')
             ->willReturn(['setup_skipped' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -634,16 +442,13 @@ final class PasskeySetupInterstitialTest extends TestCase
             ->with('tx_nrpasskeysbe')
             ->willReturn(['enforcement_ok_at' => \time()]);
         $GLOBALS['BE_USER'] = $backendUser;
-
         $this->enforcementService->expects(self::never())->method('getStatus');
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -658,24 +463,16 @@ final class PasskeySetupInterstitialTest extends TestCase
             ->with('tx_nrpasskeysbe')
             ->willReturn(['enforcement_ok_at' => \time() - 3600]);
         $GLOBALS['BE_USER'] = $backendUser;
-
         $this->enforcementService
             ->expects(self::once())
             ->method('getStatus')
-            ->willReturn(new EnforcementStatus(
-                level: EnforcementLevel::Off,
-                gracePeriodDays: 0,
-                gracePeriodStart: 0,
-                hasPasskeys: true,
-            ));
-
+            ->willReturn(new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: true));
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -689,22 +486,12 @@ final class PasskeySetupInterstitialTest extends TestCase
             ->with('tx_nrpasskeysbe')
             ->willReturn(['setup_skipped' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Enforced,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Enforced, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $handler->expects(self::never())->method('handle');
-
         $response = $this->subject->process($request, $handler);
-
         self::assertInstanceOf(HtmlResponse::class, $response);
     }
 
@@ -712,7 +499,6 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function handleSkipPostStoresSessionAndReturnsRedirect(): void
     {
         $nonce = 'test-nonce-abc123';
-
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
         $backendUser
@@ -724,17 +510,10 @@ final class PasskeySetupInterstitialTest extends TestCase
             ->method('setAndSaveSessionData')
             ->with('tx_nrpasskeysbe', ['setup_skipped' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
-
-        $request = $this->createMockRequest('main', 'POST', [
-            'passkey_setup_skip' => '1',
-            'passkey_setup_nonce' => $nonce,
-        ]);
+        $request = $this->createMockRequest('main', 'POST', ['passkey_setup_skip' => '1', 'passkey_setup_nonce' => $nonce]);
         $handler = $this->createMockHandler();
-
         $handler->expects(self::never())->method('handle');
-
         $response = $this->subject->process($request, $handler);
-
         self::assertInstanceOf(RedirectResponse::class, $response);
         self::assertSame(303, $response->getStatusCode());
         self::assertSame('/typo3/', $response->getHeaderLine('Location'));
@@ -750,25 +529,12 @@ final class PasskeySetupInterstitialTest extends TestCase
             ->with('tx_nrpasskeysbe')
             ->willReturn(['skip_nonce' => 'correct-nonce']);
         $GLOBALS['BE_USER'] = $backendUser;
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
-        $request = $this->createMockRequest('main', 'POST', [
-            'passkey_setup_skip' => '1',
-            'passkey_setup_nonce' => 'wrong-nonce',
-        ]);
+        $request = $this->createMockRequest('main', 'POST', ['passkey_setup_skip' => '1', 'passkey_setup_nonce' => 'wrong-nonce']);
         $handler = $this->createMockHandler();
-
         $handler->expects(self::never())->method('handle');
-
         $response = $this->subject->process($request, $handler);
-
         // Invalid nonce falls through to render interstitial
         self::assertInstanceOf(HtmlResponse::class, $response);
     }
@@ -777,23 +543,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptLoginRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('login');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -801,23 +558,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptPasswordResetRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('password_reset');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -825,23 +573,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptPasskeysEnforcementStatusAjaxRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('ajax_passkeys_enforcement_status');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -849,29 +588,18 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughWhenRouteIsNull(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
-            ->willReturnCallback(static fn(string $name): mixed => null);
+        $request->method('getAttribute')->willReturnCallback(static fn(string $name): mixed => null);
         $request->method('getMethod')->willReturn('GET');
         $request->method('getParsedBody')->willReturn(null);
-
         $handler = $this->createMockHandler();
-
         // Null route means exempt (no route identifier to check)
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -885,16 +613,13 @@ final class PasskeySetupInterstitialTest extends TestCase
             ->with('tx_nrpasskeysbe')
             ->willReturn(['passkey_authenticated' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
-
         // No enforcement mock needed — exits before checking enforcement
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -902,23 +627,14 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughForExemptInstallRoute(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('install_something');
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -926,22 +642,12 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialEscapesXssInOutput(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
-
         // Ensure no unescaped dynamic values — the response should be well-formed HTML
         self::assertStringContainsString('<!DOCTYPE html>', $body);
         self::assertStringContainsString('</html>', $body);
@@ -953,15 +659,12 @@ final class PasskeySetupInterstitialTest extends TestCase
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = null;
         $GLOBALS['BE_USER'] = $backendUser;
-
         $request = $this->createMockRequest();
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -969,38 +672,27 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function passesThroughWhenRouteIdentifierIsNotString(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $route = $this->createMock(Route::class);
-        $route->method('getOption')
-            ->willReturnCallback(static fn(string $option): mixed => null);
-
+        $route->method('getOption')->willReturnCallback(static fn(string $option): mixed => null);
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
-            ->willReturnCallback(static function (string $name) use ($route): mixed {
+        $request->method('getAttribute')->willReturnCallback(
+            static function (string $name) use ($route): mixed {
                 if ($name === 'route') {
                     return $route;
                 }
 
                 return null;
-            });
+            },
+        );
         $request->method('getMethod')->willReturn('GET');
         $request->method('getParsedBody')->willReturn(null);
-
         $handler = $this->createMockHandler();
-
         $handler
             ->expects(self::once())
             ->method('handle')
             ->with($request);
-
         $this->subject->process($request, $handler);
     }
 
@@ -1008,35 +700,27 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialUsesNormalizedParamsSitePath(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $normalizedParams = new class {
             public function getSitePath(): string
             {
                 return '/subdir/';
             }
         };
-
         $route = $this->createMock(Route::class);
-        $route->method('getOption')
-            ->willReturnCallback(static function (string $option): mixed {
+        $route->method('getOption')->willReturnCallback(
+            static function (string $option): mixed {
                 if ($option === '_identifier') {
                     return 'main';
                 }
 
                 return null;
-            });
-
+            },
+        );
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
-            ->willReturnCallback(static function (string $name) use ($route, $normalizedParams): mixed {
+        $request->method('getAttribute')->willReturnCallback(
+            static function (string $name) use ($route, $normalizedParams): mixed {
                 if ($name === 'route') {
                     return $route;
                 }
@@ -1046,14 +730,12 @@ final class PasskeySetupInterstitialTest extends TestCase
                 }
 
                 return null;
-            });
+            },
+        );
         $request->method('getMethod')->willReturn('GET');
         $request->method('getParsedBody')->willReturn(null);
-
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         // The skip-form action uses the normalized backend path; the "Set up now"
         // link is built from UriBuilder (user_setup route) and is asserted separately.
         $body = (string) $response->getBody();
@@ -1064,25 +746,15 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialShowsSkipButtonWithGracePeriodDaysRemaining(): void
     {
         $this->setUpBackendUser(42);
-
         // Grace period just started with 7 days remaining
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 7,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
-
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 7, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService
             ->expects(self::once())
             ->method('getStatus')
             ->willReturn($status);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringContainsString('Skip for now', $body);
         self::assertStringContainsString('7 days remaining', $body);
@@ -1092,30 +764,19 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialHidesSkipButtonWhenGracePeriodExpired(): void
     {
         $this->setUpBackendUser(42);
-
         // Required level with 0 grace days — once started, immediately expired
-        $initialStatus = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
-
+        $initialStatus = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService
             ->expects(self::once())
             ->method('getStatus')
             ->willReturn($initialStatus);
-
         $this->enforcementService
             ->expects(self::once())
             ->method('startGracePeriod')
             ->with(42);
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringNotContainsString('Skip for now', $body);
         self::assertStringContainsString('Passkey setup is now required', $body);
@@ -1125,28 +786,17 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialUsesLocaleFromLanguageService(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $locale = $this->createMock(Locale::class);
         $locale->method('getLanguageCode')->willReturn('de');
-
         $languageService = $this->createMock(LanguageService::class);
         $languageService->method('getLocale')->willReturn($locale);
         $languageService->method('sL')->willReturn('');
         $GLOBALS['LANG'] = $languageService;
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringContainsString('<html lang="de"', $body);
     }
@@ -1155,28 +805,17 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialUsesTranslationsWhenLanguageServiceAvailable(): void
     {
         $this->setUpBackendUser(1);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Required,
-            gracePeriodDays: 14,
-            gracePeriodStart: \time(),
-            hasPasskeys: false,
-        );
+        $status = new EnforcementStatus(level: EnforcementLevel::Required, gracePeriodDays: 14, gracePeriodStart: \time(), hasPasskeys: false);
         $this->enforcementService->method('getStatus')->willReturn($status);
-
         $locale = $this->createMock(Locale::class);
         $locale->method('getLanguageCode')->willReturn('de');
-
         $languageService = $this->createMock(LanguageService::class);
         $languageService->method('getLocale')->willReturn($locale);
         $languageService->method('sL')->willReturn('Übersetzt');
         $GLOBALS['LANG'] = $languageService;
-
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-
         $response = $this->subject->process($request, $handler);
-
         $body = (string) $response->getBody();
         self::assertStringContainsString('Übersetzt', $body);
     }
@@ -1193,30 +832,28 @@ final class PasskeySetupInterstitialTest extends TestCase
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
-    private function createMockRequest(
-        string $routeIdentifier = 'main',
-        string $method = 'GET',
-        ?array $parsedBody = null,
-    ): ServerRequestInterface&MockObject {
+    private function createMockRequest(string $routeIdentifier = 'main', string $method = 'GET', ?array $parsedBody = null): ServerRequestInterface&MockObject
+    {
         $route = $this->createMock(Route::class);
-        $route->method('getOption')
-            ->willReturnCallback(static function (string $option) use ($routeIdentifier): mixed {
+        $route->method('getOption')->willReturnCallback(
+            static function (string $option) use ($routeIdentifier): mixed {
                 if ($option === '_identifier') {
                     return $routeIdentifier;
                 }
 
                 return null;
-            });
-
+            },
+        );
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
-            ->willReturnCallback(static function (string $name) use ($route): mixed {
+        $request->method('getAttribute')->willReturnCallback(
+            static function (string $name) use ($route): mixed {
                 if ($name === 'route') {
                     return $route;
                 }
 
                 return null;
-            });
+            },
+        );
         $request->method('getMethod')->willReturn($method);
         $request->method('getParsedBody')->willReturn($parsedBody);
 

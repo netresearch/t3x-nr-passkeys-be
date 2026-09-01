@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
@@ -57,27 +56,18 @@ final class LoginControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->webAuthnService = $this->createMock(WebAuthnService::class);
         $this->configService = $this->createMock(ExtensionConfigurationService::class);
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
         $this->connectionPool = $this->createMock(ConnectionPool::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-
         // verifyAction issues a login token into the nonce cache via
         // GeneralUtility::makeInstance(CacheManager::class); stub it out.
         $this->loginTokenCache = $this->createMock(FrontendInterface::class);
         $cacheManagerStub = $this->createStub(CacheManager::class);
         $cacheManagerStub->method('getCache')->willReturn($this->loginTokenCache);
         GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManagerStub);
-
-        $this->subject = new LoginController(
-            $this->webAuthnService,
-            $this->configService,
-            $this->rateLimiterService,
-            $this->connectionPool,
-            $this->logger,
-        );
+        $this->subject = new LoginController($this->webAuthnService, $this->configService, $this->rateLimiterService, $this->connectionPool, $this->logger);
     }
 
     protected function tearDown(): void
@@ -91,28 +81,18 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => 'admin']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-
-        $options = PublicKeyCredentialRequestOptions::create(
-            challenge: \random_bytes(32),
-            rpId: 'example.com',
-        );
+        $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
             ->expects(self::once())
             ->method('createAssertionOptions')
             ->with('admin', 42)
-            ->willReturn(new AssertionOptions(
-                options: $options,
-                challengeToken: 'ct_abc123',
-            ));
-
+            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_abc123'));
         $this->webAuthnService
             ->expects(self::once())
             ->method('serializeRequestOptions')
             ->with($options)
             ->willReturn('{"challenge":"abc","rpId":"example.com"}');
-
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertArrayHasKey('options', $body);
@@ -134,7 +114,6 @@ final class LoginControllerTest extends TestCase
     {
         $this->stubAssertionOptionGeneration();
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-
         $this->assertTimingBudgetSpent($this->timeOptionsAction('admin'));
     }
 
@@ -143,7 +122,6 @@ final class LoginControllerTest extends TestCase
     {
         $this->stubAssertionOptionGeneration();
         $this->setUpFindBeUser('nosuchuser', null);
-
         $this->assertTimingBudgetSpent($this->timeOptionsAction('nosuchuser'));
     }
 
@@ -158,10 +136,9 @@ final class LoginControllerTest extends TestCase
      */
     private function assertTimingBudgetSpent(float $elapsedNs): void
     {
-        $budgetNs = 150_000_000.0;
-
+        $budgetNs = 150000000.0;
         self::assertGreaterThan($budgetNs * 0.9, $elapsedNs, 'Response must not come back before the budget');
-        self::assertLessThan(2_000_000_000.0, $elapsedNs, 'Response must not sleep far beyond the budget');
+        self::assertLessThan(2000000000.0, $elapsedNs, 'Response must not sleep far beyond the budget');
     }
 
     /**
@@ -169,20 +146,10 @@ final class LoginControllerTest extends TestCase
      */
     private function stubAssertionOptionGeneration(): void
     {
-        $options = PublicKeyCredentialRequestOptions::create(
-            challenge: \random_bytes(32),
-            rpId: 'example.com',
-        );
-
-        $this->webAuthnService
-            ->method('createAssertionOptions')
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_known'));
-        $this->webAuthnService
-            ->method('createDecoyAssertionOptions')
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_decoy'));
-        $this->webAuthnService
-            ->method('serializeRequestOptions')
-            ->willReturn('{"challenge":"abc","rpId":"example.com"}');
+        $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
+        $this->webAuthnService->method('createAssertionOptions')->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_known'));
+        $this->webAuthnService->method('createDecoyAssertionOptions')->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_decoy'));
+        $this->webAuthnService->method('serializeRequestOptions')->willReturn('{"challenge":"abc","rpId":"example.com"}');
     }
 
     /**
@@ -193,7 +160,6 @@ final class LoginControllerTest extends TestCase
         $startedAt = \hrtime(true);
         $response = $this->subject->optionsAction($this->createJsonRequest(['username' => $username]));
         $elapsed = (float) (\hrtime(true) - $startedAt);
-
         self::assertSame(200, $response->getStatusCode());
 
         return $elapsed;
@@ -203,13 +169,8 @@ final class LoginControllerTest extends TestCase
     public function optionsActionWithEmptyUsernameWhenDiscoverableDisabled(): void
     {
         $request = $this->createJsonRequest(['username' => '']);
-
-        $this->configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
-
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Username is required', $body['error']);
@@ -219,33 +180,18 @@ final class LoginControllerTest extends TestCase
     public function optionsActionWithEmptyUsernameWhenDiscoverableEnabled(): void
     {
         $request = $this->createJsonRequest(['username' => '']);
-
-        $this->configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
-
-        $options = PublicKeyCredentialRequestOptions::create(
-            challenge: \random_bytes(32),
-            rpId: 'example.com',
-            allowCredentials: [],
-        );
-
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+        $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com', allowCredentials: []);
         $this->webAuthnService
             ->expects(self::once())
             ->method('createDiscoverableAssertionOptions')
-            ->willReturn(new AssertionOptions(
-                options: $options,
-                challengeToken: 'ct_discoverable',
-            ));
-
+            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_discoverable'));
         $this->webAuthnService
             ->expects(self::once())
             ->method('serializeRequestOptions')
             ->with($options)
             ->willReturn('{"challenge":"abc","rpId":"example.com","allowCredentials":[]}');
-
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertArrayHasKey('options', $body);
@@ -258,27 +204,18 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => 'unknown']);
         $this->setUpFindBeUser('unknown', null);
-
-        $options = PublicKeyCredentialRequestOptions::create(
-            challenge: \random_bytes(32),
-            rpId: 'example.com',
-        );
+        $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
             ->expects(self::once())
             ->method('createDecoyAssertionOptions')
             ->with('unknown')
-            ->willReturn(new AssertionOptions(
-                options: $options,
-                challengeToken: 'ct_decoy',
-            ));
+            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_decoy'));
         $this->webAuthnService
             ->expects(self::once())
             ->method('serializeRequestOptions')
             ->with($options)
             ->willReturn('{"challenge":"abc","rpId":"example.com","allowCredentials":[{"type":"public-key","id":"decoy"}]}');
-
         $response = $this->subject->optionsAction($request);
-
         // Same shape and status (200) as a real user -> no enumeration oracle.
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -291,13 +228,8 @@ final class LoginControllerTest extends TestCase
     public function optionsActionWhenRateLimited(): void
     {
         $request = $this->createJsonRequest(['username' => 'admin']);
-
-        $this->rateLimiterService
-            ->method('consumeRateLimit')
-            ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
-
+        $this->rateLimiterService->method('consumeRateLimit')->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Too many requests. Please try again later.', $body['error']);
@@ -307,27 +239,16 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithValidAssertion(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => ['id' => 'cred123', 'response' => []],
-            'challengeToken' => 'ct_abc123',
-        ]);
+        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => ['id' => 'cred123', 'response' => []], 'challengeToken' => 'ct_abc123']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-
         $this->webAuthnService
             ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->with(
-                responseJson: self::isType('string'),
-                challengeToken: 'ct_abc123',
-                beUserUid: 42,
-            );
-
+            ->with(responseJson: self::isType('string'), challengeToken: 'ct_abc123', beUserUid: 42);
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess')
             ->with('admin', self::anything());
-
         // A verified username-first login yields a single-use token, stored in
         // the nonce cache, that the JS submits through the login form. The stored
         // value carries its own expiry so redemption does not rely on the cache
@@ -338,23 +259,23 @@ final class LoginControllerTest extends TestCase
             ->method('set')
             ->with(
                 self::isType('string'),
-                self::callback(static function (mixed $value) use ($issuedAt): bool {
-                    self::assertIsString($value);
-                    $payload = \json_decode($value, true, 8, JSON_THROW_ON_ERROR);
-                    self::assertIsArray($payload);
-                    self::assertSame(42, $payload['uid'] ?? null);
-                    self::assertIsInt($payload['expiresAt'] ?? null);
-                    self::assertGreaterThan($issuedAt, $payload['expiresAt']);
-                    self::assertLessThanOrEqual($issuedAt + 120 + 2, $payload['expiresAt']);
+                self::callback(
+                    static function (mixed $value) use ($issuedAt): bool {
+                        self::assertIsString($value);
+                        $payload = \json_decode($value, true, 8, JSON_THROW_ON_ERROR);
+                        self::assertIsArray($payload);
+                        self::assertSame(42, $payload['uid'] ?? null);
+                        self::assertIsInt($payload['expiresAt'] ?? null);
+                        self::assertGreaterThan($issuedAt, $payload['expiresAt']);
+                        self::assertLessThanOrEqual($issuedAt + 120 + 2, $payload['expiresAt']);
 
-                    return true;
-                }),
+                        return true;
+                    },
+                ),
                 [],
                 120,
             );
-
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -365,25 +286,17 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithInvalidAssertion(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => ['bad' => 'data'],
-            'challengeToken' => 'ct_abc123',
-        ]);
+        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => ['bad' => 'data'], 'challengeToken' => 'ct_abc123']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-
         $this->webAuthnService
             ->expects(self::once())
             ->method('verifyAssertionResponse')
             ->willThrowException(new RuntimeException('Verification failed', 1700000035));
-
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
             ->with('admin', self::anything());
-
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Authentication failed', $body['error']);
@@ -399,28 +312,23 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionMapsNonRuntimeExceptionsToTheGeneric401(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => ['id' => 'AQID', 'rawId' => 'AQID', 'type' => 'public-key', 'response' => []],
-            'challengeToken' => 'ct_abc123',
-        ]);
+        $request = $this->createJsonRequest(
+            [
+                'username' => 'admin',
+                'assertion' => ['id' => 'AQID', 'rawId' => 'AQID', 'type' => 'public-key', 'response' => []],
+                'challengeToken' => 'ct_abc123',
+            ],
+        );
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-
         $this->webAuthnService
             ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->willThrowException(new InvalidDataException(
-                null,
-                'Invalid input',
-            ));
-
+            ->willThrowException(new InvalidDataException(null, 'Invalid input'));
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
             ->with('admin', self::anything());
-
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         self::assertSame('Authentication failed', $this->decodeResponse($response)['error']);
     }
@@ -433,16 +341,9 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionRejectsNonUtf8BodyWithABadRequestResponse(): void
     {
-        $request = $this->createFormRequest([
-            'username' => 'admin',
-            'assertion' => ['clientDataJSON' => "\xFF\xFE"],
-            'challengeToken' => 'ct_abc123',
-        ]);
-
+        $request = $this->createFormRequest(['username' => 'admin', 'assertion' => ['clientDataJSON' => "\xff\xfe"], 'challengeToken' => 'ct_abc123']);
         $this->webAuthnService->expects(self::never())->method('verifyAssertionResponse');
-
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         self::assertSame('Invalid request body', $this->decodeResponse($response)['error']);
     }
@@ -452,9 +353,7 @@ final class LoginControllerTest extends TestCase
     {
         // Missing assertion and challengeToken
         $request = $this->createJsonRequest(['username' => 'admin']);
-
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -463,18 +362,9 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWhenRateLimited(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => ['id' => 'cred123'],
-            'challengeToken' => 'ct_abc123',
-        ]);
-
-        $this->rateLimiterService
-            ->method('consumeRateLimit')
-            ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
-
+        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => ['id' => 'cred123'], 'challengeToken' => 'ct_abc123']);
+        $this->rateLimiterService->method('consumeRateLimit')->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Too many requests. Please try again later.', $body['error']);
@@ -485,17 +375,9 @@ final class LoginControllerTest extends TestCase
     public function optionsActionDiscoverableLoginRateLimited(): void
     {
         $request = $this->createJsonRequest(['username' => '']);
-
-        $this->configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
-
-        $this->rateLimiterService
-            ->method('consumeRateLimit')
-            ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
-
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+        $this->rateLimiterService->method('consumeRateLimit')->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Too many requests', $body['error']);
@@ -506,23 +388,16 @@ final class LoginControllerTest extends TestCase
     public function optionsActionDiscoverableLoginInternalError(): void
     {
         $request = $this->createJsonRequest(['username' => '']);
-
-        $this->configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
-
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
         $this->webAuthnService
             ->expects(self::once())
             ->method('createDiscoverableAssertionOptions')
             ->willThrowException(new Error('Unexpected internal failure'));
-
         $this->logger
             ->expects(self::once())
             ->method('error')
             ->with('Failed to generate discoverable assertion options', self::anything());
-
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(500, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Internal error', $body['error']);
@@ -533,20 +408,16 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => 'admin']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-
         $this->webAuthnService
             ->expects(self::once())
             ->method('createAssertionOptions')
             ->with('admin', 42)
             ->willThrowException(new Error('Unexpected internal failure'));
-
         $this->logger
             ->expects(self::once())
             ->method('error')
             ->with('Failed to generate assertion options', self::anything());
-
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(500, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Internal error', $body['error']);
@@ -555,19 +426,16 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithUnknownUser(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'nonexistent',
-            'assertion' => ['id' => 'cred123', 'response' => []],
-            'challengeToken' => 'ct_abc123',
-        ]);
+        $request = $this->createJsonRequest(
+            [
+                'username' => 'nonexistent',
+                'assertion' => ['id' => 'cred123', 'response' => []],
+                'challengeToken' => 'ct_abc123',
+            ],
+        );
         $this->setUpFindBeUser('nonexistent', null);
-
-        $this->webAuthnService
-            ->expects(self::never())
-            ->method('verifyAssertionResponse');
-
+        $this->webAuthnService->expects(self::never())->method('verifyAssertionResponse');
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Authentication failed', $body['error']);
@@ -578,20 +446,12 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionDiscoverableUnknownCredentialReturnsSignalReason(): void
     {
-        $request = $this->createJsonRequest([
-            'assertion' => ['id' => 'orphan-cred', 'response' => []],
-            'challengeToken' => 'ct_abc123',
-        ]);
-
-        $this->configService->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
-
+        $request = $this->createJsonRequest(['assertion' => ['id' => 'orphan-cred', 'response' => []], 'challengeToken' => 'ct_abc123']);
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
         // Credential ID resolves to no user → genuine unknown credential.
         $this->webAuthnService->method('findBeUserUidFromAssertion')->willReturn(null);
         $this->webAuthnService->expects(self::never())->method('verifyAssertionResponse');
-
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('unknown_credential', $body['reason']);
@@ -600,14 +460,8 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionDiscoverableValidAssertionIssuesToken(): void
     {
-        $request = $this->createJsonRequest([
-            'assertion' => ['id' => 'cred123', 'response' => []],
-            'challengeToken' => 'ct_abc123',
-        ]);
-
-        $this->configService->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
-
+        $request = $this->createJsonRequest(['assertion' => ['id' => 'cred123', 'response' => []], 'challengeToken' => 'ct_abc123']);
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
         $this->webAuthnService->method('findBeUserUidFromAssertion')->willReturn(7);
         $this->webAuthnService
             ->expects(self::once())
@@ -615,9 +469,7 @@ final class LoginControllerTest extends TestCase
             ->with(responseJson: self::isType('string'), challengeToken: 'ct_abc123', beUserUid: 7);
         $this->rateLimiterService->expects(self::once())->method('recordSuccess');
         $this->loginTokenCache->expects(self::once())->method('set');
-
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -627,16 +479,9 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionDiscoverableRejectedWhenFeatureDisabled(): void
     {
-        $request = $this->createJsonRequest([
-            'assertion' => ['id' => 'cred123', 'response' => []],
-            'challengeToken' => 'ct_abc123',
-        ]);
-
-        $this->configService->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
-
+        $request = $this->createJsonRequest(['assertion' => ['id' => 'cred123', 'response' => []], 'challengeToken' => 'ct_abc123']);
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
     }
 
@@ -644,13 +489,8 @@ final class LoginControllerTest extends TestCase
     public function optionsActionWithoutUsernameKeyWhenDiscoverableDisabled(): void
     {
         $request = $this->createJsonRequest([]);
-
-        $this->configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
-
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Username is required', $body['error']);
@@ -660,13 +500,8 @@ final class LoginControllerTest extends TestCase
     public function optionsActionLockout(): void
     {
         $request = $this->createJsonRequest(['username' => 'lockeduser']);
-
-        $this->rateLimiterService
-            ->method('checkLockout')
-            ->willThrowException(new RuntimeException('Account locked out', 1700000011));
-
+        $this->rateLimiterService->method('checkLockout')->willThrowException(new RuntimeException('Account locked out', 1700000011));
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         // UX-3: a lockout (code 1700000011) is reported distinctly from rate limiting.
@@ -678,13 +513,8 @@ final class LoginControllerTest extends TestCase
     public function optionsActionWithNonScalarUsername(): void
     {
         $request = $this->createJsonRequest(['username' => ['array', 'value']]);
-
-        $this->configService
-            ->method('getConfiguration')
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
-
+        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
         $response = $this->subject->optionsAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Username is required', $body['error']);
@@ -693,18 +523,9 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithLockout(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'lockeduser',
-            'assertion' => ['id' => 'cred123'],
-            'challengeToken' => 'ct_abc123',
-        ]);
-
-        $this->rateLimiterService
-            ->method('checkLockout')
-            ->willThrowException(new RuntimeException('Account locked', 1700000011));
-
+        $request = $this->createJsonRequest(['username' => 'lockeduser', 'assertion' => ['id' => 'cred123'], 'challengeToken' => 'ct_abc123']);
+        $this->rateLimiterService->method('checkLockout')->willThrowException(new RuntimeException('Account locked', 1700000011));
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         // UX-3: lockout reported distinctly from rate limiting.
@@ -716,14 +537,8 @@ final class LoginControllerTest extends TestCase
     public function verifyActionWithNonArrayAssertion(): void
     {
         // The assertion must be a JSON object; a scalar is rejected as missing.
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => 'not-an-object',
-            'challengeToken' => 'ct_abc123',
-        ]);
-
+        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => 'not-an-object', 'challengeToken' => 'ct_abc123']);
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -732,14 +547,8 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithNonScalarChallengeToken(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => '{"id":"cred123"}',
-            'challengeToken' => ['not' => 'scalar'],
-        ]);
-
+        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => '{"id":"cred123"}', 'challengeToken' => ['not' => 'scalar']]);
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -748,14 +557,8 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithEmptyUsername(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => '',
-            'assertion' => '{"id":"cred123"}',
-            'challengeToken' => 'ct_abc123',
-        ]);
-
+        $request = $this->createJsonRequest(['username' => '', 'assertion' => '{"id":"cred123"}', 'challengeToken' => 'ct_abc123']);
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -764,14 +567,8 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithEmptyAssertion(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => '',
-            'challengeToken' => 'ct_abc123',
-        ]);
-
+        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => '', 'challengeToken' => 'ct_abc123']);
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -780,14 +577,8 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithEmptyChallengeToken(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => '{"id":"cred123"}',
-            'challengeToken' => '',
-        ]);
-
+        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => '{"id":"cred123"}', 'challengeToken' => '']);
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -796,24 +587,14 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionLogsWarningOnFailure(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => ['bad' => 'data'],
-            'challengeToken' => 'ct_abc123',
-        ]);
+        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => ['bad' => 'data'], 'challengeToken' => 'ct_abc123']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-
-        $this->webAuthnService
-            ->method('verifyAssertionResponse')
-            ->willThrowException(new RuntimeException('Verification failed', 1700000035));
-
+        $this->webAuthnService->method('verifyAssertionResponse')->willThrowException(new RuntimeException('Verification failed', 1700000035));
         $this->logger
             ->expects(self::once())
             ->method('warning')
             ->with('Passkey assertion verification failed', self::anything());
-
         $response = $this->subject->verifyAction($request);
-
         self::assertSame(401, $response->getStatusCode());
     }
 
@@ -822,47 +603,26 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => 'admin']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-
-        $options = PublicKeyCredentialRequestOptions::create(
-            challenge: \random_bytes(32),
-            rpId: 'example.com',
-        );
-        $this->webAuthnService
-            ->method('createAssertionOptions')
-            ->willReturn(new AssertionOptions(
-                options: $options,
-                challengeToken: 'ct',
-            ));
-        $this->webAuthnService
-            ->method('serializeRequestOptions')
-            ->willReturn('{"challenge":"abc"}');
-
+        $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
+        $this->webAuthnService->method('createAssertionOptions')->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct'));
+        $this->webAuthnService->method('serializeRequestOptions')->willReturn('{"challenge":"abc"}');
         $this->rateLimiterService
             ->expects(self::once())
             ->method('consumeRateLimit')
             ->with('login_options', self::anything());
-
         $this->subject->optionsAction($request);
     }
 
     #[Test]
     public function verifyActionConsumesRateLimit(): void
     {
-        $request = $this->createJsonRequest([
-            'username' => 'admin',
-            'assertion' => ['id' => 'cred123', 'response' => []],
-            'challengeToken' => 'ct_abc123',
-        ]);
+        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => ['id' => 'cred123', 'response' => []], 'challengeToken' => 'ct_abc123']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-
-        $this->webAuthnService
-            ->method('verifyAssertionResponse');
-
+        $this->webAuthnService->method('verifyAssertionResponse');
         $this->rateLimiterService
             ->expects(self::once())
             ->method('consumeRateLimit')
             ->with('login_verify', self::anything());
-
         $this->subject->verifyAction($request);
     }
 
@@ -875,7 +635,6 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createMock(ServerRequestInterface::class);
         $request->method('getParsedBody')->willReturn($data);
-
         $stream = $this->createMock(StreamInterface::class);
         $stream->method('__toString')->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
         $request->method('getBody')->willReturn($stream);
@@ -892,10 +651,8 @@ final class LoginControllerTest extends TestCase
     {
         $expressionBuilder = $this->createMock(ExpressionBuilder::class);
         $expressionBuilder->method('eq')->willReturn('1=1');
-
         $result = $this->createMock(Result::class);
         $result->method('fetchAssociative')->willReturn($userRow ?? false);
-
         $queryBuilder = $this->createMock(QueryBuilder::class);
         $queryBuilder->method('select')->willReturnSelf();
         $queryBuilder->method('from')->willReturnSelf();
@@ -903,7 +660,6 @@ final class LoginControllerTest extends TestCase
         $queryBuilder->method('expr')->willReturn($expressionBuilder);
         $queryBuilder->method('createNamedParameter')->willReturn("'" . $username . "'");
         $queryBuilder->method('executeQuery')->willReturn($result);
-
         $this->connectionPool
             ->method('getQueryBuilderForTable')
             ->with('be_users')

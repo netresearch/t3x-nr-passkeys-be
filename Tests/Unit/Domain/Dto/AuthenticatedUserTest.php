@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Domain\Dto;
@@ -20,13 +19,7 @@ final class AuthenticatedUserTest extends TestCase
     #[Test]
     public function constructorSetsAllProperties(): void
     {
-        $user = new AuthenticatedUser(
-            uid: 42,
-            username: 'admin',
-            realName: 'Admin User',
-            isAdmin: true,
-        );
-
+        $user = new AuthenticatedUser(uid: 42, username: 'admin', realName: 'Admin User', isAdmin: true);
         self::assertSame(42, $user->uid);
         self::assertSame('admin', $user->username);
         self::assertSame('Admin User', $user->realName);
@@ -36,13 +29,7 @@ final class AuthenticatedUserTest extends TestCase
     #[Test]
     public function constructorWithNonAdminUser(): void
     {
-        $user = new AuthenticatedUser(
-            uid: 7,
-            username: 'editor',
-            realName: '',
-            isAdmin: false,
-        );
-
+        $user = new AuthenticatedUser(uid: 7, username: 'editor', realName: '', isAdmin: false);
         self::assertSame(7, $user->uid);
         self::assertSame('editor', $user->username);
         self::assertSame('', $user->realName);

@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
@@ -109,8 +108,8 @@ trait BackendUserTrait
         }
 
         $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
-        $systemMaintainers = \is_array($sysConf) ? ($sysConf['systemMaintainers'] ?? []) : [];
+        $sysConf = \is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
+        $systemMaintainers = \is_array($sysConf) ? $sysConf['systemMaintainers'] ?? [] : [];
 
         if (!\is_array($systemMaintainers) || $systemMaintainers === []) {
             return true;

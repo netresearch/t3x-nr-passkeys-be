@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Domain\Dto;
@@ -23,12 +22,7 @@ final class AssertionOptionsTest extends TestCase
     {
         $options = $this->createMock(PublicKeyCredentialRequestOptions::class);
         $token = 'challenge-token-abc';
-
-        $dto = new AssertionOptions(
-            options: $options,
-            challengeToken: $token,
-        );
-
+        $dto = new AssertionOptions(options: $options, challengeToken: $token);
         self::assertSame($options, $dto->options);
         self::assertSame($token, $dto->challengeToken);
     }

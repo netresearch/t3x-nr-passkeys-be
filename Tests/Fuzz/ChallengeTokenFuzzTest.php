@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Fuzz;
@@ -28,27 +27,20 @@ final class ChallengeTokenFuzzTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $encryptionKey = 'fuzz-test-encryption-key-' . \bin2hex(\random_bytes(16));
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $encryptionKey;
-
         $cache = $this->createMock(FrontendInterface::class);
         $cache->method('has')->willReturn(true);
         $cache->method('get')->willReturn('valid');
-
         $configService = $this->createMock(ExtensionConfigurationService::class);
-        $config = new ExtensionConfiguration(
-            challengeTtlSeconds: 120,
-        );
+        $config = new ExtensionConfiguration(challengeTtlSeconds: 120);
         $configService->method('getConfiguration')->willReturn($config);
         $configService->method('getEncryptionKey')->willReturn($encryptionKey);
-
         $lockFactory = $this->createMock(LockFactory::class);
         $locker = $this->createMock(LockingStrategyInterface::class);
         $locker->method('acquire')->willReturn(true);
         $locker->method('release')->willReturn(true);
         $lockFactory->method('createLocker')->willReturn($locker);
-
         $this->challengeService = new ChallengeService($cache, $configService, $lockFactory, $this->createMock(LoggerInterface::class));
     }
 
@@ -135,13 +127,12 @@ final class ChallengeTokenFuzzTest extends TestCase
     {
         $challenge = $this->challengeService->generateChallenge();
         $token = $this->challengeService->createChallengeToken($challenge);
-
         // Try bit-flipping each byte of the token
         $tokenBytes = $token;
 
         for ($i = 0; $i < \min(\strlen($tokenBytes), 50); $i++) {
             $modified = $tokenBytes;
-            $modified[$i] = \chr(\ord($modified[$i]) ^ 0xFF);
+            $modified[$i] = \chr(\ord($modified[$i]) ^ 0xff);
 
             try {
                 $this->challengeService->verifyChallengeToken($modified);
@@ -169,13 +160,7 @@ final class ChallengeTokenFuzzTest extends TestCase
     #[Test]
     public function createTokenHandlesVariousChallenges(): void
     {
-        $testChallenges = [
-            \random_bytes(32),
-            \random_bytes(1),
-            \random_bytes(64),
-            \str_repeat("\x00", 32),
-            \str_repeat("\xFF", 32),
-        ];
+        $testChallenges = [\random_bytes(32), \random_bytes(1), \random_bytes(64), \str_repeat("\x00", 32), \str_repeat("\xff", 32)];
 
         foreach ($testChallenges as $challenge) {
             $token = $this->challengeService->createChallengeToken($challenge);

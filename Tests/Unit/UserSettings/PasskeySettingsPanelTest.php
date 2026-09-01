@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\UserSettings;
@@ -37,14 +36,11 @@ final class PasskeySettingsPanelTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->pageRenderer = $this->createMock(PageRenderer::class);
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
-
         $this->uriBuilder = $this->createMock(UriBuilder::class);
-        $this->uriBuilder
-            ->method('buildUriFromRoute')
-            ->willReturnCallback(static function (string $routeName): Uri {
+        $this->uriBuilder->method('buildUriFromRoute')->willReturnCallback(
+            static function (string $routeName): Uri {
                 $routeMap = [
                     'ajax_passkeys_manage_list' => '/typo3/ajax/passkeys/manage/list?token=test-token',
                     'ajax_passkeys_manage_registration_options' => '/typo3/ajax/passkeys/manage/registration/options?token=test-token',
@@ -54,18 +50,15 @@ final class PasskeySettingsPanelTest extends TestCase
                 ];
 
                 return new Uri($routeMap[$routeName] ?? '/typo3/unknown');
-            });
-
+            },
+        );
         $this->subject = new PasskeySettingsPanel();
-
         // Set up a valid encryptionKey so existing tests reach panel rendering
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 64);
-
         // Set up language service mock
         $languageService = $this->createMock(LanguageService::class);
-        $languageService
-            ->method('sL')
-            ->willReturnCallback(static function (string $key): string {
+        $languageService->method('sL')->willReturnCallback(
+            static function (string $key): string {
                 $map = [
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.info.passkeys' => 'Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup.',
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.title' => 'Passkeys',
@@ -80,7 +73,8 @@ final class PasskeySettingsPanelTest extends TestCase
                 ];
 
                 return $map[$key] ?? '';
-            });
+            },
+        );
         $GLOBALS['LANG'] = $languageService;
     }
 
@@ -95,9 +89,7 @@ final class PasskeySettingsPanelTest extends TestCase
     public function renderReturnsEmptyStringWhenNoBackendUser(): void
     {
         unset($GLOBALS['BE_USER']);
-
         $result = $this->subject->render([]);
-
         self::assertSame('', $result);
     }
 
@@ -105,9 +97,7 @@ final class PasskeySettingsPanelTest extends TestCase
     public function renderReturnsEmptyStringWhenBackendUserIsNotAuthentication(): void
     {
         $GLOBALS['BE_USER'] = new stdClass();
-
         $result = $this->subject->render([]);
-
         self::assertSame('', $result);
     }
 
@@ -117,9 +107,7 @@ final class PasskeySettingsPanelTest extends TestCase
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 0];
         $GLOBALS['BE_USER'] = $backendUser;
-
         $result = $this->subject->render([]);
-
         self::assertSame('', $result);
     }
 
@@ -128,14 +116,11 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
         $this->credentialRepository
             ->method('countByBeUser')
             ->with(1)
             ->willReturn(3);
-
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('id="passkey-management-container"', $result);
     }
 
@@ -144,16 +129,11 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $this->pageRenderer
             ->expects(self::once())
             ->method('loadJavaScriptModule')
             ->with('@netresearch/nr-passkeys-be/PasskeyManagement.js');
-
         $this->subject->render([]);
     }
 
@@ -162,13 +142,8 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('data-list-url="/typo3/ajax/passkeys/manage/list?token=test-token"', $result);
         self::assertStringContainsString('data-register-options-url="/typo3/ajax/passkeys/manage/registration/options?token=test-token"', $result);
         self::assertStringContainsString('data-register-verify-url="/typo3/ajax/passkeys/manage/registration/verify?token=test-token"', $result);
@@ -181,15 +156,12 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(42);
         $this->registerDependencies();
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('countByBeUser')
             ->with(42)
             ->willReturn(5);
-
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('id="passkey-count"', $result);
         self::assertStringContainsString('>5<', $result);
     }
@@ -199,13 +171,8 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('badge-warning', $result);
     }
 
@@ -214,13 +181,8 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(1);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(1);
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('badge-info', $result);
     }
 
@@ -229,13 +191,8 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(2);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(2);
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('badge-success', $result);
     }
 
@@ -244,13 +201,8 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('Passkeys', $result);
         self::assertStringContainsString('Manage your registered passkeys', $result);
         self::assertStringContainsString('Add Passkey', $result);
@@ -265,13 +217,8 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('id="passkey-list-table"', $result);
         self::assertStringContainsString('id="passkey-list-body"', $result);
         self::assertStringContainsString('id="passkey-add-btn"', $result);
@@ -284,20 +231,12 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         // Override with a language service that returns empty strings
         $languageService = $this->createMock(LanguageService::class);
-        $languageService
-            ->method('sL')
-            ->willReturn('');
+        $languageService->method('sL')->willReturn('');
         $GLOBALS['LANG'] = $languageService;
-
         $result = $this->subject->render([]);
-
         // Fallback labels should be used
         self::assertStringContainsString('Passkeys', $result);
         self::assertStringContainsString('Add Passkey', $result);
@@ -308,25 +247,19 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $languageService = $this->createMock(LanguageService::class);
-        $languageService
-            ->method('sL')
-            ->willReturnCallback(static function (string $key): string {
+        $languageService->method('sL')->willReturnCallback(
+            static function (string $key): string {
                 if (\str_contains($key, 'manage.title')) {
                     return '<script>alert("xss")</script>';
                 }
 
                 return 'safe';
-            });
+            },
+        );
         $GLOBALS['LANG'] = $languageService;
-
         $result = $this->subject->render([]);
-
         self::assertStringNotContainsString('<script>', $result);
         self::assertStringContainsString('&lt;script&gt;', $result);
     }
@@ -335,11 +268,8 @@ final class PasskeySettingsPanelTest extends TestCase
     public function renderReturnsWarningWhenEncryptionKeyTooShort(): void
     {
         $this->setUpBackendUser(1);
-
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short';
-
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('alert alert-danger', $result);
         self::assertStringContainsString('encryption key', $result);
         self::assertStringNotContainsString('passkey-management-container', $result);
@@ -349,11 +279,8 @@ final class PasskeySettingsPanelTest extends TestCase
     public function renderReturnsWarningWhenEncryptionKeyMissing(): void
     {
         $this->setUpBackendUser(1);
-
         unset($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']);
-
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('alert alert-danger', $result);
         self::assertStringNotContainsString('passkey-management-container', $result);
     }
@@ -363,15 +290,9 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 32);
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('passkey-management-container', $result);
         self::assertStringNotContainsString('alert alert-danger', $result);
     }
@@ -381,17 +302,11 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('class="alert alert-info"', $result);
         self::assertStringContainsString('biometric or device-based authentication', $result);
         self::assertStringContainsString('at least two passkeys', $result);
-
         // Info box must appear BEFORE the management container
         $infoBoxPos = \strpos($result, 'class="alert alert-info"');
         $containerPos = \strpos($result, 'id="passkey-management-container"');
@@ -405,13 +320,8 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $result = $this->subject->render([]);
-
         // The mock returns the text from the map for manage.info.passkeys
         self::assertStringContainsString('We recommend registering at least two passkeys for backup', $result);
     }
@@ -421,25 +331,19 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $languageService = $this->createMock(LanguageService::class);
-        $languageService
-            ->method('sL')
-            ->willReturnCallback(static function (string $key): string {
+        $languageService->method('sL')->willReturnCallback(
+            static function (string $key): string {
                 if (\str_contains($key, 'manage.info.passkeys')) {
                     return '<img src=x onerror=alert(1)>';
                 }
 
                 return 'safe';
-            });
+            },
+        );
         $GLOBALS['LANG'] = $languageService;
-
         $result = $this->subject->render([]);
-
         self::assertStringNotContainsString('<img src=x', $result);
         self::assertStringContainsString('&lt;img src=x', $result);
     }
@@ -449,19 +353,11 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-
-        $this->credentialRepository
-            ->method('countByBeUser')
-            ->willReturn(0);
-
+        $this->credentialRepository->method('countByBeUser')->willReturn(0);
         $languageService = $this->createMock(LanguageService::class);
-        $languageService
-            ->method('sL')
-            ->willReturn('');
+        $languageService->method('sL')->willReturn('');
         $GLOBALS['LANG'] = $languageService;
-
         $result = $this->subject->render([]);
-
         // Fallback text should be used
         self::assertStringContainsString('Passkeys replace your password', $result);
         self::assertStringContainsString('at least two passkeys for backup', $result);
@@ -471,14 +367,11 @@ final class PasskeySettingsPanelTest extends TestCase
     public function renderFallsBackGracefullyWhenLanguageServiceNotAvailable(): void
     {
         $this->setUpBackendUser(1);
-
         // Use a short encryptionKey to trigger the validation warning path
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short';
         unset($GLOBALS['LANG']);
-
         // Without LanguageService, the translate trait returns the fallback string
         $result = $this->subject->render([]);
-
         self::assertStringContainsString('alert-danger', $result);
         self::assertStringContainsString('encryption key is missing', $result);
     }

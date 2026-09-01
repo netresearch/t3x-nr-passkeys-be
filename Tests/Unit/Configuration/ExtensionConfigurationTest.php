@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Configuration;
@@ -21,7 +20,6 @@ final class ExtensionConfigurationTest extends TestCase
     public function userVerificationDefaultsToRequiredForInvalidValue(): void
     {
         $config = new ExtensionConfiguration(userVerification: 'invalid');
-
         self::assertSame('required', $config->getUserVerification());
     }
 
@@ -29,7 +27,6 @@ final class ExtensionConfigurationTest extends TestCase
     public function userVerificationAcceptsPreferred(): void
     {
         $config = new ExtensionConfiguration(userVerification: 'preferred');
-
         self::assertSame('preferred', $config->getUserVerification());
     }
 
@@ -37,7 +34,6 @@ final class ExtensionConfigurationTest extends TestCase
     public function userVerificationAcceptsDiscouraged(): void
     {
         $config = new ExtensionConfiguration(userVerification: 'discouraged');
-
         self::assertSame('discouraged', $config->getUserVerification());
     }
 
@@ -45,7 +41,6 @@ final class ExtensionConfigurationTest extends TestCase
     public function userVerificationAcceptsRequired(): void
     {
         $config = new ExtensionConfiguration(userVerification: 'required');
-
         self::assertSame('required', $config->getUserVerification());
     }
 
@@ -53,7 +48,6 @@ final class ExtensionConfigurationTest extends TestCase
     public function defaultValues(): void
     {
         $config = new ExtensionConfiguration();
-
         self::assertSame('', $config->getRpId());
         self::assertSame('TYPO3 Backend', $config->getRpName());
         self::assertSame('', $config->getOrigin());
@@ -89,7 +83,6 @@ final class ExtensionConfigurationTest extends TestCase
             lockoutDurationSeconds: 1800,
             allowedAlgorithms: 'ES256,RS256',
         );
-
         self::assertSame('example.com', $config->getRpId());
         self::assertSame('My App', $config->getRpName());
         self::assertSame('https://example.com', $config->getOrigin());
@@ -110,7 +103,6 @@ final class ExtensionConfigurationTest extends TestCase
     public function allowedAlgorithmsListSplitsAndTrims(): void
     {
         $config = new ExtensionConfiguration(allowedAlgorithms: 'ES256 , RS256, ES384 ');
-
         self::assertSame(['ES256', 'RS256', 'ES384'], $config->getAllowedAlgorithmsList());
     }
 
@@ -118,7 +110,6 @@ final class ExtensionConfigurationTest extends TestCase
     public function allowedAlgorithmsListSingleAlgorithm(): void
     {
         $config = new ExtensionConfiguration(allowedAlgorithms: 'ES256');
-
         self::assertSame(['ES256'], $config->getAllowedAlgorithmsList());
     }
 }

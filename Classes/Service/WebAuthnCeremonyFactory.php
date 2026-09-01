@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -33,10 +32,7 @@ final class WebAuthnCeremonyFactory
 {
     private ?SerializerInterface $serializer = null;
 
-    public function __construct(
-        private readonly ExtensionConfigurationService $configService,
-        private readonly LoggerInterface $logger,
-    ) {}
+    public function __construct(private readonly ExtensionConfigurationService $configService, private readonly LoggerInterface $logger) {}
 
     public function getSerializer(): SerializerInterface
     {
@@ -52,13 +48,10 @@ final class WebAuthnCeremonyFactory
     public function createCeremonyFactory(): CeremonyStepManagerFactory
     {
         $factory = new CeremonyStepManagerFactory();
-
         $origin = $this->configService->getEffectiveOrigin();
         $factory->setAllowedOrigins([$origin]);
-
         $algorithmManager = $this->createAlgorithmManager();
         $factory->setAlgorithmManager($algorithmManager);
-
         $factory->setAttestationStatementSupportManager($this->createAttestationStatementSupportManager());
 
         return $factory;

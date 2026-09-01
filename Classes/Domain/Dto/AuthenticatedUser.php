@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Domain\Dto;
@@ -17,10 +16,5 @@ namespace Netresearch\NrPasskeysBe\Domain\Dto;
  */
 final readonly class AuthenticatedUser
 {
-    public function __construct(
-        public int $uid,
-        public string $username,
-        public string $realName,
-        public bool $isAdmin,
-    ) {}
+    public function __construct(public int $uid, public string $username, public string $realName, public bool $isAdmin) {}
 }

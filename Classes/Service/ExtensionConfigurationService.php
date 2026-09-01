@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -21,9 +20,8 @@ final readonly class ExtensionConfigurationService
 
     private \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration $config;
 
-    public function __construct(
-        private ExtensionConfiguration $extensionConfiguration,
-    ) {
+    public function __construct(private ExtensionConfiguration $extensionConfiguration)
+    {
         $settings = $this->extensionConfiguration->get('nr_passkeys_be');
 
         if (!\is_array($settings)) {
@@ -118,19 +116,13 @@ final readonly class ExtensionConfigurationService
     private function assertHostTrustEnforced(): void
     {
         $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $pattern = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS'])
-            && \is_string($confVars['SYS']['trustedHostsPattern'] ?? null)
-            ? $confVars['SYS']['trustedHostsPattern']
-            : '';
+        $pattern = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS']) && \is_string($confVars['SYS']['trustedHostsPattern'] ?? null) ? $confVars['SYS']['trustedHostsPattern'] : '';
 
         // '.*' makes VerifyHostHeader accept any Host header; '' is treated by core
         // as invalid (rejects every Host). Refuse to derive an anchor from either.
         if ($pattern === '' || $pattern === '.*') {
             throw new RuntimeException(
-                'Refusing to derive WebAuthn rpId/origin from the request Host header: '
-                . 'host-header validation is disabled (trustedHostsPattern is empty or ".*"). '
-                . 'Configure $GLOBALS[\'TYPO3_CONF_VARS\'][\'SYS\'][\'trustedHostsPattern\'] '
-                . 'with a strict pattern, or set the rpId and origin extension settings explicitly.',
+                'Refusing to derive WebAuthn rpId/origin from the request Host header: ' . 'host-header validation is disabled (trustedHostsPattern is empty or ".*"). ' . 'Configure $GLOBALS[\'TYPO3_CONF_VARS\'][\'SYS\'][\'trustedHostsPattern\'] ' . 'with a strict pattern, or set the rpId and origin extension settings explicitly.',
                 1700000060,
             );
         }
@@ -152,9 +144,7 @@ final readonly class ExtensionConfigurationService
         }
 
         $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS'])
-            ? $confVars['SYS']
-            : [];
+        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS']) ? $confVars['SYS'] : [];
 
         return NormalizedParams::createFromServerParams($_SERVER, $sysConf);
     }
@@ -167,15 +157,12 @@ final readonly class ExtensionConfigurationService
     public function getEncryptionKey(): string
     {
         $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
-        $key = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
-            ? $sysConf['encryptionKey']
-            : '';
+        $sysConf = \is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
+        $key = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null) ? $sysConf['encryptionKey'] : '';
 
         if (\strlen($key) < 32) {
             throw new RuntimeException(
-                'TYPO3 encryptionKey is missing or too short (min 32 chars). '
-                . 'Configure it in Settings > Configure Installation-Wide Options.',
+                'TYPO3 encryptionKey is missing or too short (min 32 chars). ' . 'Configure it in Settings > Configure Installation-Wide Options.',
                 1700000050,
             );
         }

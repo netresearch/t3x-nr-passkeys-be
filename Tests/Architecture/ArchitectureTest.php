@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Architecture;
@@ -28,10 +27,9 @@ use PHPat\Test\PHPat;
  */
 final class ArchitectureTest
 {
-    private const NS = 'Netresearch\\NrPasskeysBe\\';
+    private const NS = 'Netresearch\NrPasskeysBe\\';
 
     // ─── Layer isolation ─────────────────────────────────────────────
-
     public function test_domain_does_not_depend_on_infrastructure(): Rule
     {
         return PHPat::rule()
@@ -87,7 +85,7 @@ final class ArchitectureTest
     public function test_route_resolver_does_not_depend_on_business_logic(): Rule
     {
         return PHPat::rule()
-            ->classes(Selector::classname(self::NS . 'Middleware\\PublicRouteResolver'))
+            ->classes(Selector::classname(self::NS . 'Middleware\PublicRouteResolver'))
             ->shouldNot()
             ->dependOn()
             ->classes(
@@ -163,7 +161,6 @@ final class ArchitectureTest
     }
 
     // ─── Finality enforcement ────────────────────────────────────────
-
     public function test_all_services_are_final(): Rule
     {
         return PHPat::rule()
@@ -186,7 +183,7 @@ final class ArchitectureTest
     public function test_all_dtos_are_final(): Rule
     {
         return PHPat::rule()
-            ->classes(Selector::inNamespace(self::NS . 'Domain\\Dto'))
+            ->classes(Selector::inNamespace(self::NS . 'Domain\Dto'))
             ->should()
             ->beFinal()
             ->because('DTOs are immutable value objects that must not be extended');
@@ -195,7 +192,7 @@ final class ArchitectureTest
     public function test_domain_models_are_final(): Rule
     {
         return PHPat::rule()
-            ->classes(Selector::inNamespace(self::NS . 'Domain\\Model'))
+            ->classes(Selector::inNamespace(self::NS . 'Domain\Model'))
             ->should()
             ->beFinal()
             ->because('Domain models are entities that must not be extended');
@@ -244,7 +241,7 @@ final class ArchitectureTest
         // chain. Any *other* class added here must still be final.
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Authentication'))
-            ->excluding(Selector::classname(self::NS . 'Authentication\\PasskeyAuthenticationService'))
+            ->excluding(Selector::classname(self::NS . 'Authentication\PasskeyAuthenticationService'))
             ->should()
             ->beFinal()
             ->because('Authentication classes are leaf classes — composition over inheritance');
@@ -256,7 +253,7 @@ final class ArchitectureTest
         // AbstractFormElement base class. Any *other* class added here must still be final.
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Form'))
-            ->excluding(Selector::classname(self::NS . 'Form\\Element\\PasskeyInfoElement'))
+            ->excluding(Selector::classname(self::NS . 'Form\Element\PasskeyInfoElement'))
             ->should()
             ->beFinal()
             ->because('Form classes are leaf classes — composition over inheritance');

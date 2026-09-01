@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Configuration;
@@ -75,11 +74,9 @@ final class AjaxRoutesTest extends TestCase
     {
         $routes = $this->routes();
         self::assertArrayHasKey($identifier, $routes);
-
         $route = $routes[$identifier];
         self::assertIsArray($route);
         self::assertArrayHasKey('sudoMode', $route, $identifier . ' must require sudo mode');
-
         $sudoMode = $route['sudoMode'];
         self::assertIsArray($sudoMode);
         self::assertSame('passkeys', $sudoMode['group'] ?? null);

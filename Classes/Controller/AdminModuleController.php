@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
@@ -62,9 +61,7 @@ final class AdminModuleController
         $moduleTemplate->setTitle($this->translate('module.title', 'Passkey Management'));
         $this->buildDocHeaderMenu($moduleTemplate, 'dashboard');
         $this->addHelpButton($moduleTemplate);
-
         $stats = $this->adoptionStatsService->getStats();
-
         $groupData = [];
 
         foreach ($stats->groups as $group) {
@@ -82,10 +79,7 @@ final class AdminModuleController
         $userData = [];
 
         foreach ($stats->usersWithoutPasskeys as $user) {
-            $editUrl = (string) $this->uriBuilder->buildUriFromRoute('record_edit', [
-                'edit[be_users][' . $user->uid . ']' => 'edit',
-            ]);
-
+            $editUrl = (string) $this->uriBuilder->buildUriFromRoute('record_edit', ['edit[be_users][' . $user->uid . ']' => 'edit']);
             $userData[] = [
                 'uid' => $user->uid,
                 'username' => $user->username,
@@ -101,31 +95,26 @@ final class AdminModuleController
 
         $config = $this->configService->getConfiguration();
         $adoptionPercentage = $stats->adoptionPercentage();
-
-        $moduleTemplate->assignMultiple([
-            'totalUsers' => $stats->totalUsers,
-            'usersWithPasskeys' => $stats->usersWithPasskeys,
-            'adoptionPercentage' => $adoptionPercentage,
-            'adoptionBadge' => $this->adoptionBadge($adoptionPercentage, $stats->totalUsers),
-            'groups' => $groupData,
-            'usersWithoutPasskeys' => $userData,
-            'usersWithoutPasskeysTruncated' => $stats->usersWithoutPasskeysTruncated,
-            'usersWithoutPasskeysLimit' => AdoptionStatsService::USERS_WITHOUT_PASSKEYS_LIMIT,
-            'enforcementLevels' => $this->getEnforcementLevelOptions(),
-            'helpUrl' => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'),
-            'configRpId' => $this->configService->getEffectiveRpId(),
-            'configRpIdIsAutoDetected' => $config->getRpId() === '',
-            'configOriginIsAutoDetected' => $config->getOrigin() === '',
-            'isNewInstallation' => $stats->usersWithPasskeys === 0,
-        ]);
-
-        $this->pageRenderer->loadJavaScriptModule(
-            '@netresearch/nr-passkeys-be/PasskeyDashboard.js',
+        $moduleTemplate->assignMultiple(
+            [
+                'totalUsers' => $stats->totalUsers,
+                'usersWithPasskeys' => $stats->usersWithPasskeys,
+                'adoptionPercentage' => $adoptionPercentage,
+                'adoptionBadge' => $this->adoptionBadge($adoptionPercentage, $stats->totalUsers),
+                'groups' => $groupData,
+                'usersWithoutPasskeys' => $userData,
+                'usersWithoutPasskeysTruncated' => $stats->usersWithoutPasskeysTruncated,
+                'usersWithoutPasskeysLimit' => AdoptionStatsService::USERS_WITHOUT_PASSKEYS_LIMIT,
+                'enforcementLevels' => $this->getEnforcementLevelOptions(),
+                'helpUrl' => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'),
+                'configRpId' => $this->configService->getEffectiveRpId(),
+                'configRpIdIsAutoDetected' => $config->getRpId() === '',
+                'configOriginIsAutoDetected' => $config->getOrigin() === '',
+                'isNewInstallation' => $stats->usersWithPasskeys === 0,
+            ],
         );
-        $this->pageRenderer->addInlineLanguageLabelFile(
-            'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
-            'js.',
-        );
+        $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyDashboard.js');
+        $this->pageRenderer->addInlineLanguageLabelFile('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
 
         return $moduleTemplate->renderResponse('AdminModule/Dashboard');
     }
@@ -139,10 +128,7 @@ final class AdminModuleController
         $moduleTemplate->setTitle($this->translate('module.title', 'Passkey Management') . ' – ' . $this->translate('module.help', 'Help'));
         $this->buildDocHeaderMenu($moduleTemplate, 'help');
         $this->addHelpButton($moduleTemplate);
-
-        $moduleTemplate->assignMultiple([
-            'dashboardUrl' => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys'),
-        ]);
+        $moduleTemplate->assignMultiple(['dashboardUrl' => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys')]);
 
         return $moduleTemplate->renderResponse('AdminModule/Help');
     }
@@ -155,7 +141,6 @@ final class AdminModuleController
         $menuRegistry = $moduleTemplate->getDocHeaderComponent()->getMenuRegistry();
         $menu = $this->createMenu($menuRegistry);
         $menu->setIdentifier('PasskeyManagementMenu');
-
         $dashboardItem = $this
             ->createMenuItem($menu)
             ->setTitle($this->translate('module.dashboard', 'Dashboard'))
@@ -166,7 +151,6 @@ final class AdminModuleController
         }
 
         $menu->addMenuItem($dashboardItem);
-
         $helpItem = $this
             ->createMenuItem($menu)
             ->setTitle($this->translate('module.help', 'Help'))
@@ -177,7 +161,6 @@ final class AdminModuleController
         }
 
         $menu->addMenuItem($helpItem);
-
         $menuRegistry->addMenu($menu);
     }
 
@@ -218,9 +201,7 @@ final class AdminModuleController
     private function componentFactory(): ?ComponentFactory
     {
         if ($this->componentFactory === false) {
-            $this->componentFactory = \class_exists(ComponentFactory::class)
-                ? GeneralUtility::makeInstance(ComponentFactory::class)
-                : null;
+            $this->componentFactory = \class_exists(ComponentFactory::class) ? GeneralUtility::makeInstance(ComponentFactory::class) : null;
         }
 
         return $this->componentFactory;
@@ -260,10 +241,9 @@ final class AdminModuleController
             ->createLinkButton($buttonBar)
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'))
             ->setTitle($this->translate('module.help', 'Help'))
-            ->setIcon($this->iconFactory->getIcon(
-                'actions-question-circle',
-                ...(\enum_exists(IconSize::class) ? [IconSize::SMALL] : ['small']),
-            ))
+            ->setIcon(
+                $this->iconFactory->getIcon('actions-question-circle', ...\enum_exists(IconSize::class) ? [IconSize::SMALL] : ['small']),
+            )
             ->setShowLabelText(false);
         $buttonBar->addButton($helpButton, ButtonBar::BUTTON_POSITION_RIGHT, 1);
     }
@@ -291,15 +271,39 @@ final class AdminModuleController
     private function adoptionBadge(float $percentage, int $totalUsers): array
     {
         if ($totalUsers === 0) {
-            return ['label' => $this->translate('dashboard.badge.noUsers', 'No users'), 'class' => 'badge-secondary', 'icon' => 'actions-minus'];
+            return [
+                'label' => $this->translate('dashboard.badge.noUsers', 'No users'),
+                'class' => 'badge-secondary',
+                'icon' => 'actions-minus',
+            ];
         }
 
         return match (true) {
-            $percentage >= 100.0 => ['label' => $this->translate('dashboard.badge.platinum', 'Platinum'), 'class' => 'badge-success', 'icon' => 'actions-bolt'],
-            $percentage >= 75.0 => ['label' => $this->translate('dashboard.badge.gold', 'Gold'), 'class' => 'badge-info', 'icon' => 'actions-star'],
-            $percentage >= 50.0 => ['label' => $this->translate('dashboard.badge.silver', 'Silver'), 'class' => 'badge-secondary', 'icon' => 'actions-check'],
-            $percentage >= 25.0 => ['label' => $this->translate('dashboard.badge.bronze', 'Bronze'), 'class' => 'badge-warning', 'icon' => 'actions-arrow-up'],
-            default => ['label' => $this->translate('dashboard.badge.gettingStarted', 'Getting started'), 'class' => 'badge-danger', 'icon' => 'actions-rocket'],
+            $percentage >= 100.0 => [
+                'label' => $this->translate('dashboard.badge.platinum', 'Platinum'),
+                'class' => 'badge-success',
+                'icon' => 'actions-bolt',
+            ],
+            $percentage >= 75.0 => [
+                'label' => $this->translate('dashboard.badge.gold', 'Gold'),
+                'class' => 'badge-info',
+                'icon' => 'actions-star',
+            ],
+            $percentage >= 50.0 => [
+                'label' => $this->translate('dashboard.badge.silver', 'Silver'),
+                'class' => 'badge-secondary',
+                'icon' => 'actions-check',
+            ],
+            $percentage >= 25.0 => [
+                'label' => $this->translate('dashboard.badge.bronze', 'Bronze'),
+                'class' => 'badge-warning',
+                'icon' => 'actions-arrow-up',
+            ],
+            default => [
+                'label' => $this->translate('dashboard.badge.gettingStarted', 'Getting started'),
+                'class' => 'badge-danger',
+                'icon' => 'actions-rocket',
+            ],
         };
     }
 }

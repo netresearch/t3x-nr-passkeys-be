@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -34,12 +33,7 @@ use Webauthn\PublicKeyCredentialUserEntity;
  */
 final readonly class AttestationService
 {
-    private const ALGORITHM_MAP = [
-        'ES256' => -7,
-        'ES384' => -35,
-        'ES512' => -36,
-        'RS256' => -257,
-    ];
+    private const ALGORITHM_MAP = ['ES256' => -7, 'ES384' => -35, 'ES512' => -36, 'RS256' => -257];
 
     public function __construct(
         private ExtensionConfigurationService $configService,
@@ -56,23 +50,11 @@ final readonly class AttestationService
     {
         $rpId = $this->configService->getEffectiveRpId();
         $rpName = $this->configService->getConfiguration()->getRpName();
-
-        $rp = PublicKeyCredentialRpEntity::create(
-            name: $rpName,
-            id: $rpId,
-        );
-
+        $rp = PublicKeyCredentialRpEntity::create(name: $rpName, id: $rpId);
         $userHandle = $this->createUserHandle($beUserUid);
-
-        $user = PublicKeyCredentialUserEntity::create(
-            name: $username,
-            id: $userHandle,
-            displayName: $displayName,
-        );
-
+        $user = PublicKeyCredentialUserEntity::create(name: $username, id: $userHandle, displayName: $displayName);
         $challenge = $this->challengeService->generateChallenge();
         $challengeToken = $this->challengeService->createChallengeToken($challenge);
-
         $existingCredentials = $this->credentialRepository->findByBeUser($beUserUid);
         $excludeCredentials = \array_map(
             static fn(Credential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
@@ -82,22 +64,17 @@ final readonly class AttestationService
             ),
             $existingCredentials,
         );
-
         $authenticatorSelection = AuthenticatorSelectionCriteria::create(
             userVerification: $this->configService->getConfiguration()->getUserVerification(),
             residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
         );
-
         // credProps asks the authenticator to report whether it actually created a
         // discoverable (resident) credential. residentKey PREFERRED lets it decline
         // silently, and a non-discoverable passkey can never appear in the browser's
         // autofill menu — without this the extension cannot tell the difference, and
         // the user is left wondering why one passkey is offered there and another is
         // not. The answer arrives client-side via getClientExtensionResults().
-        $extensions = AuthenticationExtensions::create([
-            AuthenticationExtension::create('credProps', true),
-        ]);
-
+        $extensions = AuthenticationExtensions::create([AuthenticationExtension::create('credProps', true)]);
         $options = PublicKeyCredentialCreationOptions::create(
             rp: $rp,
             user: $user,
@@ -110,10 +87,7 @@ final readonly class AttestationService
             extensions: $extensions,
         );
 
-        return new RegistrationOptions(
-            options: $options,
-            challengeToken: $challengeToken,
-        );
+        return new RegistrationOptions(options: $options, challengeToken: $challengeToken);
     }
 
     /**
@@ -124,26 +98,14 @@ final readonly class AttestationService
      *
      * @throws RuntimeException on verification failure
      */
-    public function verifyRegistrationResponse(
-        string $responseJson,
-        string $challengeToken,
-        int $beUserUid,
-        string $username,
-        string $displayName,
-    ): CredentialRecord {
+    public function verifyRegistrationResponse(string $responseJson, string $challengeToken, int $beUserUid, string $username, string $displayName): CredentialRecord
+    {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
-
         $rpId = $this->configService->getEffectiveRpId();
         $rpName = $this->configService->getConfiguration()->getRpName();
         $userHandle = $this->createUserHandle($beUserUid);
-
         $rp = PublicKeyCredentialRpEntity::create(name: $rpName, id: $rpId);
-        $user = PublicKeyCredentialUserEntity::create(
-            name: $username,
-            id: $userHandle,
-            displayName: $displayName,
-        );
-
+        $user = PublicKeyCredentialUserEntity::create(name: $username, id: $userHandle, displayName: $displayName);
         $creationOptions = PublicKeyCredentialCreationOptions::create(
             rp: $rp,
             user: $user,
@@ -151,13 +113,8 @@ final readonly class AttestationService
             pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
             attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
         );
-
         // Deserialize the browser response
-        $publicKeyCredential = $this->ceremonyFactory->getSerializer()->deserialize(
-            $responseJson,
-            PublicKeyCredential::class,
-            'json',
-        );
+        $publicKeyCredential = $this->ceremonyFactory->getSerializer()->deserialize($responseJson, PublicKeyCredential::class, 'json');
 
         if (!$publicKeyCredential instanceof PublicKeyCredential) {
             throw new RuntimeException('Failed to deserialize credential response', 1700000020);
@@ -180,22 +137,12 @@ final readonly class AttestationService
                 host: $rpId,
             );
         } catch (Throwable $e) {
-            $this->logger->error('Passkey registration verification failed', [
-                'be_user_uid' => $beUserUid,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->error('Passkey registration verification failed', ['be_user_uid' => $beUserUid, 'error' => $e->getMessage()]);
 
-            throw new RuntimeException(
-                'Registration verification failed: ' . $e->getMessage(),
-                1700000022,
-                $e,
-            );
+            throw new RuntimeException('Registration verification failed: ' . $e->getMessage(), 1700000022, $e);
         }
 
-        $this->logger->info('Passkey registered successfully', [
-            'be_user_uid' => $beUserUid,
-            'username' => $username,
-        ]);
+        $this->logger->info('Passkey registered successfully', ['be_user_uid' => $beUserUid, 'username' => $username]);
 
         return $source;
     }
@@ -220,7 +167,6 @@ final readonly class AttestationService
             discoverable: $discoverable,
             label: $label,
         );
-
         $uid = $this->credentialRepository->save($credential);
         $credential->setUid($uid);
 

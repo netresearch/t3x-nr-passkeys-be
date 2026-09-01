@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -46,14 +45,7 @@ final readonly class AssertionService
      *
      * @var list<list<string>>
      */
-    private const DECOY_TRANSPORT_SETS = [
-        ['internal'],
-        ['internal', 'hybrid'],
-        ['usb'],
-        ['usb', 'nfc'],
-        ['hybrid'],
-        [],
-    ];
+    private const DECOY_TRANSPORT_SETS = [['internal'], ['internal', 'hybrid'], ['usb'], ['usb', 'nfc'], ['hybrid'], []];
 
     public function __construct(
         private ExtensionConfigurationService $configService,
@@ -71,16 +63,17 @@ final readonly class AssertionService
         $rpId = $this->configService->getEffectiveRpId();
         $challenge = $this->challengeService->generateChallenge();
         $challengeToken = $this->challengeService->createChallengeToken($challenge);
-
         $credentials = $this->credentialRepository->findByBeUser($beUserUid);
-        $allowCredentials = \array_values(\array_map(
-            static fn(Credential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
-                type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
-                id: $cred->getCredentialId(),
-                transports: $cred->getTransportsArray(),
+        $allowCredentials = \array_values(
+            \array_map(
+                static fn(Credential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
+                    type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
+                    id: $cred->getCredentialId(),
+                    transports: $cred->getTransportsArray(),
+                ),
+                $credentials,
             ),
-            $credentials,
-        ));
+        );
 
         // An existing user who has not registered a passkey yet would otherwise
         // answer with an empty allowCredentials — a reliable "this account exists"
@@ -98,10 +91,7 @@ final readonly class AssertionService
             timeout: 60000,
         );
 
-        return new AssertionOptions(
-            options: $options,
-            challengeToken: $challengeToken,
-        );
+        return new AssertionOptions(options: $options, challengeToken: $challengeToken);
     }
 
     /**
@@ -112,7 +102,6 @@ final readonly class AssertionService
         $rpId = $this->configService->getEffectiveRpId();
         $challenge = $this->challengeService->generateChallenge();
         $challengeToken = $this->challengeService->createChallengeToken($challenge);
-
         $options = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
@@ -121,10 +110,7 @@ final readonly class AssertionService
             timeout: 60000,
         );
 
-        return new AssertionOptions(
-            options: $options,
-            challengeToken: $challengeToken,
-        );
+        return new AssertionOptions(options: $options, challengeToken: $challengeToken);
     }
 
     /**
@@ -143,7 +129,6 @@ final readonly class AssertionService
         $rpId = $this->configService->getEffectiveRpId();
         $challenge = $this->challengeService->generateChallenge();
         $challengeToken = $this->challengeService->createChallengeToken($challenge);
-
         $options = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
@@ -152,10 +137,7 @@ final readonly class AssertionService
             timeout: 60000,
         );
 
-        return new AssertionOptions(
-            options: $options,
-            challengeToken: $challengeToken,
-        );
+        return new AssertionOptions(options: $options, challengeToken: $challengeToken);
     }
 
     /**
@@ -176,16 +158,9 @@ final readonly class AssertionService
      */
     private function buildDecoyDescriptors(string $username): array
     {
-        $derivedKey = \hash_hkdf(
-            'sha256',
-            $this->configService->getEncryptionKey(),
-            32,
-            'nr_passkeys_be_decoy',
-        );
-
+        $derivedKey = \hash_hkdf('sha256', $this->configService->getEncryptionKey(), 32, 'nr_passkeys_be_decoy');
         $seed = \hash_hmac('sha256', $username . '|count', $derivedKey, true);
-        $count = 1 + (\ord($seed[0]) % 3);
-
+        $count = 1 + \ord($seed[0]) % 3;
         $descriptors = [];
 
         for ($index = 0; $index < $count; ++$index) {
@@ -199,10 +174,8 @@ final readonly class AssertionService
             // failing that check was then certainly a real, enrolled account, which is
             // precisely the oracle these decoys exist to close.
             $selectors = \hash_hmac('sha256', $username . '|' . $index . '|selectors', $derivedKey, true);
-
             $length = self::DECOY_ID_LENGTHS[\ord($selectors[0]) % \count(self::DECOY_ID_LENGTHS)];
             $transports = self::DECOY_TRANSPORT_SETS[\ord($selectors[1]) % \count(self::DECOY_TRANSPORT_SETS)];
-
             $descriptors[] = PublicKeyCredentialDescriptor::create(
                 type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
                 id: $this->deriveDecoyId($derivedKey, $username . '|' . $index . '|id', $length),
@@ -245,11 +218,7 @@ final readonly class AssertionService
     public function findBeUserUidFromAssertion(string $responseJson): ?int
     {
         try {
-            $publicKeyCredential = $this->ceremonyFactory->getSerializer()->deserialize(
-                $responseJson,
-                PublicKeyCredential::class,
-                'json',
-            );
+            $publicKeyCredential = $this->ceremonyFactory->getSerializer()->deserialize($responseJson, PublicKeyCredential::class, 'json');
 
             if (!$publicKeyCredential instanceof PublicKeyCredential) {
                 return null;
@@ -272,20 +241,12 @@ final readonly class AssertionService
      *
      * @throws RuntimeException on verification failure
      */
-    public function verifyAssertionResponse(
-        string $responseJson,
-        string $challengeToken,
-        int $beUserUid,
-    ): VerifiedAssertion {
+    public function verifyAssertionResponse(string $responseJson, string $challengeToken, int $beUserUid): VerifiedAssertion
+    {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
         $rpId = $this->configService->getEffectiveRpId();
-
         // Deserialize the browser response
-        $publicKeyCredential = $this->ceremonyFactory->getSerializer()->deserialize(
-            $responseJson,
-            PublicKeyCredential::class,
-            'json',
-        );
+        $publicKeyCredential = $this->ceremonyFactory->getSerializer()->deserialize($responseJson, PublicKeyCredential::class, 'json');
 
         if (!$publicKeyCredential instanceof PublicKeyCredential) {
             throw new RuntimeException('Failed to deserialize assertion response', 1700000030);
@@ -302,9 +263,7 @@ final readonly class AssertionService
         $credential = $this->credentialRepository->findByCredentialId($credentialId);
 
         if (!$credential instanceof Credential) {
-            $this->logger->warning('Assertion with unknown credential ID', [
-                'be_user_uid' => $beUserUid,
-            ]);
+            $this->logger->warning('Assertion with unknown credential ID', ['be_user_uid' => $beUserUid]);
 
             throw new RuntimeException('Unknown credential', 1700000032);
         }
@@ -314,22 +273,20 @@ final readonly class AssertionService
         }
 
         if ($credential->getBeUser() !== $beUserUid) {
-            $this->logger->warning('Credential does not belong to the claimed user', [
-                'be_user_uid' => $beUserUid,
-                'credential_be_user' => $credential->getBeUser(),
-            ]);
+            $this->logger->warning(
+                'Credential does not belong to the claimed user',
+                ['be_user_uid' => $beUserUid, 'credential_be_user' => $credential->getBeUser()],
+            );
 
             throw new RuntimeException('Credential mismatch', 1700000034);
         }
 
         $storedSource = $this->credentialToSource($credential);
-
         $requestOptions = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
             userVerification: $this->configService->getConfiguration()->getUserVerification(),
         );
-
         $factory = $this->ceremonyFactory->createCeremonyFactory();
         $ceremonyManager = $factory->requestCeremony();
         $validator = AuthenticatorAssertionResponseValidator::create($ceremonyManager);
@@ -343,30 +300,16 @@ final readonly class AssertionService
                 userHandle: $credential->getUserHandle() !== '' ? $credential->getUserHandle() : null,
             );
         } catch (Throwable $e) {
-            $this->logger->error('Passkey assertion verification failed', [
-                'be_user_uid' => $beUserUid,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->error('Passkey assertion verification failed', ['be_user_uid' => $beUserUid, 'error' => $e->getMessage()]);
 
-            throw new RuntimeException(
-                'Assertion verification failed: ' . $e->getMessage(),
-                1700000035,
-                $e,
-            );
+            throw new RuntimeException('Assertion verification failed: ' . $e->getMessage(), 1700000035, $e);
         }
 
         $this->credentialRepository->updateSignCount($credential->getUid(), $updatedSource->counter);
         $this->credentialRepository->updateLastUsed($credential->getUid());
+        $this->logger->info('Passkey login successful', ['be_user_uid' => $beUserUid, 'credential_uid' => $credential->getUid()]);
 
-        $this->logger->info('Passkey login successful', [
-            'be_user_uid' => $beUserUid,
-            'credential_uid' => $credential->getUid(),
-        ]);
-
-        return new VerifiedAssertion(
-            credential: $credential,
-            source: $updatedSource,
-        );
+        return new VerifiedAssertion(credential: $credential, source: $updatedSource);
     }
 
     /**
@@ -379,9 +322,7 @@ final readonly class AssertionService
 
     private function credentialToSource(Credential $credential): CredentialRecord
     {
-        $aaguid = $credential->getAaguid() !== ''
-            ? Uuid::fromString($credential->getAaguid())
-            : Uuid::v4();
+        $aaguid = $credential->getAaguid() !== '' ? Uuid::fromString($credential->getAaguid()) : Uuid::v4();
 
         return CredentialRecord::create(
             publicKeyCredentialId: $credential->getCredentialId(),

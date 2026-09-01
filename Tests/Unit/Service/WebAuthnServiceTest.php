@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
@@ -69,20 +68,13 @@ final class WebAuthnServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'test-encryption-key-for-user-handle-generation';
-
         $this->configServiceMock = $this->createMock(ExtensionConfigurationService::class);
-        $this->configServiceMock->method('getEncryptionKey')
-            ->willReturn('test-encryption-key-for-user-handle-generation');
+        $this->configServiceMock->method('getEncryptionKey')->willReturn('test-encryption-key-for-user-handle-generation');
         $this->challengeServiceMock = $this->createMock(ChallengeService::class);
         $this->credentialRepositoryMock = $this->createMock(CredentialRepository::class);
         $this->loggerMock = $this->createMock(LoggerInterface::class);
-
-        $this->ceremonyFactory = new WebAuthnCeremonyFactory(
-            $this->configServiceMock,
-            $this->loggerMock,
-        );
+        $this->ceremonyFactory = new WebAuthnCeremonyFactory($this->configServiceMock, $this->loggerMock);
         $this->attestationService = new AttestationService(
             $this->configServiceMock,
             $this->challengeServiceMock,
@@ -97,10 +89,7 @@ final class WebAuthnServiceTest extends TestCase
             $this->loggerMock,
             $this->ceremonyFactory,
         );
-        $this->subject = new WebAuthnService(
-            $this->attestationService,
-            $this->assertionService,
-        );
+        $this->subject = new WebAuthnService($this->attestationService, $this->assertionService);
     }
 
     protected function tearDown(): void
@@ -117,42 +106,22 @@ final class WebAuthnServiceTest extends TestCase
         $displayName = 'Admin User';
         $challenge = \random_bytes(32);
         $challengeToken = 'test-challenge-token';
-
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            rpName: 'Test TYPO3',
-            userVerification: 'required',
-            allowedAlgorithms: 'ES256,RS256',
-        );
-
-        $this->configServiceMock
-            ->method('getEffectiveRpId')
-            ->willReturn('example.com');
-
-        $this->configServiceMock
-            ->method('getConfiguration')
-            ->willReturn($config);
-
-        $this->challengeServiceMock
-            ->method('generateChallenge')
-            ->willReturn($challenge);
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test TYPO3', userVerification: 'required', allowedAlgorithms: 'ES256,RS256');
+        $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
+        $this->configServiceMock->method('getConfiguration')->willReturn($config);
+        $this->challengeServiceMock->method('generateChallenge')->willReturn($challenge);
         $this->challengeServiceMock
             ->method('createChallengeToken')
             ->with($challenge)
             ->willReturn($challengeToken);
-
         $this->credentialRepositoryMock
             ->method('findByBeUser')
             ->with($beUserUid)
             ->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions($beUserUid, $username, $displayName);
-
         self::assertInstanceOf(RegistrationOptions::class, $result);
         self::assertInstanceOf(PublicKeyCredentialCreationOptions::class, $result->options);
         self::assertSame($challengeToken, $result->challengeToken);
-
         $options = $result->options;
         self::assertSame($challenge, $options->challenge);
         self::assertSame('example.com', $options->rp->id);
@@ -169,7 +138,6 @@ final class WebAuthnServiceTest extends TestCase
         $beUserUid = 123;
         $username = 'admin';
         $displayName = 'Admin User';
-
         $existingCredential = new Credential(
             uid: 1,
             beUser: $beUserUid,
@@ -178,36 +146,16 @@ final class WebAuthnServiceTest extends TestCase
             transports: '["usb","nfc"]',
             label: 'My Key',
         );
-
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            rpName: 'Test TYPO3',
-            userVerification: 'preferred',
-        );
-
-        $this->configServiceMock
-            ->method('getEffectiveRpId')
-            ->willReturn('example.com');
-
-        $this->configServiceMock
-            ->method('getConfiguration')
-            ->willReturn($config);
-
-        $this->challengeServiceMock
-            ->method('generateChallenge')
-            ->willReturn(\random_bytes(32));
-
-        $this->challengeServiceMock
-            ->method('createChallengeToken')
-            ->willReturn('token');
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test TYPO3', userVerification: 'preferred');
+        $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
+        $this->configServiceMock->method('getConfiguration')->willReturn($config);
+        $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
+        $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock
             ->method('findByBeUser')
             ->with($beUserUid)
             ->willReturn([$existingCredential]);
-
         $result = $this->subject->createRegistrationOptions($beUserUid, $username, $displayName);
-
         $options = $result->options;
         self::assertCount(1, $options->excludeCredentials);
         self::assertSame('existing-credential-id', $options->excludeCredentials[0]->id);
@@ -221,7 +169,6 @@ final class WebAuthnServiceTest extends TestCase
         $username = 'testuser';
         $challenge = \random_bytes(32);
         $challengeToken = 'assertion-challenge-token';
-
         $credential = new Credential(
             uid: 10,
             beUser: $beUserUid,
@@ -230,40 +177,22 @@ final class WebAuthnServiceTest extends TestCase
             transports: '["internal"]',
             label: 'My Passkey',
         );
-
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            userVerification: 'preferred',
-        );
-
-        $this->configServiceMock
-            ->method('getEffectiveRpId')
-            ->willReturn('example.com');
-
-        $this->configServiceMock
-            ->method('getConfiguration')
-            ->willReturn($config);
-
-        $this->challengeServiceMock
-            ->method('generateChallenge')
-            ->willReturn($challenge);
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', userVerification: 'preferred');
+        $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
+        $this->configServiceMock->method('getConfiguration')->willReturn($config);
+        $this->challengeServiceMock->method('generateChallenge')->willReturn($challenge);
         $this->challengeServiceMock
             ->method('createChallengeToken')
             ->with($challenge)
             ->willReturn($challengeToken);
-
         $this->credentialRepositoryMock
             ->method('findByBeUser')
             ->with($beUserUid)
             ->willReturn([$credential]);
-
         $result = $this->subject->createAssertionOptions($username, $beUserUid);
-
         self::assertInstanceOf(AssertionOptions::class, $result);
         self::assertInstanceOf(PublicKeyCredentialRequestOptions::class, $result->options);
         self::assertSame($challengeToken, $result->challengeToken);
-
         $options = $result->options;
         self::assertSame($challenge, $options->challenge);
         self::assertSame('example.com', $options->rpId);
@@ -279,35 +208,18 @@ final class WebAuthnServiceTest extends TestCase
     {
         $challenge = \random_bytes(32);
         $challengeToken = 'discoverable-token';
-
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            userVerification: 'required',
-        );
-
-        $this->configServiceMock
-            ->method('getEffectiveRpId')
-            ->willReturn('example.com');
-
-        $this->configServiceMock
-            ->method('getConfiguration')
-            ->willReturn($config);
-
-        $this->challengeServiceMock
-            ->method('generateChallenge')
-            ->willReturn($challenge);
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', userVerification: 'required');
+        $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
+        $this->configServiceMock->method('getConfiguration')->willReturn($config);
+        $this->challengeServiceMock->method('generateChallenge')->willReturn($challenge);
         $this->challengeServiceMock
             ->method('createChallengeToken')
             ->with($challenge)
             ->willReturn($challengeToken);
-
         $result = $this->subject->createDiscoverableAssertionOptions();
-
         self::assertInstanceOf(AssertionOptions::class, $result);
         self::assertInstanceOf(PublicKeyCredentialRequestOptions::class, $result->options);
         self::assertSame($challengeToken, $result->challengeToken);
-
         $options = $result->options;
         self::assertSame($challenge, $options->challenge);
         self::assertSame('example.com', $options->rpId);
@@ -322,7 +234,6 @@ final class WebAuthnServiceTest extends TestCase
         $beUserUid = 789;
         $label = 'Work Laptop Key';
         $expectedUid = 42;
-
         $source = CredentialRecord::create(
             publicKeyCredentialId: 'credential-id-xyz',
             type: 'public-key',
@@ -334,21 +245,16 @@ final class WebAuthnServiceTest extends TestCase
             userHandle: 'user-handle-hash',
             counter: 0,
         );
-
         $this->credentialRepositoryMock
             ->expects(self::once())
             ->method('save')
-            ->with(self::callback(fn(Credential $cred): bool => $cred->getBeUser() === $beUserUid
-                && $cred->getLabel() === $label
-                && $cred->getCredentialId() === $source->publicKeyCredentialId
-                && $cred->getPublicKeyCose() === $source->credentialPublicKey
-                && $cred->getUserHandle() === $source->userHandle
-                && $cred->getSignCount() === $source->counter
-                && $cred->getAaguid() === $source->aaguid->toString()))
+            ->with(
+                self::callback(
+                    fn(Credential $cred): bool => $cred->getBeUser() === $beUserUid && $cred->getLabel() === $label && $cred->getCredentialId() === $source->publicKeyCredentialId && $cred->getPublicKeyCose() === $source->credentialPublicKey && $cred->getUserHandle() === $source->userHandle && $cred->getSignCount() === $source->counter && $cred->getAaguid() === $source->aaguid->toString(),
+                ),
+            )
             ->willReturn($expectedUid);
-
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
-
         self::assertInstanceOf(Credential::class, $result);
         self::assertSame($expectedUid, $result->getUid());
         self::assertSame($beUserUid, $result->getBeUser());
@@ -360,21 +266,17 @@ final class WebAuthnServiceTest extends TestCase
     public function createUserHandleIsDeterministic(): void
     {
         $beUserUid = 100;
-
         $config = new ExtensionConfiguration();
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         // Call twice and check that user handle is the same
         $result1 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
         $result2 = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
-
         $userHandle1 = $result1->options->user->id;
         $userHandle2 = $result2->options->user->id;
-
         self::assertSame($userHandle1, $userHandle2, 'User handle must be deterministic for same UID');
     }
 
@@ -387,13 +289,10 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result1 = $this->subject->createRegistrationOptions(100, 'user1', 'User 1');
         $result2 = $this->subject->createRegistrationOptions(200, 'user2', 'User 2');
-
         $userHandle1 = $result1->options->user->id;
         $userHandle2 = $result2->options->user->id;
-
         self::assertNotSame($userHandle1, $userHandle2, 'Different users must have different user handles');
     }
 
@@ -406,10 +305,8 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
         $json = $this->subject->serializeCreationOptions($result->options);
-
         self::assertJson($json);
         $decoded = \json_decode($json, true);
         self::assertIsArray($decoded);
@@ -428,10 +325,8 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createAssertionOptions('user', 456);
         $json = $this->subject->serializeRequestOptions($result->options);
-
         self::assertJson($json);
         $decoded = \json_decode($json, true);
         self::assertIsArray($decoded);
@@ -447,19 +342,15 @@ final class WebAuthnServiceTest extends TestCase
         $challengeToken = 'valid-token';
         $challenge = \random_bytes(32);
         $beUserUid = 100;
-
         $config = new ExtensionConfiguration(rpId: 'example.com');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
-
         $this->challengeServiceMock
             ->method('verifyChallengeToken')
             ->with($challengeToken)
             ->willReturn($challenge);
-
         // Invalid JSON structure will fail deserialization
         $this->expectException(Throwable::class);
-
         $this->subject->verifyAssertionResponse($invalidJson, $challengeToken, $beUserUid);
     }
 
@@ -470,32 +361,19 @@ final class WebAuthnServiceTest extends TestCase
         $challengeToken = 'token';
         $challenge = \random_bytes(32);
         $beUserUid = 123;
-
         $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn('https://example.com');
-
         $this->challengeServiceMock
             ->method('verifyChallengeToken')
             ->with($challengeToken)
             ->willReturn($challenge);
-
         // Invalid response will trigger error logging
-        $this->loggerMock
-            ->expects(self::never())
-            ->method('error');
-
+        $this->loggerMock->expects(self::never())->method('error');
         // Will throw during deserialization
         $this->expectException(Throwable::class);
-
-        $this->subject->verifyRegistrationResponse(
-            $invalidJson,
-            $challengeToken,
-            $beUserUid,
-            'user',
-            'User',
-        );
+        $this->subject->verifyRegistrationResponse($invalidJson, $challengeToken, $beUserUid, 'user', 'User');
     }
 
     #[Test]
@@ -504,7 +382,6 @@ final class WebAuthnServiceTest extends TestCase
         $beUserUid = 999;
         $label = 'Security Key';
         $expectedUid = 55;
-
         $uuid = Uuid::v4();
         $source = CredentialRecord::create(
             publicKeyCredentialId: 'test-cred-id',
@@ -517,20 +394,20 @@ final class WebAuthnServiceTest extends TestCase
             userHandle: 'user-handle',
             counter: 5,
         );
-
         $this->credentialRepositoryMock
             ->expects(self::once())
             ->method('save')
-            ->with(self::callback(function (Credential $cred) use ($uuid): bool {
-                $transports = $cred->getTransportsArray();
+            ->with(
+                self::callback(
+                    function (Credential $cred) use ($uuid): bool {
+                        $transports = $cred->getTransportsArray();
 
-                return $transports === ['usb', 'ble', 'nfc']
-                    && $cred->getAaguid() === $uuid->toString();
-            }))
+                        return $transports === ['usb', 'ble', 'nfc'] && $cred->getAaguid() === $uuid->toString();
+                    },
+                ),
+            )
             ->willReturn($expectedUid);
-
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
-
         self::assertSame($expectedUid, $result->getUid());
         self::assertSame(['usb', 'ble', 'nfc'], $result->getTransportsArray());
     }
@@ -541,46 +418,29 @@ final class WebAuthnServiceTest extends TestCase
         $invalidJson = '{"invalid": "json structure that does not match PublicKeyCredential"}';
         $challengeToken = 'token';
         $challenge = \random_bytes(32);
-
         $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn('https://example.com');
-
         $this->challengeServiceMock
             ->method('verifyChallengeToken')
             ->with($challengeToken)
             ->willReturn($challenge);
-
         $this->expectException(Throwable::class);
-
-        $this->subject->verifyRegistrationResponse(
-            $invalidJson,
-            $challengeToken,
-            123,
-            'user',
-            'User',
-        );
+        $this->subject->verifyRegistrationResponse($invalidJson, $challengeToken, 123, 'user', 'User');
     }
 
     #[Test]
     #[DataProvider('algorithmProvider')]
     public function createRegistrationOptionsWithDifferentAlgorithms(string $algorithms, int $expectedCount): void
     {
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            rpName: 'Test',
-            allowedAlgorithms: $algorithms,
-        );
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test', allowedAlgorithms: $algorithms);
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         self::assertCount($expectedCount, $result->options->pubKeyCredParams);
     }
 
@@ -598,20 +458,13 @@ final class WebAuthnServiceTest extends TestCase
     #[Test]
     public function createRegistrationOptionsIgnoresUnknownAlgorithms(): void
     {
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            rpName: 'Test',
-            allowedAlgorithms: 'ES256,UNKNOWN_ALGO,RS256',
-        );
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test', allowedAlgorithms: 'ES256,UNKNOWN_ALGO,RS256');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         // Only ES256 and RS256 should be in the params (unknown ignored)
         self::assertCount(2, $result->options->pubKeyCredParams);
     }
@@ -625,9 +478,7 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         self::assertSame(60000, $result->options->timeout);
     }
 
@@ -640,9 +491,7 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createAssertionOptions('user', 456);
-
         self::assertSame(60000, $result->options->timeout);
     }
 
@@ -654,48 +503,33 @@ final class WebAuthnServiceTest extends TestCase
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
-
         $result = $this->subject->createDiscoverableAssertionOptions();
-
         self::assertSame(60000, $result->options->timeout);
     }
 
     #[Test]
     public function createRegistrationOptionsUsesConfiguredUserVerification(): void
     {
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            rpName: 'Test',
-            userVerification: 'discouraged',
-        );
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test', userVerification: 'discouraged');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         self::assertSame('discouraged', $result->options->authenticatorSelection->userVerification);
     }
 
     #[Test]
     public function createAssertionOptionsUsesConfiguredUserVerification(): void
     {
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            userVerification: 'discouraged',
-        );
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', userVerification: 'discouraged');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createAssertionOptions('user', 456);
-
         self::assertSame('discouraged', $result->options->userVerification);
     }
 
@@ -708,9 +542,7 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         self::assertSame('preferred', $result->options->authenticatorSelection->residentKey);
     }
 
@@ -723,9 +555,7 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         self::assertSame('none', $result->options->attestation);
     }
 
@@ -734,7 +564,6 @@ final class WebAuthnServiceTest extends TestCase
     {
         $beUserUid = 111;
         $label = 'Test Key';
-
         $source = CredentialRecord::create(
             publicKeyCredentialId: 'cred-id',
             type: 'public-key',
@@ -746,15 +575,12 @@ final class WebAuthnServiceTest extends TestCase
             userHandle: 'handle',
             counter: 42,
         );
-
         $this->credentialRepositoryMock
             ->expects(self::once())
             ->method('save')
             ->with(self::callback(fn(Credential $cred): bool => $cred->getSignCount() === 42))
             ->willReturn(1);
-
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
-
         self::assertSame(42, $result->getSignCount());
     }
 
@@ -763,21 +589,18 @@ final class WebAuthnServiceTest extends TestCase
     {
         $beUserUid = 500;
         $challenge = \random_bytes(32);
-
         // Create a config service mock that returns different keys on consecutive calls
         $configServiceMock = $this->createMock(ExtensionConfigurationService::class);
-        $configServiceMock->method('getEncryptionKey')
-            ->willReturnOnConsecutiveCalls(
-                'test-encryption-key-for-user-handle-generation',
-                'a-completely-different-key-that-is-long-enough-for-validation',
-            );
+        $configServiceMock->method('getEncryptionKey')->willReturnOnConsecutiveCalls(
+            'test-encryption-key-for-user-handle-generation',
+            'a-completely-different-key-that-is-long-enough-for-validation',
+        );
         $config = new ExtensionConfiguration();
         $configServiceMock->method('getConfiguration')->willReturn($config);
         $configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->challengeServiceMock->method('generateChallenge')->willReturn($challenge);
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $ceremonyFactory = new WebAuthnCeremonyFactory($configServiceMock, $this->loggerMock);
         $subject = new WebAuthnService(
             new AttestationService(
@@ -795,13 +618,10 @@ final class WebAuthnServiceTest extends TestCase
                 $ceremonyFactory,
             ),
         );
-
         $result1 = $subject->createRegistrationOptions($beUserUid, 'user', 'User');
         $handle1 = $result1->options->user->id;
-
         $result2 = $subject->createRegistrationOptions($beUserUid, 'user', 'User');
         $handle2 = $result2->options->user->id;
-
         self::assertNotSame($handle1, $handle2, 'User handle must depend on encryption key');
     }
 
@@ -814,9 +634,7 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         $userHandle = $result->options->user->id;
         self::assertSame(32, \strlen($userHandle), 'User handle must be 32 bytes (SHA-256)');
     }
@@ -851,7 +669,6 @@ final class WebAuthnServiceTest extends TestCase
                 label: 'Key 3',
             ),
         ];
-
         $config = new ExtensionConfiguration(rpId: 'example.com');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
@@ -861,9 +678,7 @@ final class WebAuthnServiceTest extends TestCase
             ->method('findByBeUser')
             ->with($beUserUid)
             ->willReturn($credentials);
-
         $result = $this->subject->createAssertionOptions('user', $beUserUid);
-
         self::assertCount(3, $result->options->allowCredentials);
         self::assertSame('cred-1', $result->options->allowCredentials[0]->id);
         self::assertSame('cred-2', $result->options->allowCredentials[1]->id);
@@ -879,42 +694,30 @@ final class WebAuthnServiceTest extends TestCase
         $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
-        $this->configServiceMock->method('getEncryptionKey')->willThrowException(
-            new RuntimeException('TYPO3 encryptionKey is missing or too short', 1700000050),
-        );
+        $this->configServiceMock->method('getEncryptionKey')->willThrowException(new RuntimeException('TYPO3 encryptionKey is missing or too short', 1700000050));
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000050);
         $this->expectExceptionMessage('TYPO3 encryptionKey is missing or too short');
-
         $this->subject->createRegistrationOptions(123, 'user', 'User');
     }
 
     #[Test]
     public function createAlgorithmManagerLogsWarningForUnknownAlgorithm(): void
     {
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            rpName: 'Test',
-            allowedAlgorithms: 'ES256,UNKNOWN_ALGO',
-        );
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test', allowedAlgorithms: 'ES256,UNKNOWN_ALGO');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn('https://example.com');
-
         // The unknown algorithm should trigger a warning log
         $this->loggerMock
             ->expects(self::once())
             ->method('warning')
             ->with('Unknown algorithm configured', ['algorithm' => 'UNKNOWN_ALGO']);
-
         // Use reflection to call the private createAlgorithmManager method directly
         $reflection = new ReflectionMethod($this->ceremonyFactory, 'createAlgorithmManager');
-
         $reflection->invoke($this->ceremonyFactory);
     }
 
@@ -927,9 +730,7 @@ final class WebAuthnServiceTest extends TestCase
         $origin = 'https://example.com';
         $challenge = \random_bytes(32);
         $challengeToken = 'token';
-
         [$assertionJson, $credentialId] = $this->buildAssertionJson($rpId, $challenge, $origin);
-
         $config = new ExtensionConfiguration(rpId: $rpId, allowedAlgorithms: 'ES256');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn($rpId);
@@ -938,7 +739,6 @@ final class WebAuthnServiceTest extends TestCase
             ->method('verifyChallengeToken')
             ->with($challengeToken)
             ->willReturn($challenge);
-
         $revokedCredential = new Credential(
             uid: 10,
             beUser: 100,
@@ -952,11 +752,9 @@ final class WebAuthnServiceTest extends TestCase
             ->method('findByCredentialId')
             ->with($credentialId)
             ->willReturn($revokedCredential);
-
         // The revocation guard must fire with its dedicated code (1700000033).
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000033);
-
         $this->subject->verifyAssertionResponse($assertionJson, $challengeToken, 100);
     }
 
@@ -965,7 +763,6 @@ final class WebAuthnServiceTest extends TestCase
     {
         $beUserUid = 456;
         $label = 'Test';
-
         $source = CredentialRecord::create(
             publicKeyCredentialId: 'cred-id',
             type: 'public-key',
@@ -977,15 +774,12 @@ final class WebAuthnServiceTest extends TestCase
             userHandle: 'handle',
             counter: 0,
         );
-
         $this->credentialRepositoryMock
             ->expects(self::once())
             ->method('save')
             ->with(self::callback(fn(Credential $cred): bool => $cred->getTransports() === '[]'))
             ->willReturn(1);
-
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
-
         self::assertSame([], $result->getTransportsArray());
     }
 
@@ -1007,9 +801,7 @@ final class WebAuthnServiceTest extends TestCase
             ->method('findByBeUser')
             ->with(999)
             ->willReturn([]);
-
         $result = $this->subject->createAssertionOptions('user', 999);
-
         self::assertNotEmpty($result->options->allowCredentials);
         self::assertSame(
             \array_map(
@@ -1031,7 +823,6 @@ final class WebAuthnServiceTest extends TestCase
             new Credential(uid: 1, beUser: $beUserUid, credentialId: 'cred-1', transports: '["usb"]'),
             new Credential(uid: 2, beUser: $beUserUid, credentialId: 'cred-2', transports: '["internal"]'),
         ];
-
         $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
@@ -1041,9 +832,7 @@ final class WebAuthnServiceTest extends TestCase
             ->method('findByBeUser')
             ->with($beUserUid)
             ->willReturn($credentials);
-
         $result = $this->subject->createRegistrationOptions($beUserUid, 'user', 'User');
-
         self::assertCount(2, $result->options->excludeCredentials);
         self::assertSame('cred-1', $result->options->excludeCredentials[0]->id);
         self::assertSame('cred-2', $result->options->excludeCredentials[1]->id);
@@ -1058,33 +847,23 @@ final class WebAuthnServiceTest extends TestCase
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         // Call serialize twice - should reuse the same serializer instance internally
         $json1 = $this->subject->serializeCreationOptions($result->options);
         $json2 = $this->subject->serializeCreationOptions($result->options);
-
         self::assertSame($json1, $json2);
     }
 
     #[Test]
     public function createRegistrationOptionsWithLowercaseAlgorithms(): void
     {
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            rpName: 'Test',
-            allowedAlgorithms: 'es256,rs256',
-        );
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test', allowedAlgorithms: 'es256,rs256');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         // Algorithm names are uppercased internally, so lowercase input should work
         self::assertCount(2, $result->options->pubKeyCredParams);
     }
@@ -1092,20 +871,13 @@ final class WebAuthnServiceTest extends TestCase
     #[Test]
     public function createRegistrationOptionsWithWhitespaceAlgorithms(): void
     {
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            rpName: 'Test',
-            allowedAlgorithms: ' ES256 , RS256 ',
-        );
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test', allowedAlgorithms: ' ES256 , RS256 ');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->challengeServiceMock->method('generateChallenge')->willReturn(\random_bytes(32));
         $this->challengeServiceMock->method('createChallengeToken')->willReturn('token');
         $this->credentialRepositoryMock->method('findByBeUser')->willReturn([]);
-
         $result = $this->subject->createRegistrationOptions(123, 'user', 'User');
-
         // Whitespace should be trimmed
         self::assertCount(2, $result->options->pubKeyCredParams);
     }
@@ -1114,7 +886,6 @@ final class WebAuthnServiceTest extends TestCase
     public function findBeUserUidFromAssertionReturnsNullForInvalidJson(): void
     {
         $result = $this->subject->findBeUserUidFromAssertion('not valid json');
-
         self::assertNull($result);
     }
 
@@ -1122,7 +893,6 @@ final class WebAuthnServiceTest extends TestCase
     public function findBeUserUidFromAssertionReturnsNullForEmptyString(): void
     {
         $result = $this->subject->findBeUserUidFromAssertion('');
-
         self::assertNull($result);
     }
 
@@ -1130,7 +900,6 @@ final class WebAuthnServiceTest extends TestCase
     public function findBeUserUidFromAssertionReturnsNullForMalformedStructure(): void
     {
         $result = $this->subject->findBeUserUidFromAssertion('{"invalid": "structure"}');
-
         self::assertNull($result);
     }
 
@@ -1143,17 +912,13 @@ final class WebAuthnServiceTest extends TestCase
         $beUserUid = 42;
         $challengeToken = 'test-challenge-token';
         $userHandle = 'user-handle-hash';
-
         // Generate ES256 key pair (software authenticator)
         $key = \openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
         self::assertNotFalse($key);
-
         $details = \openssl_pkey_get_details($key);
         self::assertIsArray($details);
-
-        $x = \str_pad($details['ec']['x'], 32, "\0", STR_PAD_LEFT);
-        $y = \str_pad($details['ec']['y'], 32, "\0", STR_PAD_LEFT);
-
+        $x = \str_pad($details['ec']['x'], 32, "\x00", STR_PAD_LEFT);
+        $y = \str_pad($details['ec']['y'], 32, "\x00", STR_PAD_LEFT);
         // Create COSE-encoded public key (EC2 / ES256)
         $coseKey = MapObject::create()
             ->add(UnsignedIntegerObject::create(1), UnsignedIntegerObject::create(2))
@@ -1162,51 +927,40 @@ final class WebAuthnServiceTest extends TestCase
             ->add(NegativeIntegerObject::create(-2), ByteStringObject::create($x))
             ->add(NegativeIntegerObject::create(-3), ByteStringObject::create($y));
         $publicKeyCose = (string) $coseKey;
-
         $credentialId = \random_bytes(32);
         $b64url = static fn(string $d): string => \rtrim(\strtr(\base64_encode($d), '+/', '-_'), '=');
-
         // Build clientDataJSON
-        $clientDataJSON = \json_encode([
-            'type' => 'webauthn.get',
-            'challenge' => $b64url($challenge),
-            'origin' => $origin,
-            'crossOrigin' => false,
-        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-
+        $clientDataJSON = \json_encode(
+            ['type' => 'webauthn.get', 'challenge' => $b64url($challenge), 'origin' => $origin, 'crossOrigin' => false],
+            JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        );
         // Build authenticatorData: rpIdHash (32) + flags (1) + counter (4)
-        $authData = \hash('sha256', $rpId, true) . \chr(0x05) . \pack('N', 1);
-
+        $authData = \hash('sha256', $rpId, true) . \chr(0x5) . \pack('N', 1);
         // Sign: authenticatorData || SHA-256(clientDataJSON)
         \openssl_sign($authData . \hash('sha256', $clientDataJSON, true), $signature, $key, OPENSSL_ALGO_SHA256);
-
         // Build assertion JSON
-        $assertionJson = \json_encode([
-            'type' => 'public-key',
-            'id' => $b64url($credentialId),
-            'rawId' => $b64url($credentialId),
-            'response' => [
-                'clientDataJSON' => $b64url($clientDataJSON),
-                'authenticatorData' => $b64url($authData),
-                'signature' => $b64url($signature),
+        $assertionJson = \json_encode(
+            [
+                'type' => 'public-key',
+                'id' => $b64url($credentialId),
+                'rawId' => $b64url($credentialId),
+                'response' => [
+                    'clientDataJSON' => $b64url($clientDataJSON),
+                    'authenticatorData' => $b64url($authData),
+                    'signature' => $b64url($signature),
+                ],
             ],
-        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-
-        // Set up mocks
-        $config = new ExtensionConfiguration(
-            rpId: $rpId,
-            allowedAlgorithms: 'ES256',
+            JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
         );
-
+        // Set up mocks
+        $config = new ExtensionConfiguration(rpId: $rpId, allowedAlgorithms: 'ES256');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn($rpId);
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn($origin);
-
         $this->challengeServiceMock
             ->method('verifyChallengeToken')
             ->with($challengeToken)
             ->willReturn($challenge);
-
         $credential = new Credential(
             uid: 10,
             beUser: $beUserUid,
@@ -1218,32 +972,27 @@ final class WebAuthnServiceTest extends TestCase
             transports: '[]',
             label: 'Test Key',
         );
-
         $this->credentialRepositoryMock
             ->method('findByCredentialId')
             ->with($credentialId)
             ->willReturn($credential);
-
         $this->credentialRepositoryMock
             ->expects(self::once())
             ->method('updateSignCount')
             ->with(10, 1);
-
         $this->credentialRepositoryMock
             ->expects(self::once())
             ->method('updateLastUsed')
             ->with(10);
-
         $this->loggerMock
             ->expects(self::once())
             ->method('info')
-            ->with('Passkey login successful', self::callback(
-                static fn(array $ctx): bool => $ctx['be_user_uid'] === $beUserUid && $ctx['credential_uid'] === 10,
-            ));
-
+            ->with(
+                'Passkey login successful',
+                self::callback(static fn(array $ctx): bool => $ctx['be_user_uid'] === $beUserUid && $ctx['credential_uid'] === 10),
+            );
         // Execute
         $result = $this->subject->verifyAssertionResponse($assertionJson, $challengeToken, $beUserUid);
-
         // Assert
         self::assertInstanceOf(VerifiedAssertion::class, $result);
         self::assertSame($credential, $result->credential);
@@ -1262,31 +1011,27 @@ final class WebAuthnServiceTest extends TestCase
     {
         $key = \openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
         self::assertNotFalse($key);
-
         $credentialId = \random_bytes(32);
         $b64url = static fn(string $d): string => \rtrim(\strtr(\base64_encode($d), '+/', '-_'), '=');
-
-        $clientDataJSON = \json_encode([
-            'type' => 'webauthn.get',
-            'challenge' => $b64url($challenge),
-            'origin' => $origin,
-            'crossOrigin' => false,
-        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-
-        $authData = \hash('sha256', $rpId, true) . \chr(0x05) . \pack('N', 1);
-
+        $clientDataJSON = \json_encode(
+            ['type' => 'webauthn.get', 'challenge' => $b64url($challenge), 'origin' => $origin, 'crossOrigin' => false],
+            JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        );
+        $authData = \hash('sha256', $rpId, true) . \chr(0x5) . \pack('N', 1);
         \openssl_sign($authData . \hash('sha256', $clientDataJSON, true), $signature, $key, OPENSSL_ALGO_SHA256);
-
-        $assertionJson = \json_encode([
-            'type' => 'public-key',
-            'id' => $b64url($credentialId),
-            'rawId' => $b64url($credentialId),
-            'response' => [
-                'clientDataJSON' => $b64url($clientDataJSON),
-                'authenticatorData' => $b64url($authData),
-                'signature' => $b64url($signature),
+        $assertionJson = \json_encode(
+            [
+                'type' => 'public-key',
+                'id' => $b64url($credentialId),
+                'rawId' => $b64url($credentialId),
+                'response' => [
+                    'clientDataJSON' => $b64url($clientDataJSON),
+                    'authenticatorData' => $b64url($authData),
+                    'signature' => $b64url($signature),
+                ],
             ],
-        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+            JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        );
 
         return [$assertionJson, $credentialId, $key];
     }
@@ -1298,10 +1043,8 @@ final class WebAuthnServiceTest extends TestCase
     {
         $details = \openssl_pkey_get_details($key);
         self::assertIsArray($details);
-
-        $x = \str_pad($details['ec']['x'], 32, "\0", STR_PAD_LEFT);
-        $y = \str_pad($details['ec']['y'], 32, "\0", STR_PAD_LEFT);
-
+        $x = \str_pad($details['ec']['x'], 32, "\x00", STR_PAD_LEFT);
+        $y = \str_pad($details['ec']['y'], 32, "\x00", STR_PAD_LEFT);
         $coseKey = MapObject::create()
             ->add(UnsignedIntegerObject::create(1), UnsignedIntegerObject::create(2))
             ->add(UnsignedIntegerObject::create(3), NegativeIntegerObject::create(-7))
@@ -1318,9 +1061,7 @@ final class WebAuthnServiceTest extends TestCase
         $rpId = 'example.com';
         $origin = 'https://example.com';
         $challenge = \random_bytes(32);
-
         [$assertionJson, $credentialId] = $this->buildAssertionJson($rpId, $challenge, $origin);
-
         $revokedCredential = new Credential(
             uid: 5,
             beUser: 42,
@@ -1330,14 +1071,11 @@ final class WebAuthnServiceTest extends TestCase
             label: 'Revoked Key',
             revokedAt: 1700000000,
         );
-
         $this->credentialRepositoryMock
             ->method('findByCredentialId')
             ->with($credentialId)
             ->willReturn($revokedCredential);
-
         $result = $this->subject->findBeUserUidFromAssertion($assertionJson);
-
         self::assertNull($result, 'Revoked credentials should return null');
     }
 
@@ -1347,25 +1085,13 @@ final class WebAuthnServiceTest extends TestCase
         $rpId = 'example.com';
         $origin = 'https://example.com';
         $challenge = \random_bytes(32);
-
         [$assertionJson, $credentialId] = $this->buildAssertionJson($rpId, $challenge, $origin);
-
-        $validCredential = new Credential(
-            uid: 10,
-            beUser: 42,
-            credentialId: $credentialId,
-            publicKeyCose: 'cose-data',
-            transports: '[]',
-            label: 'My Key',
-        );
-
+        $validCredential = new Credential(uid: 10, beUser: 42, credentialId: $credentialId, publicKeyCose: 'cose-data', transports: '[]', label: 'My Key');
         $this->credentialRepositoryMock
             ->method('findByCredentialId')
             ->with($credentialId)
             ->willReturn($validCredential);
-
         $result = $this->subject->findBeUserUidFromAssertion($assertionJson);
-
         self::assertSame(42, $result, 'Should return the be_user UID from the valid credential');
     }
 
@@ -1375,16 +1101,12 @@ final class WebAuthnServiceTest extends TestCase
         $rpId = 'example.com';
         $origin = 'https://example.com';
         $challenge = \random_bytes(32);
-
         [$assertionJson, $credentialId] = $this->buildAssertionJson($rpId, $challenge, $origin);
-
         $this->credentialRepositoryMock
             ->method('findByCredentialId')
             ->with($credentialId)
             ->willReturn(null);
-
         $result = $this->subject->findBeUserUidFromAssertion($assertionJson);
-
         self::assertNull($result, 'Should return null when credential is not found');
     }
 
@@ -1396,33 +1118,26 @@ final class WebAuthnServiceTest extends TestCase
         $challenge = \random_bytes(32);
         $challengeToken = 'test-token';
         $beUserUid = 42;
-
         [$assertionJson, $credentialId] = $this->buildAssertionJson($rpId, $challenge, $origin);
-
         $config = new ExtensionConfiguration(rpId: $rpId, allowedAlgorithms: 'ES256');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn($rpId);
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn($origin);
-
         $this->challengeServiceMock
             ->method('verifyChallengeToken')
             ->with($challengeToken)
             ->willReturn($challenge);
-
         $this->credentialRepositoryMock
             ->method('findByCredentialId')
             ->with($credentialId)
             ->willReturn(null);
-
         $this->loggerMock
             ->expects(self::once())
             ->method('warning')
             ->with('Assertion with unknown credential ID', ['be_user_uid' => $beUserUid]);
-
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000032);
         $this->expectExceptionMessage('Unknown credential');
-
         $this->subject->verifyAssertionResponse($assertionJson, $challengeToken, $beUserUid);
     }
 
@@ -1434,19 +1149,15 @@ final class WebAuthnServiceTest extends TestCase
         $challenge = \random_bytes(32);
         $challengeToken = 'test-token';
         $beUserUid = 1;
-
         [$assertionJson, $credentialId] = $this->buildAssertionJson($rpId, $challenge, $origin);
-
         $config = new ExtensionConfiguration(rpId: $rpId, allowedAlgorithms: 'ES256');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn($rpId);
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn($origin);
-
         $this->challengeServiceMock
             ->method('verifyChallengeToken')
             ->with($challengeToken)
             ->willReturn($challenge);
-
         // Credential belongs to user 999, but we're asserting as user 1
         $credential = new Credential(
             uid: 10,
@@ -1456,24 +1167,17 @@ final class WebAuthnServiceTest extends TestCase
             transports: '[]',
             label: 'Other User Key',
         );
-
         $this->credentialRepositoryMock
             ->method('findByCredentialId')
             ->with($credentialId)
             ->willReturn($credential);
-
         $this->loggerMock
             ->expects(self::once())
             ->method('warning')
-            ->with(
-                'Credential does not belong to the claimed user',
-                ['be_user_uid' => $beUserUid, 'credential_be_user' => 999],
-            );
-
+            ->with('Credential does not belong to the claimed user', ['be_user_uid' => $beUserUid, 'credential_be_user' => 999]);
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000034);
         $this->expectExceptionMessage('Credential mismatch');
-
         $this->subject->verifyAssertionResponse($assertionJson, $challengeToken, $beUserUid);
     }
 
@@ -1486,24 +1190,19 @@ final class WebAuthnServiceTest extends TestCase
         $challengeToken = 'test-token';
         $beUserUid = 42;
         $userHandle = 'user-handle-hash';
-
         [$assertionJson, $credentialId, $key] = $this->buildAssertionJson($rpId, $challenge, $origin);
-
         // Use a WRONG public key so the validator throws during check()
         $wrongKey = \openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
         self::assertNotFalse($wrongKey);
         $wrongCoseKey = $this->buildCosePublicKey($wrongKey);
-
         $config = new ExtensionConfiguration(rpId: $rpId, allowedAlgorithms: 'ES256');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn($rpId);
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn($origin);
-
         $this->challengeServiceMock
             ->method('verifyChallengeToken')
             ->with($challengeToken)
             ->willReturn($challenge);
-
         $credential = new Credential(
             uid: 10,
             beUser: $beUserUid,
@@ -1515,55 +1214,42 @@ final class WebAuthnServiceTest extends TestCase
             transports: '[]',
             label: 'Test Key',
         );
-
         $this->credentialRepositoryMock
             ->method('findByCredentialId')
             ->with($credentialId)
             ->willReturn($credential);
-
         $this->loggerMock
             ->expects(self::once())
             ->method('error')
             ->with(
                 'Passkey assertion verification failed',
-                self::callback(static fn(array $ctx): bool => $ctx['be_user_uid'] === $beUserUid
-                    && isset($ctx['error'])
-                    && $ctx['error'] !== ''),
+                self::callback(
+                    static fn(array $ctx): bool => $ctx['be_user_uid'] === $beUserUid && isset($ctx['error']) && $ctx['error'] !== '',
+                ),
             );
-
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000035);
         $this->expectExceptionMessageMatches('/Assertion verification failed:/');
-
         $this->subject->verifyAssertionResponse($assertionJson, $challengeToken, $beUserUid);
     }
 
     #[Test]
     public function createAlgorithmManagerHandlesAllSupportedAlgorithms(): void
     {
-        $config = new ExtensionConfiguration(
-            rpId: 'example.com',
-            rpName: 'Test',
-            allowedAlgorithms: 'ES256,ES384,ES512,RS256',
-        );
-
+        $config = new ExtensionConfiguration(rpId: 'example.com', rpName: 'Test', allowedAlgorithms: 'ES256,ES384,ES512,RS256');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn('example.com');
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn('https://example.com');
-
         $reflection = new ReflectionMethod($this->ceremonyFactory, 'createAlgorithmManager');
 
         /** @var AlgorithmManager $manager */
         $manager = $reflection->invoke($this->ceremonyFactory);
-
         self::assertInstanceOf(AlgorithmManager::class, $manager);
-
         // Verify all four algorithms are registered by checking their COSE identifiers
         // ES256 = -7, ES384 = -35, ES512 = -36, RS256 = -257
         $algorithms = \iterator_to_array($manager->all());
         $identifiers = \array_map(static fn(Algorithm $algo): int => $algo->identifier(), $algorithms);
         \sort($identifiers);
-
         self::assertContains(-7, $identifiers, 'ES256 (identifier -7) should be registered');
         self::assertContains(-35, $identifiers, 'ES384 (identifier -35) should be registered');
         self::assertContains(-36, $identifiers, 'ES512 (identifier -36) should be registered');
@@ -1585,19 +1271,16 @@ final class WebAuthnServiceTest extends TestCase
             transports: '["usb"]',
             label: 'Test Key',
         );
-
         $reflection = new ReflectionMethod($this->assertionService, 'credentialToSource');
 
         /** @var CredentialRecord $source */
         $source = $reflection->invoke($this->assertionService, $credential);
-
         self::assertInstanceOf(CredentialRecord::class, $source);
         self::assertSame('cred-id-123', $source->publicKeyCredentialId);
         self::assertSame('cose-public-key', $source->credentialPublicKey);
         self::assertSame('user-handle', $source->userHandle);
         self::assertSame(5, $source->counter);
         self::assertSame(['usb'], $source->transports);
-
         // When aaguid is empty, a v4 UUID should be generated
         $uuidString = $source->aaguid->toString();
         self::assertMatchesRegularExpression(
@@ -1622,12 +1305,10 @@ final class WebAuthnServiceTest extends TestCase
             transports: '[]',
             label: 'Known Authenticator',
         );
-
         $reflection = new ReflectionMethod($this->assertionService, 'credentialToSource');
 
         /** @var CredentialRecord $source */
         $source = $reflection->invoke($this->assertionService, $credential);
-
         self::assertSame($fixedAaguid, $source->aaguid->toString());
     }
 
@@ -1639,31 +1320,20 @@ final class WebAuthnServiceTest extends TestCase
         $challenge = \random_bytes(32);
         $challengeToken = 'test-token';
         $beUserUid = 42;
-
         // Build an assertion response (AuthenticatorAssertionResponse, NOT AuthenticatorAttestationResponse)
         // This triggers the "Expected attestation response" path (line 165-167)
         [$assertionJson] = $this->buildAssertionJson($rpId, $challenge, $origin);
-
         $config = new ExtensionConfiguration(rpId: $rpId, rpName: 'Test', allowedAlgorithms: 'ES256');
         $this->configServiceMock->method('getConfiguration')->willReturn($config);
         $this->configServiceMock->method('getEffectiveRpId')->willReturn($rpId);
         $this->configServiceMock->method('getEffectiveOrigin')->willReturn($origin);
-
         $this->challengeServiceMock
             ->method('verifyChallengeToken')
             ->with($challengeToken)
             ->willReturn($challenge);
-
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000021);
         $this->expectExceptionMessage('Expected attestation response');
-
-        $this->subject->verifyRegistrationResponse(
-            $assertionJson,
-            $challengeToken,
-            $beUserUid,
-            'user',
-            'User',
-        );
+        $this->subject->verifyRegistrationResponse($assertionJson, $challengeToken, $beUserUid, 'user', 'User');
     }
 }

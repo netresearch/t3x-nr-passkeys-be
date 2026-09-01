@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Authentication;
@@ -62,7 +61,6 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $loginData = $this->login;
         $rawUsername = $loginData['uname'] ?? '';
         $username = \is_string($rawUsername) ? $rawUsername : '';
-
         // Token-based passkey login: the /passkeys/login/verify endpoint already
         // ran the full WebAuthn ceremony (and enforced the discoverable-login
         // flag) and issued a single-use token bound to this user. getUser() and
@@ -89,10 +87,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             return false;
         }
 
-        $this->getLogger()->info('Passkey login attempt', [
-            'username' => $username,
-            'assertion_length' => \strlen($payload['assertion']),
-        ]);
+        $this->getLogger()->info('Passkey login attempt', ['username' => $username, 'assertion_length' => \strlen($payload['assertion'])]);
 
         if ($username === '') {
             // Discoverable login is an operator-gated feature. Enforce the flag on the
@@ -121,9 +116,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             $user = $this->fetchUserByUid($beUserUid);
 
             if (!\is_array($user)) {
-                $this->getLogger()->info('Discoverable login: user not found for resolved UID', [
-                    'be_user_uid' => $beUserUid,
-                ]);
+                $this->getLogger()->info('Discoverable login: user not found for resolved UID', ['be_user_uid' => $beUserUid]);
 
                 return false;
             }
@@ -136,9 +129,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         if (!\is_array($user)) {
             // Don't reveal whether user exists
-            $this->getLogger()->info('Passkey login attempt for unknown user', [
-                'username_hash' => \hash('sha256', $username),
-            ]);
+            $this->getLogger()->info('Passkey login attempt for unknown user', ['username_hash' => \hash('sha256', $username)]);
 
             return false;
         }
@@ -159,9 +150,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         if ($tokenUid > 0 && $tokenUid === (\is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
             $this->consumePasskeyToken();
             $this->markSessionAsPasskeyAuthenticated($user);
-            $this->getLogger()->info('Passkey token authentication successful', [
-                'be_user_uid' => $tokenUid,
-            ]);
+            $this->getLogger()->info('Passkey token authentication successful', ['be_user_uid' => $tokenUid]);
 
             return 200;
         }
@@ -184,9 +173,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                     $uid = \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
 
                     if ($uid > 0 && $this->hasRegisteredPasskeys($uid)) {
-                        $this->getLogger()->warning('Password login blocked for user with registered passkeys', [
-                            'be_user_uid' => $uid,
-                        ]);
+                        $this->getLogger()->warning('Password login blocked for user with registered passkeys', ['be_user_uid' => $uid]);
 
                         return 0;
                     }
@@ -198,26 +185,22 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
                 if ($status->hasPasskeys) {
                     if ($status->level === EnforcementLevel::Enforced) {
-                        $this->getLogger()->warning('Password login blocked by group enforcement', [
-                            'username' => $user['username'] ?? '',
-                        ]);
+                        $this->getLogger()->warning('Password login blocked by group enforcement', ['username' => $user['username'] ?? '']);
 
                         return 0;
                     }
 
                     if ($status->level === EnforcementLevel::Required && $status->isGracePeriodExpired()) {
-                        $this->getLogger()->warning('Password login blocked: grace period expired', [
-                            'username' => $user['username'] ?? '',
-                        ]);
+                        $this->getLogger()->warning('Password login blocked: grace period expired', ['username' => $user['username'] ?? '']);
 
                         return 0;
                     }
                 }
             } catch (Throwable $e) {
-                $this->getLogger()->error('Passkey enforcement check failed; allowing password login (fail-open)', [
-                    'be_user_uid' => $user['uid'] ?? null,
-                    'error' => $e->getMessage(),
-                ]);
+                $this->getLogger()->error(
+                    'Passkey enforcement check failed; allowing password login (fail-open)',
+                    ['be_user_uid' => $user['uid'] ?? null, 'error' => $e->getMessage()],
+                );
             }
 
             return 100;
@@ -230,23 +213,22 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         try {
             // Check lockout
             $this->getRateLimiterService()->checkLockout($username, $ip);
-
             // Verify the assertion
             $result = $this->getWebAuthnService()->verifyAssertionResponse(
                 responseJson: $payload['assertion'],
                 challengeToken: $payload['challengeToken'],
                 beUserUid: \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0,
             );
-
             // Clear lockout on success
             $this->getRateLimiterService()->recordSuccess($username, $ip);
-
-            $this->getLogger()->info('Passkey authentication successful', [
-                'be_user_uid' => $user['uid'],
-                'username' => $username,
-                'credential_uid' => $result->credential->getUid(),
-            ]);
-
+            $this->getLogger()->info(
+                'Passkey authentication successful',
+                [
+                    'be_user_uid' => $user['uid'],
+                    'username' => $username,
+                    'credential_uid' => $result->credential->getUid(),
+                ],
+            );
             $this->markSessionAsPasskeyAuthenticated($user);
 
             // Return 200 = authenticated, stop further auth processing
@@ -255,14 +237,16 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             // Passkey assertions are unforgeable; do not feed the cross-IP
             // per-username lockout (avoids an account-lockout DoS).
             $this->getRateLimiterService()->recordFailure($username, $ip, countUserLockout: false);
-
-            $this->getLogger()->warning('Passkey authentication failed', [
-                'be_user_uid' => $user['uid'],
-                'username' => $username,
-                'error_code' => $e->getCode(),
-                'error_message' => $e->getMessage(),
-                'ip' => $ip,
-            ]);
+            $this->getLogger()->warning(
+                'Passkey authentication failed',
+                [
+                    'be_user_uid' => $user['uid'],
+                    'username' => $username,
+                    'error_code' => $e->getCode(),
+                    'error_message' => $e->getMessage(),
+                    'ip' => $ip,
+                ],
+            );
 
             // Return 0 = authentication failed
             return 0;
@@ -284,7 +268,6 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         $this->passkeyPayload = null;
-
         $rawUident = $this->login['uident'] ?? '';
         $uident = \is_string($rawUident) ? $rawUident : '';
 
@@ -311,10 +294,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             return null;
         }
 
-        $this->passkeyPayload = [
-            'assertion' => \json_encode($assertion, JSON_THROW_ON_ERROR),
-            'challengeToken' => $challengeToken,
-        ];
+        $this->passkeyPayload = ['assertion' => \json_encode($assertion, JSON_THROW_ON_ERROR), 'challengeToken' => $challengeToken];
 
         return $this->passkeyPayload;
     }
@@ -343,9 +323,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             ->getConfiguration()
             ->isSkipMfaOnPasskeyAuth()) {
             $this->pObj->setAndSaveSessionData('mfa', true);
-            $this->getLogger()->info('Passkey auth satisfied MFA requirement (skipping TYPO3 MFA challenge)', [
-                'be_user_uid' => $user['uid'] ?? null,
-            ]);
+            $this->getLogger()->info(
+                'Passkey auth satisfied MFA requirement (skipping TYPO3 MFA challenge)',
+                ['be_user_uid' => $user['uid'] ?? null],
+            );
         }
     }
 
@@ -374,10 +355,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $payload = $this->decodeLoginTokenPayload($value);
 
         if ($payload === null || \time() > $payload['expiresAt']) {
-            $this->getLogger()->warning('Passkey login token rejected', [
-                'reason' => $payload === null ? 'unusable_payload' : 'expired',
-                'be_user_uid' => $payload['uid'] ?? null,
-            ]);
+            $this->getLogger()->warning(
+                'Passkey login token rejected',
+                ['reason' => $payload === null ? 'unusable_payload' : 'expired', 'be_user_uid' => $payload['uid'] ?? null],
+            );
             $this->consumePasskeyToken();
 
             return 0;
@@ -399,9 +380,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         try {
-            $value = GeneralUtility::makeInstance(CacheManager::class)
-                ->getCache('nr_passkeys_be_nonce')
-                ->get('passkey_login_' . $token);
+            $value = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce')->get('passkey_login_' . $token);
         } catch (Throwable $e) {
             $this->getLogger()->warning('Passkey token resolution failed', ['error' => $e->getMessage()]);
 
@@ -433,9 +412,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $uid = \is_numeric($payload['uid'] ?? null) ? (int) $payload['uid'] : 0;
         $expiresAt = \is_numeric($payload['expiresAt'] ?? null) ? (int) $payload['expiresAt'] : 0;
 
-        return $uid > 0 && $expiresAt > 0
-            ? ['uid' => $uid, 'expiresAt' => $expiresAt]
-            : null;
+        return $uid > 0 && $expiresAt > 0 ? ['uid' => $uid, 'expiresAt' => $expiresAt] : null;
     }
 
     /**
@@ -450,9 +427,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         try {
-            GeneralUtility::makeInstance(CacheManager::class)
-                ->getCache('nr_passkeys_be_nonce')
-                ->remove('passkey_login_' . $token);
+            GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce')->remove('passkey_login_' . $token);
         } catch (Throwable) {
             // Cleanup failure is non-critical: the expiresAt in the token value is
             // still enforced on every redemption attempt.
@@ -468,9 +443,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $uident = \is_string($rawUident) ? $rawUident : '';
 
         try {
-            $data = ($uident !== '' && $uident[0] === '{')
-                ? \json_decode($uident, true, 8, JSON_THROW_ON_ERROR)
-                : null;
+            $data = $uident !== '' && $uident[0] === '{' ? \json_decode($uident, true, 8, JSON_THROW_ON_ERROR) : null;
         } catch (JsonException) {
             $data = null;
         }
@@ -491,17 +464,13 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      */
     private function fetchUserByUid(int $uid): array|false
     {
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable('be_users');
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('be_users');
 
         return $queryBuilder
             ->select('*')
             ->from('be_users')
             ->where(
-                $queryBuilder->expr()->eq(
-                    'uid',
-                    $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER),
-                ),
+                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER)),
                 $queryBuilder->expr()->eq('disable', 0),
                 $queryBuilder->expr()->eq('deleted', 0),
             )
@@ -519,17 +488,12 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      */
     private function hasRegisteredPasskeys(int $beUserUid): bool
     {
-        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
-            ->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
-
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
         $count = $queryBuilder
             ->count('uid')
             ->from('tx_nrpasskeysbe_credential')
             ->where(
-                $queryBuilder->expr()->eq(
-                    'be_user',
-                    $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER),
-                ),
+                $queryBuilder->expr()->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
                 $queryBuilder->expr()->eq('deleted', 0),
                 $queryBuilder->expr()->eq('revoked_at', 0),
             )
@@ -602,9 +566,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS'])
-            ? $confVars['SYS']
-            : [];
+        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS']) ? $confVars['SYS'] : [];
 
         return NormalizedParams::createFromServerParams($_SERVER, $sysConf)->getRemoteAddress();
     }

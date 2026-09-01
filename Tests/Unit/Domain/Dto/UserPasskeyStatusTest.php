@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Domain\Dto;
@@ -25,15 +24,14 @@ final class UserPasskeyStatusTest extends TestCase
             username: 'jdoe',
             realName: 'John Doe',
             groups: '1,3,5',
-            gracePeriodStart: 1_700_000_000,
+            gracePeriodStart: 1700000000,
             gracePeriodRemainingDays: 7,
         );
-
         self::assertSame(42, $status->uid);
         self::assertSame('jdoe', $status->username);
         self::assertSame('John Doe', $status->realName);
         self::assertSame('1,3,5', $status->groups);
-        self::assertSame(1_700_000_000, $status->gracePeriodStart);
+        self::assertSame(1700000000, $status->gracePeriodStart);
         self::assertSame(7, $status->gracePeriodRemainingDays);
         self::assertSame(0, $status->nudgeUntil);
         self::assertFalse($status->hasActiveNudge());
@@ -47,17 +45,15 @@ final class UserPasskeyStatusTest extends TestCase
             username: 'admin',
             realName: 'Admin User',
             groups: '2,4',
-            gracePeriodStart: 1_700_000_000,
+            gracePeriodStart: 1700000000,
             gracePeriodRemainingDays: 3,
         );
-
         $serialized = $status->jsonSerialize();
-
         self::assertSame(99, $serialized['uid']);
         self::assertSame('admin', $serialized['username']);
         self::assertSame('Admin User', $serialized['realName']);
         self::assertSame('2,4', $serialized['groups']);
-        self::assertSame(1_700_000_000, $serialized['gracePeriodStart']);
+        self::assertSame(1700000000, $serialized['gracePeriodStart']);
         self::assertSame(3, $serialized['gracePeriodRemainingDays']);
         self::assertSame(0, $serialized['nudgeUntil']);
         self::assertFalse($serialized['hasActiveNudge']);
@@ -74,9 +70,7 @@ final class UserPasskeyStatusTest extends TestCase
             gracePeriodStart: 0,
             gracePeriodRemainingDays: 0,
         );
-
         $serialized = $status->jsonSerialize();
-
         self::assertSame('', $serialized['groups']);
         self::assertSame(0, $serialized['gracePeriodStart']);
         self::assertSame(0, $serialized['gracePeriodRemainingDays']);
@@ -92,9 +86,8 @@ final class UserPasskeyStatusTest extends TestCase
             groups: '1',
             gracePeriodStart: 0,
             gracePeriodRemainingDays: 0,
-            nudgeUntil: \time() + 86_400,
+            nudgeUntil: \time() + 86400,
         );
-
         self::assertTrue($status->hasActiveNudge());
         self::assertTrue($status->jsonSerialize()['hasActiveNudge']);
         self::assertGreaterThan(0, $status->jsonSerialize()['nudgeUntil']);
@@ -110,9 +103,8 @@ final class UserPasskeyStatusTest extends TestCase
             groups: '1',
             gracePeriodStart: 0,
             gracePeriodRemainingDays: 0,
-            nudgeUntil: \time() - 86_400,
+            nudgeUntil: \time() - 86400,
         );
-
         self::assertFalse($status->hasActiveNudge());
         self::assertFalse($status->jsonSerialize()['hasActiveNudge']);
     }
@@ -125,13 +117,11 @@ final class UserPasskeyStatusTest extends TestCase
             username: 'testuser',
             realName: 'Test User',
             groups: '1',
-            gracePeriodStart: 1_700_000_000,
+            gracePeriodStart: 1700000000,
             gracePeriodRemainingDays: 14,
         );
-
         $json = \json_encode($status, \JSON_THROW_ON_ERROR);
         $decoded = \json_decode($json, true, 512, \JSON_THROW_ON_ERROR);
-
         self::assertSame(50, $decoded['uid']);
         self::assertSame('testuser', $decoded['username']);
         self::assertSame(14, $decoded['gracePeriodRemainingDays']);

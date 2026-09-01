@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Fuzz;
@@ -32,24 +31,14 @@ final class RequestPayloadFuzzTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $webAuthnService = $this->createMock(WebAuthnService::class);
-        $webAuthnService->method('createDiscoverableAssertionOptions')
-            ->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
-        $webAuthnService->method('createAssertionOptions')
-            ->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
+        $webAuthnService->method('createDiscoverableAssertionOptions')->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
+        $webAuthnService->method('createAssertionOptions')->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
         $configService = $this->createMock(ExtensionConfigurationService::class);
         $configService->method('getConfiguration')->willReturn(new ExtensionConfiguration());
         $rateLimiter = $this->createMock(RateLimiterService::class);
         $connectionPool = $this->createMock(ConnectionPool::class);
-
-        $this->controller = new LoginController(
-            $webAuthnService,
-            $configService,
-            $rateLimiter,
-            $connectionPool,
-            new NullLogger(),
-        );
+        $this->controller = new LoginController($webAuthnService, $configService, $rateLimiter, $connectionPool, new NullLogger());
     }
 
     /**
@@ -110,7 +99,6 @@ final class RequestPayloadFuzzTest extends TestCase
     {
         $request = $this->createRequestWithBody($body);
         $response = $this->controller->optionsAction($request);
-
         self::assertInstanceOf(ResponseInterface::class, $response);
         $statusCode = $response->getStatusCode();
         self::assertContains($statusCode, [400, 401, 429, 500]);
@@ -122,7 +110,6 @@ final class RequestPayloadFuzzTest extends TestCase
     {
         $request = $this->createRequestWithBody($body);
         $response = $this->controller->verifyAction($request);
-
         self::assertInstanceOf(ResponseInterface::class, $response);
         $statusCode = $response->getStatusCode();
         self::assertContains($statusCode, [400, 401, 429, 500]);
@@ -149,7 +136,6 @@ final class RequestPayloadFuzzTest extends TestCase
     {
         $stream = $this->createMock(StreamInterface::class);
         $stream->method('__toString')->willReturn($body);
-
         $request = $this->createMock(ServerRequestInterface::class);
         $request->method('getParsedBody')->willReturn(null);
         $request->method('getBody')->willReturn($stream);

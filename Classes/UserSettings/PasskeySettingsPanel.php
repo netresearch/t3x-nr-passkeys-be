@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\UserSettings;
@@ -53,10 +52,8 @@ final class PasskeySettingsPanel
         }
 
         $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
-        $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
-            ? $sysConf['encryptionKey']
-            : '';
+        $sysConf = \is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
+        $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null) ? $sysConf['encryptionKey'] : '';
 
         if (\strlen($encryptionKey) < 32) {
             $warning = $this->translate(
@@ -69,14 +66,9 @@ final class PasskeySettingsPanel
 
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
         $pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyManagement.js');
-        $pageRenderer->addInlineLanguageLabelFile(
-            'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
-            'js.',
-        );
-
+        $pageRenderer->addInlineLanguageLabelFile('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
         $credentialRepository = GeneralUtility::makeInstance(CredentialRepository::class);
         $passkeyCount = $credentialRepository->countByBeUser($userId);
-
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         $urls = [
             'list' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
@@ -98,7 +90,6 @@ final class PasskeySettingsPanel
             'manage.info.passkeys',
             'Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup — for example, your laptop and your phone.',
         );
-
         $title = $this->translate('manage.title', 'Passkeys');
         $description = $this->translate('manage.description', 'Manage your registered passkeys for passwordless login.');
         $addLabel = $this->translate('manage.add', 'Add Passkey');
@@ -109,19 +100,16 @@ final class PasskeySettingsPanel
         $singleKeyWarning = $this->translate('manage.warning.singleKey', 'You only have one passkey registered. Consider adding a backup passkey.');
         $noPasskeys = $this->translate('manage.noPasskeys', 'No passkeys registered yet.');
         $nameHelp = $this->translate('manage.label.name.help', 'A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").');
-
         $countBadgeClass = match (true) {
             $passkeyCount === 0 => 'badge-warning',
             $passkeyCount === 1 => 'badge-info',
             default => 'badge-success',
         };
-
         $listUrl = \htmlspecialchars($urls['list'], ENT_QUOTES, 'UTF-8');
         $registerOptionsUrl = \htmlspecialchars($urls['registerOptions'], ENT_QUOTES, 'UTF-8');
         $registerVerifyUrl = \htmlspecialchars($urls['registerVerify'], ENT_QUOTES, 'UTF-8');
         $renameUrl = \htmlspecialchars($urls['rename'], ENT_QUOTES, 'UTF-8');
         $removeUrl = \htmlspecialchars($urls['remove'], ENT_QUOTES, 'UTF-8');
-
         $title = \htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
         $description = \htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
         $addLabel = \htmlspecialchars($addLabel, ENT_QUOTES, 'UTF-8');
@@ -135,37 +123,37 @@ final class PasskeySettingsPanel
         $infoText = \htmlspecialchars($infoText, ENT_QUOTES, 'UTF-8');
 
         return <<<HTML
-<style>.passkey-name-input{max-width:200px}</style>
-<div class="alert alert-info">{$infoText}</div>
-<div id="passkey-management-container"
-     data-list-url="{$listUrl}"
-     data-register-options-url="{$registerOptionsUrl}"
-     data-register-verify-url="{$registerVerifyUrl}"
-     data-rename-url="{$renameUrl}"
-     data-remove-url="{$removeUrl}">
-    <h4>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h4>
-    <p class="text-body-secondary">{$description}</p>
-    <div id="passkey-single-warning" class="alert alert-warning d-none" role="status" aria-live="polite">{$singleKeyWarning}</div>
-    <div class="mb-3">
-        <div class="d-flex align-items-center gap-2">
-            <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" aria-describedby="passkey-name-help" />
-            <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
+        <style>.passkey-name-input{max-width:200px}</style>
+        <div class="alert alert-info">{$infoText}</div>
+        <div id="passkey-management-container"
+             data-list-url="{$listUrl}"
+             data-register-options-url="{$registerOptionsUrl}"
+             data-register-verify-url="{$registerVerifyUrl}"
+             data-rename-url="{$renameUrl}"
+             data-remove-url="{$removeUrl}">
+            <h4>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h4>
+            <p class="text-body-secondary">{$description}</p>
+            <div id="passkey-single-warning" class="alert alert-warning d-none" role="status" aria-live="polite">{$singleKeyWarning}</div>
+            <div class="mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" aria-describedby="passkey-name-help" />
+                    <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
+                </div>
+                <small id="passkey-name-help" class="form-text text-body-secondary">{$nameHelp}</small>
+            </div>
+            <div id="passkey-empty" class="alert alert-info d-none" role="status" aria-live="polite">{$noPasskeys}</div>
+            <table class="table table-hover" id="passkey-list-table">
+                <thead>
+                    <tr>
+                        <th>{$nameLabel}</th>
+                        <th>{$createdLabel}</th>
+                        <th>{$lastUsedLabel}</th>
+                        <th>{$actionsLabel}</th>
+                    </tr>
+                </thead>
+                <tbody id="passkey-list-body"></tbody>
+            </table>
         </div>
-        <small id="passkey-name-help" class="form-text text-body-secondary">{$nameHelp}</small>
-    </div>
-    <div id="passkey-empty" class="alert alert-info d-none" role="status" aria-live="polite">{$noPasskeys}</div>
-    <table class="table table-hover" id="passkey-list-table">
-        <thead>
-            <tr>
-                <th>{$nameLabel}</th>
-                <th>{$createdLabel}</th>
-                <th>{$lastUsedLabel}</th>
-                <th>{$actionsLabel}</th>
-            </tr>
-        </thead>
-        <tbody id="passkey-list-body"></tbody>
-    </table>
-</div>
-HTML;
+        HTML;
     }
 }

@@ -4,9 +4,7 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
-
 use Netresearch\NrPasskeysBe\Widgets\Adoption\PasskeyAdoptionStatsProviderInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -19,9 +17,7 @@ return static function (ContainerConfigurator $containerConfigurator, ContainerB
     // provider is tagged even on installs without typo3/cms-dashboard.
     // The interface carries no typo3/cms-dashboard symbol, so this is safe
     // to evaluate unconditionally.
-    $containerBuilder
-        ->registerForAutoconfiguration(PasskeyAdoptionStatsProviderInterface::class)
-        ->addTag('nr_passkeys_be.adoption_stats_provider');
+    $containerBuilder->registerForAutoconfiguration(PasskeyAdoptionStatsProviderInterface::class)->addTag('nr_passkeys_be.adoption_stats_provider');
 
     // Dashboard widgets ship only when typo3/cms-dashboard is installed
     // (composer "suggest", not a hard requirement). Guarding here keeps

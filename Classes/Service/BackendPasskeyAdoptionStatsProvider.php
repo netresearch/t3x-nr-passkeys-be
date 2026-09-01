@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -18,9 +17,7 @@ use Netresearch\NrPasskeysBe\Widgets\Adoption\PasskeyAdoptionStatsProviderInterf
  */
 final readonly class BackendPasskeyAdoptionStatsProvider implements PasskeyAdoptionStatsProviderInterface
 {
-    public function __construct(
-        private AdoptionStatsService $adoptionStatsService,
-    ) {}
+    public function __construct(private AdoptionStatsService $adoptionStatsService) {}
 
     public function getAudienceStats(): PasskeyAudienceStats
     {

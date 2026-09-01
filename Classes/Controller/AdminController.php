@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
@@ -70,16 +69,9 @@ final readonly class AdminController
         }
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
-        $list = \array_map(
-            static fn(Credential $cred): AdminCredentialInfo => $cred->toAdminCredentialInfo(),
-            $credentials,
-        );
+        $list = \array_map(static fn(Credential $cred): AdminCredentialInfo => $cred->toAdminCredentialInfo(), $credentials);
 
-        return new JsonResponse([
-            'beUserUid' => $beUserUid,
-            'credentials' => $list,
-            'count' => \count($list),
-        ]);
+        return new JsonResponse(['beUserUid' => $beUserUid, 'credentials' => $list, 'count' => \count($list)]);
     }
 
     /**
@@ -118,12 +110,10 @@ final readonly class AdminController
         }
 
         $this->credentialRepository->revoke($credentialUid, $admin->uid);
-
-        $this->logger->info('Admin revoked passkey', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'credential_uid' => $credentialUid,
-        ]);
+        $this->logger->info(
+            'Admin revoked passkey',
+            ['admin_uid' => $admin->uid, 'be_user_uid' => $beUserUid, 'credential_uid' => $credentialUid],
+        );
 
         return new JsonResponse(['status' => 'ok']);
     }
@@ -170,12 +160,10 @@ final readonly class AdminController
         }
 
         $this->rateLimiterService->resetLockout($username);
-
-        $this->logger->info('Admin unlocked user account', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'username' => $username,
-        ]);
+        $this->logger->info(
+            'Admin unlocked user account',
+            ['admin_uid' => $admin->uid, 'be_user_uid' => $beUserUid, 'username' => $username],
+        );
 
         return new JsonResponse(['status' => 'ok']);
     }
@@ -210,11 +198,10 @@ final readonly class AdminController
             }
         }
 
-        $this->logger->info('Admin revoked all passkeys', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'revoked_count' => $revokedCount,
-        ]);
+        $this->logger->info(
+            'Admin revoked all passkeys',
+            ['admin_uid' => $admin->uid, 'be_user_uid' => $beUserUid, 'revoked_count' => $revokedCount],
+        );
 
         return new JsonResponse(['status' => 'ok', 'revokedCount' => $revokedCount]);
     }
@@ -234,10 +221,8 @@ final readonly class AdminController
         }
 
         $body = $this->getJsonBody($request);
-
         $rawGroupUid = $body['groupUid'] ?? null;
         $groupUid = \is_numeric($rawGroupUid) ? (int) $rawGroupUid : 0;
-
         $rawEnforcement = $body['enforcement'] ?? null;
         $enforcement = \is_string($rawEnforcement) ? $rawEnforcement : '';
 
@@ -269,17 +254,11 @@ final readonly class AdminController
         }
 
         $connection = $this->connectionPool->getConnectionForTable('be_groups');
-        $connection->update(
-            'be_groups',
-            ['passkey_enforcement' => $level->value],
-            ['uid' => $groupUid],
+        $connection->update('be_groups', ['passkey_enforcement' => $level->value], ['uid' => $groupUid]);
+        $this->logger->info(
+            'Admin updated group enforcement',
+            ['admin_uid' => $admin->uid, 'group_uid' => $groupUid, 'enforcement' => $level->value],
         );
-
-        $this->logger->info('Admin updated group enforcement', [
-            'admin_uid' => $admin->uid,
-            'group_uid' => $groupUid,
-            'enforcement' => $level->value,
-        ]);
 
         return new JsonResponse(['status' => 'ok', 'enforcement' => $level->value]);
     }
@@ -314,24 +293,20 @@ final readonly class AdminController
         }
 
         // Set passkey_nudge_until to a future timestamp so the banner picks up the nudge
-        $nudgeUntil = \time() + (self::NUDGE_DURATION_DAYS * 86_400);
-
+        $nudgeUntil = \time() + self::NUDGE_DURATION_DAYS * 86400;
         $connection = $this->connectionPool->getConnectionForTable('be_users');
-        $connection->update(
-            'be_users',
-            ['passkey_nudge_until' => $nudgeUntil],
-            ['uid' => $beUserUid],
-        );
-
+        $connection->update('be_users', ['passkey_nudge_until' => $nudgeUntil], ['uid' => $beUserUid]);
         $usernameValue = $row['username'] ?? '';
         $username = \is_string($usernameValue) ? $usernameValue : '';
-
-        $this->logger->info('Admin sent passkey reminder', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'username' => $username,
-            'nudge_until' => $nudgeUntil,
-        ]);
+        $this->logger->info(
+            'Admin sent passkey reminder',
+            [
+                'admin_uid' => $admin->uid,
+                'be_user_uid' => $beUserUid,
+                'username' => $username,
+                'nudge_until' => $nudgeUntil,
+            ],
+        );
 
         return new JsonResponse(['status' => 'ok', 'nudgeUntil' => $nudgeUntil]);
     }
@@ -366,20 +341,13 @@ final readonly class AdminController
         }
 
         $connection = $this->connectionPool->getConnectionForTable('be_users');
-        $connection->update(
-            'be_users',
-            ['passkey_nudge_until' => 0],
-            ['uid' => $beUserUid],
-        );
-
+        $connection->update('be_users', ['passkey_nudge_until' => 0], ['uid' => $beUserUid]);
         $usernameValue = $row['username'] ?? '';
         $username = \is_string($usernameValue) ? $usernameValue : '';
-
-        $this->logger->info('Admin cleared passkey nudge', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'username' => $username,
-        ]);
+        $this->logger->info(
+            'Admin cleared passkey nudge',
+            ['admin_uid' => $admin->uid, 'be_user_uid' => $beUserUid, 'username' => $username],
+        );
 
         return new JsonResponse(['status' => 'ok']);
     }

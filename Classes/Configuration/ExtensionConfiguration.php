@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Configuration;
@@ -34,9 +33,7 @@ final readonly class ExtensionConfiguration
         private int $lockoutDurationSeconds = 900,
         private string $allowedAlgorithms = 'ES256',
     ) {
-        $this->userVerification = \in_array($userVerification, self::VALID_USER_VERIFICATION, true)
-            ? $userVerification
-            : 'required';
+        $this->userVerification = \in_array($userVerification, self::VALID_USER_VERIFICATION, true) ? $userVerification : 'required';
     }
 
     public function getRpId(): string

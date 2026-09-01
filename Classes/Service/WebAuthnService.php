@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
@@ -30,10 +29,7 @@ use Webauthn\PublicKeyCredentialRequestOptions;
  */
 final readonly class WebAuthnService
 {
-    public function __construct(
-        private AttestationService $attestationService,
-        private AssertionService $assertionService,
-    ) {}
+    public function __construct(private AttestationService $attestationService, private AssertionService $assertionService) {}
 
     /**
      * Create registration options for a backend user.
@@ -48,20 +44,9 @@ final readonly class WebAuthnService
      *
      * @throws RuntimeException on verification failure
      */
-    public function verifyRegistrationResponse(
-        string $responseJson,
-        string $challengeToken,
-        int $beUserUid,
-        string $username,
-        string $displayName,
-    ): CredentialRecord {
-        return $this->attestationService->verifyRegistrationResponse(
-            $responseJson,
-            $challengeToken,
-            $beUserUid,
-            $username,
-            $displayName,
-        );
+    public function verifyRegistrationResponse(string $responseJson, string $challengeToken, int $beUserUid, string $username, string $displayName): CredentialRecord
+    {
+        return $this->attestationService->verifyRegistrationResponse($responseJson, $challengeToken, $beUserUid, $username, $displayName);
     }
 
     /**
@@ -101,11 +86,8 @@ final readonly class WebAuthnService
      *
      * @throws RuntimeException on verification failure
      */
-    public function verifyAssertionResponse(
-        string $responseJson,
-        string $challengeToken,
-        int $beUserUid,
-    ): VerifiedAssertion {
+    public function verifyAssertionResponse(string $responseJson, string $challengeToken, int $beUserUid): VerifiedAssertion
+    {
         return $this->assertionService->verifyAssertionResponse($responseJson, $challengeToken, $beUserUid);
     }
 

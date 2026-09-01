@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Widgets\Adoption;
@@ -25,9 +24,7 @@ final class BackendPasskeyAdoptionStatsProviderTest extends TestCase
         $adoptionStatsService->method('countTotalActiveUsers')->willReturn(10);
         $adoptionStatsService->method('countUsersWithPasskeys')->willReturn(6);
         $adoptionStatsService->method('countActiveCredentials')->willReturn(12);
-
         $stats = (new BackendPasskeyAdoptionStatsProvider($adoptionStatsService))->getAudienceStats();
-
         self::assertSame('backend', $stats->audienceKey);
         self::assertSame(10, $stats->totalActiveUsers);
         self::assertSame(6, $stats->usersWithPasskeys);

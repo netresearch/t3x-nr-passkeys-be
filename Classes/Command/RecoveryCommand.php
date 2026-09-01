@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Command;
@@ -27,20 +26,15 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
  * or an account locked out by failed attempts. Run on the server, no backend login
  * required.
  */
-#[AsCommand(
-    name: 'passkeys:recovery',
-    description: 'Emergency recovery: list/disable passkey enforcement and reset login lockouts from the CLI.',
-)]
+#[AsCommand(name: 'passkeys:recovery', description: 'Emergency recovery: list/disable passkey enforcement and reset login lockouts from the CLI.')]
 final class RecoveryCommand extends Command
 {
     use TypeCastTrait;
 
     private const TABLE_GROUPS = 'be_groups';
 
-    public function __construct(
-        private readonly ConnectionPool $connectionPool,
-        private readonly RateLimiterService $rateLimiterService,
-    ) {
+    public function __construct(private readonly ConnectionPool $connectionPool, private readonly RateLimiterService $rateLimiterService)
+    {
         parent::__construct();
     }
 
@@ -48,7 +42,12 @@ final class RecoveryCommand extends Command
     {
         $this
             ->addOption('list', null, InputOption::VALUE_NONE, 'List all backend user groups and their passkey enforcement level')
-            ->addOption('disable-group', null, InputOption::VALUE_REQUIRED, 'Set passkey enforcement to "off" for the given be_groups UID')
+            ->addOption(
+                'disable-group',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Set passkey enforcement to "off" for the given be_groups UID',
+            )
             ->addOption('disable-all', null, InputOption::VALUE_NONE, 'Set passkey enforcement to "off" for ALL backend user groups')
             ->addOption('unlock', null, InputOption::VALUE_REQUIRED, 'Reset the login lockout counters for the given username');
     }
@@ -99,7 +98,6 @@ final class RecoveryCommand extends Command
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_GROUPS);
         $queryBuilder->getRestrictions()->removeAll();
-
         $rows = $queryBuilder
             ->select('uid', 'title', 'passkey_enforcement', 'passkey_grace_period_days')
             ->from(self::TABLE_GROUPS)
@@ -107,7 +105,6 @@ final class RecoveryCommand extends Command
             ->orderBy('uid')
             ->executeQuery()
             ->fetchAllAssociative();
-
         $tableRows = [];
 
         foreach ($rows as $row) {
@@ -142,9 +139,7 @@ final class RecoveryCommand extends Command
     private function disableEnforcementForAllGroups(): int
     {
         $queryBuilder = $this->connectionPool->getConnectionForTable(self::TABLE_GROUPS)->createQueryBuilder();
-        $queryBuilder
-            ->update(self::TABLE_GROUPS)
-            ->set('passkey_enforcement', 'off');
+        $queryBuilder->update(self::TABLE_GROUPS)->set('passkey_enforcement', 'off');
 
         return $queryBuilder->executeStatement();
     }

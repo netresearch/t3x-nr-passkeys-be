@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
@@ -41,9 +40,30 @@ final class AssertionDecoyTest extends TestCase
      * @var list<string>
      */
     private const SAMPLE_USERNAMES = [
-        'alice', 'bob', 'carol', 'dave', 'erin', 'frank', 'grace', 'heidi',
-        'ivan', 'judy', 'karl', 'lena', 'mallory', 'niaj', 'olivia', 'peggy',
-        'quinn', 'rupert', 'sybil', 'trent', 'ursula', 'victor', 'walter', 'xena',
+        'alice',
+        'bob',
+        'carol',
+        'dave',
+        'erin',
+        'frank',
+        'grace',
+        'heidi',
+        'ivan',
+        'judy',
+        'karl',
+        'lena',
+        'mallory',
+        'niaj',
+        'olivia',
+        'peggy',
+        'quinn',
+        'rupert',
+        'sybil',
+        'trent',
+        'ursula',
+        'victor',
+        'walter',
+        'xena',
     ];
 
     private CredentialRepository&MockObject $credentialRepository;
@@ -53,22 +73,15 @@ final class AssertionDecoyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $configService = $this->createMock(ExtensionConfigurationService::class);
         $configService->method('getEncryptionKey')->willReturn('test-encryption-key-at-least-32-chars-long');
         $configService->method('getEffectiveRpId')->willReturn('example.com');
-        $configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(
-            rpId: 'example.com',
-            userVerification: 'preferred',
-        ));
-
+        $configService->method('getConfiguration')->willReturn(new ExtensionConfiguration(rpId: 'example.com', userVerification: 'preferred'));
         $challengeService = $this->createMock(ChallengeService::class);
         $challengeService->method('generateChallenge')->willReturn(\str_repeat("\x01", 32));
         $challengeService->method('createChallengeToken')->willReturn('challenge-token');
-
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
         $logger = $this->createMock(LoggerInterface::class);
-
         $this->subject = new AssertionService(
             $configService,
             $challengeService,
@@ -91,7 +104,6 @@ final class AssertionDecoyTest extends TestCase
     {
         $first = $this->decoysFor('alice');
         $second = $this->decoysFor('alice');
-
         self::assertSame(
             \array_map(static fn(PublicKeyCredentialDescriptor $d): string => $d->id, $first),
             \array_map(static fn(PublicKeyCredentialDescriptor $d): string => $d->id, $second),
@@ -204,19 +216,16 @@ final class AssertionDecoyTest extends TestCase
 
         /** @var list<list<string>> $sets */
         $sets = $reflection->getConstant('DECOY_TRANSPORT_SETS');
-
         self::assertIsArray($lengths);
         self::assertIsArray($sets);
         self::assertNotSame([], $lengths);
         self::assertNotSame([], $sets);
-
         $total = 0;
         $selfIdentifying = 0;
 
         foreach (self::SAMPLE_USERNAMES as $username) {
             foreach ($this->decoysFor($username) as $descriptor) {
                 ++$total;
-
                 // Exactly the test an attacker can run, using only what the endpoint
                 // returns: the raw credential id and the transports beside it.
                 $id = $descriptor->id;
@@ -230,7 +239,6 @@ final class AssertionDecoyTest extends TestCase
         }
 
         self::assertGreaterThan(0, $total);
-
         // Both relations holding is a 1-in-24 coincidence per descriptor once the
         // derivations are independent; before the fix it was every single one.
         self::assertLessThan(
@@ -267,7 +275,6 @@ final class AssertionDecoyTest extends TestCase
                 }
 
                 ++$longIds;
-
                 self::assertNotSame(
                     \substr($id, 32),
                     \hash('sha256', \substr($id, 0, 32) . '|1', true),
@@ -276,11 +283,7 @@ final class AssertionDecoyTest extends TestCase
             }
         }
 
-        self::assertGreaterThan(
-            0,
-            $longIds,
-            'The sample must contain ids longer than one sha256 block, or this proves nothing',
-        );
+        self::assertGreaterThan(0, $longIds, 'The sample must contain ids longer than one sha256 block, or this proves nothing');
     }
 
     /**
@@ -292,19 +295,11 @@ final class AssertionDecoyTest extends TestCase
     public function knownUserWithoutCredentialsGetsDecoysInsteadOfAnEmptyList(): void
     {
         $this->credentialRepository->method('findByBeUser')->willReturn([]);
-
         $options = $this->subject->createAssertionOptions('alice', 42)->options;
-
-        self::assertNotEmpty(
-            $options->allowCredentials,
-            'An existing user without a passkey must not answer with an empty allowCredentials',
-        );
+        self::assertNotEmpty($options->allowCredentials, 'An existing user without a passkey must not answer with an empty allowCredentials');
         self::assertSame(
             \array_map(static fn(PublicKeyCredentialDescriptor $d): string => $d->id, $this->decoysFor('alice')),
-            \array_map(
-                static fn(PublicKeyCredentialDescriptor $d): string => $d->id,
-                \array_values($options->allowCredentials),
-            ),
+            \array_map(static fn(PublicKeyCredentialDescriptor $d): string => $d->id, \array_values($options->allowCredentials)),
             'A passkey-less known user must be indistinguishable from an unknown username',
         );
     }
@@ -312,16 +307,9 @@ final class AssertionDecoyTest extends TestCase
     #[Test]
     public function knownUserWithCredentialsGetsTheRealOnes(): void
     {
-        $credential = new Credential(
-            uid: 1,
-            beUser: 42,
-            credentialId: 'real-credential-id',
-            transports: '["internal"]',
-        );
+        $credential = new Credential(uid: 1, beUser: 42, credentialId: 'real-credential-id', transports: '["internal"]');
         $this->credentialRepository->method('findByBeUser')->willReturn([$credential]);
-
         $options = $this->subject->createAssertionOptions('alice', 42)->options;
-
         self::assertCount(1, $options->allowCredentials);
         self::assertSame('real-credential-id', \array_values($options->allowCredentials)[0]->id);
     }

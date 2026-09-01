@@ -4,7 +4,6 @@
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
 declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Widgets;
@@ -25,19 +24,13 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  */
 final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'setup',
-        'dashboard',
-    ];
+    protected array $coreExtensionsToLoad = ['setup', 'dashboard'];
 
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-    ];
+    protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
 
     // No cache override needed: this DI smoke test resolves the stats
     // providers only and never invokes the nonce/rate-limit caches, so the
     // file-backend defaults registered in ext_localconf.php are fine.
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,7 +44,6 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
     {
         $provider = $this->get(BackendPasskeyAdoptionStatsProvider::class);
         self::assertInstanceOf(BackendPasskeyAdoptionStatsProvider::class, $provider);
-
         $stats = $provider->getAudienceStats();
         self::assertSame('backend', $stats->audienceKey);
         // be_users.csv: 5 active users; credential fixture: 2 distinct users
@@ -66,7 +58,6 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
     {
         $provider = $this->get(PasskeyCredentialsCountDataProvider::class);
         self::assertInstanceOf(PasskeyCredentialsCountDataProvider::class, $provider);
-
         // Exactly the backend segment (3), never double-counted (would be 6
         // if the provider were tagged twice via autoconfigure + explicit tag).
         self::assertSame(3, $provider->getNumber());
@@ -77,9 +68,7 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
     {
         $provider = $this->get(PasskeyAdoptionChartDataProvider::class);
         self::assertInstanceOf(PasskeyAdoptionChartDataProvider::class, $provider);
-
         $chartData = $provider->getChartData();
-
         // One provider in the iterator => one dataset (backend green/orange).
         self::assertCount(1, $chartData['datasets']);
         self::assertSame(['#4c7e3a', '#ff8700'], $chartData['datasets'][0]['backgroundColor']);
