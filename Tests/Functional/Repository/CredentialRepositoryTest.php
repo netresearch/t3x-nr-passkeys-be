@@ -231,13 +231,13 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             ->getRestrictions()
             ->removeAll();
         $row = $queryBuilder
-            ->select(
-                '*',
-            )
+            ->select('*')
             ->from('tx_nrpasskeysbe_credential')
-            ->where($queryBuilder
+            ->where(
+                $queryBuilder
                     ->expr()
-                    ->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
+                    ->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)),
+            )
             ->executeQuery()
             ->fetchAssociative();
         self::assertNotFalse($row);

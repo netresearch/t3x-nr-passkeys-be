@@ -165,12 +165,13 @@ final class ArchitectureTest
     // ─── Finality enforcement ────────────────────────────────────────
     public function test_all_services_are_final(): Rule
     {
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Service'))
             ->should()
             ->beFinal()
-            ->because('Services are leaf classes — composition over inheritance');
+            ->because(
+                'Services are leaf classes — composition over inheritance',
+            );
     }
 
     public function test_all_controllers_are_final(): Rule
@@ -186,62 +187,68 @@ final class ArchitectureTest
 
     public function test_all_dtos_are_final(): Rule
     {
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Domain\Dto'))
             ->should()
             ->beFinal()
-            ->because('DTOs are immutable value objects that must not be extended');
+            ->because(
+                'DTOs are immutable value objects that must not be extended',
+            );
     }
 
     public function test_domain_models_are_final(): Rule
     {
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Domain\Model'))
             ->should()
             ->beFinal()
-            ->because('Domain models are entities that must not be extended');
+            ->because(
+                'Domain models are entities that must not be extended',
+            );
     }
 
     public function test_configuration_is_final(): Rule
     {
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Configuration'))
             ->should()
             ->beFinal()
-            ->because('Configuration value objects must not be extended');
+            ->because(
+                'Configuration value objects must not be extended',
+            );
     }
 
     public function test_middleware_is_final(): Rule
     {
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Middleware'))
             ->should()
             ->beFinal()
-            ->because('Middleware is a leaf class — composition over inheritance');
+            ->because(
+                'Middleware is a leaf class — composition over inheritance',
+            );
     }
 
     public function test_event_listeners_are_final(): Rule
     {
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'EventListener'))
             ->should()
             ->beFinal()
-            ->because('Event listeners are leaf classes — composition over inheritance');
+            ->because(
+                'Event listeners are leaf classes — composition over inheritance',
+            );
     }
 
     public function test_user_settings_is_final(): Rule
     {
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'UserSettings'))
             ->should()
             ->beFinal()
-            ->because('UserSettings panel is a leaf class — composition over inheritance');
+            ->because(
+                'UserSettings panel is a leaf class — composition over inheritance',
+            );
     }
 
     public function test_authentication_is_final(): Rule
@@ -249,10 +256,11 @@ final class ArchitectureTest
         // PasskeyAuthenticationService is the one documented exception — it extends the
         // TYPO3 AbstractAuthenticationService base class and is wired into the auth
         // chain. Any *other* class added here must still be final.
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Authentication'))
-            ->excluding(Selector::classname(self::NS . 'Authentication\PasskeyAuthenticationService'))
+            ->excluding(
+                Selector::classname(self::NS . 'Authentication\PasskeyAuthenticationService'),
+            )
             ->should()
             ->beFinal()
             ->because('Authentication classes are leaf classes — composition over inheritance');
@@ -262,10 +270,11 @@ final class ArchitectureTest
     {
         // PasskeyInfoElement is the one documented exception — it extends the FormEngine
         // AbstractFormElement base class. Any *other* class added here must still be final.
-        return PHPat::rule(
-        )
+        return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Form'))
-            ->excluding(Selector::classname(self::NS . 'Form\Element\PasskeyInfoElement'))
+            ->excluding(
+                Selector::classname(self::NS . 'Form\Element\PasskeyInfoElement'),
+            )
             ->should()
             ->beFinal()
             ->because('Form classes are leaf classes — composition over inheritance');

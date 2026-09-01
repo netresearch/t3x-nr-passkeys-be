@@ -132,11 +132,11 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     {
         $this->setUpConfigService();
         $this->pageRenderer
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('loadJavaScriptModule')
-            ->with('@netresearch/nr-passkeys-be/PasskeyLogin.js');
+            ->with(
+                '@netresearch/nr-passkeys-be/PasskeyLogin.js',
+            );
         $this->pageRenderer->method('addJsInlineCode');
         ($this->subject)($this->createEvent());
     }
@@ -146,11 +146,11 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     {
         $this->setUpConfigService();
         $this->pageRenderer
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('addCssFile')
-            ->with('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');
+            ->with(
+                'EXT:nr_passkeys_be/Resources/Public/Css/backend.css',
+            );
         $this->pageRenderer->method('loadJavaScriptModule');
         $this->pageRenderer->method('addJsInlineCode');
         ($this->subject)($this->createEvent());

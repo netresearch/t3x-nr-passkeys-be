@@ -93,19 +93,19 @@ final class LoginControllerTest extends TestCase
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
         $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('createAssertionOptions')
             ->with('admin', 42)
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_abc123'));
+            ->willReturn(
+                new AssertionOptions(options: $options, challengeToken: 'ct_abc123'),
+            );
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('serializeRequestOptions')
             ->with($options)
-            ->willReturn('{"challenge":"abc","rpId":"example.com"}');
+            ->willReturn(
+                '{"challenge":"abc","rpId":"example.com"}',
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -162,20 +162,20 @@ final class LoginControllerTest extends TestCase
     {
         $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
-            ->method(
-                'createAssertionOptions',
-            )
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_known'));
+            ->method('createAssertionOptions')
+            ->willReturn(
+                new AssertionOptions(options: $options, challengeToken: 'ct_known'),
+            );
         $this->webAuthnService
-            ->method(
-                'createDecoyAssertionOptions',
-            )
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_decoy'));
+            ->method('createDecoyAssertionOptions')
+            ->willReturn(
+                new AssertionOptions(options: $options, challengeToken: 'ct_decoy'),
+            );
         $this->webAuthnService
-            ->method(
-                'serializeRequestOptions',
-            )
-            ->willReturn('{"challenge":"abc","rpId":"example.com"}');
+            ->method('serializeRequestOptions')
+            ->willReturn(
+                '{"challenge":"abc","rpId":"example.com"}',
+            );
     }
 
     /**
@@ -196,10 +196,10 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => '']);
         $this->configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: false),
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -211,28 +211,28 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => '']);
         $this->configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: true),
+            );
         $options = PublicKeyCredentialRequestOptions::create(
             challenge: \random_bytes(32),
             rpId: 'example.com',
             allowCredentials: [],
         );
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('createDiscoverableAssertionOptions')
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_discoverable'));
+            ->willReturn(
+                new AssertionOptions(options: $options, challengeToken: 'ct_discoverable'),
+            );
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('serializeRequestOptions')
             ->with($options)
-            ->willReturn('{"challenge":"abc","rpId":"example.com","allowCredentials":[]}');
+            ->willReturn(
+                '{"challenge":"abc","rpId":"example.com","allowCredentials":[]}',
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -248,19 +248,19 @@ final class LoginControllerTest extends TestCase
         $this->setUpFindBeUser('unknown', null);
         $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('createDecoyAssertionOptions')
             ->with('unknown')
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct_decoy'));
+            ->willReturn(
+                new AssertionOptions(options: $options, challengeToken: 'ct_decoy'),
+            );
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('serializeRequestOptions')
             ->with($options)
-            ->willReturn('{"challenge":"abc","rpId":"example.com","allowCredentials":[{"type":"public-key","id":"decoy"}]}');
+            ->willReturn(
+                '{"challenge":"abc","rpId":"example.com","allowCredentials":[{"type":"public-key","id":"decoy"}]}',
+            );
         $response = $this->subject->optionsAction($request);
 
         // Same shape and status (200) as a real user -> no enumeration oracle.
@@ -276,10 +276,10 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => 'admin']);
         $this->rateLimiterService
-            ->method(
-                'consumeRateLimit',
-            )
-            ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
+            ->method('consumeRateLimit')
+            ->willThrowException(
+                new RuntimeException('Rate limit exceeded', 1700000010),
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -299,11 +299,13 @@ final class LoginControllerTest extends TestCase
         );
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->with(responseJson: self::isType('string'), challengeToken: 'ct_abc123', beUserUid: 42);
+            ->with(
+                responseJson: self::isType('string'),
+                challengeToken: 'ct_abc123',
+                beUserUid: 42,
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess')
@@ -351,11 +353,11 @@ final class LoginControllerTest extends TestCase
         );
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->willThrowException(new RuntimeException('Verification failed', 1700000035));
+            ->willThrowException(
+                new RuntimeException('Verification failed', 1700000035),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
@@ -385,11 +387,11 @@ final class LoginControllerTest extends TestCase
         );
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->willThrowException(new InvalidDataException(null, 'Invalid input'));
+            ->willThrowException(
+                new InvalidDataException(null, 'Invalid input'),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
@@ -436,10 +438,10 @@ final class LoginControllerTest extends TestCase
             ['username' => 'admin', 'assertion' => ['id' => 'cred123'], 'challengeToken' => 'ct_abc123'],
         );
         $this->rateLimiterService
-            ->method(
-                'consumeRateLimit',
-            )
-            ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
+            ->method('consumeRateLimit')
+            ->willThrowException(
+                new RuntimeException('Rate limit exceeded', 1700000010),
+            );
         $response = $this->subject->verifyAction($request);
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -452,15 +454,15 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => '']);
         $this->configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: true),
+            );
         $this->rateLimiterService
-            ->method(
-                'consumeRateLimit',
-            )
-            ->willThrowException(new RuntimeException('Rate limit exceeded', 1700000010));
+            ->method('consumeRateLimit')
+            ->willThrowException(
+                new RuntimeException('Rate limit exceeded', 1700000010),
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -473,22 +475,23 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => '']);
         $this->configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: true),
+            );
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('createDiscoverableAssertionOptions')
-            ->willThrowException(new Error('Unexpected internal failure'));
+            ->willThrowException(
+                new Error('Unexpected internal failure'),
+            );
         $this->logger
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('error')
-            ->with('Failed to generate discoverable assertion options', self::anything());
+            ->with(
+                'Failed to generate discoverable assertion options',
+                self::anything(),
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(500, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -501,18 +504,19 @@ final class LoginControllerTest extends TestCase
         $request = $this->createJsonRequest(['username' => 'admin']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('createAssertionOptions')
             ->with('admin', 42)
-            ->willThrowException(new Error('Unexpected internal failure'));
+            ->willThrowException(
+                new Error('Unexpected internal failure'),
+            );
         $this->logger
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('error')
-            ->with('Failed to generate assertion options', self::anything());
+            ->with(
+                'Failed to generate assertion options',
+                self::anything(),
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(500, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -549,10 +553,10 @@ final class LoginControllerTest extends TestCase
             ['assertion' => ['id' => 'orphan-cred', 'response' => []], 'challengeToken' => 'ct_abc123'],
         );
         $this->configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: true),
+            );
 
         // Credential ID resolves to no user → genuine unknown credential.
         $this->webAuthnService
@@ -574,19 +578,21 @@ final class LoginControllerTest extends TestCase
             ['assertion' => ['id' => 'cred123', 'response' => []], 'challengeToken' => 'ct_abc123'],
         );
         $this->configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: true),
+            );
         $this->webAuthnService
             ->method('findBeUserUidFromAssertion')
             ->willReturn(7);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->with(responseJson: self::isType('string'), challengeToken: 'ct_abc123', beUserUid: 7);
+            ->with(
+                responseJson: self::isType('string'),
+                challengeToken: 'ct_abc123',
+                beUserUid: 7,
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess');
@@ -607,10 +613,10 @@ final class LoginControllerTest extends TestCase
             ['assertion' => ['id' => 'cred123', 'response' => []], 'challengeToken' => 'ct_abc123'],
         );
         $this->configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: false),
+            );
         $response = $this->subject->verifyAction($request);
         self::assertSame(400, $response->getStatusCode());
     }
@@ -620,10 +626,10 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest([]);
         $this->configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: false),
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -635,10 +641,10 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => 'lockeduser']);
         $this->rateLimiterService
-            ->method(
-                'checkLockout',
-            )
-            ->willThrowException(new RuntimeException('Account locked out', 1700000011));
+            ->method('checkLockout')
+            ->willThrowException(
+                new RuntimeException('Account locked out', 1700000011),
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -653,10 +659,10 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => ['array', 'value']]);
         $this->configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: false),
+            );
         $response = $this->subject->optionsAction($request);
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -670,10 +676,10 @@ final class LoginControllerTest extends TestCase
             ['username' => 'lockeduser', 'assertion' => ['id' => 'cred123'], 'challengeToken' => 'ct_abc123'],
         );
         $this->rateLimiterService
-            ->method(
-                'checkLockout',
-            )
-            ->willThrowException(new RuntimeException('Account locked', 1700000011));
+            ->method('checkLockout')
+            ->willThrowException(
+                new RuntimeException('Account locked', 1700000011),
+            );
         $response = $this->subject->verifyAction($request);
         self::assertSame(429, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -746,16 +752,17 @@ final class LoginControllerTest extends TestCase
         );
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
         $this->webAuthnService
-            ->method(
-                'verifyAssertionResponse',
-            )
-            ->willThrowException(new RuntimeException('Verification failed', 1700000035));
+            ->method('verifyAssertionResponse')
+            ->willThrowException(
+                new RuntimeException('Verification failed', 1700000035),
+            );
         $this->logger
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('warning')
-            ->with('Passkey assertion verification failed', self::anything());
+            ->with(
+                'Passkey assertion verification failed',
+                self::anything(),
+            );
         $response = $this->subject->verifyAction($request);
         self::assertSame(401, $response->getStatusCode());
     }
@@ -767,19 +774,20 @@ final class LoginControllerTest extends TestCase
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
         $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
-            ->method(
-                'createAssertionOptions',
-            )
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct'));
+            ->method('createAssertionOptions')
+            ->willReturn(
+                new AssertionOptions(options: $options, challengeToken: 'ct'),
+            );
         $this->webAuthnService
             ->method('serializeRequestOptions')
             ->willReturn('{"challenge":"abc"}');
         $this->rateLimiterService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('consumeRateLimit')
-            ->with('login_options', self::anything());
+            ->with(
+                'login_options',
+                self::anything(),
+            );
         $this->subject->optionsAction($request);
     }
 
@@ -796,11 +804,12 @@ final class LoginControllerTest extends TestCase
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
         $this->webAuthnService->method('verifyAssertionResponse');
         $this->rateLimiterService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('consumeRateLimit')
-            ->with('login_verify', self::anything());
+            ->with(
+                'login_verify',
+                self::anything(),
+            );
         $this->subject->verifyAction($request);
     }
 

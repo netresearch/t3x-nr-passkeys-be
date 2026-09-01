@@ -25,11 +25,11 @@ final class InjectPasskeyBannerTest extends TestCase
     {
         $pageRenderer = $this->createMock(PageRenderer::class);
         $pageRenderer
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('loadJavaScriptModule')
-            ->with('@netresearch/nr-passkeys-be/PasskeyBanner.js');
+            ->with(
+                '@netresearch/nr-passkeys-be/PasskeyBanner.js',
+            );
         $view = $this->createMock(ViewInterface::class);
         $event = new AfterBackendPageRenderEvent('<html></html>', $view);
         $subject = new InjectPasskeyBanner($pageRenderer);
@@ -41,11 +41,12 @@ final class InjectPasskeyBannerTest extends TestCase
     {
         $pageRenderer = $this->createMock(PageRenderer::class);
         $pageRenderer
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('addInlineLanguageLabelFile')
-            ->with('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
+            ->with(
+                'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+                'js.',
+            );
         $view = $this->createMock(ViewInterface::class);
         $event = new AfterBackendPageRenderEvent('<html></html>', $view);
         $subject = new InjectPasskeyBanner($pageRenderer);
@@ -57,11 +58,11 @@ final class InjectPasskeyBannerTest extends TestCase
     {
         $pageRenderer = $this->createMock(PageRenderer::class);
         $pageRenderer
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('addCssFile')
-            ->with('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');
+            ->with(
+                'EXT:nr_passkeys_be/Resources/Public/Css/backend.css',
+            );
         $view = $this->createMock(ViewInterface::class);
         $event = new AfterBackendPageRenderEvent('<html></html>', $view);
         $subject = new InjectPasskeyBanner($pageRenderer);

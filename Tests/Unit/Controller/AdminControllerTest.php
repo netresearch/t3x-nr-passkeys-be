@@ -82,12 +82,12 @@ final class AdminControllerTest extends TestCase
             revokedBy: 1,
         );
         $this->credentialRepository
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findAllByBeUser')
             ->with(42)
-            ->willReturn([$cred1, $cred2]);
+            ->willReturn(
+                [$cred1, $cred2],
+            );
         $response = $this->subject->listAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -133,12 +133,12 @@ final class AdminControllerTest extends TestCase
         $request = $this->createJsonRequest(['beUserUid' => 42, 'credentialUid' => 10]);
         $cred = new Credential(uid: 10, beUser: 42, label: 'Key 1');
         $this->credentialRepository
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(10, 42)
-            ->willReturn($cred);
+            ->willReturn(
+                $cred,
+            );
         $this->credentialRepository
             ->expects(self::once())
             ->method('revoke')
@@ -289,12 +289,12 @@ final class AdminControllerTest extends TestCase
 
         // User 42 has credential 10, but not 999
         $this->credentialRepository
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(999, 42)
-            ->willReturn(null);
+            ->willReturn(
+                null,
+            );
         $this->credentialRepository
             ->expects(self::never())
             ->method('revoke');
@@ -672,12 +672,12 @@ final class AdminControllerTest extends TestCase
         $cred2 = new Credential(uid: 11, beUser: 42, label: 'Key 2');
         $cred3 = new Credential(uid: 12, beUser: 42, label: 'Revoked', revokedAt: 1700000000, revokedBy: 1);
         $this->credentialRepository
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findAllByBeUser')
             ->with(42)
-            ->willReturn([$cred1, $cred2, $cred3]);
+            ->willReturn(
+                [$cred1, $cred2, $cred3],
+            );
         $this->credentialRepository
             ->expects(self::exactly(2))
             ->method('revoke')
@@ -770,11 +770,13 @@ final class AdminControllerTest extends TestCase
         $this->setUpGroupLookup(5, ['uid' => 5]);
         $connection = $this->createMock(Connection::class);
         $connection
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('update')
-            ->with('be_groups', ['passkey_enforcement' => 'encourage'], ['uid' => 5]);
+            ->with(
+                'be_groups',
+                ['passkey_enforcement' => 'encourage'],
+                ['uid' => 5],
+            );
         $this->connectionPool
             ->method('getConnectionForTable')
             ->with('be_groups')
@@ -954,11 +956,13 @@ final class AdminControllerTest extends TestCase
         $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
         $connection = $this->createMock(Connection::class);
         $connection
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('update')
-            ->with('be_users', ['passkey_nudge_until' => 0], ['uid' => 42]);
+            ->with(
+                'be_users',
+                ['passkey_nudge_until' => 0],
+                ['uid' => 42],
+            );
         $this->connectionPool
             ->method('getConnectionForTable')
             ->with('be_users')
@@ -1033,10 +1037,10 @@ final class AdminControllerTest extends TestCase
     {
         $queryBuilder = $this->createSingleRowQueryBuilder($uid, $groupRow);
         $queryBuilder
-            ->method(
-                'getRestrictions',
-            )
-            ->willReturn($this->createMock(QueryRestrictionContainerInterface::class));
+            ->method('getRestrictions')
+            ->willReturn(
+                $this->createMock(QueryRestrictionContainerInterface::class),
+            );
         $this->connectionPool
             ->method('getQueryBuilderForTable')
             ->with('be_groups')
@@ -1054,10 +1058,10 @@ final class AdminControllerTest extends TestCase
     {
         $queryBuilder = $this->createSingleRowQueryBuilder($uid, $userRow);
         $queryBuilder
-            ->method(
-                'getRestrictions',
-            )
-            ->willReturn($this->createMock(QueryRestrictionContainerInterface::class));
+            ->method('getRestrictions')
+            ->willReturn(
+                $this->createMock(QueryRestrictionContainerInterface::class),
+            );
         $this->connectionPool
             ->method('getQueryBuilderForTable')
             ->with('be_users')

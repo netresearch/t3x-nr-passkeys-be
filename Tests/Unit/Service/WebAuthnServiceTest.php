@@ -72,10 +72,10 @@ final class WebAuthnServiceTest extends TestCase
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'test-encryption-key-for-user-handle-generation';
         $this->configServiceMock = $this->createMock(ExtensionConfigurationService::class);
         $this->configServiceMock
-            ->method(
-                'getEncryptionKey',
-            )
-            ->willReturn('test-encryption-key-for-user-handle-generation');
+            ->method('getEncryptionKey')
+            ->willReturn(
+                'test-encryption-key-for-user-handle-generation',
+            );
         $this->challengeServiceMock = $this->createMock(ChallengeService::class);
         $this->credentialRepositoryMock = $this->createMock(CredentialRepository::class);
         $this->loggerMock = $this->createMock(LoggerInterface::class);
@@ -763,11 +763,11 @@ final class WebAuthnServiceTest extends TestCase
             counter: 42,
         );
         $this->credentialRepositoryMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('save')
-            ->with(self::callback(fn(Credential $cred): bool => $cred->getSignCount() === 42))
+            ->with(
+                self::callback(fn(Credential $cred): bool => $cred->getSignCount() === 42),
+            )
             ->willReturn(1);
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
         self::assertSame(42, $result->getSignCount());
@@ -919,10 +919,10 @@ final class WebAuthnServiceTest extends TestCase
             ->method('getEffectiveRpId')
             ->willReturn('example.com');
         $this->configServiceMock
-            ->method(
-                'getEncryptionKey',
-            )
-            ->willThrowException(new RuntimeException('TYPO3 encryptionKey is missing or too short', 1700000050));
+            ->method('getEncryptionKey')
+            ->willThrowException(
+                new RuntimeException('TYPO3 encryptionKey is missing or too short', 1700000050),
+            );
         $this->challengeServiceMock
             ->method('generateChallenge')
             ->willReturn(\random_bytes(32));
@@ -954,11 +954,12 @@ final class WebAuthnServiceTest extends TestCase
 
         // The unknown algorithm should trigger a warning log
         $this->loggerMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('warning')
-            ->with('Unknown algorithm configured', ['algorithm' => 'UNKNOWN_ALGO']);
+            ->with(
+                'Unknown algorithm configured',
+                ['algorithm' => 'UNKNOWN_ALGO'],
+            );
 
         // Use reflection to call the private createAlgorithmManager method directly
         $reflection = new ReflectionMethod($this->ceremonyFactory, 'createAlgorithmManager');
@@ -999,11 +1000,11 @@ final class WebAuthnServiceTest extends TestCase
             revokedAt: 1700000000,
         );
         $this->credentialRepositoryMock
-            ->method(
-                'findByCredentialId',
-            )
+            ->method('findByCredentialId')
             ->with($credentialId)
-            ->willReturn($revokedCredential);
+            ->willReturn(
+                $revokedCredential,
+            );
 
         // The revocation guard must fire with its dedicated code (1700000033).
         $this->expectException(RuntimeException::class);
@@ -1028,11 +1029,11 @@ final class WebAuthnServiceTest extends TestCase
             counter: 0,
         );
         $this->credentialRepositoryMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('save')
-            ->with(self::callback(fn(Credential $cred): bool => $cred->getTransports() === '[]'))
+            ->with(
+                self::callback(fn(Credential $cred): bool => $cred->getTransports() === '[]'),
+            )
             ->willReturn(1);
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
         self::assertSame([], $result->getTransportsArray());
@@ -1226,10 +1227,12 @@ final class WebAuthnServiceTest extends TestCase
         $y = \str_pad($details['ec']['y'], 32, "\x00", STR_PAD_LEFT);
 
         // Create COSE-encoded public key (EC2 / ES256)
-        $coseKey = MapObject::create(
-        )
+        $coseKey = MapObject::create()
             ->add(UnsignedIntegerObject::create(1), UnsignedIntegerObject::create(2))
-            ->add(UnsignedIntegerObject::create(3), NegativeIntegerObject::create(-7))
+            ->add(
+                UnsignedIntegerObject::create(3),
+                NegativeIntegerObject::create(-7),
+            )
             ->add(NegativeIntegerObject::create(-1), UnsignedIntegerObject::create(1))
             ->add(NegativeIntegerObject::create(-2), ByteStringObject::create($x))
             ->add(NegativeIntegerObject::create(-3), ByteStringObject::create($y));
@@ -1367,10 +1370,12 @@ final class WebAuthnServiceTest extends TestCase
         self::assertIsArray($details);
         $x = \str_pad($details['ec']['x'], 32, "\x00", STR_PAD_LEFT);
         $y = \str_pad($details['ec']['y'], 32, "\x00", STR_PAD_LEFT);
-        $coseKey = MapObject::create(
-        )
+        $coseKey = MapObject::create()
             ->add(UnsignedIntegerObject::create(1), UnsignedIntegerObject::create(2))
-            ->add(UnsignedIntegerObject::create(3), NegativeIntegerObject::create(-7))
+            ->add(
+                UnsignedIntegerObject::create(3),
+                NegativeIntegerObject::create(-7),
+            )
             ->add(NegativeIntegerObject::create(-1), UnsignedIntegerObject::create(1))
             ->add(NegativeIntegerObject::create(-2), ByteStringObject::create($x))
             ->add(NegativeIntegerObject::create(-3), ByteStringObject::create($y));
@@ -1395,11 +1400,11 @@ final class WebAuthnServiceTest extends TestCase
             revokedAt: 1700000000,
         );
         $this->credentialRepositoryMock
-            ->method(
-                'findByCredentialId',
-            )
+            ->method('findByCredentialId')
             ->with($credentialId)
-            ->willReturn($revokedCredential);
+            ->willReturn(
+                $revokedCredential,
+            );
         $result = $this->subject->findBeUserUidFromAssertion($assertionJson);
         self::assertNull($result, 'Revoked credentials should return null');
     }
@@ -1470,11 +1475,12 @@ final class WebAuthnServiceTest extends TestCase
             ->with($credentialId)
             ->willReturn(null);
         $this->loggerMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('warning')
-            ->with('Assertion with unknown credential ID', ['be_user_uid' => $beUserUid]);
+            ->with(
+                'Assertion with unknown credential ID',
+                ['be_user_uid' => $beUserUid],
+            );
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000032);
         $this->expectExceptionMessage('Unknown credential');
@@ -1519,11 +1525,12 @@ final class WebAuthnServiceTest extends TestCase
             ->with($credentialId)
             ->willReturn($credential);
         $this->loggerMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('warning')
-            ->with('Credential does not belong to the claimed user', ['be_user_uid' => $beUserUid, 'credential_be_user' => 999]);
+            ->with(
+                'Credential does not belong to the claimed user',
+                ['be_user_uid' => $beUserUid, 'credential_be_user' => 999],
+            );
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000034);
         $this->expectExceptionMessage('Credential mismatch');

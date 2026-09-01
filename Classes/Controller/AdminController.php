@@ -150,14 +150,13 @@ final readonly class AdminController
         // Validate that beUserUid matches the given username to ensure audit log integrity
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
         $row = $queryBuilder
-            ->select(
-                'uid',
-                'username',
-            )
+            ->select('uid', 'username')
             ->from('be_users')
-            ->where($queryBuilder
+            ->where(
+                $queryBuilder
                     ->expr()
-                    ->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)))
+                    ->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
+            )
             ->executeQuery()
             ->fetchAssociative();
 

@@ -99,11 +99,14 @@ final class ChallengeServiceTest extends TestCase
     public function createChallengeTokenReturnsBase64EncodedString(): void
     {
         $this->nonceCacheMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('set')
-            ->with(self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'), 'valid', [], 180);
+            ->with(
+                self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'),
+                'valid',
+                [],
+                180,
+            );
         $challenge = \random_bytes(32);
         $token = $this->subject->createChallengeToken($challenge);
 
@@ -310,11 +313,14 @@ final class ChallengeServiceTest extends TestCase
     public function createChallengeTokenStoredNonceWithCorrectTtlBuffer(): void
     {
         $this->nonceCacheMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('set')
-            ->with(self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'), 'valid', [], 180);
+            ->with(
+                self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'),
+                'valid',
+                [],
+                180,
+            );
         $this->subject->createChallengeToken(\random_bytes(32));
     }
 
@@ -340,11 +346,11 @@ final class ChallengeServiceTest extends TestCase
             ->method('get')
             ->willReturn('valid');
         $this->nonceCacheMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('remove')
-            ->with(self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'));
+            ->with(
+                self::matchesRegularExpression('/^nonce_[a-zA-Z0-9]+$/'),
+            );
         $this->subject->verifyChallengeToken($token);
     }
 

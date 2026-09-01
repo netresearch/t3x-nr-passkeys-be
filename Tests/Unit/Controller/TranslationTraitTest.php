@@ -47,11 +47,11 @@ final class TranslationTraitTest extends TestCase
     {
         $langMock = $this->createMock(LanguageService::class);
         $langMock
-            ->method(
-                'sL',
-            )
+            ->method('sL')
             ->with('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:some.key')
-            ->willReturn('Translated value');
+            ->willReturn(
+                'Translated value',
+            );
         $GLOBALS['LANG'] = $langMock;
         $result = $this->subject->callTranslate('some.key', 'Fallback value');
         self::assertSame('Translated value', $result);
@@ -98,11 +98,11 @@ final class TranslationTraitTest extends TestCase
     {
         $langMock = $this->createMock(LanguageService::class);
         $langMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('sL')
-            ->with('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:flash.success')
+            ->with(
+                'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:flash.success',
+            )
             ->willReturn('Success');
         $GLOBALS['LANG'] = $langMock;
         $this->subject->callTranslate('flash.success', 'Success fallback');
@@ -113,11 +113,11 @@ final class TranslationTraitTest extends TestCase
     {
         $langMock = $this->createMock(LanguageService::class);
         $langMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('sL')
-            ->with('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:')
+            ->with(
+                'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:',
+            )
             ->willReturn('');
         $GLOBALS['LANG'] = $langMock;
         $result = $this->subject->callTranslate('', 'empty key fallback');

@@ -58,17 +58,19 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     // Made public so the DI smoke test (Tests/Functional) can resolve them
     // and assert the tagged_iterator yields exactly the registered providers.
     $services
-        ->set(
-            PasskeyAdoptionChartDataProvider::class,
-        )
+        ->set(PasskeyAdoptionChartDataProvider::class)
         ->public()
-        ->arg('$statsProviders', tagged_iterator('nr_passkeys_be.adoption_stats_provider'));
+        ->arg(
+            '$statsProviders',
+            tagged_iterator('nr_passkeys_be.adoption_stats_provider'),
+        );
     $services
-        ->set(
-            PasskeyCredentialsCountDataProvider::class,
-        )
+        ->set(PasskeyCredentialsCountDataProvider::class)
         ->public()
-        ->arg('$statsProviders', tagged_iterator('nr_passkeys_be.adoption_stats_provider'));
+        ->arg(
+            '$statsProviders',
+            tagged_iterator('nr_passkeys_be.adoption_stats_provider'),
+        );
     $adminOnlySupported = \interface_exists(AdminOnlyWidgetInterface::class);
     $services
         ->set(

@@ -71,10 +71,15 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         // Default enforcement: Off level with no passkeys (non-blocking)
         $this->enforcementService
-            ->method(
-                'getStatus',
-            )
-            ->willReturn(new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false));
+            ->method('getStatus')
+            ->willReturn(
+                new EnforcementStatus(
+                    level: EnforcementLevel::Off,
+                    gracePeriodDays: 0,
+                    gracePeriodStart: 0,
+                    hasPasskeys: false,
+                ),
+            );
 
         // Use addInstance for non-singleton services (used by makeInstance FIFO queue)
         GeneralUtility::addInstance(WebAuthnService::class, $this->webAuthnService);
@@ -235,11 +240,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->expects(self::once())
             ->method('checkLockout');
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->with(responseJson: '{"valid":"assertion"}', challengeToken: 'challenge-token-123', beUserUid: 42)
+            ->with(
+                responseJson: '{"valid":"assertion"}',
+                challengeToken: 'challenge-token-123',
+                beUserUid: 42,
+            )
             ->willReturn(new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class)));
         $this->rateLimiterService
             ->expects(self::once())
@@ -278,21 +285,22 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $this->addOffEnforcementService();
         $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
         $this->webAuthnService
-            ->method(
-                'verifyAssertionResponse',
-            )
-            ->willReturn(new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class)));
+            ->method('verifyAssertionResponse')
+            ->willReturn(
+                new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class)),
+            );
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
         $pObj = $this->createMock(BackendUserAuthentication::class);
 
         // Only the tx_nrpasskeysbe marker — never the 'mfa' key.
         $pObj
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('setAndSaveSessionData')
-            ->with('tx_nrpasskeysbe', ['passkey_authenticated' => true]);
+            ->with(
+                'tx_nrpasskeysbe',
+                ['passkey_authenticated' => true],
+            );
         $subject->pObj = $pObj;
         $subject->login = ['uname' => 'admin', 'uident' => $this->buildPasskeyUident(['ok' => 'assertion'])];
         $result = $subject->authUser(['uid' => 42, 'username' => 'admin']);
@@ -304,10 +312,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = ['uname' => 'admin', 'uident' => $this->buildPasskeyUident(['bad' => 'data'])];
         $this->webAuthnService
-            ->method(
-                'verifyAssertionResponse',
-            )
-            ->willThrowException(new RuntimeException('Assertion failed', 1700000035));
+            ->method('verifyAssertionResponse')
+            ->willThrowException(
+                new RuntimeException('Assertion failed', 1700000035),
+            );
 
         // On verification failure, no session writes should occur at all.
         $this->pObj
@@ -364,11 +372,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->expects(self::once())
             ->method('checkLockout');
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->willThrowException(new RuntimeException('Assertion failed', 1700000035));
+            ->willThrowException(
+                new RuntimeException('Assertion failed', 1700000035),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
@@ -399,11 +407,12 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
         $logger = $this->createMock(LoggerInterface::class);
         $logger
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('warning')
-            ->with('Password login blocked for user with registered passkeys', self::anything());
+            ->with(
+                'Password login blocked for user with registered passkeys',
+                self::anything(),
+            );
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $logger);
         $subject->login = ['uname' => 'admin', 'uident' => 'regularPassword123'];
@@ -558,11 +567,12 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         );
         $logger = $this->createMock(LoggerInterface::class);
         $logger
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('warning')
-            ->with('Password login blocked by group enforcement', self::anything());
+            ->with(
+                'Password login blocked by group enforcement',
+                self::anything(),
+            );
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $logger);
         $subject->login = ['uname' => 'enforced_user', 'uident' => 'regularPassword123'];
@@ -585,11 +595,12 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         );
         $logger = $this->createMock(LoggerInterface::class);
         $logger
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('warning')
-            ->with('Password login blocked: grace period expired', self::anything());
+            ->with(
+                'Password login blocked: grace period expired',
+                self::anything(),
+            );
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $logger);
         $subject->login = ['uname' => 'required_expired', 'uident' => 'regularPassword123'];
@@ -663,10 +674,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = ['uname' => 'testuser', 'uident' => $this->buildPasskeyUident(['bad' => 'data'])];
         $this->webAuthnService
-            ->method(
-                'verifyAssertionResponse',
-            )
-            ->willThrowException(new RuntimeException('Verification failed', 1700000035));
+            ->method('verifyAssertionResponse')
+            ->willThrowException(
+                new RuntimeException('Verification failed', 1700000035),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
@@ -686,10 +697,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
         $this->subject->login = ['uname' => 'admin', 'uident' => $this->buildPasskeyUident(['ok' => 'assertion'], 'token-abc')];
         $this->webAuthnService
-            ->method(
-                'verifyAssertionResponse',
-            )
-            ->willReturn(new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class)));
+            ->method('verifyAssertionResponse')
+            ->willReturn(
+                new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class)),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess')
@@ -704,11 +715,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = ['uname' => 'locked_user', 'uident' => $this->buildPasskeyUident(['ok' => 'assertion'], 'token-abc')];
         $this->rateLimiterService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('checkLockout')
-            ->willThrowException(new RuntimeException('Account locked', 1700000011));
+            ->willThrowException(
+                new RuntimeException('Account locked', 1700000011),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordFailure')
@@ -763,11 +774,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = ['uname' => '', 'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123')];
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findBeUserUidFromAssertion')
-            ->with('{"assertion":"data"}')
+            ->with(
+                '{"assertion":"data"}',
+            )
             ->willReturn(null);
         $result = $this->subject->getUser();
         self::assertFalse($result);
@@ -779,10 +790,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         GeneralUtility::purgeInstances();
         $configServiceDisabled = $this->createMock(ExtensionConfigurationService::class);
         $configServiceDisabled
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: false));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: false),
+            );
         GeneralUtility::addInstance(ExtensionConfigurationService::class, $configServiceDisabled);
         $this->subject->login = ['uname' => '', 'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123')];
 
@@ -798,11 +809,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = ['uname' => '', 'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123')];
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findBeUserUidFromAssertion')
-            ->with('{"assertion":"data"}')
+            ->with(
+                '{"assertion":"data"}',
+            )
             ->willReturn(42);
         $this->setUpFetchUserByUid(42, ['uid' => 42, 'username' => 'admin', 'disable' => 0, 'deleted' => 0]);
         $result = $this->subject->getUser();
@@ -816,11 +827,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $this->subject->login = ['uname' => '', 'uident' => $this->buildPasskeyUident(['assertion' => 'data'], 'token-123')];
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findBeUserUidFromAssertion')
-            ->with('{"assertion":"data"}')
+            ->with(
+                '{"assertion":"data"}',
+            )
             ->willReturn(999);
         $this->setUpFetchUserByUid(999, null);
         $result = $this->subject->getUser();
@@ -874,11 +885,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         // Empty uname key defaults to '' which triggers discoverable flow
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findBeUserUidFromAssertion')
-            ->with('{"assertion":"data"}')
+            ->with(
+                '{"assertion":"data"}',
+            )
             ->willReturn(null);
         $result = $this->subject->getUser();
         self::assertFalse($result);
@@ -968,11 +979,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->method('fetchUserRecord')
             ->willReturn($expectedUser);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->with(responseJson: '{"cached":"test"}', challengeToken: 'cached-token', beUserUid: 42)
+            ->with(
+                responseJson: '{"cached":"test"}',
+                challengeToken: 'cached-token',
+                beUserUid: 42,
+            )
             ->willReturn(new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class)));
 
         // Both getUser and authUser should use the same decoded payload
@@ -992,10 +1005,15 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $enforcementService = $this->createMock(EnforcementService::class);
         $enforcementService
-            ->method(
-                'getStatus',
-            )
-            ->willReturn(new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false));
+            ->method('getStatus')
+            ->willReturn(
+                new EnforcementStatus(
+                    level: EnforcementLevel::Off,
+                    gracePeriodDays: 0,
+                    gracePeriodStart: 0,
+                    hasPasskeys: false,
+                ),
+            );
         GeneralUtility::addInstance(EnforcementService::class, $enforcementService);
     }
 
@@ -1053,11 +1071,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->willReturn($result);
         $connectionPool = $this->createMock(ConnectionPool::class);
         $connectionPool
-            ->method(
-                'getQueryBuilderForTable',
-            )
+            ->method('getQueryBuilderForTable')
             ->with('tx_nrpasskeysbe_credential')
-            ->willReturn($queryBuilder);
+            ->willReturn(
+                $queryBuilder,
+            );
         GeneralUtility::addInstance(ConnectionPool::class, $connectionPool);
     }
 

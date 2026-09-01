@@ -34,15 +34,15 @@ final class RequestPayloadFuzzTest extends TestCase
         parent::setUp();
         $webAuthnService = $this->createMock(WebAuthnService::class);
         $webAuthnService
-            ->method(
-                'createDiscoverableAssertionOptions',
-            )
-            ->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
+            ->method('createDiscoverableAssertionOptions')
+            ->willThrowException(
+                new RuntimeException('Fuzz: no real WebAuthn context'),
+            );
         $webAuthnService
-            ->method(
-                'createAssertionOptions',
-            )
-            ->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
+            ->method('createAssertionOptions')
+            ->willThrowException(
+                new RuntimeException('Fuzz: no real WebAuthn context'),
+            );
         $configService = $this->createMock(ExtensionConfigurationService::class);
         $configService
             ->method('getConfiguration')

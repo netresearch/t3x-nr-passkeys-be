@@ -143,13 +143,13 @@ final class EnforcementServiceTest extends FunctionalTestCase
             ->getRestrictions()
             ->removeAll();
         $row = $queryBuilder
-            ->select(
-                'passkey_grace_period_start',
-            )
+            ->select('passkey_grace_period_start')
             ->from('be_users')
-            ->where($queryBuilder
+            ->where(
+                $queryBuilder
                     ->expr()
-                    ->eq('uid', 99))
+                    ->eq('uid', 99),
+            )
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);

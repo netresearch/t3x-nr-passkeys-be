@@ -77,15 +77,16 @@ final readonly class AdoptionStatsService
             ->getRestrictions()
             ->removeAll();
         $result = $queryBuilder
-            ->count(
-                'uid',
-            )
+            ->count('uid')
             ->from(self::TABLE_USERS)
-            ->where($queryBuilder
+            ->where(
+                $queryBuilder
                     ->expr()
-                    ->eq('deleted', 0), $queryBuilder
+                    ->eq('deleted', 0),
+                $queryBuilder
                     ->expr()
-                    ->eq('disable', 0))
+                    ->eq('disable', 0),
+            )
             ->executeQuery()
             ->fetchOne();
 
@@ -105,10 +106,10 @@ final readonly class AdoptionStatsService
             ->getRestrictions()
             ->removeAll();
         $result = $queryBuilder
-            ->addSelectLiteral(
-                'COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('be_user') . ') AS cnt',
+            ->addSelectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('be_user') . ') AS cnt')
+            ->from(
+                self::TABLE_CREDENTIALS,
             )
-            ->from(self::TABLE_CREDENTIALS)
             ->where($queryBuilder
                     ->expr()
                     ->eq('deleted', 0), $queryBuilder
@@ -180,13 +181,10 @@ final readonly class AdoptionStatsService
             ->getRestrictions()
             ->removeAll();
         $groups = $groupQueryBuilder
-            ->select(
-                'uid',
-                'title',
-                'passkey_enforcement',
-                'passkey_grace_period_days',
+            ->select('uid', 'title', 'passkey_enforcement', 'passkey_grace_period_days')
+            ->from(
+                self::TABLE_GROUPS,
             )
-            ->from(self::TABLE_GROUPS)
             ->where($groupQueryBuilder
                     ->expr()
                     ->eq('deleted', 0))
@@ -254,15 +252,16 @@ final readonly class AdoptionStatsService
             ->getRestrictions()
             ->removeAll();
         $rows = $queryBuilder
-            ->select(
-                'usergroup',
-            )
+            ->select('usergroup')
             ->from(self::TABLE_USERS)
-            ->where($queryBuilder
+            ->where(
+                $queryBuilder
                     ->expr()
-                    ->eq('deleted', 0), $queryBuilder
+                    ->eq('deleted', 0),
+                $queryBuilder
                     ->expr()
-                    ->eq('disable', 0))
+                    ->eq('disable', 0),
+            )
             ->executeQuery()
             ->fetchAllAssociative();
 

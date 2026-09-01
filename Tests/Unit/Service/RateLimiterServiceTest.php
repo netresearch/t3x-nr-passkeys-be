@@ -267,11 +267,14 @@ final class RateLimiterServiceTest extends TestCase
             ->willReturn(false);
         $expectedTag = 'lockout_' . \hash('sha256', 'admin');
         $this->rateLimitCacheMock
-            ->expects(
-                self::exactly(2),
-            )
+            ->expects(self::exactly(2))
             ->method('set')
-            ->with(self::isType('string'), '1', [$expectedTag], 900);
+            ->with(
+                self::isType('string'),
+                '1',
+                [$expectedTag],
+                900,
+            );
         $this->subject->recordFailure('admin', '192.168.1.1');
     }
 
@@ -284,11 +287,14 @@ final class RateLimiterServiceTest extends TestCase
             ->method('get')
             ->willReturn(false);
         $this->rateLimitCacheMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('set')
-            ->with(self::isType('string'), '1', self::isType('array'), 900);
+            ->with(
+                self::isType('string'),
+                '1',
+                self::isType('array'),
+                900,
+            );
         $this->subject->recordFailure('admin', '192.168.1.1', false);
     }
 
@@ -319,11 +325,11 @@ final class RateLimiterServiceTest extends TestCase
         $ipKey = 'lo_' . \hash('sha256', 'admin|192.168.1.1');
         $userKey = 'lou_' . \hash('sha256', 'admin');
         $this->rateLimitCacheMock
-            ->expects(
-                self::exactly(2),
-            )
+            ->expects(self::exactly(2))
             ->method('remove')
-            ->with(self::callback(static fn(string $key): bool => $key === $ipKey || $key === $userKey));
+            ->with(
+                self::callback(static fn(string $key): bool => $key === $ipKey || $key === $userKey),
+            );
         $this->subject->recordSuccess('admin', '192.168.1.1');
     }
 
@@ -347,11 +353,11 @@ final class RateLimiterServiceTest extends TestCase
     {
         // When no IP is provided, it flushes by tag for the user
         $this->rateLimitCacheMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('flushByTag')
-            ->with('lockout_' . \hash('sha256', 'admin'));
+            ->with(
+                'lockout_' . \hash('sha256', 'admin'),
+            );
 
         // remove() should NOT be called (it only does flushByTag path)
         $this->rateLimitCacheMock
@@ -402,11 +408,11 @@ final class RateLimiterServiceTest extends TestCase
     {
         // When IP is empty string, it should use flushByTag path
         $this->rateLimitCacheMock
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('flushByTag')
-            ->with('lockout_' . \hash('sha256', 'testuser'));
+            ->with(
+                'lockout_' . \hash('sha256', 'testuser'),
+            );
         $this->rateLimitCacheMock
             ->expects(self::never())
             ->method('remove');

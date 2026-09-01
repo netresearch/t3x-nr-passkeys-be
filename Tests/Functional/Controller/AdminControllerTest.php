@@ -176,14 +176,13 @@ final class AdminControllerTest extends FunctionalTestCase
             ->getRestrictions()
             ->removeAll();
         $row = $queryBuilder
-            ->select(
-                'revoked_at',
-                'revoked_by',
-            )
+            ->select('revoked_at', 'revoked_by')
             ->from('tx_nrpasskeysbe_credential')
-            ->where($queryBuilder
+            ->where(
+                $queryBuilder
                     ->expr()
-                    ->eq('uid', 1))
+                    ->eq('uid', 1),
+            )
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);
@@ -316,13 +315,13 @@ final class AdminControllerTest extends FunctionalTestCase
             ->get(ConnectionPool::class)
             ->getQueryBuilderForTable('be_groups');
         $row = $queryBuilder
-            ->select(
-                'passkey_enforcement',
-            )
+            ->select('passkey_enforcement')
             ->from('be_groups')
-            ->where($queryBuilder
+            ->where(
+                $queryBuilder
                     ->expr()
-                    ->eq('uid', 3))
+                    ->eq('uid', 3),
+            )
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);
@@ -384,13 +383,13 @@ final class AdminControllerTest extends FunctionalTestCase
             ->get(ConnectionPool::class)
             ->getQueryBuilderForTable('be_users');
         $row = $queryBuilder
-            ->select(
-                'passkey_nudge_until',
-            )
+            ->select('passkey_nudge_until')
             ->from('be_users')
-            ->where($queryBuilder
+            ->where(
+                $queryBuilder
                     ->expr()
-                    ->eq('uid', 1))
+                    ->eq('uid', 1),
+            )
             ->executeQuery()
             ->fetchAssociative();
         self::assertIsArray($row);

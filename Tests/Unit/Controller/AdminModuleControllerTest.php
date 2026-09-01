@@ -194,28 +194,29 @@ final class AdminModuleControllerTest extends TestCase
             );
         $expectedResponse = new HtmlResponse('<html></html>');
         $moduleTemplate
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('renderResponse')
             ->with('AdminModule/Dashboard')
-            ->willReturn($expectedResponse);
+            ->willReturn(
+                $expectedResponse,
+            );
         $this->moduleTemplateFactory
             ->expects(self::once())
             ->method('create')
             ->willReturn($moduleTemplate);
         $this->pageRenderer
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('loadJavaScriptModule')
-            ->with('@netresearch/nr-passkeys-be/PasskeyDashboard.js');
+            ->with(
+                '@netresearch/nr-passkeys-be/PasskeyDashboard.js',
+            );
         $this->pageRenderer
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('addInlineLanguageLabelFile')
-            ->with('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
+            ->with(
+                'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+                'js.',
+            );
         $request = $this->createMock(ServerRequestInterface::class);
         $response = $this->subject->dashboardAction($request);
         self::assertSame($expectedResponse, $response);
@@ -300,20 +301,20 @@ final class AdminModuleControllerTest extends TestCase
             ->method('setTitle')
             ->with('Passkey Management – Help');
         $moduleTemplate
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('assignMultiple')
-            ->with(self::callback(static fn(array $vars): bool => \array_key_exists('dashboardUrl', $vars)))
+            ->with(
+                self::callback(static fn(array $vars): bool => \array_key_exists('dashboardUrl', $vars)),
+            )
             ->willReturnSelf();
         $expectedResponse = new HtmlResponse('<html></html>');
         $moduleTemplate
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('renderResponse')
             ->with('AdminModule/Help')
-            ->willReturn($expectedResponse);
+            ->willReturn(
+                $expectedResponse,
+            );
         $this->moduleTemplateFactory
             ->expects(self::once())
             ->method('create')

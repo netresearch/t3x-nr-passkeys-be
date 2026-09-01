@@ -116,15 +116,16 @@ final readonly class EnforcementService
         // are applied automatically by TYPO3's QueryBuilder, which is exactly what we need
         // for be_groups (respects deleted, hidden, starttime, endtime).
         return $queryBuilder
-            ->select(
-                'uid',
-                'passkey_enforcement',
-                'passkey_grace_period_days',
-            )
+            ->select('uid', 'passkey_enforcement', 'passkey_grace_period_days')
             ->from('be_groups')
-            ->where($queryBuilder
+            ->where(
+                $queryBuilder
                     ->expr()
-                    ->in('uid', $queryBuilder->createNamedParameter($groupUids, ArrayParameterType::INTEGER)))
+                    ->in(
+                        'uid',
+                        $queryBuilder->createNamedParameter($groupUids, ArrayParameterType::INTEGER),
+                    ),
+            )
             ->executeQuery()
             ->fetchAllAssociative();
     }

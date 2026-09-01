@@ -107,13 +107,10 @@ final class RecoveryCommand extends Command
             ->getRestrictions()
             ->removeAll();
         $rows = $queryBuilder
-            ->select(
-                'uid',
-                'title',
-                'passkey_enforcement',
-                'passkey_grace_period_days',
+            ->select('uid', 'title', 'passkey_enforcement', 'passkey_grace_period_days')
+            ->from(
+                self::TABLE_GROUPS,
             )
-            ->from(self::TABLE_GROUPS)
             ->where($queryBuilder
                     ->expr()
                     ->eq('deleted', 0))

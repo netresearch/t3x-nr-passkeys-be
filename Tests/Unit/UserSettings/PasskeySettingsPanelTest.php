@@ -140,11 +140,11 @@ final class PasskeySettingsPanelTest extends TestCase
             ->method('countByBeUser')
             ->willReturn(0);
         $this->pageRenderer
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('loadJavaScriptModule')
-            ->with('@netresearch/nr-passkeys-be/PasskeyManagement.js');
+            ->with(
+                '@netresearch/nr-passkeys-be/PasskeyManagement.js',
+            );
         $this->subject->render([]);
     }
 

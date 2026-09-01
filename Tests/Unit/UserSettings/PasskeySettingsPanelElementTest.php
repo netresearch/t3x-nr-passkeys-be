@@ -47,18 +47,18 @@ final class PasskeySettingsPanelElementTest extends TestCase
         $this->pageRenderer = $this->createMock(PageRenderer::class);
         $this->uriBuilder = $this->createMock(UriBuilder::class);
         $this->uriBuilder
-            ->method(
-                'buildUriFromRoute',
-            )
-            ->willReturnCallback(static fn(string $routeName): Uri => new Uri('/typo3/ajax/passkeys/' . $routeName . '?token=test'));
+            ->method('buildUriFromRoute')
+            ->willReturnCallback(
+                static fn(string $routeName): Uri => new Uri('/typo3/ajax/passkeys/' . $routeName . '?token=test'),
+            );
         $this->panel = new PasskeySettingsPanel();
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 64);
         $languageService = $this->createMock(LanguageService::class);
         $languageService
-            ->method(
-                'sL',
-            )
-            ->willReturnCallback(static fn(string $key): string => \basename(\str_replace(':', '/', $key)));
+            ->method('sL')
+            ->willReturnCallback(
+                static fn(string $key): string => \basename(\str_replace(':', '/', $key)),
+            );
         $GLOBALS['LANG'] = $languageService;
     }
 
@@ -142,11 +142,11 @@ final class PasskeySettingsPanelElementTest extends TestCase
             ->method('countByBeUser')
             ->willReturn(0);
         $this->pageRenderer
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('loadJavaScriptModule')
-            ->with('@netresearch/nr-passkeys-be/PasskeyManagement.js');
+            ->with(
+                '@netresearch/nr-passkeys-be/PasskeyManagement.js',
+            );
         $this
             ->createSubject()
             ->render();

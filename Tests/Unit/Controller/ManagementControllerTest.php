@@ -87,19 +87,21 @@ final class ManagementControllerTest extends TestCase
         $user = PublicKeyCredentialUserEntity::create(name: 'admin', id: 'user-handle', displayName: 'Admin User');
         $options = PublicKeyCredentialCreationOptions::create(rp: $rp, user: $user, challenge: \random_bytes(32));
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('createRegistrationOptions')
-            ->with(42, 'admin', 'Admin User')
+            ->with(
+                42,
+                'admin',
+                'Admin User',
+            )
             ->willReturn(new RegistrationOptions(options: $options, challengeToken: 'ct_reg_abc'));
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('serializeCreationOptions')
             ->with($options)
-            ->willReturn('{"rp":{"name":"TYPO3"},"challenge":"xyz"}');
+            ->willReturn(
+                '{"rp":{"name":"TYPO3"},"challenge":"xyz"}',
+            );
         $response = $this->subject->registrationOptionsAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -151,12 +153,12 @@ final class ManagementControllerTest extends TestCase
             ->willReturn($sourceMock);
         $storedCredential = new Credential(uid: 99, beUser: 42, label: 'My YubiKey');
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('storeCredential')
             ->with($sourceMock, 42, 'My YubiKey')
-            ->willReturn($storedCredential);
+            ->willReturn(
+                $storedCredential,
+            );
         $response = $this->subject->registrationVerifyAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -173,12 +175,12 @@ final class ManagementControllerTest extends TestCase
         $cred1 = new Credential(uid: 10, beUser: 42, label: 'Key 1', createdAt: 1700000000);
         $cred2 = new Credential(uid: 11, beUser: 42, label: 'Key 2', createdAt: 1700001000);
         $this->credentialRepository
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findByBeUser')
             ->with(42)
-            ->willReturn([$cred1, $cred2]);
+            ->willReturn(
+                [$cred1, $cred2],
+            );
         $response = $this->subject->listAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -196,12 +198,12 @@ final class ManagementControllerTest extends TestCase
         $request = $this->createJsonRequest(['uid' => 10, 'label' => 'Renamed Key']);
         $cred = new Credential(uid: 10, beUser: 42, label: 'Old Name');
         $this->credentialRepository
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(10, 42)
-            ->willReturn($cred);
+            ->willReturn(
+                $cred,
+            );
         $this->credentialRepository
             ->expects(self::once())
             ->method('updateLabel')
@@ -220,12 +222,12 @@ final class ManagementControllerTest extends TestCase
 
         // User owns credential 10, not 999
         $this->credentialRepository
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(999, 42)
-            ->willReturn(null);
+            ->willReturn(
+                null,
+            );
         $this->credentialRepository
             ->expects(self::never())
             ->method('updateLabel');
@@ -242,12 +244,12 @@ final class ManagementControllerTest extends TestCase
         $request = $this->createJsonRequest(['uid' => 10]);
         $cred1 = new Credential(uid: 10, beUser: 42, label: 'Key 1');
         $this->credentialRepository
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(10, 42)
-            ->willReturn($cred1);
+            ->willReturn(
+                $cred1,
+            );
         $this->credentialRepository
             ->expects(self::once())
             ->method('countByBeUser')
@@ -305,12 +307,12 @@ final class ManagementControllerTest extends TestCase
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest(['uid' => 999]);
         $this->credentialRepository
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(999, 42)
-            ->willReturn(null);
+            ->willReturn(
+                null,
+            );
         $this->credentialRepository
             ->expects(self::never())
             ->method('delete');
@@ -365,11 +367,11 @@ final class ManagementControllerTest extends TestCase
             ],
         );
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('verifyRegistrationResponse')
-            ->willThrowException(new RuntimeException('Verification failed', 1700000022));
+            ->willThrowException(
+                new RuntimeException('Verification failed', 1700000022),
+            );
         $this->logger
             ->expects(self::once())
             ->method('error')
@@ -386,17 +388,18 @@ final class ManagementControllerTest extends TestCase
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('createRegistrationOptions')
-            ->willThrowException(new RuntimeException('Internal failure'));
+            ->willThrowException(
+                new RuntimeException('Internal failure'),
+            );
         $this->logger
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('error')
-            ->with('Failed to generate registration options', self::anything());
+            ->with(
+                'Failed to generate registration options',
+                self::anything(),
+            );
         $response = $this->subject->registrationOptionsAction($request);
         self::assertSame(500, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -510,12 +513,12 @@ final class ManagementControllerTest extends TestCase
             ->willReturn($sourceMock);
         $storedCredential = new Credential(uid: 99, beUser: 42, label: 'Passkey');
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('storeCredential')
             ->with($sourceMock, 42, 'Passkey')
-            ->willReturn($storedCredential);
+            ->willReturn(
+                $storedCredential,
+            );
         $response = $this->subject->registrationVerifyAction($request);
         self::assertSame(200, $response->getStatusCode());
     }
@@ -585,11 +588,15 @@ final class ManagementControllerTest extends TestCase
         );
         $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('verifyRegistrationResponse')
-            ->with(self::isType('string'), 'ct_reg_abc', 42, 'admin', 'admin')
+            ->with(
+                self::isType('string'),
+                'ct_reg_abc',
+                42,
+                'admin',
+                'admin',
+            )
             ->willReturn($sourceMock);
         $storedCredential = new Credential(uid: 99, beUser: 42, label: 'My Key');
         $this->webAuthnService
@@ -605,12 +612,12 @@ final class ManagementControllerTest extends TestCase
         $this->setUpAuthenticatedUser(42, 'admin', '');
         $request = $this->createJsonRequest([]);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('createRegistrationOptions')
             ->with(42, 'admin', 'admin')
-            ->willThrowException(new RuntimeException('test'));
+            ->willThrowException(
+                new RuntimeException('test'),
+            );
         $response = $this->subject->registrationOptionsAction($request);
         self::assertSame(500, $response->getStatusCode());
     }
@@ -631,12 +638,12 @@ final class ManagementControllerTest extends TestCase
             ->willReturn($sourceMock);
         $storedCredential = new Credential(uid: 99, beUser: 42, label: 'Passkey');
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('storeCredential')
             ->with($sourceMock, 42, 'Passkey')
-            ->willReturn($storedCredential);
+            ->willReturn(
+                $storedCredential,
+            );
         $response = $this->subject->registrationVerifyAction($request);
         self::assertSame(200, $response->getStatusCode());
     }
@@ -660,12 +667,12 @@ final class ManagementControllerTest extends TestCase
         $expectedLabel = \str_repeat('A', 128);
         $storedCredential = new Credential(uid: 99, beUser: 42, label: $expectedLabel);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('storeCredential')
             ->with($sourceMock, 42, $expectedLabel)
-            ->willReturn($storedCredential);
+            ->willReturn(
+                $storedCredential,
+            );
         $response = $this->subject->registrationVerifyAction($request);
         self::assertSame(200, $response->getStatusCode());
     }
@@ -749,11 +756,11 @@ final class ManagementControllerTest extends TestCase
             hasPasskeys: false,
         );
         $this->enforcementService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('getStatus')
-            ->with(['uid' => 42, 'username' => 'admin', 'realName' => 'Admin User'])
+            ->with(
+                ['uid' => 42, 'username' => 'admin', 'realName' => 'Admin User'],
+            )
             ->willReturn($status);
         $response = $this->subject->enforcementStatusAction($request);
         self::assertSame(200, $response->getStatusCode());
@@ -986,11 +993,11 @@ final class ManagementControllerTest extends TestCase
             ->method('verifyRegistrationResponse')
             ->willReturn($sourceMock);
         $this->webAuthnService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('storeCredential')
-            ->willReturn(new Credential(uid: 99, beUser: 42, label: 'Passkey'));
+            ->willReturn(
+                new Credential(uid: 99, beUser: 42, label: 'Passkey'),
+            );
         $response = $this->subject->registrationVerifyAction(
             $this->createJsonRequest(['credential' => ['id' => 'cred-xyz'], 'challengeToken' => 'ct_reg_abc']),
         );

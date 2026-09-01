@@ -611,18 +611,23 @@ final class PasskeySetupInterstitialTest extends TestCase
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
         $backendUser
-            ->method(
-                'getSessionData',
-            )
+            ->method('getSessionData')
             ->with('tx_nrpasskeysbe')
-            ->willReturn(['enforcement_ok_at' => \time() - 3600]);
+            ->willReturn(
+                ['enforcement_ok_at' => \time() - 3600],
+            );
         $GLOBALS['BE_USER'] = $backendUser;
         $this->enforcementService
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('getStatus')
-            ->willReturn(new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: true));
+            ->willReturn(
+                new EnforcementStatus(
+                    level: EnforcementLevel::Off,
+                    gracePeriodDays: 0,
+                    gracePeriodStart: 0,
+                    hasPasskeys: true,
+                ),
+            );
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
         $handler
@@ -671,11 +676,12 @@ final class PasskeySetupInterstitialTest extends TestCase
             ->with('tx_nrpasskeysbe')
             ->willReturn(['skip_nonce' => $nonce]);
         $backendUser
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('setAndSaveSessionData')
-            ->with('tx_nrpasskeysbe', ['setup_skipped' => true]);
+            ->with(
+                'tx_nrpasskeysbe',
+                ['setup_skipped' => true],
+            );
         $GLOBALS['BE_USER'] = $backendUser;
         $request = $this->createMockRequest('main', 'POST', ['passkey_setup_skip' => '1', 'passkey_setup_nonce' => $nonce]);
         $handler = $this->createMockHandler();

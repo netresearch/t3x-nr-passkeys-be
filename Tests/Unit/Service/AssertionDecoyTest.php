@@ -82,10 +82,10 @@ final class AssertionDecoyTest extends TestCase
             ->method('getEffectiveRpId')
             ->willReturn('example.com');
         $configService
-            ->method(
-                'getConfiguration',
-            )
-            ->willReturn(new ExtensionConfiguration(rpId: 'example.com', userVerification: 'preferred'));
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(rpId: 'example.com', userVerification: 'preferred'),
+            );
         $challengeService = $this->createMock(ChallengeService::class);
         $challengeService
             ->method('generateChallenge')

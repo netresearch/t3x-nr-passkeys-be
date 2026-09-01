@@ -65,9 +65,11 @@ final readonly class CredentialRepository
             ->from(self::TABLE)
             ->where(
                 $queryBuilder
-                    ->expr(
-                    )
-                    ->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
+                    ->expr()
+                    ->eq(
+                        'be_user',
+                        $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER),
+                    ),
                 $queryBuilder
                     ->expr()
                     ->eq('deleted', 0),
@@ -162,9 +164,11 @@ final readonly class CredentialRepository
             ->from(self::TABLE)
             ->where(
                 $queryBuilder
-                    ->expr(
-                    )
-                    ->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
+                    ->expr()
+                    ->eq(
+                        'be_user',
+                        $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER),
+                    ),
                 $queryBuilder
                     ->expr()
                     ->eq('deleted', 0),
@@ -189,9 +193,11 @@ final readonly class CredentialRepository
             ->from(self::TABLE)
             ->where(
                 $queryBuilder
-                    ->expr(
-                    )
-                    ->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
+                    ->expr()
+                    ->eq(
+                        'be_user',
+                        $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER),
+                    ),
                 $queryBuilder
                     ->expr()
                     ->eq('deleted', 0),
@@ -214,9 +220,11 @@ final readonly class CredentialRepository
                     ->expr()
                     ->eq('uid', $queryBuilder->createNamedParameter($uid, ParameterType::INTEGER)),
                 $queryBuilder
-                    ->expr(
-                    )
-                    ->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
+                    ->expr()
+                    ->eq(
+                        'be_user',
+                        $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER),
+                    ),
                 $queryBuilder
                     ->expr()
                     ->eq('deleted', 0),

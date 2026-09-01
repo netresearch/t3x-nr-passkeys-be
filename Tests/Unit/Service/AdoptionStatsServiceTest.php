@@ -380,10 +380,15 @@ final class AdoptionStatsServiceTest extends TestCase
                 },
             );
         $this->enforcementService
-            ->method(
-                'getStatus',
-            )
-            ->willReturn(new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false));
+            ->method('getStatus')
+            ->willReturn(
+                new EnforcementStatus(
+                    level: EnforcementLevel::Off,
+                    gracePeriodDays: 0,
+                    gracePeriodStart: 0,
+                    hasPasskeys: false,
+                ),
+            );
         $stats = $this->subject->getStats();
 
         // Group 1 should count only users with matching usergroup (empty strings skipped)
@@ -401,12 +406,12 @@ final class AdoptionStatsServiceTest extends TestCase
     public function countTotalActiveUsersReturnsAggregateCount(): void
     {
         $this->connectionPool
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('getQueryBuilderForTable')
             ->with('be_users')
-            ->willReturn($this->createCountQueryBuilder(7));
+            ->willReturn(
+                $this->createCountQueryBuilder(7),
+            );
         self::assertSame(7, $this->subject->countTotalActiveUsers());
     }
 
@@ -414,11 +419,11 @@ final class AdoptionStatsServiceTest extends TestCase
     public function countUsersWithPasskeysReturnsAggregateCount(): void
     {
         $this->connectionPool
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('getQueryBuilderForTable')
-            ->with('tx_nrpasskeysbe_credential')
+            ->with(
+                'tx_nrpasskeysbe_credential',
+            )
             ->willReturn($this->createSelectLiteralQueryBuilder(4));
         self::assertSame(4, $this->subject->countUsersWithPasskeys());
     }
@@ -427,11 +432,11 @@ final class AdoptionStatsServiceTest extends TestCase
     public function countActiveCredentialsReturnsAggregateCount(): void
     {
         $this->connectionPool
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('getQueryBuilderForTable')
-            ->with('tx_nrpasskeysbe_credential')
+            ->with(
+                'tx_nrpasskeysbe_credential',
+            )
             ->willReturn($this->createCountQueryBuilder(11));
         self::assertSame(11, $this->subject->countActiveCredentials());
     }
@@ -571,10 +576,10 @@ final class AdoptionStatsServiceTest extends TestCase
             ->method('createNamedParameter')
             ->willReturn("'mocked'");
         $queryBuilder
-            ->method(
-                'quoteIdentifier',
-            )
-            ->willReturnCallback(static fn(string $identifier): string => '`' . $identifier . '`');
+            ->method('quoteIdentifier')
+            ->willReturnCallback(
+                static fn(string $identifier): string => '`' . $identifier . '`',
+            );
 
         return $queryBuilder;
     }

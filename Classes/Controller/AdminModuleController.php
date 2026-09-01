@@ -152,11 +152,11 @@ final class AdminModuleController
         $menu = $this->createMenu($menuRegistry);
         $menu->setIdentifier('PasskeyManagementMenu');
         $dashboardItem = $this
-            ->createMenuItem(
-                $menu,
-            )
+            ->createMenuItem($menu)
             ->setTitle($this->translate('module.dashboard', 'Dashboard'))
-            ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys'));
+            ->setHref(
+                (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys'),
+            );
 
         if ($activeTab === 'dashboard') {
             $dashboardItem->setActive(true);
@@ -164,11 +164,11 @@ final class AdminModuleController
 
         $menu->addMenuItem($dashboardItem);
         $helpItem = $this
-            ->createMenuItem(
-                $menu,
-            )
+            ->createMenuItem($menu)
             ->setTitle($this->translate('module.help', 'Help'))
-            ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'));
+            ->setHref(
+                (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'),
+            );
 
         if ($activeTab === 'help') {
             $helpItem->setActive(true);
@@ -254,10 +254,10 @@ final class AdminModuleController
             ->getDocHeaderComponent()
             ->getButtonBar();
         $helpButton = $this
-            ->createLinkButton(
-                $buttonBar,
+            ->createLinkButton($buttonBar)
+            ->setHref(
+                (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'),
             )
-            ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'))
             ->setTitle($this->translate('module.help', 'Help'))
             ->setIcon(
                 $this->iconFactory->getIcon(

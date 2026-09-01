@@ -172,12 +172,12 @@ final class EnforcementServiceTest extends TestCase
                 ['uid' => 42],
             );
         $this->connectionPool
-            ->expects(
-                self::once(),
-            )
+            ->expects(self::once())
             ->method('getConnectionForTable')
             ->with('be_users')
-            ->willReturn($connection);
+            ->willReturn(
+                $connection,
+            );
         $this->subject->startGracePeriod(42);
     }
 
@@ -243,10 +243,10 @@ final class EnforcementServiceTest extends TestCase
             ->method('expr')
             ->willReturn($expressionBuilder);
         $queryBuilder
-            ->method(
-                'createNamedParameter',
-            )
-            ->willReturnCallback(static fn(mixed $value): string => \is_array($value) ? \implode(',', $value) : (string) $value);
+            ->method('createNamedParameter')
+            ->willReturnCallback(
+                static fn(mixed $value): string => \is_array($value) ? \implode(',', $value) : (string) $value,
+            );
         $queryBuilder
             ->method('executeQuery')
             ->willReturn($result);

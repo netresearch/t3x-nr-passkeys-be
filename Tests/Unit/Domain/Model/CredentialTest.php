@@ -451,17 +451,11 @@ final class CredentialTest extends TestCase
         // authenticator that stayed silent must not be reported as limited.
         $unknown = (new Credential(uid: 1, label: 'Test'))->toCredentialInfo();
         self::assertNull($unknown->jsonSerialize()['discoverable']);
-        $yes = (new Credential(
-            uid: 2,
-            discoverable: CredentialDiscoverability::Discoverable,
-            label: 'Test',
-        ))->toCredentialInfo();
+        $yes = (new Credential(uid: 2, discoverable: CredentialDiscoverability::Discoverable, label: 'Test'))->toCredentialInfo(
+        );
         self::assertTrue($yes->jsonSerialize()['discoverable']);
-        $no = (new Credential(
-            uid: 3,
-            discoverable: CredentialDiscoverability::NotDiscoverable,
-            label: 'Test',
-        ))->toCredentialInfo();
+        $no = (new Credential(uid: 3, discoverable: CredentialDiscoverability::NotDiscoverable, label: 'Test'))->toCredentialInfo(
+        );
         self::assertFalse($no->jsonSerialize()['discoverable']);
     }
 

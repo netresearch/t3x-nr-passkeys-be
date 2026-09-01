@@ -92,9 +92,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         $this
-            ->getLogger(
-            )
-            ->info('Passkey login attempt', ['username' => $username, 'assertion_length' => \strlen($payload['assertion'])]);
+            ->getLogger()
+            ->info(
+                'Passkey login attempt',
+                ['username' => $username, 'assertion_length' => \strlen($payload['assertion'])],
+            );
 
         if ($username === '') {
             // Discoverable login is an operator-gated feature. Enforce the flag on the
@@ -130,9 +132,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
             if (!\is_array($user)) {
                 $this
-                    ->getLogger(
-                    )
-                    ->info('Discoverable login: user not found for resolved UID', ['be_user_uid' => $beUserUid]);
+                    ->getLogger()
+                    ->info(
+                        'Discoverable login: user not found for resolved UID',
+                        ['be_user_uid' => $beUserUid],
+                    );
 
                 return false;
             }
@@ -146,9 +150,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         if (!\is_array($user)) {
             // Don't reveal whether user exists
             $this
-                ->getLogger(
-                )
-                ->info('Passkey login attempt for unknown user', ['username_hash' => \hash('sha256', $username)]);
+                ->getLogger()
+                ->info(
+                    'Passkey login attempt for unknown user',
+                    ['username_hash' => \hash('sha256', $username)],
+                );
 
             return false;
         }
@@ -195,9 +201,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
                     if ($uid > 0 && $this->hasRegisteredPasskeys($uid)) {
                         $this
-                            ->getLogger(
-                            )
-                            ->warning('Password login blocked for user with registered passkeys', ['be_user_uid' => $uid]);
+                            ->getLogger()
+                            ->warning(
+                                'Password login blocked for user with registered passkeys',
+                                ['be_user_uid' => $uid],
+                            );
 
                         return 0;
                     }
@@ -212,18 +220,22 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 if ($status->hasPasskeys) {
                     if ($status->level === EnforcementLevel::Enforced) {
                         $this
-                            ->getLogger(
-                            )
-                            ->warning('Password login blocked by group enforcement', ['username' => $user['username'] ?? '']);
+                            ->getLogger()
+                            ->warning(
+                                'Password login blocked by group enforcement',
+                                ['username' => $user['username'] ?? ''],
+                            );
 
                         return 0;
                     }
 
                     if ($status->level === EnforcementLevel::Required && $status->isGracePeriodExpired()) {
                         $this
-                            ->getLogger(
-                            )
-                            ->warning('Password login blocked: grace period expired', ['username' => $user['username'] ?? '']);
+                            ->getLogger()
+                            ->warning(
+                                'Password login blocked: grace period expired',
+                                ['username' => $user['username'] ?? ''],
+                            );
 
                         return 0;
                     }
@@ -437,11 +449,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         try {
-            $value = GeneralUtility::makeInstance(
-                CacheManager::class,
-            )
+            $value = GeneralUtility::makeInstance(CacheManager::class)
                 ->getCache('nr_passkeys_be_nonce')
-                ->get('passkey_login_' . $token);
+                ->get(
+                    'passkey_login_' . $token,
+                );
         } catch (Throwable $e) {
             $this
                 ->getLogger()
@@ -490,11 +502,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         try {
-            GeneralUtility::makeInstance(
-                CacheManager::class,
-            )
+            GeneralUtility::makeInstance(CacheManager::class)
                 ->getCache('nr_passkeys_be_nonce')
-                ->remove('passkey_login_' . $token);
+                ->remove(
+                    'passkey_login_' . $token,
+                );
         } catch (Throwable) {
             // Cleanup failure is non-critical: the expiresAt in the token value is
             // still enforced on every redemption attempt.
@@ -567,9 +579,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             ->from('tx_nrpasskeysbe_credential')
             ->where(
                 $queryBuilder
-                    ->expr(
-                    )
-                    ->eq('be_user', $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER)),
+                    ->expr()
+                    ->eq(
+                        'be_user',
+                        $queryBuilder->createNamedParameter($beUserUid, ParameterType::INTEGER),
+                    ),
                 $queryBuilder
                     ->expr()
                     ->eq('deleted', 0),
