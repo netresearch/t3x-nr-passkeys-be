@@ -53,6 +53,7 @@ final readonly class AdoptionStatsService
         // The query fetches one extra row past the cap so we can tell the UI the
         // list was truncated rather than silently showing only the first N (ADMIN-4).
         $truncated = \count($usersWithoutPasskeys) > self::USERS_WITHOUT_PASSKEYS_LIMIT;
+
         if ($truncated) {
             $usersWithoutPasskeys = \array_slice($usersWithoutPasskeys, 0, self::USERS_WITHOUT_PASSKEYS_LIMIT);
         }

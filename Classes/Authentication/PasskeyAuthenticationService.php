@@ -69,8 +69,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         // authUser() run on DIFFERENT service instances, so each resolves the
         // token independently; it is consumed only in authUser().
         $tokenUid = $this->resolvePasskeyToken();
+
         if ($tokenUid > 0) {
             $user = $this->fetchUserByUid($tokenUid);
+
             if (\is_array($user)) {
                 $this->getLogger()->info('Passkey token login', ['be_user_uid' => $tokenUid]);
 
@@ -81,6 +83,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         $payload = $this->getPasskeyPayload();
+
         if ($payload === null) {
             // Not a passkey login - let other services handle it
             return false;
@@ -97,23 +100,31 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             // (LoginController::optionsAction). A challenge token carries no mode binding,
             // so a token from the username-first flow must not be replayable through the
             // discoverable code path when the operator disabled it.
-            if (!$this->getExtensionConfigService()->getConfiguration()->isDiscoverableLoginEnabled()) {
+            if (!$this
+                ->getExtensionConfigService()
+                ->getConfiguration()
+                ->isDiscoverableLoginEnabled()) {
                 $this->getLogger()->info('Discoverable login attempted while disabled');
+
                 return false;
             }
 
             // Discoverable login: resolve user from credential ID in the assertion
             $beUserUid = $this->getWebAuthnService()->findBeUserUidFromAssertion($payload['assertion']);
+
             if ($beUserUid === null) {
                 $this->getLogger()->info('Discoverable login: could not resolve user from assertion');
+
                 return false;
             }
 
             $user = $this->fetchUserByUid($beUserUid);
+
             if (!\is_array($user)) {
                 $this->getLogger()->info('Discoverable login: user not found for resolved UID', [
                     'be_user_uid' => $beUserUid,
                 ]);
+
                 return false;
             }
 
@@ -122,11 +133,13 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         // Look up the user by username
         $user = $this->fetchUserRecord($username);
+
         if (!\is_array($user)) {
             // Don't reveal whether user exists
             $this->getLogger()->info('Passkey login attempt for unknown user', [
                 'username_hash' => \hash('sha256', $username),
             ]);
+
             return false;
         }
 
@@ -142,6 +155,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         // Runs before getPasskeyPayload() because a passkey_token payload is not
         // a raw-assertion payload and must not fall through to the password path.
         $tokenUid = $this->resolvePasskeyToken();
+
         if ($tokenUid > 0 && $tokenUid === (\is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
             $this->consumePasskeyToken();
             $this->markSessionAsPasskeyAuthenticated($user);
@@ -153,6 +167,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         $payload = $this->getPasskeyPayload();
+
         if ($payload === null) {
             // Not a passkey login attempt - check per-user/per-group enforcement.
             //
@@ -162,8 +177,12 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             // to the password service (return 100). Legitimate blocks are explicit
             // `return 0` statements that are not affected by the catch.
             try {
-                if ($this->getExtensionConfigService()->getConfiguration()->isDisablePasswordLogin()) {
+                if ($this
+                    ->getExtensionConfigService()
+                    ->getConfiguration()
+                    ->isDisablePasswordLogin()) {
                     $uid = \is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
+
                     if ($uid > 0 && $this->hasRegisteredPasskeys($uid)) {
                         $this->getLogger()->warning('Password login blocked for user with registered passkeys', [
                             'be_user_uid' => $uid,
@@ -176,6 +195,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 // Per-group enforcement: block password login when the user's group demands passkeys
                 /** @var array<string, mixed> $user TYPO3 backend user record from AbstractAuthenticationService */
                 $status = $this->getEnforcementService()->getStatus($user);
+
                 if ($status->hasPasskeys) {
                     if ($status->level === EnforcementLevel::Enforced) {
                         $this->getLogger()->warning('Password login blocked by group enforcement', [
@@ -267,6 +287,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         $rawUident = $this->login['uident'] ?? '';
         $uident = \is_string($rawUident) ? $rawUident : '';
+
         if ($uident === '' || $uident[0] !== '{') {
             return null;
         }
@@ -286,6 +307,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         if (!\is_array($assertion) || !\is_string($challengeToken) || $challengeToken === '') {
             $this->getLogger()->warning('Passkey payload has invalid structure');
+
             return null;
         }
 
@@ -316,7 +338,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         // Setting the 'mfa' session key satisfies the check in
         // AbstractUserAuthentication::evaluateMfaRequirements() and skips the
         // MfaRequiredException path. Password logins are unaffected.
-        if ($this->getExtensionConfigService()->getConfiguration()->isSkipMfaOnPasskeyAuth()) {
+        if ($this
+            ->getExtensionConfigService()
+            ->getConfiguration()
+            ->isSkipMfaOnPasskeyAuth()) {
             $this->pObj->setAndSaveSessionData('mfa', true);
             $this->getLogger()->info('Passkey auth satisfied MFA requirement (skipping TYPO3 MFA challenge)', [
                 'be_user_uid' => $user['uid'] ?? null,
@@ -341,11 +366,13 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     private function resolvePasskeyToken(): int
     {
         $value = $this->fetchLoginTokenValue();
+
         if ($value === null) {
             return 0;
         }
 
         $payload = $this->decodeLoginTokenPayload($value);
+
         if ($payload === null || \time() > $payload['expiresAt']) {
             $this->getLogger()->warning('Passkey login token rejected', [
                 'reason' => $payload === null ? 'unusable_payload' : 'expired',
@@ -366,6 +393,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     private function fetchLoginTokenValue(): ?string
     {
         $token = $this->extractLoginToken();
+
         if ($token === '') {
             return null;
         }
@@ -416,6 +444,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     private function consumePasskeyToken(): void
     {
         $token = $this->extractLoginToken();
+
         if ($token === '') {
             return;
         }
@@ -563,8 +592,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     private function getRemoteAddress(): string
     {
         $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
+
         if ($request instanceof ServerRequestInterface) {
             $params = $request->getAttribute('normalizedParams');
+
             if ($params instanceof NormalizedParams) {
                 return $params->getRemoteAddress();
             }

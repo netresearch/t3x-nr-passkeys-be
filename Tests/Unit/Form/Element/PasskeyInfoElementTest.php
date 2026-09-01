@@ -438,6 +438,7 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $subject = new PasskeyInfoElement($this->credentialRepository);
         $subject->setData($data);
+
         return $subject;
     }
 
@@ -485,6 +486,7 @@ final class PasskeyInfoElementTest extends TestCase
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.never' => 'Never',
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.cancel' => 'Cancel',
                 ];
+
                 return $map[$key] ?? $key;
             },
         );

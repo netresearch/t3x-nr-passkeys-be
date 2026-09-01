@@ -25,8 +25,10 @@ trait TranslationTrait
     private function translate(string $key, string $fallback): string
     {
         $lang = $GLOBALS['LANG'] ?? null;
+
         if ($lang instanceof LanguageService) {
             $translated = $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:' . $key);
+
             if ($translated !== '') {
                 return $translated;
             }

@@ -152,11 +152,13 @@ final class AdminModuleControllerTest extends TestCase
             ->willReturn($stats);
 
         $moduleTemplate = $this->createModuleTemplateMock();
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('setTitle')
             ->with('Passkey Management');
 
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('assignMultiple')
             ->with(self::callback(static fn(array $variables): bool => $variables['totalUsers'] === 10
                 && $variables['usersWithPasskeys'] === 6
@@ -173,7 +175,8 @@ final class AdminModuleControllerTest extends TestCase
                 && \array_key_exists('isNewInstallation', $variables)));
 
         $expectedResponse = new HtmlResponse('<html></html>');
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('renderResponse')
             ->with('AdminModule/Dashboard')
             ->willReturn($expectedResponse);
@@ -239,6 +242,7 @@ final class AdminModuleControllerTest extends TestCase
         $moduleTemplate->method('assignMultiple')
             ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
                 $capturedVariables = $vars;
+
                 return $moduleTemplate;
             });
         $moduleTemplate->method('renderResponse')
@@ -281,17 +285,20 @@ final class AdminModuleControllerTest extends TestCase
     public function helpActionRendersHelpTemplate(): void
     {
         $moduleTemplate = $this->createModuleTemplateMock();
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('setTitle')
             ->with('Passkey Management – Help');
 
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('assignMultiple')
             ->with(self::callback(static fn(array $vars): bool => \array_key_exists('dashboardUrl', $vars)))
             ->willReturnSelf();
 
         $expectedResponse = new HtmlResponse('<html></html>');
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('renderResponse')
             ->with('AdminModule/Help')
             ->willReturn($expectedResponse);
@@ -327,6 +334,7 @@ final class AdminModuleControllerTest extends TestCase
         $moduleTemplate->method('assignMultiple')
             ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
                 $capturedVariables = $vars;
+
                 return $moduleTemplate;
             });
         $moduleTemplate->method('renderResponse')
@@ -361,6 +369,7 @@ final class AdminModuleControllerTest extends TestCase
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.required' => 'Erforderlich',
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.enforced' => 'Erzwungen',
                 ];
+
                 return $map[$key] ?? '';
             },
         );
@@ -383,6 +392,7 @@ final class AdminModuleControllerTest extends TestCase
         $moduleTemplate->method('assignMultiple')
             ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
                 $capturedVariables = $vars;
+
                 return $moduleTemplate;
             });
         $moduleTemplate->method('renderResponse')
@@ -445,6 +455,7 @@ final class AdminModuleControllerTest extends TestCase
         $moduleTemplate->method('assignMultiple')
             ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
                 $capturedVariables = $vars;
+
                 return $moduleTemplate;
             });
         $moduleTemplate->method('renderResponse')

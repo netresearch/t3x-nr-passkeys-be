@@ -36,7 +36,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Domain'))
-            ->shouldNot()->dependOn()
+            ->shouldNot()
+            ->dependOn()
             ->classes(
                 Selector::inNamespace(self::NS . 'Controller'),
                 Selector::inNamespace(self::NS . 'Middleware'),
@@ -53,7 +54,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Configuration'))
-            ->shouldNot()->dependOn()
+            ->shouldNot()
+            ->dependOn()
             ->classes(
                 Selector::inNamespace(self::NS . 'Service'),
                 Selector::inNamespace(self::NS . 'Controller'),
@@ -70,7 +72,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Service'))
-            ->shouldNot()->dependOn()
+            ->shouldNot()
+            ->dependOn()
             ->classes(
                 Selector::inNamespace(self::NS . 'Controller'),
                 Selector::inNamespace(self::NS . 'Middleware'),
@@ -85,7 +88,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::classname(self::NS . 'Middleware\\PublicRouteResolver'))
-            ->shouldNot()->dependOn()
+            ->shouldNot()
+            ->dependOn()
             ->classes(
                 Selector::inNamespace(self::NS . 'Service'),
                 Selector::inNamespace(self::NS . 'Domain'),
@@ -99,7 +103,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'EventListener'))
-            ->shouldNot()->dependOn()
+            ->shouldNot()
+            ->dependOn()
             ->classes(
                 Selector::inNamespace(self::NS . 'Controller'),
                 Selector::inNamespace(self::NS . 'Middleware'),
@@ -114,7 +119,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Authentication'))
-            ->shouldNot()->dependOn()
+            ->shouldNot()
+            ->dependOn()
             ->classes(
                 Selector::inNamespace(self::NS . 'Controller'),
                 Selector::inNamespace(self::NS . 'Middleware'),
@@ -129,7 +135,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'UserSettings'))
-            ->shouldNot()->dependOn()
+            ->shouldNot()
+            ->dependOn()
             ->classes(
                 Selector::inNamespace(self::NS . 'Controller'),
                 Selector::inNamespace(self::NS . 'Middleware'),
@@ -143,7 +150,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Form'))
-            ->shouldNot()->dependOn()
+            ->shouldNot()
+            ->dependOn()
             ->classes(
                 Selector::inNamespace(self::NS . 'Controller'),
                 Selector::inNamespace(self::NS . 'Middleware'),
@@ -160,7 +168,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Service'))
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('Services are leaf classes — composition over inheritance');
     }
 
@@ -169,7 +178,8 @@ final class ArchitectureTest
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Controller'))
             ->excluding(Selector::isInterface())
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('Controllers are leaf classes — composition over inheritance');
     }
 
@@ -177,7 +187,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Domain\\Dto'))
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('DTOs are immutable value objects that must not be extended');
     }
 
@@ -185,7 +196,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Domain\\Model'))
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('Domain models are entities that must not be extended');
     }
 
@@ -193,7 +205,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Configuration'))
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('Configuration value objects must not be extended');
     }
 
@@ -201,7 +214,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Middleware'))
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('Middleware is a leaf class — composition over inheritance');
     }
 
@@ -209,7 +223,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'EventListener'))
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('Event listeners are leaf classes — composition over inheritance');
     }
 
@@ -217,7 +232,8 @@ final class ArchitectureTest
     {
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'UserSettings'))
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('UserSettings panel is a leaf class — composition over inheritance');
     }
 
@@ -229,7 +245,8 @@ final class ArchitectureTest
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Authentication'))
             ->excluding(Selector::classname(self::NS . 'Authentication\\PasskeyAuthenticationService'))
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('Authentication classes are leaf classes — composition over inheritance');
     }
 
@@ -240,7 +257,8 @@ final class ArchitectureTest
         return PHPat::rule()
             ->classes(Selector::inNamespace(self::NS . 'Form'))
             ->excluding(Selector::classname(self::NS . 'Form\\Element\\PasskeyInfoElement'))
-            ->should()->beFinal()
+            ->should()
+            ->beFinal()
             ->because('Form classes are leaf classes — composition over inheritance');
     }
 }

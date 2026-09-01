@@ -89,18 +89,21 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
+
         if (!$backendUser instanceof BackendUserAuthentication) {
             return $handler->handle($request);
         }
 
         /** @var array<string, mixed>|null $userRow */
         $userRow = $backendUser->user;
+
         if (!\is_array($userRow)) {
             return $handler->handle($request);
         }
 
         $rawUid = $userRow['uid'] ?? null;
         $uid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+
         if ($uid === 0) {
             return $handler->handle($request);
         }
@@ -130,6 +133,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         // Handle skip POST with CSRF nonce validation
         if ($request->getMethod() === 'POST') {
             $parsedBody = $request->getParsedBody();
+
             if (\is_array($parsedBody) && ($parsedBody['passkey_setup_skip'] ?? '') === '1') {
                 $submittedNonce = $parsedBody['passkey_setup_nonce'] ?? '';
                 $storedNonce = $sessionArray['skip_nonce'] ?? '';
@@ -163,6 +167,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         // suppress the interstitial, so it cannot be permanently suppressed.
         $now = \time();
         $decidedAt = $sessionArray['enforcement_ok_at'] ?? 0;
+
         if (\is_int($decidedAt) && $decidedAt > 0 && ($now - $decidedAt) < self::ENFORCEMENT_CACHE_TTL) {
             return $handler->handle($request);
         }
@@ -230,11 +235,13 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
     {
         // Check route identifier against exempt prefixes
         $route = $request->getAttribute('route');
+
         if (!$route instanceof Route) {
             return true;
         }
 
         $identifier = $route->getOption('_identifier');
+
         if (!\is_string($identifier)) {
             return true;
         }
@@ -269,8 +276,10 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
     private function resolveBackendPath(ServerRequestInterface $request): string
     {
         $normalizedParams = $request->getAttribute('normalizedParams');
+
         if (\is_object($normalizedParams) && \method_exists($normalizedParams, 'getSitePath')) {
             $sitePath = $normalizedParams->getSitePath();
+
             if (\is_string($sitePath) && $sitePath !== '') {
                 return \rtrim($sitePath, '/') . '/typo3/';
             }
@@ -315,6 +324,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         $escapedGraceMessage = \htmlspecialchars($graceMessage, ENT_QUOTES, 'UTF-8');
 
         $skipButton = '';
+
         if ($canSkip) {
             if ($remainingDays > 0) {
                 $skipTemplate = $this->translate('interstitial.button.skipRemaining', 'Skip for now (%d days remaining)');
@@ -336,10 +346,13 @@ HTML;
 
         $htmlLang = 'en';
         $lang = $GLOBALS['LANG'] ?? null;
+
         if ($lang instanceof LanguageService) {
             $locale = $lang->getLocale();
+
             if ($locale instanceof Locale) {
                 $langCode = $locale->getLanguageCode();
+
                 if ($langCode !== '') {
                     $htmlLang = $langCode;
                 }
@@ -486,5 +499,4 @@ HTML;
 
         return new HtmlResponse($html);
     }
-
 }

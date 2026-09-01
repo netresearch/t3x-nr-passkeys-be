@@ -193,6 +193,7 @@ final readonly class LoginController
 
         try {
             $this->rateLimiterService->consumeRateLimit('login_verify', $ip);
+
             if ($username !== '') {
                 $this->rateLimiterService->checkLockout($username, $ip);
             }
@@ -219,6 +220,7 @@ final readonly class LoginController
         // A miss means the authenticator offered a passkey this server does not
         // know — safe to report: no username is involved, so no enumeration oracle.
         $beUserUid = $this->webAuthnService->findBeUserUidFromAssertion($assertion);
+
         if ($beUserUid === null) {
             \usleep(\random_int(50000, 150000));
 
@@ -237,6 +239,7 @@ final readonly class LoginController
     {
         $startedAt = \hrtime(true);
         $beUserUid = $this->findBeUserUid($username);
+
         if ($beUserUid === null) {
             $this->padToTimingBudget($startedAt);
 
@@ -263,6 +266,7 @@ final readonly class LoginController
     private function padToTimingBudget(int $startedAt): void
     {
         $remainingNs = self::TIMING_BUDGET_NS - (\hrtime(true) - $startedAt);
+
         if ($remainingNs > 0) {
             \usleep(\intdiv($remainingNs, 1000));
         }
@@ -385,6 +389,7 @@ final readonly class LoginController
     private function getRemoteAddress(ServerRequestInterface $request): string
     {
         $params = $request->getAttribute('normalizedParams');
+
         if ($params instanceof NormalizedParams) {
             return $params->getRemoteAddress();
         }
@@ -396,5 +401,4 @@ final readonly class LoginController
 
         return NormalizedParams::createFromServerParams($_SERVER, $sysConf)->getRemoteAddress();
     }
-
 }

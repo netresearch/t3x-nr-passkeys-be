@@ -164,6 +164,7 @@ final readonly class AttestationService
         }
 
         $response = $publicKeyCredential->response;
+
         if (!$response instanceof AuthenticatorAttestationResponse) {
             throw new RuntimeException('Expected attestation response', 1700000021);
         }
@@ -183,6 +184,7 @@ final readonly class AttestationService
                 'be_user_uid' => $beUserUid,
                 'error' => $e->getMessage(),
             ]);
+
             throw new RuntimeException(
                 'Registration verification failed: ' . $e->getMessage(),
                 1700000022,
@@ -243,6 +245,7 @@ final readonly class AttestationService
 
         foreach ($algorithms as $algo) {
             $algoId = self::ALGORITHM_MAP[\strtoupper(\trim($algo))] ?? null;
+
             if ($algoId !== null) {
                 $params[] = PublicKeyCredentialParameters::createPk($algoId);
             }

@@ -523,6 +523,7 @@ final class WebAuthnServiceTest extends TestCase
             ->method('save')
             ->with(self::callback(function (Credential $cred) use ($uuid): bool {
                 $transports = $cred->getTransportsArray();
+
                 return $transports === ['usb', 'ble', 'nfc']
                     && $cred->getAaguid() === $uuid->toString();
             }))

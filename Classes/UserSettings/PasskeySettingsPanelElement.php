@@ -59,12 +59,14 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
         $resultArray = $this->initializeResultArray();
 
         $backendUser = $GLOBALS['BE_USER'] ?? null;
+
         if (!$backendUser instanceof BackendUserAuthentication) {
             return $resultArray;
         }
 
         $rawUid = $backendUser->user['uid'] ?? null;
         $userId = \is_numeric($rawUid) ? (int) $rawUid : 0;
+
         if ($userId === 0) {
             return $resultArray;
         }
@@ -74,6 +76,7 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
         $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
             ? $sysConf['encryptionKey']
             : '';
+
         if (\strlen($encryptionKey) < 32) {
             $warning = $this->translate(
                 'manage.warning.encryptionKey',

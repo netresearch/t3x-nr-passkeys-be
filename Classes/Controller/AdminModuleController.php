@@ -66,6 +66,7 @@ final class AdminModuleController
         $stats = $this->adoptionStatsService->getStats();
 
         $groupData = [];
+
         foreach ($stats->groups as $group) {
             $groupData[] = [
                 'uid' => $group->uid,
@@ -79,6 +80,7 @@ final class AdminModuleController
         }
 
         $userData = [];
+
         foreach ($stats->usersWithoutPasskeys as $user) {
             $editUrl = (string) $this->uriBuilder->buildUriFromRoute('record_edit', [
                 'edit[be_users][' . $user->uid . ']' => 'edit',
@@ -154,18 +156,22 @@ final class AdminModuleController
         $menu = $this->createMenu($menuRegistry);
         $menu->setIdentifier('PasskeyManagementMenu');
 
-        $dashboardItem = $this->createMenuItem($menu)
+        $dashboardItem = $this
+            ->createMenuItem($menu)
             ->setTitle($this->translate('module.dashboard', 'Dashboard'))
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys'));
+
         if ($activeTab === 'dashboard') {
             $dashboardItem->setActive(true);
         }
 
         $menu->addMenuItem($dashboardItem);
 
-        $helpItem = $this->createMenuItem($menu)
+        $helpItem = $this
+            ->createMenuItem($menu)
             ->setTitle($this->translate('module.help', 'Help'))
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'));
+
         if ($activeTab === 'help') {
             $helpItem->setActive(true);
         }
@@ -182,6 +188,7 @@ final class AdminModuleController
     private function createMenu(MenuRegistry $menuRegistry): Menu
     {
         $factory = $this->componentFactory();
+
         if ($factory instanceof ComponentFactory) {
             return $factory->createMenu();
         }
@@ -196,6 +203,7 @@ final class AdminModuleController
     private function createMenuItem(Menu $menu): MenuItem
     {
         $factory = $this->componentFactory();
+
         if ($factory instanceof ComponentFactory) {
             return $factory->createMenuItem();
         }
@@ -228,6 +236,7 @@ final class AdminModuleController
     private function getEnforcementLevelOptions(): array
     {
         $options = [];
+
         foreach (EnforcementLevel::cases() as $level) {
             $fallback = match ($level) {
                 EnforcementLevel::Off => 'Off',
@@ -247,7 +256,8 @@ final class AdminModuleController
     private function addHelpButton(ModuleTemplate $moduleTemplate): void
     {
         $buttonBar = $moduleTemplate->getDocHeaderComponent()->getButtonBar();
-        $helpButton = $this->createLinkButton($buttonBar)
+        $helpButton = $this
+            ->createLinkButton($buttonBar)
             ->setHref((string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'))
             ->setTitle($this->translate('module.help', 'Help'))
             ->setIcon($this->iconFactory->getIcon(
@@ -265,6 +275,7 @@ final class AdminModuleController
     private function createLinkButton(ButtonBar $buttonBar): LinkButton
     {
         $factory = $this->componentFactory();
+
         if ($factory instanceof ComponentFactory) {
             return $factory->createLinkButton();
         }

@@ -52,6 +52,7 @@ final readonly class AdminController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -90,6 +91,7 @@ final readonly class AdminController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -110,6 +112,7 @@ final readonly class AdminController
 
         // Verify the credential belongs to the specified user
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $beUserUid);
+
         if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found for this user'], 404);
         }
@@ -134,6 +137,7 @@ final readonly class AdminController
     public function unlockAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -185,11 +189,13 @@ final readonly class AdminController
     public function revokeAllAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
         $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+
         if ($beUserUid instanceof ResponseInterface) {
             return $beUserUid;
         }
@@ -222,6 +228,7 @@ final readonly class AdminController
     public function updateEnforcementAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -239,6 +246,7 @@ final readonly class AdminController
         }
 
         $level = EnforcementLevel::tryFrom($enforcement);
+
         if ($level === null) {
             return new JsonResponse(['error' => 'Invalid enforcement level'], 400);
         }
@@ -288,16 +296,19 @@ final readonly class AdminController
     public function sendReminderAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
         $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+
         if ($beUserUid instanceof ResponseInterface) {
             return $beUserUid;
         }
 
         $row = $this->findActiveBackendUser($beUserUid);
+
         if ($row === null) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
@@ -337,16 +348,19 @@ final readonly class AdminController
     public function clearNudgeAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
         $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+
         if ($beUserUid instanceof ResponseInterface) {
             return $beUserUid;
         }
 
         $row = $this->findActiveBackendUser($beUserUid);
+
         if ($row === null) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }

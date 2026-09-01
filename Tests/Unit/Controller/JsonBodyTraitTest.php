@@ -139,7 +139,8 @@ final class JsonBodyTraitTest extends TestCase
     {
         $request = $this->createMock(ServerRequestInterface::class);
         $request->method('getParsedBody')->willReturn(null);
-        $request->method('getHeaderLine')
+        $request
+            ->method('getHeaderLine')
             ->with('Content-Type')
             ->willReturn('text/plain');
 
@@ -158,7 +159,8 @@ final class JsonBodyTraitTest extends TestCase
 
         $request = $this->createMock(ServerRequestInterface::class);
         $request->method('getParsedBody')->willReturn(null);
-        $request->method('getHeaderLine')
+        $request
+            ->method('getHeaderLine')
             ->with('Content-Type')
             ->willReturn('application/json; charset=utf-8');
 
@@ -180,11 +182,13 @@ final class JsonBodyTraitTest extends TestCase
 
         // Create JSON nested 20 levels deep (exceeds depth limit of 16)
         $nested = '{"a":';
+
         for ($i = 0; $i < 18; $i++) {
             $nested .= '{"a":';
         }
 
         $nested .= '"v"';
+
         for ($i = 0; $i < 19; $i++) {
             $nested .= '}';
         }

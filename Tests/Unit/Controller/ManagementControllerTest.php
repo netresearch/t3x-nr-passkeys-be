@@ -153,6 +153,7 @@ final class ManagementControllerTest extends TestCase
             ->with(
                 self::callback(static function (string $json): bool {
                     $decoded = \json_decode($json, true);
+
                     return $decoded['id'] === 'cred-xyz';
                 }),
                 'ct_reg_abc',
@@ -1201,7 +1202,6 @@ final class ManagementControllerTest extends TestCase
         return $request;
     }
 
-
     /**
      * Decode a PSR-7 response body as JSON.
      *
@@ -1212,6 +1212,7 @@ final class ManagementControllerTest extends TestCase
         $body = (string) $response->getBody();
         $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         \assert(\is_array($decoded));
+
         return $decoded;
     }
 }

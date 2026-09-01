@@ -94,6 +94,7 @@ final class AjaxRoutesTest extends TestCase
     public function everyPostRouteRequiresSudoMode(): void
     {
         $missing = [];
+
         foreach ($this->routes() as $identifier => $route) {
             if (!\is_array($route)) {
                 continue;

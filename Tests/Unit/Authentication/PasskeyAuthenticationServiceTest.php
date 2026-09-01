@@ -153,7 +153,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     private function stubTokenCache(string $token, string|false $value): FrontendInterface&MockObject
     {
         $cache = $this->createMock(FrontendInterface::class);
-        $cache->method('get')->with('passkey_login_' . $token)->willReturn($value);
+        $cache
+            ->method('get')
+            ->with('passkey_login_' . $token)
+            ->willReturn($value);
         $cacheManager = $this->createStub(CacheManager::class);
         $cacheManager->method('getCache')->willReturn($cache);
         GeneralUtility::setSingletonInstance(CacheManager::class, $cacheManager);
@@ -185,7 +188,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     public function authUserRejectsExpiredLoginTokenEvenWhenTheCacheStillReturnsIt(): void
     {
         $cache = $this->stubTokenCache('tok123', $this->buildTokenValue(42, -1));
-        $cache->expects(self::atLeastOnce())->method('remove')->with('passkey_login_tok123');
+        $cache
+            ->expects(self::atLeastOnce())
+            ->method('remove')
+            ->with('passkey_login_tok123');
 
         $this->subject->login = [
             'uname' => '',
@@ -202,7 +208,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         // The pre-fix format: a bare uid with no expiry information.
         $cache = $this->stubTokenCache('tok123', '42');
-        $cache->expects(self::atLeastOnce())->method('remove')->with('passkey_login_tok123');
+        $cache
+            ->expects(self::atLeastOnce())
+            ->method('remove')
+            ->with('passkey_login_tok123');
 
         $this->subject->login = [
             'uname' => '',
@@ -928,7 +937,8 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function getUserWithExistingUser(): void
     {
-        $service = $this->getMockBuilder(PasskeyAuthenticationService::class)
+        $service = $this
+            ->getMockBuilder(PasskeyAuthenticationService::class)
             ->onlyMethods(['fetchUserRecord'])
             ->getMock();
 
@@ -1066,7 +1076,8 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function getUserWithUnknownUserReturnsFalse(): void
     {
-        $service = $this->getMockBuilder(PasskeyAuthenticationService::class)
+        $service = $this
+            ->getMockBuilder(PasskeyAuthenticationService::class)
             ->onlyMethods(['fetchUserRecord'])
             ->getMock();
 
@@ -1242,7 +1253,8 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     public function payloadIsCachedAcrossGetUserAndAuthUser(): void
     {
         $credential = new Credential(uid: 10, beUser: 1, label: 'Test Key');
-        $service = $this->getMockBuilder(PasskeyAuthenticationService::class)
+        $service = $this
+            ->getMockBuilder(PasskeyAuthenticationService::class)
             ->onlyMethods(['fetchUserRecord'])
             ->getMock();
 
@@ -1258,7 +1270,10 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         GeneralUtility::addInstance(RateLimiterService::class, $this->rateLimiterService);
 
         $expectedUser = ['uid' => 42, 'username' => 'admin'];
-        $service->expects(self::once())->method('fetchUserRecord')->willReturn($expectedUser);
+        $service
+            ->expects(self::once())
+            ->method('fetchUserRecord')
+            ->willReturn($expectedUser);
 
         $this->webAuthnService
             ->expects(self::once())
@@ -1374,10 +1389,12 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     {
         $reflection = new ReflectionClass($service);
         $parent = $reflection;
+
         while ($parent !== false) {
             if ($parent->hasProperty('logger')) {
                 $prop = $parent->getProperty('logger');
                 $prop->setValue($service, $logger);
+
                 return;
             }
 

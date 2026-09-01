@@ -52,6 +52,7 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
     public function getChartData(): array
     {
         $segments = [];
+
         foreach ($this->statsProviders as $provider) {
             $segments[] = $provider->getAudienceStats();
         }
@@ -63,6 +64,7 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
         );
 
         $datasets = [];
+
         foreach ($segments as $segment) {
             $colors = self::AUDIENCE_COLORS[$segment->audienceKey] ?? self::FALLBACK_COLORS;
             $datasets[] = [

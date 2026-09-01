@@ -60,11 +60,13 @@ final readonly class ChallengeService
     public function verifyChallengeToken(string $token): string
     {
         $decoded = \base64_decode($token, true);
+
         if ($decoded === false) {
             throw new RuntimeException('Invalid challenge token encoding', 1700000001);
         }
 
         $parts = \explode('|', $decoded);
+
         if (\count($parts) !== 4) {
             throw new RuntimeException('Invalid challenge token format', 1700000002);
         }
@@ -85,6 +87,7 @@ final readonly class ChallengeService
 
         // Check TTL
         $expiresAt = (int) $expiresAtStr;
+
         if (\time() > $expiresAt) {
             $this->logger->warning('Expired challenge token presented', [
                 'expiredAt' => $expiresAt,
@@ -126,6 +129,7 @@ final readonly class ChallengeService
         }
 
         $challenge = \base64_decode($challengeB64, true);
+
         if ($challenge === false) {
             throw new RuntimeException('Invalid challenge data in token', 1700000006);
         }

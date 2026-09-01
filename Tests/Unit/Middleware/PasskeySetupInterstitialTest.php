@@ -65,7 +65,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest();
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -78,7 +81,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest();
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -99,7 +105,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -118,7 +127,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -139,7 +151,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -160,7 +175,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('ajax_passkeys_manage_list');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -209,7 +227,10 @@ final class PasskeySetupInterstitialTest extends TestCase
             $request = $this->createMockRequest($identifier);
             $handler = $this->createMockHandler();
 
-            $handler->expects(self::once())->method('handle')->with($request);
+            $handler
+                ->expects(self::once())
+                ->method('handle')
+                ->with($request);
 
             $this->subject->process($request, $handler);
         }
@@ -231,7 +252,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('user_setup');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -252,7 +276,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('logout');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -273,7 +300,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('passkeys_manage_list');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -294,7 +324,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('passkeys_login_options');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -315,7 +348,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('mfa');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -561,7 +597,8 @@ final class PasskeySetupInterstitialTest extends TestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
-        $backendUser->method('getSessionData')
+        $backendUser
+            ->method('getSessionData')
             ->with('tx_nrpasskeysbe')
             ->willReturn(['setup_skipped' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -577,7 +614,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -589,7 +629,8 @@ final class PasskeySetupInterstitialTest extends TestCase
         // the enforcement query entirely on subsequent requests.
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
-        $backendUser->method('getSessionData')
+        $backendUser
+            ->method('getSessionData')
             ->with('tx_nrpasskeysbe')
             ->willReturn(['enforcement_ok_at' => \time()]);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -598,7 +639,10 @@ final class PasskeySetupInterstitialTest extends TestCase
 
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -609,7 +653,8 @@ final class PasskeySetupInterstitialTest extends TestCase
         // An expired cache (> TTL) must re-run the enforcement query.
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
-        $backendUser->method('getSessionData')
+        $backendUser
+            ->method('getSessionData')
             ->with('tx_nrpasskeysbe')
             ->willReturn(['enforcement_ok_at' => \time() - 3600]);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -626,7 +671,10 @@ final class PasskeySetupInterstitialTest extends TestCase
 
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -636,7 +684,8 @@ final class PasskeySetupInterstitialTest extends TestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
-        $backendUser->method('getSessionData')
+        $backendUser
+            ->method('getSessionData')
             ->with('tx_nrpasskeysbe')
             ->willReturn(['setup_skipped' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -666,10 +715,12 @@ final class PasskeySetupInterstitialTest extends TestCase
 
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
-        $backendUser->method('getSessionData')
+        $backendUser
+            ->method('getSessionData')
             ->with('tx_nrpasskeysbe')
             ->willReturn(['skip_nonce' => $nonce]);
-        $backendUser->expects(self::once())
+        $backendUser
+            ->expects(self::once())
             ->method('setAndSaveSessionData')
             ->with('tx_nrpasskeysbe', ['setup_skipped' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -694,7 +745,8 @@ final class PasskeySetupInterstitialTest extends TestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
-        $backendUser->method('getSessionData')
+        $backendUser
+            ->method('getSessionData')
             ->with('tx_nrpasskeysbe')
             ->willReturn(['skip_nonce' => 'correct-nonce']);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -737,7 +789,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('login');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -758,7 +813,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('password_reset');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -779,7 +837,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('ajax_passkeys_enforcement_status');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -806,7 +867,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $handler = $this->createMockHandler();
 
         // Null route means exempt (no route identifier to check)
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -816,7 +880,8 @@ final class PasskeySetupInterstitialTest extends TestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
-        $backendUser->method('getSessionData')
+        $backendUser
+            ->method('getSessionData')
             ->with('tx_nrpasskeysbe')
             ->willReturn(['passkey_authenticated' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
@@ -825,7 +890,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -846,7 +914,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest('install_something');
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -886,7 +957,10 @@ final class PasskeySetupInterstitialTest extends TestCase
         $request = $this->createMockRequest();
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -922,7 +996,10 @@ final class PasskeySetupInterstitialTest extends TestCase
 
         $handler = $this->createMockHandler();
 
-        $handler->expects(self::once())->method('handle')->with($request);
+        $handler
+            ->expects(self::once())
+            ->method('handle')
+            ->with($request);
 
         $this->subject->process($request, $handler);
     }
@@ -1108,7 +1185,8 @@ final class PasskeySetupInterstitialTest extends TestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'usergroup' => '1'];
-        $backendUser->method('getSessionData')
+        $backendUser
+            ->method('getSessionData')
             ->with('tx_nrpasskeysbe')
             ->willReturn(null);
         $backendUser->method('getOriginalUserIdWhenInSwitchUserMode')->willReturn($switchUserOriginalUid);

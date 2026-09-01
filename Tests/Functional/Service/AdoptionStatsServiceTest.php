@@ -112,6 +112,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         // be_users.csv: user 1 → group "1", user 2 → groups "1,2", user 99 → group "3"
         // admin users 5,42 → no groups
         $groupMap = [];
+
         foreach ($stats->groups as $group) {
             $groupMap[$group->uid] = $group;
         }
@@ -130,6 +131,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         $stats = $this->subject->getStats();
 
         $groupMap = [];
+
         foreach ($stats->groups as $group) {
             $groupMap[$group->uid] = $group;
         }
@@ -148,6 +150,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         $stats = $this->subject->getStats();
 
         $groupMap = [];
+
         foreach ($stats->groups as $group) {
             $groupMap[$group->uid] = $group;
         }
@@ -181,6 +184,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         $stats = $this->subject->getStats();
 
         $userMap = [];
+
         foreach ($stats->usersWithoutPasskeys as $user) {
             $userMap[$user->username] = $user;
         }
@@ -197,6 +201,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         $stats = $this->subject->getStats();
 
         $userMap = [];
+
         foreach ($stats->usersWithoutPasskeys as $user) {
             $userMap[$user->username] = $user;
         }

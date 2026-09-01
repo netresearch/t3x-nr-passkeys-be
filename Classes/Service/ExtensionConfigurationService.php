@@ -25,6 +25,7 @@ final readonly class ExtensionConfigurationService
         private ExtensionConfiguration $extensionConfiguration,
     ) {
         $settings = $this->extensionConfiguration->get('nr_passkeys_be');
+
         if (!\is_array($settings)) {
             $settings = [];
         }
@@ -55,11 +56,13 @@ final readonly class ExtensionConfigurationService
     public function getEffectiveRpId(): string
     {
         $rpId = $this->config->getRpId();
+
         if ($rpId !== '') {
             return $rpId;
         }
 
         $host = $this->getNormalizedParams()->getHttpHost();
+
         if ($host === '') {
             // CLI / cron / background task: no Host header to spoof, so the
             // 'localhost' fallback is a safe anchor and trust enforcement does
@@ -75,6 +78,7 @@ final readonly class ExtensionConfigurationService
     public function getEffectiveOrigin(): string
     {
         $origin = $this->config->getOrigin();
+
         if ($origin !== '') {
             return $origin;
         }
@@ -82,6 +86,7 @@ final readonly class ExtensionConfigurationService
         $params = $this->getNormalizedParams();
         $scheme = $params->isHttps() ? 'https' : 'http';
         $host = $params->getHttpHost();
+
         if ($host === '') {
             // CLI / cron / background task: no Host header to spoof; safe fallback.
             return $scheme . '://localhost';
@@ -137,8 +142,10 @@ final readonly class ExtensionConfigurationService
     private function getNormalizedParams(): NormalizedParams
     {
         $request = $GLOBALS['TYPO3_REQUEST'] ?? null;
+
         if ($request instanceof ServerRequestInterface) {
             $params = $request->getAttribute('normalizedParams');
+
             if ($params instanceof NormalizedParams) {
                 return $params;
             }

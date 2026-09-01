@@ -53,6 +53,7 @@ class PasskeyInfoElement extends AbstractFormElement
         $resultArray = $this->initializeResultArray();
 
         $tableName = $this->data['tableName'] ?? '';
+
         if ($tableName !== 'be_users') {
             return $resultArray;
         }
@@ -62,6 +63,7 @@ class PasskeyInfoElement extends AbstractFormElement
             : [];
         $rawUid = $databaseRow['uid'] ?? null;
         $userId = \is_numeric($rawUid) ? (int) $rawUid : 0;
+
         if ($userId === 0) {
             return $resultArray;
         }
@@ -74,13 +76,16 @@ class PasskeyInfoElement extends AbstractFormElement
         // Check the system maintainers list directly to avoid instantiating a BackendUserAuthentication
         // (which requires a database connection for setBeUserByUid).
         $isManagementAllowed = $isAdmin;
+
         if ($isAdmin) {
             $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
             $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
             $systemMaintainers = \is_array($sysConf) ? ($sysConf['systemMaintainers'] ?? []) : [];
+
             if (\is_array($systemMaintainers) && $systemMaintainers !== []) {
                 $systemMaintainerIds = \array_map(\intval(...), $systemMaintainers);
                 $targetIsSystemMaintainer = \in_array($userId, $systemMaintainerIds, true);
+
                 if ($targetIsSystemMaintainer && !$currentBackendUser->isSystemMaintainer()) {
                     $isManagementAllowed = false;
                 }
@@ -116,6 +121,7 @@ class PasskeyInfoElement extends AbstractFormElement
         // Credential list
         if ($credentials !== []) {
             $childHtml[] = '<ul class="list-group t3js-passkey-credentials-list">';
+
             foreach ($credentials as $credential) {
                 $credUid = $credential->getUid();
                 $isRevoked = $credential->isRevoked();

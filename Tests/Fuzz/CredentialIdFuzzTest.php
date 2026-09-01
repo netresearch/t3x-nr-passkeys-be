@@ -22,28 +22,51 @@ final class CredentialIdFuzzTest extends TestCase
     public static function fuzzedCredentialDataProvider(): iterable
     {
         yield 'empty array' => [[]];
+
         yield 'null values' => [['uid' => null, 'be_user' => null, 'credential_id' => null]];
+
         yield 'negative uid' => [['uid' => -1, 'be_user' => -1]];
+
         yield 'max int uid' => [['uid' => PHP_INT_MAX, 'be_user' => PHP_INT_MAX]];
+
         yield 'string uid' => [['uid' => 'not_a_number']];
+
         yield 'float uid' => [['uid' => 3.14]];
+
         yield 'binary credential_id' => [['credential_id' => \random_bytes(255)]];
+
         yield 'empty credential_id' => [['credential_id' => '']];
+
         yield 'huge credential_id' => [['credential_id' => \str_repeat('X', 10000)]];
+
         yield 'null byte credential_id' => [['credential_id' => "\x00\x00\x00"]];
+
         yield 'unicode label' => [['label' => '🔑 Mëîn Schlüssel 日本語']];
+
         yield 'long label' => [['label' => \str_repeat('A', 500)]];
+
         yield 'html label' => [['label' => '<b>Bold</b><script>alert(1)</script>']];
+
         yield 'malformed transports json' => [['transports' => 'not json']];
+
         yield 'transports with objects' => [['transports' => '{"key": "value"}']];
+
         yield 'transports with nested arrays' => [['transports' => '[[["deep"]]]']];
+
         yield 'empty transports' => [['transports' => '']];
+
         yield 'null transports' => [['transports' => null]];
+
         yield 'negative timestamps' => [['created_at' => -1, 'last_used_at' => -1]];
+
         yield 'future timestamps' => [['created_at' => PHP_INT_MAX, 'last_used_at' => PHP_INT_MAX]];
+
         yield 'invalid aaguid' => [['aaguid' => 'not-a-uuid']];
+
         yield 'empty aaguid' => [['aaguid' => '']];
+
         yield 'oversized public_key_cose' => [['public_key_cose' => \random_bytes(65536)]];
+
         yield 'all zeros' => [['uid' => 0, 'be_user' => 0, 'sign_count' => 0, 'created_at' => 0]];
     }
 

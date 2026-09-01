@@ -58,13 +58,15 @@ final class PublicRouteResolverTest extends TestCase
     private function assertPassesThrough(?Route $route): void
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
+        $request
+            ->method('getAttribute')
             ->with('route')
             ->willReturn($route);
 
         $expectedResponse = $this->createMock(ResponseInterface::class);
         $handler = $this->createMock(RequestHandlerInterface::class);
-        $handler->expects(self::once())
+        $handler
+            ->expects(self::once())
             ->method('handle')
             ->with($request)
             ->willReturn($expectedResponse);
@@ -82,7 +84,8 @@ final class PublicRouteResolverTest extends TestCase
         $route = $this->createRoute('public', 'passkeys_login_options');
 
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getAttribute')
+        $request
+            ->method('getAttribute')
             ->with('route')
             ->willReturn($route);
 

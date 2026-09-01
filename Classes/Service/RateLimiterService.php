@@ -106,6 +106,7 @@ final readonly class RateLimiterService
 
         try {
             $current = $this->getAttemptCount($key);
+
             if ($current >= $maxAttempts) {
                 $this->logger->warning('Rate limit exceeded', [
                     'endpoint' => $endpoint,
@@ -219,6 +220,7 @@ final readonly class RateLimiterService
         if ($ip !== '') {
             $key = $this->buildLockoutKey($username, $ip);
             $this->rateLimitCache->remove($key);
+
             return;
         }
 
@@ -264,6 +266,7 @@ final readonly class RateLimiterService
 
         try {
             $current = $this->getAttemptCount($key);
+
             if ($current >= $threshold) {
                 throw new RuntimeException($message, $code);
             }
@@ -306,6 +309,7 @@ final readonly class RateLimiterService
     private function getAttemptCount(string $key): int
     {
         $value = $this->rateLimitCache->get($key);
+
         if ($value === false) {
             return 0;
         }

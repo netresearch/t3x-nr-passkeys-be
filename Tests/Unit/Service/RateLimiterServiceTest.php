@@ -474,6 +474,7 @@ final class RateLimiterServiceTest extends TestCase
             ->method('remove')
             ->willReturnCallback(static function (string $key) use (&$removedKeys): bool {
                 $removedKeys[] = $key;
+
                 return true;
             });
 

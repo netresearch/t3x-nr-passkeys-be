@@ -187,6 +187,7 @@ final readonly class AssertionService
         $count = 1 + (\ord($seed[0]) % 3);
 
         $descriptors = [];
+
         for ($index = 0; $index < $count; ++$index) {
             // Two independent derivations, and they must stay independent. The
             // selectors decide how long the id is and which transports it claims; the
@@ -226,6 +227,7 @@ final readonly class AssertionService
     {
         $id = '';
         $block = 0;
+
         while (\strlen($id) < $length) {
             $id .= \hash_hmac('sha256', $label . '|' . $block, $derivedKey, true);
             ++$block;
@@ -254,6 +256,7 @@ final readonly class AssertionService
             }
 
             $credential = $this->credentialRepository->findByCredentialId($publicKeyCredential->rawId);
+
             if (!$credential instanceof Credential || $credential->isRevoked()) {
                 return null;
             }
@@ -289,6 +292,7 @@ final readonly class AssertionService
         }
 
         $response = $publicKeyCredential->response;
+
         if (!$response instanceof AuthenticatorAssertionResponse) {
             throw new RuntimeException('Expected assertion response', 1700000031);
         }
@@ -301,6 +305,7 @@ final readonly class AssertionService
             $this->logger->warning('Assertion with unknown credential ID', [
                 'be_user_uid' => $beUserUid,
             ]);
+
             throw new RuntimeException('Unknown credential', 1700000032);
         }
 
@@ -313,6 +318,7 @@ final readonly class AssertionService
                 'be_user_uid' => $beUserUid,
                 'credential_be_user' => $credential->getBeUser(),
             ]);
+
             throw new RuntimeException('Credential mismatch', 1700000034);
         }
 
@@ -341,6 +347,7 @@ final readonly class AssertionService
                 'be_user_uid' => $beUserUid,
                 'error' => $e->getMessage(),
             ]);
+
             throw new RuntimeException(
                 'Assertion verification failed: ' . $e->getMessage(),
                 1700000035,

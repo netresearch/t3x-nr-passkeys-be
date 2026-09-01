@@ -113,11 +113,13 @@ final class AssertionDecoyTest extends TestCase
     public function decoyCountVariesAcrossUsernames(): void
     {
         $counts = [];
+
         foreach (self::SAMPLE_USERNAMES as $username) {
             $counts[\count($this->decoysFor($username))] = true;
         }
 
         self::assertGreaterThan(1, \count($counts), 'Decoy descriptor count must not be fixed');
+
         foreach (\array_keys($counts) as $count) {
             self::assertGreaterThanOrEqual(1, $count);
             self::assertLessThanOrEqual(3, $count);
@@ -132,6 +134,7 @@ final class AssertionDecoyTest extends TestCase
     public function decoyIdLengthVariesAndStaysRealistic(): void
     {
         $lengths = [];
+
         foreach (self::SAMPLE_USERNAMES as $username) {
             foreach ($this->decoysFor($username) as $descriptor) {
                 $lengths[\strlen($descriptor->id)] = true;
@@ -139,6 +142,7 @@ final class AssertionDecoyTest extends TestCase
         }
 
         self::assertGreaterThan(1, \count($lengths), 'Decoy credential-ID length must not be fixed');
+
         foreach (\array_keys($lengths) as $length) {
             self::assertContains($length, [16, 20, 32, 64], 'Decoy IDs must use realistic byte lengths');
         }
@@ -153,9 +157,11 @@ final class AssertionDecoyTest extends TestCase
     {
         $withTransports = 0;
         $seen = [];
+
         foreach (self::SAMPLE_USERNAMES as $username) {
             foreach ($this->decoysFor($username) as $descriptor) {
                 $transports = $descriptor->transports;
+
                 if ($transports !== []) {
                     ++$withTransports;
                 }
@@ -167,6 +173,7 @@ final class AssertionDecoyTest extends TestCase
         }
 
         self::assertGreaterThan(0, $withTransports, 'Decoys must sometimes report transports');
+
         foreach (\array_keys($seen) as $transport) {
             self::assertContains($transport, ['internal', 'hybrid', 'usb', 'nfc']);
         }
@@ -191,8 +198,10 @@ final class AssertionDecoyTest extends TestCase
         // so an attacker uses exactly these, and a hardcoded copy would silently stop
         // matching the implementation and make this test vacuous.
         $reflection = new ReflectionClass(AssertionService::class);
+
         /** @var list<int> $lengths */
         $lengths = $reflection->getConstant('DECOY_ID_LENGTHS');
+
         /** @var list<list<string>> $sets */
         $sets = $reflection->getConstant('DECOY_TRANSPORT_SETS');
 
@@ -252,6 +261,7 @@ final class AssertionDecoyTest extends TestCase
         foreach (self::SAMPLE_USERNAMES as $username) {
             foreach ($this->decoysFor($username) as $descriptor) {
                 $id = $descriptor->id;
+
                 if (\strlen($id) <= 32) {
                     continue;
                 }

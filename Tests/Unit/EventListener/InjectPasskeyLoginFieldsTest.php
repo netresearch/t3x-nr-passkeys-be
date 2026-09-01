@@ -51,6 +51,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                 $routeMap = [
                     'passkeys_login_options' => '/typo3/passkeys/login/options',
                 ];
+
                 return new Uri($routeMap[$routeName] ?? '/typo3/unknown');
             });
 
@@ -239,6 +240,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                     // (with English fallbacks) rather than via TYPO3.lang (I18N-1/L10N-1).
                     self::assertArrayHasKey('labels', $decoded);
                     self::assertIsArray($decoded['labels']);
+
                     foreach (['signIn', 'errorUnsupported', 'errorRateLimit', 'errorNotAllowed', 'helpTitle'] as $key) {
                         self::assertArrayHasKey($key, $decoded['labels']);
                         self::assertNotSame('', $decoded['labels'][$key]);

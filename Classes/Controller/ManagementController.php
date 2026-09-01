@@ -48,6 +48,7 @@ final readonly class ManagementController
     public function registrationOptionsAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -96,6 +97,7 @@ final readonly class ManagementController
     public function registrationVerifyAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -107,6 +109,7 @@ final readonly class ManagementController
         $body = $this->getJsonBody($request);
 
         $credentialJson = $this->encodeBodySection($body['credential'] ?? null);
+
         if ($credentialJson === null) {
             return new JsonResponse(['error' => 'Invalid request body'], 400);
         }
@@ -128,6 +131,7 @@ final readonly class ManagementController
 
         // Sanitize label
         $label = \mb_substr(\trim($label), 0, 128);
+
         if ($label === '') {
             $label = 'Passkey';
         }
@@ -176,6 +180,7 @@ final readonly class ManagementController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -201,11 +206,13 @@ final readonly class ManagementController
     public function enforcementStatusAction(ServerRequestInterface $request): ResponseInterface
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
+
         if (!$backendUser instanceof BackendUserAuthentication) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
         $userRow = $backendUser->user;
+
         if (!\is_array($userRow)) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -241,6 +248,7 @@ final readonly class ManagementController
     public function renameAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -259,12 +267,14 @@ final readonly class ManagementController
         }
 
         $label = \mb_substr(\trim($label), 0, 128);
+
         if ($label === '') {
             $label = 'Passkey';
         }
 
         // Verify ownership
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $user->uid);
+
         if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
@@ -289,6 +299,7 @@ final readonly class ManagementController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -306,12 +317,14 @@ final readonly class ManagementController
 
         // Verify ownership
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $user->uid);
+
         if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
         // Block removal of last passkey when enforcement is enabled
         $count = $this->credentialRepository->countByBeUser($user->uid);
+
         if ($count <= 1 && $this->configService->getConfiguration()->isDisablePasswordLogin()) {
             return new JsonResponse([
                 'error' => 'Cannot remove your last passkey when password login is disabled',

@@ -404,9 +404,11 @@ final class CredentialRepositoryTest extends FunctionalTestCase
         self::assertCount(3, $all, 'Should return active + revoked, but not deleted');
 
         $hasRevoked = false;
+
         foreach ($all as $credential) {
             if ($credential->isRevoked()) {
                 $hasRevoked = true;
+
                 break;
             }
         }

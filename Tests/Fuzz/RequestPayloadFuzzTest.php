@@ -58,27 +58,49 @@ final class RequestPayloadFuzzTest extends TestCase
     public static function malformedJsonProvider(): iterable
     {
         yield 'empty string' => [''];
+
         yield 'not json' => ['not json at all'];
+
         yield 'partial json' => ['{"username":'];
+
         yield 'array instead of object' => ['[1,2,3]'];
+
         yield 'null' => ['null'];
+
         yield 'number' => ['42'];
+
         yield 'string' => ['"just a string"'];
+
         yield 'boolean' => ['true'];
+
         yield 'deeply nested' => [\str_repeat('{"a":', 100) . '1' . \str_repeat('}', 100)];
+
         yield 'huge string value' => ['{"username":"' . \str_repeat('A', 100000) . '"}'];
+
         yield 'unicode username' => ['{"username":"ünïcödé_üser_🔑"}'];
+
         yield 'null username' => ['{"username":null}'];
+
         yield 'integer username' => ['{"username":42}'];
+
         yield 'array username' => ['{"username":["admin"]}'];
+
         yield 'object username' => ['{"username":{"name":"admin"}}'];
+
         yield 'empty username' => ['{"username":""}'];
+
         yield 'whitespace username' => ['{"username":"   "}'];
+
         yield 'sql injection username' => ['{"username":"\'; DROP TABLE be_users; --"}'];
+
         yield 'xss username' => ['{"username":"<script>alert(1)</script>"}'];
+
         yield 'null bytes in username' => ['{"username":"admin\u0000evil"}'];
+
         yield 'path traversal' => ['{"username":"../../etc/passwd"}'];
+
         yield 'extra fields' => ['{"username":"admin","extra":"malicious","__proto__":{"polluted":true}}'];
+
         yield 'binary in json' => ["\x00\x01\x02\x03"];
     }
 

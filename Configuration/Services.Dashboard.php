@@ -50,7 +50,8 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\tagged_it
 return static function (ContainerConfigurator $containerConfigurator): void {
     $services = $containerConfigurator->services();
 
-    $services->defaults()
+    $services
+        ->defaults()
         ->autowire()
         ->autoconfigure()
         ->private();
@@ -58,47 +59,51 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     // Data providers consume the cross-extension stats-provider collection.
     // Made public so the DI smoke test (Tests/Functional) can resolve them
     // and assert the tagged_iterator yields exactly the registered providers.
-    $services->set(PasskeyAdoptionChartDataProvider::class)
+    $services
+        ->set(PasskeyAdoptionChartDataProvider::class)
         ->public()
         ->arg('$statsProviders', tagged_iterator('nr_passkeys_be.adoption_stats_provider'));
-    $services->set(PasskeyCredentialsCountDataProvider::class)
+    $services
+        ->set(PasskeyCredentialsCountDataProvider::class)
         ->public()
         ->arg('$statsProviders', tagged_iterator('nr_passkeys_be.adoption_stats_provider'));
 
     $adminOnlySupported = \interface_exists(AdminOnlyWidgetInterface::class);
 
-    $services->set(
-        'dashboard.widget.nrpasskeys.adoption',
-        $adminOnlySupported ? AdminOnlyDoughnutChartWidget::class : DoughnutChartWidget::class,
-    )
+    $services
+        ->set(
+            'dashboard.widget.nrpasskeys.adoption',
+            $adminOnlySupported ? AdminOnlyDoughnutChartWidget::class : DoughnutChartWidget::class,
+        )
         ->arg('$dataProvider', service(PasskeyAdoptionChartDataProvider::class))
         ->tag('dashboard.widget', [
-            'identifier'     => 'nrpasskeys-adoption',
-            'groupNames'     => 'nrpasskeys',
-            'title'          => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.title',
-            'description'    => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.description',
-            'iconIdentifier' => 'passkeys-adoption',
-            'height'         => 'medium',
-            'width'          => 'small',
-        ]);
+                'identifier'     => 'nrpasskeys-adoption',
+                'groupNames'     => 'nrpasskeys',
+                'title'          => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.title',
+                'description'    => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.description',
+                'iconIdentifier' => 'passkeys-adoption',
+                'height'         => 'medium',
+                'width'          => 'small',
+            ]);
 
-    $services->set(
-        'dashboard.widget.nrpasskeys.credentials',
-        $adminOnlySupported ? AdminOnlyNumberWithIconWidget::class : NumberWithIconWidget::class,
-    )
+    $services
+        ->set(
+            'dashboard.widget.nrpasskeys.credentials',
+            $adminOnlySupported ? AdminOnlyNumberWithIconWidget::class : NumberWithIconWidget::class,
+        )
         ->arg('$dataProvider', service(PasskeyCredentialsCountDataProvider::class))
         ->arg('$options', [
-            'icon'     => 'passkeys-credentials',
-            'title'    => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.title',
-            'subtitle' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.subtitle',
-        ])
+                'icon'     => 'passkeys-credentials',
+                'title'    => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.title',
+                'subtitle' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.subtitle',
+            ])
         ->tag('dashboard.widget', [
-            'identifier'     => 'nrpasskeys-credentials',
-            'groupNames'     => 'nrpasskeys',
-            'title'          => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.title',
-            'description'    => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.description',
-            'iconIdentifier' => 'passkeys-credentials',
-            'height'         => 'small',
-            'width'          => 'small',
-        ]);
+                'identifier'     => 'nrpasskeys-credentials',
+                'groupNames'     => 'nrpasskeys',
+                'title'          => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.title',
+                'description'    => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.description',
+                'iconIdentifier' => 'passkeys-credentials',
+                'height'         => 'small',
+                'width'          => 'small',
+            ]);
 };

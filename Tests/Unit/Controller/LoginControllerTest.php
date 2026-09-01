@@ -609,7 +609,9 @@ final class LoginControllerTest extends TestCase
             ->willReturn(new ExtensionConfiguration(discoverableLoginEnabled: true));
 
         $this->webAuthnService->method('findBeUserUidFromAssertion')->willReturn(7);
-        $this->webAuthnService->expects(self::once())->method('verifyAssertionResponse')
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('verifyAssertionResponse')
             ->with(responseJson: self::isType('string'), challengeToken: 'ct_abc123', beUserUid: 7);
         $this->rateLimiterService->expects(self::once())->method('recordSuccess');
         $this->loginTokenCache->expects(self::once())->method('set');
@@ -881,7 +883,6 @@ final class LoginControllerTest extends TestCase
         return $request;
     }
 
-
     /**
      * Set up the ConnectionPool mock to simulate finding (or not finding) a BE user.
      *
@@ -919,6 +920,7 @@ final class LoginControllerTest extends TestCase
         $body = (string) $response->getBody();
         $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         \assert(\is_array($decoded));
+
         return $decoded;
     }
 }

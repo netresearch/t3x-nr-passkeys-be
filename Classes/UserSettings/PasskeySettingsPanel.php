@@ -40,12 +40,14 @@ final class PasskeySettingsPanel
     public function render(array $params): string
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
+
         if (!$backendUser instanceof BackendUserAuthentication) {
             return '';
         }
 
         $rawUid = $backendUser->user['uid'] ?? null;
         $userId = \is_numeric($rawUid) ? (int) $rawUid : 0;
+
         if ($userId === 0) {
             return '';
         }
@@ -55,6 +57,7 @@ final class PasskeySettingsPanel
         $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
             ? $sysConf['encryptionKey']
             : '';
+
         if (\strlen($encryptionKey) < 32) {
             $warning = $this->translate(
                 'manage.warning.encryptionKey',
@@ -165,5 +168,4 @@ final class PasskeySettingsPanel
 </div>
 HTML;
     }
-
 }

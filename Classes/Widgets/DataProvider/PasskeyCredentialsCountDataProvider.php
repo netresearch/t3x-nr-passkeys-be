@@ -30,6 +30,7 @@ final readonly class PasskeyCredentialsCountDataProvider implements NumberWithIc
     public function getNumber(): int
     {
         $total = 0;
+
         foreach ($this->statsProviders as $provider) {
             $total += $provider->getAudienceStats()->activeCredentials;
         }

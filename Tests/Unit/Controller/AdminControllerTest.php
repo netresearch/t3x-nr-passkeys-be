@@ -311,7 +311,10 @@ final class AdminControllerTest extends TestCase
             ->method('findByUidAndBeUser')
             ->with(5, 42)
             ->willReturn($cred);
-        $this->credentialRepository->expects(self::once())->method('revoke')->with(5, 1);
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('revoke')
+            ->with(5, 1);
 
         $response = $this->subject->removeAction($request);
 
@@ -915,7 +918,8 @@ final class AdminControllerTest extends TestCase
         $this->setUpGroupLookup(5, ['uid' => 5]);
 
         $connection = $this->createMock(Connection::class);
-        $connection->expects(self::once())
+        $connection
+            ->expects(self::once())
             ->method('update')
             ->with('be_groups', ['passkey_enforcement' => 'encourage'], ['uid' => 5]);
 
@@ -1051,7 +1055,8 @@ final class AdminControllerTest extends TestCase
         $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
 
         $connection = $this->createMock(Connection::class);
-        $connection->expects(self::once())
+        $connection
+            ->expects(self::once())
             ->method('update')
             ->with(
                 'be_users',
@@ -1159,7 +1164,8 @@ final class AdminControllerTest extends TestCase
         $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
 
         $connection = $this->createMock(Connection::class);
-        $connection->expects(self::once())
+        $connection
+            ->expects(self::once())
             ->method('update')
             ->with(
                 'be_users',
@@ -1300,6 +1306,7 @@ final class AdminControllerTest extends TestCase
         $body = (string) $response->getBody();
         $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         \assert(\is_array($decoded));
+
         return $decoded;
     }
 }

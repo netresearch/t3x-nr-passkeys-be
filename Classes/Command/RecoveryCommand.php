@@ -64,6 +64,7 @@ final class RecoveryCommand extends Command
         }
 
         $disableGroup = $input->getOption('disable-group');
+
         if (\is_string($disableGroup) && $disableGroup !== '') {
             $uid = (int) $disableGroup;
             $count = $this->disableEnforcementForGroup($uid);
@@ -78,6 +79,7 @@ final class RecoveryCommand extends Command
         }
 
         $unlock = $input->getOption('unlock');
+
         if (\is_string($unlock) && $unlock !== '') {
             $this->rateLimiterService->resetLockout($unlock);
             $io->success(\sprintf('Login lockout reset for user "%s".', $unlock));
@@ -107,6 +109,7 @@ final class RecoveryCommand extends Command
             ->fetchAllAssociative();
 
         $tableRows = [];
+
         foreach ($rows as $row) {
             $tableRows[] = [
                 (string) self::intVal($row['uid'] ?? null),
