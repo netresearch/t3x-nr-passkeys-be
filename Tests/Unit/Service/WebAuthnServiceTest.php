@@ -286,7 +286,9 @@ final class WebAuthnServiceTest extends TestCase
             ->method('save')
             ->with(
                 self::callback(
-                    fn(Credential $cred): bool => $cred->getBeUser() === $beUserUid && $cred->getLabel() === $label && $cred->getCredentialId() === $source->publicKeyCredentialId && $cred->getPublicKeyCose() === $source->credentialPublicKey && $cred->getUserHandle() === $source->userHandle && $cred->getSignCount() === $source->counter && $cred->getAaguid() === $source->aaguid->toString(),
+                    fn(
+                        Credential $cred,
+                    ): bool => $cred->getBeUser() === $beUserUid && $cred->getLabel() === $label && $cred->getCredentialId() === $source->publicKeyCredentialId && $cred->getPublicKeyCose() === $source->credentialPublicKey && $cred->getUserHandle() === $source->userHandle && $cred->getSignCount() === $source->counter && $cred->getAaguid() === $source->aaguid->toString(),
                 ),
             )
             ->willReturn($expectedUid);
@@ -1587,7 +1589,9 @@ final class WebAuthnServiceTest extends TestCase
             ->with(
                 'Passkey assertion verification failed',
                 self::callback(
-                    static fn(array $ctx): bool => $ctx['be_user_uid'] === $beUserUid && isset($ctx['error']) && $ctx['error'] !== '',
+                    static fn(
+                        array $ctx,
+                    ): bool => $ctx['be_user_uid'] === $beUserUid && isset($ctx['error']) && $ctx['error'] !== '',
                 ),
             );
         $this->expectException(RuntimeException::class);

@@ -47,8 +47,11 @@ final readonly class AttestationService
     /**
      * Create registration options for a backend user.
      */
-    public function createRegistrationOptions(int $beUserUid, string $username, string $displayName): RegistrationOptions
-    {
+    public function createRegistrationOptions(
+        int $beUserUid,
+        string $username,
+        string $displayName,
+    ): RegistrationOptions {
         $rpId = $this->configService->getEffectiveRpId();
         $rpName = $this->configService
             ->getConfiguration()
@@ -104,8 +107,13 @@ final readonly class AttestationService
      *
      * @throws RuntimeException on verification failure
      */
-    public function verifyRegistrationResponse(string $responseJson, string $challengeToken, int $beUserUid, string $username, string $displayName): CredentialRecord
-    {
+    public function verifyRegistrationResponse(
+        string $responseJson,
+        string $challengeToken,
+        int $beUserUid,
+        string $username,
+        string $displayName,
+    ): CredentialRecord {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
         $rpId = $this->configService->getEffectiveRpId();
         $rpName = $this->configService

@@ -59,7 +59,10 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
         // Deterministic order regardless of DI registration order.
         \usort(
             $segments,
-            static fn(PasskeyAudienceStats $a, PasskeyAudienceStats $b): int => \strcmp($a->audienceKey, $b->audienceKey),
+            static fn(
+                PasskeyAudienceStats $a,
+                PasskeyAudienceStats $b,
+            ): int => \strcmp($a->audienceKey, $b->audienceKey),
         );
         $datasets = [];
 

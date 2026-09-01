@@ -95,7 +95,9 @@ final class ArchitectureTest
                 Selector::inNamespace(self::NS . 'Authentication'),
                 Selector::inNamespace(self::NS . 'Controller'),
             )
-            ->because('PublicRouteResolver only dispatches routes, no business logic');
+            ->because(
+                'PublicRouteResolver only dispatches routes, no business logic',
+            );
     }
 
     public function test_event_listeners_do_not_depend_on_controllers(): Rule

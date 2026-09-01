@@ -30,13 +30,19 @@ use Webauthn\PublicKeyCredentialRequestOptions;
  */
 final readonly class WebAuthnService
 {
-    public function __construct(private AttestationService $attestationService, private AssertionService $assertionService) {}
+    public function __construct(
+        private AttestationService $attestationService,
+        private AssertionService $assertionService,
+    ) {}
 
     /**
      * Create registration options for a backend user.
      */
-    public function createRegistrationOptions(int $beUserUid, string $username, string $displayName): RegistrationOptions
-    {
+    public function createRegistrationOptions(
+        int $beUserUid,
+        string $username,
+        string $displayName,
+    ): RegistrationOptions {
         return $this->attestationService->createRegistrationOptions($beUserUid, $username, $displayName);
     }
 
@@ -45,8 +51,13 @@ final readonly class WebAuthnService
      *
      * @throws RuntimeException on verification failure
      */
-    public function verifyRegistrationResponse(string $responseJson, string $challengeToken, int $beUserUid, string $username, string $displayName): CredentialRecord
-    {
+    public function verifyRegistrationResponse(
+        string $responseJson,
+        string $challengeToken,
+        int $beUserUid,
+        string $username,
+        string $displayName,
+    ): CredentialRecord {
         return $this->attestationService->verifyRegistrationResponse(
             $responseJson,
             $challengeToken,
@@ -93,8 +104,11 @@ final readonly class WebAuthnService
      *
      * @throws RuntimeException on verification failure
      */
-    public function verifyAssertionResponse(string $responseJson, string $challengeToken, int $beUserUid): VerifiedAssertion
-    {
+    public function verifyAssertionResponse(
+        string $responseJson,
+        string $challengeToken,
+        int $beUserUid,
+    ): VerifiedAssertion {
         return $this->assertionService->verifyAssertionResponse($responseJson, $challengeToken, $beUserUid);
     }
 

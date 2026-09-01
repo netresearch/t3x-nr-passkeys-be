@@ -80,7 +80,11 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         'install',
     ];
 
-    public function __construct(private EnforcementService $enforcementService, private UriBuilder $uriBuilder, private LoggerInterface $logger) {}
+    public function __construct(
+        private EnforcementService $enforcementService,
+        private UriBuilder $uriBuilder,
+        private LoggerInterface $logger,
+    ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -284,8 +288,12 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
      * Uses inline PHP-rendered HTML for cross-version compatibility (v12/v13/v14).
      * All user-facing strings use LanguageService for i18n when available.
      */
-    private function renderInterstitial(EnforcementStatus $status, string $backendPath, string $nonce, string $colorScheme): HtmlResponse
-    {
+    private function renderInterstitial(
+        EnforcementStatus $status,
+        string $backendPath,
+        string $nonce,
+        string $colorScheme,
+    ): HtmlResponse {
         $remainingDays = $status->gracePeriodRemainingDays();
         $canSkip = $status->canSkip();
         $escapedBackendPath = \htmlspecialchars($backendPath, ENT_QUOTES, 'UTF-8');

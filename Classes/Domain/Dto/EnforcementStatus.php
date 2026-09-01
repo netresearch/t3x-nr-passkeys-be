@@ -25,7 +25,12 @@ final readonly class EnforcementStatus
      * @param int              $gracePeriodStart Unix timestamp when grace period started (0 = not started)
      * @param bool             $hasPasskeys     Whether the user has registered passkeys
      */
-    public function __construct(public EnforcementLevel $level, public int $gracePeriodDays, public int $gracePeriodStart, public bool $hasPasskeys) {}
+    public function __construct(
+        public EnforcementLevel $level,
+        public int $gracePeriodDays,
+        public int $gracePeriodStart,
+        public bool $hasPasskeys,
+    ) {}
 
     /**
      * Number of days remaining in the grace period.

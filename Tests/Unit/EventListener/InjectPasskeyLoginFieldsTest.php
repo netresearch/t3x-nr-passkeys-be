@@ -83,8 +83,11 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
         );
     }
 
-    private function setUpConfigService(string $rpId = 'example.com', string $origin = 'https://example.com', bool $discoverableEnabled = false): void
-    {
+    private function setUpConfigService(
+        string $rpId = 'example.com',
+        string $origin = 'https://example.com',
+        bool $discoverableEnabled = false,
+    ): void {
         $config = new ExtensionConfiguration(rpId: $rpId, discoverableLoginEnabled: $discoverableEnabled);
         $this->configService
             ->method('getConfiguration')

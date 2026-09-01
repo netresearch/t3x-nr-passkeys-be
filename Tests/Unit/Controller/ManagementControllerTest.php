@@ -1011,8 +1011,12 @@ final class ManagementControllerTest extends TestCase
      * UID of the admin acting as $uid, exactly what core's
      * getOriginalUserIdWhenInSwitchUserMode() returns in that mode.
      */
-    private function setUpAuthenticatedUser(int $uid, string $username, string $realName, ?int $switchUserOriginalUid = null): void
-    {
+    private function setUpAuthenticatedUser(
+        int $uid,
+        string $username,
+        string $realName,
+        ?int $switchUserOriginalUid = null,
+    ): void {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'username' => $username, 'realName' => $realName];
         $backendUser

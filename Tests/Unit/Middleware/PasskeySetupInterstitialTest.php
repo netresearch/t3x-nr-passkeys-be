@@ -1139,8 +1139,11 @@ final class PasskeySetupInterstitialTest extends TestCase
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
-    private function createMockRequest(string $routeIdentifier = 'main', string $method = 'GET', ?array $parsedBody = null): ServerRequestInterface&MockObject
-    {
+    private function createMockRequest(
+        string $routeIdentifier = 'main',
+        string $method = 'GET',
+        ?array $parsedBody = null,
+    ): ServerRequestInterface&MockObject {
         $route = $this->createMock(Route::class);
         $route
             ->method('getOption')

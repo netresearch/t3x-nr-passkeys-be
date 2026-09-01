@@ -62,7 +62,6 @@ final readonly class EnforcementService
         foreach ($groups as $group) {
             $enforcementValue = $group['passkey_enforcement'] ?? '';
             $level = EnforcementLevel::tryFrom(\is_string($enforcementValue) ? $enforcementValue : '');
-
             $level ??= EnforcementLevel::Off;
 
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;

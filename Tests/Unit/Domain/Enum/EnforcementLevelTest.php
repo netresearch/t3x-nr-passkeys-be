@@ -94,8 +94,11 @@ final class EnforcementLevelTest extends TestCase
 
     #[Test]
     #[DataProvider('strictestProvider')]
-    public function strictestReturnsHigherSeverity(EnforcementLevel $a, EnforcementLevel $b, EnforcementLevel $expected): void
-    {
+    public function strictestReturnsHigherSeverity(
+        EnforcementLevel $a,
+        EnforcementLevel $b,
+        EnforcementLevel $expected,
+    ): void {
         self::assertSame($expected, EnforcementLevel::strictest($a, $b));
     }
 

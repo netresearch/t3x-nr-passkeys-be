@@ -250,8 +250,11 @@ final readonly class AssertionService
      *
      * @throws RuntimeException on verification failure
      */
-    public function verifyAssertionResponse(string $responseJson, string $challengeToken, int $beUserUid): VerifiedAssertion
-    {
+    public function verifyAssertionResponse(
+        string $responseJson,
+        string $challengeToken,
+        int $beUserUid,
+    ): VerifiedAssertion {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
         $rpId = $this->configService->getEffectiveRpId();
 

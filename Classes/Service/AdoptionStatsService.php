@@ -107,14 +107,15 @@ final readonly class AdoptionStatsService
             ->removeAll();
         $result = $queryBuilder
             ->addSelectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('be_user') . ') AS cnt')
-            ->from(
-                self::TABLE_CREDENTIALS,
+            ->from(self::TABLE_CREDENTIALS)
+            ->where(
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('revoked_at', 0),
             )
-            ->where($queryBuilder
-                    ->expr()
-                    ->eq('deleted', 0), $queryBuilder
-                    ->expr()
-                    ->eq('revoked_at', 0))
             ->executeQuery()
             ->fetchOne();
 

@@ -223,8 +223,12 @@ final readonly class LoginController
      * username and for a known user with an unknown credential must be identical
      * to keep the decoy anti-enumeration defence intact.
      */
-    private function verifyUsernameFirst(string $username, string $assertion, string $challengeToken, string $ip): ResponseInterface
-    {
+    private function verifyUsernameFirst(
+        string $username,
+        string $assertion,
+        string $challengeToken,
+        string $ip,
+    ): ResponseInterface {
         $startedAt = \hrtime(true);
         $beUserUid = $this->findBeUserUid($username);
 
@@ -265,8 +269,13 @@ final readonly class LoginController
      * issue the login token. Shared by the discoverable and username-first paths.
      * $username is '' for discoverable login.
      */
-    private function verifyAndIssueToken(string $assertion, string $challengeToken, int $beUserUid, string $username, string $ip): ResponseInterface
-    {
+    private function verifyAndIssueToken(
+        string $assertion,
+        string $challengeToken,
+        int $beUserUid,
+        string $username,
+        string $ip,
+    ): ResponseInterface {
         try {
             $this->webAuthnService->verifyAssertionResponse(
                 responseJson: $assertion,

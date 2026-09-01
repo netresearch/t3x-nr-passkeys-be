@@ -37,8 +37,10 @@ final class RecoveryCommand extends Command
 
     private const TABLE_GROUPS = 'be_groups';
 
-    public function __construct(private readonly ConnectionPool $connectionPool, private readonly RateLimiterService $rateLimiterService)
-    {
+    public function __construct(
+        private readonly ConnectionPool $connectionPool,
+        private readonly RateLimiterService $rateLimiterService,
+    ) {
         parent::__construct();
     }
 

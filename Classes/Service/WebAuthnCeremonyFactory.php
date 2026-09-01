@@ -33,7 +33,10 @@ final class WebAuthnCeremonyFactory
 {
     private ?SerializerInterface $serializer = null;
 
-    public function __construct(private readonly ExtensionConfigurationService $configService, private readonly LoggerInterface $logger) {}
+    public function __construct(
+        private readonly ExtensionConfigurationService $configService,
+        private readonly LoggerInterface $logger,
+    ) {}
 
     public function getSerializer(): SerializerInterface
     {

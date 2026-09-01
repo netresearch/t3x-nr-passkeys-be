@@ -149,7 +149,9 @@ final class AdminControllerTest extends TestCase
             ->with(
                 'Admin revoked passkey',
                 self::callback(
-                    static fn(array $context): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['credential_uid'] === 10,
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['credential_uid'] === 10,
                 ),
             );
         $response = $this->subject->removeAction($request);
@@ -320,7 +322,9 @@ final class AdminControllerTest extends TestCase
             ->with(
                 'Admin unlocked user account',
                 self::callback(
-                    static fn(array $context): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['username'] === 'lockeduser',
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['username'] === 'lockeduser',
                 ),
             );
         $response = $this->subject->unlockAction($request);
@@ -693,7 +697,9 @@ final class AdminControllerTest extends TestCase
             ->with(
                 'Admin revoked all passkeys',
                 self::callback(
-                    static fn(array $context): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['revoked_count'] === 2,
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['revoked_count'] === 2,
                 ),
             );
         $response = $this->subject->revokeAllAction($request);
@@ -788,7 +794,9 @@ final class AdminControllerTest extends TestCase
             ->with(
                 'Admin updated group enforcement',
                 self::callback(
-                    static fn(array $context): bool => $context['admin_uid'] === 1 && $context['group_uid'] === 5 && $context['enforcement'] === 'encourage',
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['group_uid'] === 5 && $context['enforcement'] === 'encourage',
                 ),
             );
         $response = $this->subject->updateEnforcementAction($request);
@@ -877,7 +885,9 @@ final class AdminControllerTest extends TestCase
             ->with(
                 'be_users',
                 self::callback(
-                    static fn(array $data): bool => isset($data['passkey_nudge_until']) && \is_int($data['passkey_nudge_until']) && $data['passkey_nudge_until'] > \time(),
+                    static fn(
+                        array $data,
+                    ): bool => isset($data['passkey_nudge_until']) && \is_int($data['passkey_nudge_until']) && $data['passkey_nudge_until'] > \time(),
                 ),
                 ['uid' => 42],
             );
@@ -892,7 +902,9 @@ final class AdminControllerTest extends TestCase
             ->with(
                 'Admin sent passkey reminder',
                 self::callback(
-                    static fn(array $context): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['username'] === 'editor' && \is_int($context['nudge_until']) && $context['nudge_until'] > \time(),
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['username'] === 'editor' && \is_int($context['nudge_until']) && $context['nudge_until'] > \time(),
                 ),
             );
         $response = $this->subject->sendReminderAction($request);
@@ -974,7 +986,9 @@ final class AdminControllerTest extends TestCase
             ->with(
                 'Admin cleared passkey nudge',
                 self::callback(
-                    static fn(array $context): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['username'] === 'editor',
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['username'] === 'editor',
                 ),
             );
         $response = $this->subject->clearNudgeAction($request);

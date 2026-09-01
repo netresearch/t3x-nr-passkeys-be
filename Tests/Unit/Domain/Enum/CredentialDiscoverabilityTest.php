@@ -66,8 +66,10 @@ final class CredentialDiscoverabilityTest extends TestCase
 
     #[Test]
     #[DataProvider('clientExtensionProvider')]
-    public function fromClientExtensionResultAcceptsOnlyABoolean(mixed $rk, CredentialDiscoverability $expected): void
-    {
+    public function fromClientExtensionResultAcceptsOnlyABoolean(
+        mixed $rk,
+        CredentialDiscoverability $expected,
+    ): void {
         self::assertSame($expected, CredentialDiscoverability::fromClientExtensionResult($rk));
     }
 
