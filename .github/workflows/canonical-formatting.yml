@@ -1,0 +1,67 @@
+name: Canonical formatting
+
+# The formatter alone cannot hold this. It accepts both the collapsed and the
+# expanded shape of the same code, so a hand edit that writes one of them is
+# never reported — and the next AST edit reflows the file, putting somebody
+# else's formatting into that change's diff. The printer and the formatter
+# together have exactly one fixed point; this job asserts the tree is on it.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+
+permissions: {}
+
+jobs:
+  canonical:
+    name: Canonical formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The printer is not a Composer dependency of this extension: it is an
+      # agent skill, pinned here by tag so the gate cannot move under us.
+      - name: Check out the printer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: netresearch/php-ast-edit-skill
+          ref: v0.3.0
+          path: .printer
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install the printer's dependencies
+        working-directory: .printer
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Install this extension's dev dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Print canonically
+        run: php .printer/bin/php-ast-edit format --path . --php-version 8.2
+
+      - name: Apply the project's formatting rules
+        run: .Build/bin/php-cs-fixer fix --config Build/.php-cs-fixer.php
+
+      # Neither half is a check on its own: the printer undoes what the
+      # formatter did last, and the formatter accepts shapes the printer would
+      # not produce. The clean tree is the assertion.
+      - name: The tree must be unchanged
+        run: git diff --exit-code

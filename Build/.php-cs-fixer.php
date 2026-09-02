@@ -24,6 +24,9 @@ return (new PhpCsFixer\Config())
         '@PER-CS3.0' => true,
         '@PER-CS3.0:risky' => true,
         'array_syntax' => ['syntax' => 'short'],
+        // The blank line after the open tag. Part of what canonical printing
+        // removes around the file head, and `php-ast-edit doctor` names it.
+        'blank_line_after_opening_tag' => true,
         // Blank lines. A file written back from a syntax tree keeps only what a
         // rule describes, so the ones this code base actually keeps are stated
         // here rather than left to whoever edits next.
