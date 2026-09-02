@@ -23,13 +23,12 @@ final readonly class PasskeyCredentialsCountDataProvider implements NumberWithIc
     /**
      * @param iterable<PasskeyAdoptionStatsProviderInterface> $statsProviders
      */
-    public function __construct(
-        private iterable $statsProviders,
-    ) {}
+    public function __construct(private iterable $statsProviders) {}
 
     public function getNumber(): int
     {
         $total = 0;
+
         foreach ($this->statsProviders as $provider) {
             $total += $provider->getAudienceStats()->activeCredentials;
         }

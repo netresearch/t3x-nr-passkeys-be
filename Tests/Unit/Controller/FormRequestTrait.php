@@ -29,7 +29,9 @@ trait FormRequestTrait
     private function createFormRequest(array $data): ServerRequestInterface&MockObject
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn($data);
+        $request
+            ->method('getParsedBody')
+            ->willReturn($data);
 
         return $request;
     }

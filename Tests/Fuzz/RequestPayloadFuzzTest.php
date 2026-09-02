@@ -32,24 +32,24 @@ final class RequestPayloadFuzzTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $webAuthnService = $this->createMock(WebAuthnService::class);
-        $webAuthnService->method('createDiscoverableAssertionOptions')
-            ->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
-        $webAuthnService->method('createAssertionOptions')
-            ->willThrowException(new RuntimeException('Fuzz: no real WebAuthn context'));
+        $webAuthnService
+            ->method('createDiscoverableAssertionOptions')
+            ->willThrowException(
+                new RuntimeException('Fuzz: no real WebAuthn context'),
+            );
+        $webAuthnService
+            ->method('createAssertionOptions')
+            ->willThrowException(
+                new RuntimeException('Fuzz: no real WebAuthn context'),
+            );
         $configService = $this->createMock(ExtensionConfigurationService::class);
-        $configService->method('getConfiguration')->willReturn(new ExtensionConfiguration());
+        $configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfiguration());
         $rateLimiter = $this->createMock(RateLimiterService::class);
         $connectionPool = $this->createMock(ConnectionPool::class);
-
-        $this->controller = new LoginController(
-            $webAuthnService,
-            $configService,
-            $rateLimiter,
-            $connectionPool,
-            new NullLogger(),
-        );
+        $this->controller = new LoginController($webAuthnService, $configService, $rateLimiter, $connectionPool, new NullLogger());
     }
 
     /**
@@ -58,27 +58,49 @@ final class RequestPayloadFuzzTest extends TestCase
     public static function malformedJsonProvider(): iterable
     {
         yield 'empty string' => [''];
+
         yield 'not json' => ['not json at all'];
+
         yield 'partial json' => ['{"username":'];
+
         yield 'array instead of object' => ['[1,2,3]'];
+
         yield 'null' => ['null'];
+
         yield 'number' => ['42'];
+
         yield 'string' => ['"just a string"'];
+
         yield 'boolean' => ['true'];
+
         yield 'deeply nested' => [\str_repeat('{"a":', 100) . '1' . \str_repeat('}', 100)];
+
         yield 'huge string value' => ['{"username":"' . \str_repeat('A', 100000) . '"}'];
+
         yield 'unicode username' => ['{"username":"ünïcödé_üser_🔑"}'];
+
         yield 'null username' => ['{"username":null}'];
+
         yield 'integer username' => ['{"username":42}'];
+
         yield 'array username' => ['{"username":["admin"]}'];
+
         yield 'object username' => ['{"username":{"name":"admin"}}'];
+
         yield 'empty username' => ['{"username":""}'];
+
         yield 'whitespace username' => ['{"username":"   "}'];
+
         yield 'sql injection username' => ['{"username":"\'; DROP TABLE be_users; --"}'];
+
         yield 'xss username' => ['{"username":"<script>alert(1)</script>"}'];
+
         yield 'null bytes in username' => ['{"username":"admin\u0000evil"}'];
+
         yield 'path traversal' => ['{"username":"../../etc/passwd"}'];
+
         yield 'extra fields' => ['{"username":"admin","extra":"malicious","__proto__":{"polluted":true}}'];
+
         yield 'binary in json' => ["\x00\x01\x02\x03"];
     }
 
@@ -88,7 +110,6 @@ final class RequestPayloadFuzzTest extends TestCase
     {
         $request = $this->createRequestWithBody($body);
         $response = $this->controller->optionsAction($request);
-
         self::assertInstanceOf(ResponseInterface::class, $response);
         $statusCode = $response->getStatusCode();
         self::assertContains($statusCode, [400, 401, 429, 500]);
@@ -100,7 +121,6 @@ final class RequestPayloadFuzzTest extends TestCase
     {
         $request = $this->createRequestWithBody($body);
         $response = $this->controller->verifyAction($request);
-
         self::assertInstanceOf(ResponseInterface::class, $response);
         $statusCode = $response->getStatusCode();
         self::assertContains($statusCode, [400, 401, 429, 500]);
@@ -126,11 +146,16 @@ final class RequestPayloadFuzzTest extends TestCase
     private function createRequestWithBody(string $body): ServerRequestInterface
     {
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn($body);
-
+        $stream
+            ->method('__toString')
+            ->willReturn($body);
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn(null);
-        $request->method('getBody')->willReturn($stream);
+        $request
+            ->method('getParsedBody')
+            ->willReturn(null);
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
 
         return $request;
     }

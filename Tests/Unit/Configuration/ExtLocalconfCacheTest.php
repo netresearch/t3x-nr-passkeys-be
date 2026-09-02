@@ -49,7 +49,6 @@ final class ExtLocalconfCacheTest extends TestCase
         // process (see the class attributes), so a single include per process is
         // enough and require_once cannot swallow a needed re-execution.
         require_once \dirname(__DIR__, 3) . '/ext_localconf.php';
-
         $caching = $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations'] ?? null;
         self::assertIsArray($caching);
 
@@ -60,11 +59,9 @@ final class ExtLocalconfCacheTest extends TestCase
     public function nonceCacheDefaultsToATtlHonouringBackend(): void
     {
         $caching = $this->loadCacheConfiguration();
-
         self::assertArrayHasKey('nr_passkeys_be_nonce', $caching);
         $nonce = $caching['nr_passkeys_be_nonce'];
         self::assertIsArray($nonce);
-
         self::assertSame(FileBackend::class, $nonce['backend'] ?? null);
         self::assertNotSame(
             SimpleFileBackend::class,
@@ -86,12 +83,16 @@ final class ExtLocalconfCacheTest extends TestCase
         // SimpleFileBackend's no-op behaviour.
         self::assertNotSame(
             SimpleFileBackend::class,
-            (new ReflectionMethod($backend, 'collectGarbage'))->getDeclaringClass()->getName(),
+            (new ReflectionMethod($backend, 'collectGarbage'))
+                ->getDeclaringClass()
+                ->getName(),
             $backend . "::collectGarbage() must not be SimpleFileBackend's empty implementation",
         );
         self::assertNotSame(
             SimpleFileBackend::class,
-            (new ReflectionMethod($backend, 'get'))->getDeclaringClass()->getName(),
+            (new ReflectionMethod($backend, 'get'))
+                ->getDeclaringClass()
+                ->getName(),
             $backend . '::get() must check expiry',
         );
     }
@@ -104,7 +105,6 @@ final class ExtLocalconfCacheTest extends TestCase
         self::assertIsArray($nonce);
         $options = $nonce['options'] ?? null;
         self::assertIsArray($options);
-
         self::assertSame(300, $options['defaultLifetime'] ?? null);
     }
 }

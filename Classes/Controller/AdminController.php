@@ -52,6 +52,7 @@ final readonly class AdminController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -69,16 +70,9 @@ final readonly class AdminController
         }
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
-        $list = \array_map(
-            static fn(Credential $cred): AdminCredentialInfo => $cred->toAdminCredentialInfo(),
-            $credentials,
-        );
+        $list = \array_map(static fn(Credential $cred): AdminCredentialInfo => $cred->toAdminCredentialInfo(), $credentials);
 
-        return new JsonResponse([
-            'beUserUid' => $beUserUid,
-            'credentials' => $list,
-            'count' => \count($list),
-        ]);
+        return new JsonResponse(['beUserUid' => $beUserUid, 'credentials' => $list, 'count' => \count($list)]);
     }
 
     /**
@@ -90,6 +84,7 @@ final readonly class AdminController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -110,17 +105,16 @@ final readonly class AdminController
 
         // Verify the credential belongs to the specified user
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $beUserUid);
+
         if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found for this user'], 404);
         }
 
         $this->credentialRepository->revoke($credentialUid, $admin->uid);
-
-        $this->logger->info('Admin revoked passkey', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'credential_uid' => $credentialUid,
-        ]);
+        $this->logger->info(
+            'Admin revoked passkey',
+            ['admin_uid' => $admin->uid, 'be_user_uid' => $beUserUid, 'credential_uid' => $credentialUid],
+        );
 
         return new JsonResponse(['status' => 'ok']);
     }
@@ -134,6 +128,7 @@ final readonly class AdminController
     public function unlockAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
@@ -157,7 +152,11 @@ final readonly class AdminController
         $row = $queryBuilder
             ->select('uid', 'username')
             ->from('be_users')
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)))
+            ->where(
+                $queryBuilder
+                    ->expr()
+                    ->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
+            )
             ->executeQuery()
             ->fetchAssociative();
 
@@ -166,12 +165,10 @@ final readonly class AdminController
         }
 
         $this->rateLimiterService->resetLockout($username);
-
-        $this->logger->info('Admin unlocked user account', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'username' => $username,
-        ]);
+        $this->logger->info(
+            'Admin unlocked user account',
+            ['admin_uid' => $admin->uid, 'be_user_uid' => $beUserUid, 'username' => $username],
+        );
 
         return new JsonResponse(['status' => 'ok']);
     }
@@ -185,11 +182,13 @@ final readonly class AdminController
     public function revokeAllAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
         $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+
         if ($beUserUid instanceof ResponseInterface) {
             return $beUserUid;
         }
@@ -204,11 +203,10 @@ final readonly class AdminController
             }
         }
 
-        $this->logger->info('Admin revoked all passkeys', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'revoked_count' => $revokedCount,
-        ]);
+        $this->logger->info(
+            'Admin revoked all passkeys',
+            ['admin_uid' => $admin->uid, 'be_user_uid' => $beUserUid, 'revoked_count' => $revokedCount],
+        );
 
         return new JsonResponse(['status' => 'ok', 'revokedCount' => $revokedCount]);
     }
@@ -222,15 +220,14 @@ final readonly class AdminController
     public function updateEnforcementAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
         $body = $this->getJsonBody($request);
-
         $rawGroupUid = $body['groupUid'] ?? null;
         $groupUid = \is_numeric($rawGroupUid) ? (int) $rawGroupUid : 0;
-
         $rawEnforcement = $body['enforcement'] ?? null;
         $enforcement = \is_string($rawEnforcement) ? $rawEnforcement : '';
 
@@ -239,19 +236,26 @@ final readonly class AdminController
         }
 
         $level = EnforcementLevel::tryFrom($enforcement);
+
         if ($level === null) {
             return new JsonResponse(['error' => 'Invalid enforcement level'], 400);
         }
 
         // Verify the group exists
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_groups');
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $row = $queryBuilder
             ->select('uid')
             ->from('be_groups')
             ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($groupUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('uid', $queryBuilder->createNamedParameter($groupUid, Connection::PARAM_INT)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
             )
             ->executeQuery()
             ->fetchAssociative();
@@ -261,17 +265,12 @@ final readonly class AdminController
         }
 
         $connection = $this->connectionPool->getConnectionForTable('be_groups');
-        $connection->update(
-            'be_groups',
-            ['passkey_enforcement' => $level->value],
-            ['uid' => $groupUid],
-        );
+        $connection->update('be_groups', ['passkey_enforcement' => $level->value], ['uid' => $groupUid]);
 
-        $this->logger->info('Admin updated group enforcement', [
-            'admin_uid' => $admin->uid,
-            'group_uid' => $groupUid,
-            'enforcement' => $level->value,
-        ]);
+        $this->logger->info(
+            'Admin updated group enforcement',
+            ['admin_uid' => $admin->uid, 'group_uid' => $groupUid, 'enforcement' => $level->value],
+        );
 
         return new JsonResponse(['status' => 'ok', 'enforcement' => $level->value]);
     }
@@ -288,39 +287,39 @@ final readonly class AdminController
     public function sendReminderAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
         $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+
         if ($beUserUid instanceof ResponseInterface) {
             return $beUserUid;
         }
 
         $row = $this->findActiveBackendUser($beUserUid);
+
         if ($row === null) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
         // Set passkey_nudge_until to a future timestamp so the banner picks up the nudge
-        $nudgeUntil = \time() + (self::NUDGE_DURATION_DAYS * 86_400);
-
+        $nudgeUntil = \time() + self::NUDGE_DURATION_DAYS * 86400;
         $connection = $this->connectionPool->getConnectionForTable('be_users');
-        $connection->update(
-            'be_users',
-            ['passkey_nudge_until' => $nudgeUntil],
-            ['uid' => $beUserUid],
-        );
+        $connection->update('be_users', ['passkey_nudge_until' => $nudgeUntil], ['uid' => $beUserUid]);
 
         $usernameValue = $row['username'] ?? '';
         $username = \is_string($usernameValue) ? $usernameValue : '';
-
-        $this->logger->info('Admin sent passkey reminder', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'username' => $username,
-            'nudge_until' => $nudgeUntil,
-        ]);
+        $this->logger->info(
+            'Admin sent passkey reminder',
+            [
+                'admin_uid' => $admin->uid,
+                'be_user_uid' => $beUserUid,
+                'username' => $username,
+                'nudge_until' => $nudgeUntil,
+            ],
+        );
 
         return new JsonResponse(['status' => 'ok', 'nudgeUntil' => $nudgeUntil]);
     }
@@ -337,35 +336,32 @@ final readonly class AdminController
     public function clearNudgeAction(ServerRequestInterface $request): ResponseInterface
     {
         $admin = $this->requireAdmin();
+
         if (!$admin instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
         $beUserUid = $this->resolveManagedBeUserUid($this->getJsonBody($request));
+
         if ($beUserUid instanceof ResponseInterface) {
             return $beUserUid;
         }
 
         $row = $this->findActiveBackendUser($beUserUid);
+
         if ($row === null) {
             return new JsonResponse(['error' => 'User not found'], 404);
         }
 
         $connection = $this->connectionPool->getConnectionForTable('be_users');
-        $connection->update(
-            'be_users',
-            ['passkey_nudge_until' => 0],
-            ['uid' => $beUserUid],
-        );
+        $connection->update('be_users', ['passkey_nudge_until' => 0], ['uid' => $beUserUid]);
 
         $usernameValue = $row['username'] ?? '';
         $username = \is_string($usernameValue) ? $usernameValue : '';
-
-        $this->logger->info('Admin cleared passkey nudge', [
-            'admin_uid' => $admin->uid,
-            'be_user_uid' => $beUserUid,
-            'username' => $username,
-        ]);
+        $this->logger->info(
+            'Admin cleared passkey nudge',
+            ['admin_uid' => $admin->uid, 'be_user_uid' => $beUserUid, 'username' => $username],
+        );
 
         return new JsonResponse(['status' => 'ok']);
     }
@@ -408,14 +404,22 @@ final readonly class AdminController
     private function findActiveBackendUser(int $beUserUid): ?array
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $row = $queryBuilder
             ->select('uid', 'username')
             ->from('be_users')
             ->where(
-                $queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
-                $queryBuilder->expr()->eq('deleted', 0),
-                $queryBuilder->expr()->eq('disable', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('uid', $queryBuilder->createNamedParameter($beUserUid, Connection::PARAM_INT)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('disable', 0),
             )
             ->executeQuery()
             ->fetchAssociative();

@@ -75,11 +75,9 @@ final class AjaxRoutesTest extends TestCase
     {
         $routes = $this->routes();
         self::assertArrayHasKey($identifier, $routes);
-
         $route = $routes[$identifier];
         self::assertIsArray($route);
         self::assertArrayHasKey('sudoMode', $route, $identifier . ' must require sudo mode');
-
         $sudoMode = $route['sudoMode'];
         self::assertIsArray($sudoMode);
         self::assertSame('passkeys', $sudoMode['group'] ?? null);
@@ -94,6 +92,7 @@ final class AjaxRoutesTest extends TestCase
     public function everyPostRouteRequiresSudoMode(): void
     {
         $missing = [];
+
         foreach ($this->routes() as $identifier => $route) {
             if (!\is_array($route)) {
                 continue;

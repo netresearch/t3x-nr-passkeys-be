@@ -54,20 +54,15 @@ final class ManagementControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->webAuthnService = $this->createMock(WebAuthnService::class);
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
         $this->configService = $this->createMock(ExtensionConfigurationService::class);
         $this->enforcementService = $this->createMock(EnforcementService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-
-        $extensionConfig = new ExtensionConfiguration(
-            disablePasswordLogin: false,
-        );
+        $extensionConfig = new ExtensionConfiguration(disablePasswordLogin: false);
         $this->configService
             ->method('getConfiguration')
             ->willReturn($extensionConfig);
-
         $this->subject = new ManagementController(
             $this->webAuthnService,
             $this->credentialRepository,
@@ -88,32 +83,26 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
         $rp = PublicKeyCredentialRpEntity::create(name: 'TYPO3', id: 'example.com');
         $user = PublicKeyCredentialUserEntity::create(name: 'admin', id: 'user-handle', displayName: 'Admin User');
-        $options = PublicKeyCredentialCreationOptions::create(
-            rp: $rp,
-            user: $user,
-            challenge: \random_bytes(32),
-        );
-
+        $options = PublicKeyCredentialCreationOptions::create(rp: $rp, user: $user, challenge: \random_bytes(32));
         $this->webAuthnService
             ->expects(self::once())
             ->method('createRegistrationOptions')
-            ->with(42, 'admin', 'Admin User')
-            ->willReturn(new RegistrationOptions(
-                options: $options,
-                challengeToken: 'ct_reg_abc',
-            ));
-
+            ->with(
+                42,
+                'admin',
+                'Admin User',
+            )
+            ->willReturn(new RegistrationOptions(options: $options, challengeToken: 'ct_reg_abc'));
         $this->webAuthnService
             ->expects(self::once())
             ->method('serializeCreationOptions')
             ->with($options)
-            ->willReturn('{"rp":{"name":"TYPO3"},"challenge":"xyz"}');
-
+            ->willReturn(
+                '{"rp":{"name":"TYPO3"},"challenge":"xyz"}',
+            );
         $response = $this->subject->registrationOptionsAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertArrayHasKey('options', $body);
@@ -127,9 +116,7 @@ final class ManagementControllerTest extends TestCase
         // No BE_USER in GLOBALS
         unset($GLOBALS['BE_USER']);
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->registrationOptionsAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Not authenticated', $body['error']);
@@ -139,38 +126,40 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionSuccess(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-
-        $request = $this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
-            'challengeToken' => 'ct_reg_abc',
-            'label' => 'My YubiKey',
-        ]);
-
+        $request = $this->createJsonRequest(
+            [
+                'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+                'challengeToken' => 'ct_reg_abc',
+                'label' => 'My YubiKey',
+            ],
+        );
         $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->expects(self::once())
             ->method('verifyRegistrationResponse')
             ->with(
-                self::callback(static function (string $json): bool {
-                    $decoded = \json_decode($json, true);
-                    return $decoded['id'] === 'cred-xyz';
-                }),
+                self::callback(
+                    static function (string $json): bool {
+                        $decoded = \json_decode($json, true);
+
+                        return $decoded['id'] === 'cred-xyz';
+                    },
+                ),
                 'ct_reg_abc',
                 42,
                 'admin',
                 'Admin User',
             )
             ->willReturn($sourceMock);
-
         $storedCredential = new Credential(uid: 99, beUser: 42, label: 'My YubiKey');
         $this->webAuthnService
             ->expects(self::once())
             ->method('storeCredential')
             ->with($sourceMock, 42, 'My YubiKey')
-            ->willReturn($storedCredential);
-
+            ->willReturn(
+                $storedCredential,
+            );
         $response = $this->subject->registrationVerifyAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -183,18 +172,16 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
         $cred1 = new Credential(uid: 10, beUser: 42, label: 'Key 1', createdAt: 1700000000);
         $cred2 = new Credential(uid: 11, beUser: 42, label: 'Key 2', createdAt: 1700001000);
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('findByBeUser')
             ->with(42)
-            ->willReturn([$cred1, $cred2]);
-
+            ->willReturn(
+                [$cred1, $cred2],
+            );
         $response = $this->subject->listAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame(2, $body['count']);
@@ -208,25 +195,20 @@ final class ManagementControllerTest extends TestCase
     public function renameActionSuccess(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-        $request = $this->createJsonRequest([
-            'uid' => 10,
-            'label' => 'Renamed Key',
-        ]);
-
+        $request = $this->createJsonRequest(['uid' => 10, 'label' => 'Renamed Key']);
         $cred = new Credential(uid: 10, beUser: 42, label: 'Old Name');
         $this->credentialRepository
             ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(10, 42)
-            ->willReturn($cred);
-
+            ->willReturn(
+                $cred,
+            );
         $this->credentialRepository
             ->expects(self::once())
             ->method('updateLabel')
             ->with(10, 'Renamed Key');
-
         $response = $this->subject->renameAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -236,24 +218,20 @@ final class ManagementControllerTest extends TestCase
     public function renameActionUnownedCredential(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-        $request = $this->createJsonRequest([
-            'uid' => 999,
-            'label' => 'Renamed Key',
-        ]);
+        $request = $this->createJsonRequest(['uid' => 999, 'label' => 'Renamed Key']);
 
         // User owns credential 10, not 999
         $this->credentialRepository
             ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(999, 42)
-            ->willReturn(null);
-
+            ->willReturn(
+                null,
+            );
         $this->credentialRepository
             ->expects(self::never())
             ->method('updateLabel');
-
         $response = $this->subject->renameAction($request);
-
         self::assertSame(404, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Credential not found', $body['error']);
@@ -264,28 +242,24 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest(['uid' => 10]);
-
         $cred1 = new Credential(uid: 10, beUser: 42, label: 'Key 1');
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(10, 42)
-            ->willReturn($cred1);
-
+            ->willReturn(
+                $cred1,
+            );
         $this->credentialRepository
             ->expects(self::once())
             ->method('countByBeUser')
             ->with(42)
             ->willReturn(2);
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('delete')
             ->with(10);
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -295,12 +269,11 @@ final class ManagementControllerTest extends TestCase
     public function removeActionLastPasskeyBlocked(): void
     {
         // Configure password login as disabled (enforcement enabled)
-        $configWithEnforcement = new ExtensionConfiguration(
-            disablePasswordLogin: true,
-        );
+        $configWithEnforcement = new ExtensionConfiguration(disablePasswordLogin: true);
         $configServiceEnforced = $this->createMock(ExtensionConfigurationService::class);
-        $configServiceEnforced->method('getConfiguration')->willReturn($configWithEnforcement);
-
+        $configServiceEnforced
+            ->method('getConfiguration')
+            ->willReturn($configWithEnforcement);
         $this->subject = new ManagementController(
             $this->webAuthnService,
             $this->credentialRepository,
@@ -308,27 +281,21 @@ final class ManagementControllerTest extends TestCase
             $this->enforcementService,
             $this->logger,
         );
-
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest(['uid' => 10]);
-
         $cred = new Credential(uid: 10, beUser: 42, label: 'Only Key');
         $this->credentialRepository
             ->method('findByUidAndBeUser')
             ->with(10, 42)
             ->willReturn($cred);
-
         $this->credentialRepository
             ->method('countByBeUser')
             ->with(42)
             ->willReturn(1);
-
         $this->credentialRepository
             ->expects(self::never())
             ->method('delete');
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(409, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertStringContainsString('Cannot remove your last passkey', $body['error']);
@@ -339,19 +306,17 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest(['uid' => 999]);
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(999, 42)
-            ->willReturn(null);
-
+            ->willReturn(
+                null,
+            );
         $this->credentialRepository
             ->expects(self::never())
             ->method('delete');
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(404, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Credential not found', $body['error']);
@@ -361,13 +326,8 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionNotAuthenticated(): void
     {
         unset($GLOBALS['BE_USER']);
-        $request = $this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz'],
-            'challengeToken' => 'ct_reg_abc',
-        ]);
-
+        $request = $this->createJsonRequest(['credential' => ['id' => 'cred-xyz'], 'challengeToken' => 'ct_reg_abc']);
         $response = $this->subject->registrationVerifyAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Not authenticated', $body['error']);
@@ -378,9 +338,7 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->registrationVerifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -390,12 +348,8 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionMissingChallengeToken(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-        $request = $this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz'],
-        ]);
-
+        $request = $this->createJsonRequest(['credential' => ['id' => 'cred-xyz']]);
         $response = $this->subject->registrationVerifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -405,24 +359,24 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionVerificationFails(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-        $request = $this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz', 'response' => []],
-            'challengeToken' => 'ct_reg_abc',
-            'label' => 'My Key',
-        ]);
-
+        $request = $this->createJsonRequest(
+            [
+                'credential' => ['id' => 'cred-xyz', 'response' => []],
+                'challengeToken' => 'ct_reg_abc',
+                'label' => 'My Key',
+            ],
+        );
         $this->webAuthnService
             ->expects(self::once())
             ->method('verifyRegistrationResponse')
-            ->willThrowException(new RuntimeException('Verification failed', 1700000022));
-
+            ->willThrowException(
+                new RuntimeException('Verification failed', 1700000022),
+            );
         $this->logger
             ->expects(self::once())
             ->method('error')
             ->with('Passkey registration failed', self::anything());
-
         $response = $this->subject->registrationVerifyAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Registration failed', $body['error']);
@@ -433,19 +387,20 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
         $this->webAuthnService
             ->expects(self::once())
             ->method('createRegistrationOptions')
-            ->willThrowException(new RuntimeException('Internal failure'));
-
+            ->willThrowException(
+                new RuntimeException('Internal failure'),
+            );
         $this->logger
             ->expects(self::once())
             ->method('error')
-            ->with('Failed to generate registration options', self::anything());
-
+            ->with(
+                'Failed to generate registration options',
+                self::anything(),
+            );
         $response = $this->subject->registrationOptionsAction($request);
-
         self::assertSame(500, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Failed to generate registration options', $body['error']);
@@ -456,9 +411,7 @@ final class ManagementControllerTest extends TestCase
     {
         unset($GLOBALS['BE_USER']);
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->listAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Not authenticated', $body['error']);
@@ -469,9 +422,7 @@ final class ManagementControllerTest extends TestCase
     {
         unset($GLOBALS['BE_USER']);
         $request = $this->createJsonRequest(['uid' => 10, 'label' => 'New']);
-
         $response = $this->subject->renameAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Not authenticated', $body['error']);
@@ -482,9 +433,7 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->renameAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -495,9 +444,7 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest(['uid' => 10]);
-
         $response = $this->subject->renameAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -508,9 +455,7 @@ final class ManagementControllerTest extends TestCase
     {
         unset($GLOBALS['BE_USER']);
         $request = $this->createJsonRequest(['uid' => 10]);
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Not authenticated', $body['error']);
@@ -521,9 +466,7 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing credential uid', $body['error']);
@@ -534,25 +477,20 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest(['uid' => 10]);
-
         $cred = new Credential(uid: 10, beUser: 42, label: 'Only Key');
         $this->credentialRepository
             ->method('findByUidAndBeUser')
             ->with(10, 42)
             ->willReturn($cred);
-
         $this->credentialRepository
             ->method('countByBeUser')
             ->with(42)
             ->willReturn(1);
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('delete')
             ->with(10);
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -562,38 +500,37 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionSanitizesEmptyLabel(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-        $request = $this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
-            'challengeToken' => 'ct_reg_abc',
-            'label' => '   ',
-        ]);
-
+        $request = $this->createJsonRequest(
+            [
+                'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+                'challengeToken' => 'ct_reg_abc',
+                'label' => '   ',
+            ],
+        );
         $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->method('verifyRegistrationResponse')
             ->willReturn($sourceMock);
-
         $storedCredential = new Credential(uid: 99, beUser: 42, label: 'Passkey');
         $this->webAuthnService
             ->expects(self::once())
             ->method('storeCredential')
             ->with($sourceMock, 42, 'Passkey')
-            ->willReturn($storedCredential);
-
+            ->willReturn(
+                $storedCredential,
+            );
         $response = $this->subject->registrationVerifyAction($request);
-
         self::assertSame(200, $response->getStatusCode());
     }
 
     #[Test]
     public function listActionShowsEnforcementEnabled(): void
     {
-        $configWithEnforcement = new ExtensionConfiguration(
-            disablePasswordLogin: true,
-        );
+        $configWithEnforcement = new ExtensionConfiguration(disablePasswordLogin: true);
         $configServiceEnforced = $this->createMock(ExtensionConfigurationService::class);
-        $configServiceEnforced->method('getConfiguration')->willReturn($configWithEnforcement);
-
+        $configServiceEnforced
+            ->method('getConfiguration')
+            ->willReturn($configWithEnforcement);
         $this->subject = new ManagementController(
             $this->webAuthnService,
             $this->credentialRepository,
@@ -601,16 +538,12 @@ final class ManagementControllerTest extends TestCase
             $this->enforcementService,
             $this->logger,
         );
-
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
         $this->credentialRepository
             ->method('findByBeUser')
             ->willReturn([]);
-
         $response = $this->subject->listAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertTrue($body['enforcementEnabled']);
@@ -620,13 +553,12 @@ final class ManagementControllerTest extends TestCase
     public function getAuthenticatedUserReturnsNullWhenUserDataIsNotArray(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = null; // not an array
+        $backendUser->user = null;
+
+        // not an array
         $GLOBALS['BE_USER'] = $backendUser;
-
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->listAction($request);
-
         self::assertSame(401, $response->getStatusCode());
     }
 
@@ -634,13 +566,12 @@ final class ManagementControllerTest extends TestCase
     public function getAuthenticatedUserReturnsNullWhenNoUidInUserArray(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = ['username' => 'admin']; // no uid
+        $backendUser->user = ['username' => 'admin'];
+
+        // no uid
         $GLOBALS['BE_USER'] = $backendUser;
-
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->listAction($request);
-
         self::assertSame(401, $response->getStatusCode());
     }
 
@@ -648,13 +579,13 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionUsesUsernameAsDisplayNameWhenRealNameEmpty(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', '');
-
-        $request = $this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
-            'challengeToken' => 'ct_reg_abc',
-            'label' => 'My Key',
-        ]);
-
+        $request = $this->createJsonRequest(
+            [
+                'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+                'challengeToken' => 'ct_reg_abc',
+                'label' => 'My Key',
+            ],
+        );
         $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->expects(self::once())
@@ -664,17 +595,14 @@ final class ManagementControllerTest extends TestCase
                 'ct_reg_abc',
                 42,
                 'admin',
-                'admin', // displayName should be username when realName is empty
+                'admin',
             )
             ->willReturn($sourceMock);
-
         $storedCredential = new Credential(uid: 99, beUser: 42, label: 'My Key');
         $this->webAuthnService
             ->method('storeCredential')
             ->willReturn($storedCredential);
-
         $response = $this->subject->registrationVerifyAction($request);
-
         self::assertSame(200, $response->getStatusCode());
     }
 
@@ -683,15 +611,14 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', '');
         $request = $this->createJsonRequest([]);
-
         $this->webAuthnService
             ->expects(self::once())
             ->method('createRegistrationOptions')
-            ->with(42, 'admin', 'admin') // displayName should be username when realName is empty
-            ->willThrowException(new RuntimeException('test'));
-
+            ->with(42, 'admin', 'admin')
+            ->willThrowException(
+                new RuntimeException('test'),
+            );
         $response = $this->subject->registrationOptionsAction($request);
-
         self::assertSame(500, $response->getStatusCode());
     }
 
@@ -699,27 +626,25 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionDefaultsLabelToPasskey(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-
-        $request = $this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
-            'challengeToken' => 'ct_reg_abc',
-            // no label provided
-        ]);
-
+        $request = $this->createJsonRequest(
+            [
+                'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+                'challengeToken' => 'ct_reg_abc',
+            ],
+        );
         $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->method('verifyRegistrationResponse')
             ->willReturn($sourceMock);
-
         $storedCredential = new Credential(uid: 99, beUser: 42, label: 'Passkey');
         $this->webAuthnService
             ->expects(self::once())
             ->method('storeCredential')
             ->with($sourceMock, 42, 'Passkey')
-            ->willReturn($storedCredential);
-
+            ->willReturn(
+                $storedCredential,
+            );
         $response = $this->subject->registrationVerifyAction($request);
-
         self::assertSame(200, $response->getStatusCode());
     }
 
@@ -727,29 +652,28 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionTruncatesLabelTo128Chars(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-
         $longLabel = \str_repeat('A', 200);
-        $request = $this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
-            'challengeToken' => 'ct_reg_abc',
-            'label' => $longLabel,
-        ]);
-
+        $request = $this->createJsonRequest(
+            [
+                'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+                'challengeToken' => 'ct_reg_abc',
+                'label' => $longLabel,
+            ],
+        );
         $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->method('verifyRegistrationResponse')
             ->willReturn($sourceMock);
-
         $expectedLabel = \str_repeat('A', 128);
         $storedCredential = new Credential(uid: 99, beUser: 42, label: $expectedLabel);
         $this->webAuthnService
             ->expects(self::once())
             ->method('storeCredential')
             ->with($sourceMock, 42, $expectedLabel)
-            ->willReturn($storedCredential);
-
+            ->willReturn(
+                $storedCredential,
+            );
         $response = $this->subject->registrationVerifyAction($request);
-
         self::assertSame(200, $response->getStatusCode());
     }
 
@@ -757,39 +681,30 @@ final class ManagementControllerTest extends TestCase
     public function renameActionTruncatesLabelTo128Chars(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-
         $longLabel = \str_repeat('B', 200);
-        $request = $this->createJsonRequest([
-            'uid' => 10,
-            'label' => $longLabel,
-        ]);
-
+        $request = $this->createJsonRequest(['uid' => 10, 'label' => $longLabel]);
         $cred = new Credential(uid: 10, beUser: 42, label: 'Old Name');
         $this->credentialRepository
             ->method('findByUidAndBeUser')
             ->with(10, 42)
             ->willReturn($cred);
-
         $expectedLabel = \str_repeat('B', 128);
         $this->credentialRepository
             ->expects(self::once())
             ->method('updateLabel')
             ->with(10, $expectedLabel);
-
         $response = $this->subject->renameAction($request);
-
         self::assertSame(200, $response->getStatusCode());
     }
 
     #[Test]
     public function removeActionAllowedWhenMultiplePasskeysAndEnforcementEnabled(): void
     {
-        $configWithEnforcement = new ExtensionConfiguration(
-            disablePasswordLogin: true,
-        );
+        $configWithEnforcement = new ExtensionConfiguration(disablePasswordLogin: true);
         $configServiceEnforced = $this->createMock(ExtensionConfigurationService::class);
-        $configServiceEnforced->method('getConfiguration')->willReturn($configWithEnforcement);
-
+        $configServiceEnforced
+            ->method('getConfiguration')
+            ->willReturn($configWithEnforcement);
         $this->subject = new ManagementController(
             $this->webAuthnService,
             $this->credentialRepository,
@@ -797,28 +712,22 @@ final class ManagementControllerTest extends TestCase
             $this->enforcementService,
             $this->logger,
         );
-
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest(['uid' => 10]);
-
         $cred = new Credential(uid: 10, beUser: 42, label: 'Key 1');
         $this->credentialRepository
             ->method('findByUidAndBeUser')
             ->with(10, 42)
             ->willReturn($cred);
-
         $this->credentialRepository
             ->method('countByBeUser')
             ->with(42)
             ->willReturn(2);
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('delete')
             ->with(10);
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -829,9 +738,7 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest(['label' => 'New Name']);
-
         $response = $this->subject->renameAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -842,26 +749,20 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
         $status = new EnforcementStatus(
             level: EnforcementLevel::Encourage,
             gracePeriodDays: 14,
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         $this->enforcementService
             ->expects(self::once())
             ->method('getStatus')
-            ->with([
-                'uid' => 42,
-                'username' => 'admin',
-                'realName' => 'Admin User',
-            ])
+            ->with(
+                ['uid' => 42, 'username' => 'admin', 'realName' => 'Admin User'],
+            )
             ->willReturn($status);
-
         $response = $this->subject->enforcementStatusAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('encourage', $body['level']);
@@ -875,20 +776,16 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 7,
             gracePeriodStart: 0,
             hasPasskeys: true,
         );
-
         $this->enforcementService
             ->method('getStatus')
             ->willReturn($status);
-
         $response = $this->subject->enforcementStatusAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('required', $body['level']);
@@ -901,20 +798,11 @@ final class ManagementControllerTest extends TestCase
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
         $request = $this->createJsonRequest([]);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Off,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
-
+        $status = new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService
             ->method('getStatus')
             ->willReturn($status);
-
         $response = $this->subject->enforcementStatusAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('off', $body['level']);
@@ -926,33 +814,21 @@ final class ManagementControllerTest extends TestCase
     public function enforcementStatusActionReturnsTrueRequiresBannerWhenActiveNudge(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = [
-            'uid' => 42,
-            'username' => 'editor',
-            'realName' => 'Editor',
-            'passkey_nudge_until' => \time() + 86_400, // nudge active for 1 more day
-        ];
-        $backendUser->method('isAdmin')->willReturn(false);
+        $backendUser->user = ['uid' => 42, 'username' => 'editor', 'realName' => 'Editor', 'passkey_nudge_until' => \time() + 86400];
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
-
         $request = $this->createJsonRequest([]);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Off,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
-
+        $status = new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService
             ->method('getStatus')
             ->willReturn($status);
-
         $response = $this->subject->enforcementStatusAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('off', $body['level']);
+
         // Even though enforcement is Off, the active nudge should trigger the banner
         self::assertTrue($body['requiresBanner']);
         self::assertGreaterThan(0, $body['nudgeUntil']);
@@ -962,32 +838,20 @@ final class ManagementControllerTest extends TestCase
     public function enforcementStatusActionReturnsFalseRequiresBannerWhenNudgeActiveButUserHasPasskeys(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = [
-            'uid' => 42,
-            'username' => 'editor',
-            'realName' => 'Editor',
-            'passkey_nudge_until' => \time() + 86_400, // nudge active for 1 more day
-        ];
-        $backendUser->method('isAdmin')->willReturn(false);
+        $backendUser->user = ['uid' => 42, 'username' => 'editor', 'realName' => 'Editor', 'passkey_nudge_until' => \time() + 86400];
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
-
         $request = $this->createJsonRequest([]);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Off,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: true, // user already registered a passkey
-        );
-
+        $status = new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: true);
         $this->enforcementService
             ->method('getStatus')
             ->willReturn($status);
-
         $response = $this->subject->enforcementStatusAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
+
         // Nudge is active but user already has passkeys — banner is pointless
         self::assertFalse($body['requiresBanner']);
         self::assertSame(0, $body['nudgeUntil']);
@@ -997,32 +861,20 @@ final class ManagementControllerTest extends TestCase
     public function enforcementStatusActionReturnsFalseRequiresBannerWhenNudgeExpired(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = [
-            'uid' => 42,
-            'username' => 'editor',
-            'realName' => 'Editor',
-            'passkey_nudge_until' => \time() - 86_400, // nudge expired yesterday
-        ];
-        $backendUser->method('isAdmin')->willReturn(false);
+        $backendUser->user = ['uid' => 42, 'username' => 'editor', 'realName' => 'Editor', 'passkey_nudge_until' => \time() - 86400];
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
-
         $request = $this->createJsonRequest([]);
-
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Off,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
-
+        $status = new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         $this->enforcementService
             ->method('getStatus')
             ->willReturn($status);
-
         $response = $this->subject->enforcementStatusAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
+
         // Nudge expired and enforcement is Off, so no banner
         self::assertFalse($body['requiresBanner']);
         self::assertSame(0, $body['nudgeUntil']);
@@ -1033,9 +885,7 @@ final class ManagementControllerTest extends TestCase
     {
         unset($GLOBALS['BE_USER']);
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->enforcementStatusAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Not authenticated', $body['error']);
@@ -1047,11 +897,8 @@ final class ManagementControllerTest extends TestCase
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = null;
         $GLOBALS['BE_USER'] = $backendUser;
-
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->enforcementStatusAction($request);
-
         self::assertSame(401, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Not authenticated', $body['error']);
@@ -1061,14 +908,14 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionRejectsNonUtf8BodyWithABadRequestResponse(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-
-        $this->webAuthnService->expects(self::never())->method('verifyRegistrationResponse');
-
-        $response = $this->subject->registrationVerifyAction($this->createFormRequest([
-            'credential' => ['attestationObject' => "\xFF\xFE"],
-            'challengeToken' => 'ct_reg_abc',
-        ]));
-
+        $this->webAuthnService
+            ->expects(self::never())
+            ->method('verifyRegistrationResponse');
+        $response = $this->subject->registrationVerifyAction(
+            $this->createFormRequest(
+                ['credential' => ['attestationObject' => "\xff\xfe"], 'challengeToken' => 'ct_reg_abc'],
+            ),
+        );
         self::assertSame(400, $response->getStatusCode());
         self::assertSame('Invalid request body', $this->decodeResponse($response)['error']);
     }
@@ -1077,11 +924,10 @@ final class ManagementControllerTest extends TestCase
     public function registrationOptionsActionRefusedInSwitchUserMode(): void
     {
         $this->setUpAuthenticatedUser(42, 'maintainer', 'Maintainer', switchUserOriginalUid: 7);
-
-        $this->webAuthnService->expects(self::never())->method('createRegistrationOptions');
-
+        $this->webAuthnService
+            ->expects(self::never())
+            ->method('createRegistrationOptions');
         $response = $this->subject->registrationOptionsAction($this->createJsonRequest([]));
-
         self::assertSame(403, $response->getStatusCode());
         self::assertSame(
             'Passkeys cannot be managed while impersonating another user',
@@ -1097,16 +943,21 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionRefusedInSwitchUserMode(): void
     {
         $this->setUpAuthenticatedUser(42, 'maintainer', 'Maintainer', switchUserOriginalUid: 7);
-
-        $this->webAuthnService->expects(self::never())->method('verifyRegistrationResponse');
-        $this->webAuthnService->expects(self::never())->method('storeCredential');
-
-        $response = $this->subject->registrationVerifyAction($this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
-            'challengeToken' => 'ct_reg_abc',
-            'label' => 'Attacker key',
-        ]));
-
+        $this->webAuthnService
+            ->expects(self::never())
+            ->method('verifyRegistrationResponse');
+        $this->webAuthnService
+            ->expects(self::never())
+            ->method('storeCredential');
+        $response = $this->subject->registrationVerifyAction(
+            $this->createJsonRequest(
+                [
+                    'credential' => ['id' => 'cred-xyz', 'response' => ['attestationObject' => 'abc']],
+                    'challengeToken' => 'ct_reg_abc',
+                    'label' => 'Attacker key',
+                ],
+            ),
+        );
         self::assertSame(403, $response->getStatusCode());
     }
 
@@ -1114,14 +965,10 @@ final class ManagementControllerTest extends TestCase
     public function renameActionRefusedInSwitchUserMode(): void
     {
         $this->setUpAuthenticatedUser(42, 'maintainer', 'Maintainer', switchUserOriginalUid: 7);
-
-        $this->credentialRepository->expects(self::never())->method('updateLabel');
-
-        $response = $this->subject->renameAction($this->createJsonRequest([
-            'uid' => 99,
-            'label' => 'Renamed',
-        ]));
-
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('updateLabel');
+        $response = $this->subject->renameAction($this->createJsonRequest(['uid' => 99, 'label' => 'Renamed']));
         self::assertSame(403, $response->getStatusCode());
     }
 
@@ -1129,11 +976,10 @@ final class ManagementControllerTest extends TestCase
     public function removeActionRefusedInSwitchUserMode(): void
     {
         $this->setUpAuthenticatedUser(42, 'maintainer', 'Maintainer', switchUserOriginalUid: 7);
-
-        $this->credentialRepository->expects(self::never())->method('delete');
-
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('delete');
         $response = $this->subject->removeAction($this->createJsonRequest(['uid' => 99]));
-
         self::assertSame(403, $response->getStatusCode());
     }
 
@@ -1141,7 +987,6 @@ final class ManagementControllerTest extends TestCase
     public function registrationVerifyActionAllowedInNormalSession(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
-
         $sourceMock = $this->createMock(CredentialRecord::class);
         $this->webAuthnService
             ->expects(self::once())
@@ -1150,13 +995,12 @@ final class ManagementControllerTest extends TestCase
         $this->webAuthnService
             ->expects(self::once())
             ->method('storeCredential')
-            ->willReturn(new Credential(uid: 99, beUser: 42, label: 'Passkey'));
-
-        $response = $this->subject->registrationVerifyAction($this->createJsonRequest([
-            'credential' => ['id' => 'cred-xyz'],
-            'challengeToken' => 'ct_reg_abc',
-        ]));
-
+            ->willReturn(
+                new Credential(uid: 99, beUser: 42, label: 'Passkey'),
+            );
+        $response = $this->subject->registrationVerifyAction(
+            $this->createJsonRequest(['credential' => ['id' => 'cred-xyz'], 'challengeToken' => 'ct_reg_abc']),
+        );
         self::assertSame(200, $response->getStatusCode());
     }
 
@@ -1174,13 +1018,13 @@ final class ManagementControllerTest extends TestCase
         ?int $switchUserOriginalUid = null,
     ): void {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = [
-            'uid' => $uid,
-            'username' => $username,
-            'realName' => $realName,
-        ];
-        $backendUser->method('isAdmin')->willReturn(false);
-        $backendUser->method('getOriginalUserIdWhenInSwitchUserMode')->willReturn($switchUserOriginalUid);
+        $backendUser->user = ['uid' => $uid, 'username' => $username, 'realName' => $realName];
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(false);
+        $backendUser
+            ->method('getOriginalUserIdWhenInSwitchUserMode')
+            ->willReturn($switchUserOriginalUid);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
@@ -1192,15 +1036,19 @@ final class ManagementControllerTest extends TestCase
     private function createJsonRequest(array $data): ServerRequestInterface&MockObject
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn($data);
-
+        $request
+            ->method('getParsedBody')
+            ->willReturn($data);
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
-        $request->method('getBody')->willReturn($stream);
+        $stream
+            ->method('__toString')
+            ->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
 
         return $request;
     }
-
 
     /**
      * Decode a PSR-7 response body as JSON.
@@ -1212,6 +1060,7 @@ final class ManagementControllerTest extends TestCase
         $body = (string) $response->getBody();
         $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         \assert(\is_array($decoded));
+
         return $decoded;
     }
 }

@@ -17,10 +17,5 @@ namespace Netresearch\NrPasskeysBe\Domain\Dto;
  */
 final readonly class AuthenticatedUser
 {
-    public function __construct(
-        public int $uid,
-        public string $username,
-        public string $realName,
-        public bool $isAdmin,
-    ) {}
+    public function __construct(public int $uid, public string $username, public string $realName, public bool $isAdmin) {}
 }

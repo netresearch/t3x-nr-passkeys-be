@@ -24,12 +24,7 @@ final class VerifiedAssertionTest extends TestCase
     {
         $credential = new Credential(uid: 1, beUser: 42, label: 'Test Key');
         $source = $this->createMock(CredentialRecord::class);
-
-        $dto = new VerifiedAssertion(
-            credential: $credential,
-            source: $source,
-        );
-
+        $dto = new VerifiedAssertion(credential: $credential, source: $source);
         self::assertSame($credential, $dto->credential);
         self::assertSame($source, $dto->source);
     }

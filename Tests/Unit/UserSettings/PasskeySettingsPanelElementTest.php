@@ -45,20 +45,20 @@ final class PasskeySettingsPanelElementTest extends TestCase
 
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
         $this->pageRenderer = $this->createMock(PageRenderer::class);
-
         $this->uriBuilder = $this->createMock(UriBuilder::class);
         $this->uriBuilder
             ->method('buildUriFromRoute')
-            ->willReturnCallback(static fn(string $routeName): Uri => new Uri('/typo3/ajax/passkeys/' . $routeName . '?token=test'));
-
+            ->willReturnCallback(
+                static fn(string $routeName): Uri => new Uri('/typo3/ajax/passkeys/' . $routeName . '?token=test'),
+            );
         $this->panel = new PasskeySettingsPanel();
-
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 64);
-
         $languageService = $this->createMock(LanguageService::class);
-        $languageService->method('sL')->willReturnCallback(
-            static fn(string $key): string => \basename(\str_replace(':', '/', $key)),
-        );
+        $languageService
+            ->method('sL')
+            ->willReturnCallback(
+                static fn(string $key): string => \basename(\str_replace(':', '/', $key)),
+            );
         $GLOBALS['LANG'] = $languageService;
     }
 
@@ -72,9 +72,9 @@ final class PasskeySettingsPanelElementTest extends TestCase
     public function renderReturnsEmptyHtmlWhenNoBackendUser(): void
     {
         unset($GLOBALS['BE_USER']);
-
-        $result = $this->createSubject()->render();
-
+        $result = $this
+            ->createSubject()
+            ->render();
         self::assertEmpty($result['html'] ?? '');
     }
 
@@ -82,9 +82,9 @@ final class PasskeySettingsPanelElementTest extends TestCase
     public function renderReturnsEmptyHtmlWhenBackendUserIsNotAuthentication(): void
     {
         $GLOBALS['BE_USER'] = new stdClass();
-
-        $result = $this->createSubject()->render();
-
+        $result = $this
+            ->createSubject()
+            ->render();
         self::assertEmpty($result['html'] ?? '');
     }
 
@@ -92,9 +92,9 @@ final class PasskeySettingsPanelElementTest extends TestCase
     public function renderReturnsEmptyHtmlWhenUserUidIsZero(): void
     {
         $this->setUpBackendUser(0);
-
-        $result = $this->createSubject()->render();
-
+        $result = $this
+            ->createSubject()
+            ->render();
         self::assertEmpty($result['html'] ?? '');
     }
 
@@ -103,9 +103,9 @@ final class PasskeySettingsPanelElementTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short';
-
-        $result = $this->createSubject()->render();
-
+        $result = $this
+            ->createSubject()
+            ->render();
         self::assertStringContainsString('alert alert-danger', $result['html'] ?? '');
         self::assertStringNotContainsString('passkey-management-container', $result['html'] ?? '');
     }
@@ -115,9 +115,9 @@ final class PasskeySettingsPanelElementTest extends TestCase
     {
         $this->setUpBackendUser(1);
         unset($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']);
-
-        $result = $this->createSubject()->render();
-
+        $result = $this
+            ->createSubject()
+            ->render();
         self::assertStringContainsString('alert alert-danger', $result['html'] ?? '');
     }
 
@@ -125,10 +125,12 @@ final class PasskeySettingsPanelElementTest extends TestCase
     public function renderReturnsManagementContainerOnSuccessPath(): void
     {
         $this->setUpBackendUser(1);
-        $this->credentialRepository->method('countByBeUser')->willReturn(3);
-
-        $result = $this->createSubject()->render();
-
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(3);
+        $result = $this
+            ->createSubject()
+            ->render();
         self::assertStringContainsString('id="passkey-management-container"', $result['html'] ?? '');
     }
 
@@ -136,37 +138,44 @@ final class PasskeySettingsPanelElementTest extends TestCase
     public function renderLoadsJavaScriptModule(): void
     {
         $this->setUpBackendUser(1);
-        $this->credentialRepository->method('countByBeUser')->willReturn(0);
-
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(0);
         $this->pageRenderer
             ->expects(self::once())
             ->method('loadJavaScriptModule')
-            ->with('@netresearch/nr-passkeys-be/PasskeyManagement.js');
-
-        $this->createSubject()->render();
+            ->with(
+                '@netresearch/nr-passkeys-be/PasskeyManagement.js',
+            );
+        $this
+            ->createSubject()
+            ->render();
     }
 
     #[Test]
     public function renderUsesCorrectUserIdForRepository(): void
     {
         $this->setUpBackendUser(42);
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('countByBeUser')
             ->with(42)
             ->willReturn(0);
-
-        $this->createSubject()->render();
+        $this
+            ->createSubject()
+            ->render();
     }
 
     #[Test]
     public function renderDelegatesHtmlGenerationToPanel(): void
     {
         $this->setUpBackendUser(1);
-        $this->credentialRepository->method('countByBeUser')->willReturn(2);
-
-        $result = $this->createSubject()->render();
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(2);
+        $result = $this
+            ->createSubject()
+            ->render();
 
         // HTML comes from PasskeySettingsPanel::buildHtml() — spot-check its output
         self::assertStringContainsString('id="passkey-list-table"', $result['html'] ?? '');
@@ -178,10 +187,12 @@ final class PasskeySettingsPanelElementTest extends TestCase
     public function renderReturnsArrayWithHtmlKey(): void
     {
         $this->setUpBackendUser(1);
-        $this->credentialRepository->method('countByBeUser')->willReturn(0);
-
-        $result = $this->createSubject()->render();
-
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(0);
+        $result = $this
+            ->createSubject()
+            ->render();
         self::assertIsArray($result);
         self::assertArrayHasKey('html', $result);
     }
@@ -190,12 +201,13 @@ final class PasskeySettingsPanelElementTest extends TestCase
     public function setDataPopulatesDataProperty(): void
     {
         $subject = $this->createSubject(['tableName' => 'be_users_settings']);
+
         // setData is exercised indirectly; verify render() still works
         $this->setUpBackendUser(1);
-        $this->credentialRepository->method('countByBeUser')->willReturn(0);
-
+        $this->credentialRepository
+            ->method('countByBeUser')
+            ->willReturn(0);
         $result = $subject->render();
-
         self::assertIsArray($result);
     }
 

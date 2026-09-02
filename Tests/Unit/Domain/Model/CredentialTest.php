@@ -26,7 +26,6 @@ final class CredentialTest extends TestCase
     public function constructorSetsDefaultValues(): void
     {
         $credential = new Credential();
-
         self::assertSame(0, $credential->getUid());
         self::assertSame(0, $credential->getPid());
         self::assertSame(0, $credential->getBeUser());
@@ -62,7 +61,6 @@ final class CredentialTest extends TestCase
             revokedAt: 1700002000,
             revokedBy: 99,
         );
-
         self::assertSame(42, $credential->getUid());
         self::assertSame(1, $credential->getPid());
         self::assertSame(7, $credential->getBeUser());
@@ -232,6 +230,7 @@ final class CredentialTest extends TestCase
     {
         $credential = new Credential();
         $credential->setTransportsArray([2 => 'ble', 5 => 'nfc']);
+
         // array_values re-indexes keys, so the JSON should be a list
         self::assertSame('["ble","nfc"]', $credential->getTransports());
     }
@@ -277,7 +276,6 @@ final class CredentialTest extends TestCase
             revokedAt: 0,
             revokedBy: 0,
         );
-
         $expected = [
             'uid' => 1,
             'pid' => 2,
@@ -295,7 +293,6 @@ final class CredentialTest extends TestCase
             'revoked_at' => 0,
             'revoked_by' => 0,
         ];
-
         self::assertSame($expected, $credential->toArray());
     }
 
@@ -318,9 +315,7 @@ final class CredentialTest extends TestCase
             'revoked_at' => 0,
             'revoked_by' => 0,
         ];
-
         $credential = Credential::fromArray($data);
-
         self::assertSame(10, $credential->getUid());
         self::assertSame(1, $credential->getPid());
         self::assertSame(5, $credential->getBeUser());
@@ -341,7 +336,6 @@ final class CredentialTest extends TestCase
     public function fromArrayHandlesMissingKeysWithDefaults(): void
     {
         $credential = Credential::fromArray([]);
-
         self::assertSame(0, $credential->getUid());
         self::assertSame(0, $credential->getPid());
         self::assertSame(0, $credential->getBeUser());
@@ -361,11 +355,7 @@ final class CredentialTest extends TestCase
     #[Test]
     public function fromArrayHandlesPartialData(): void
     {
-        $credential = Credential::fromArray([
-            'uid' => 99,
-            'label' => 'Partial',
-        ]);
-
+        $credential = Credential::fromArray(['uid' => 99, 'label' => 'Partial']);
         self::assertSame(99, $credential->getUid());
         self::assertSame('Partial', $credential->getLabel());
         self::assertSame(0, $credential->getBeUser());
@@ -391,9 +381,7 @@ final class CredentialTest extends TestCase
             revokedAt: 1700070000,
             revokedBy: 77,
         );
-
         $restored = Credential::fromArray($original->toArray());
-
         self::assertSame($original->toArray(), $restored->toArray());
     }
 
@@ -416,9 +404,7 @@ final class CredentialTest extends TestCase
             revokedAt: 0,
             revokedBy: 0,
         );
-
         $info = $credential->toCredentialInfo();
-
         self::assertInstanceOf(CredentialInfo::class, $info);
         self::assertSame(42, $info->uid);
         self::assertSame('My Key', $info->label);
@@ -437,9 +423,7 @@ final class CredentialTest extends TestCase
             lastUsedAt: 1700001000,
             revokedAt: 1700002000,
         );
-
         $info = $credential->toCredentialInfo();
-
         self::assertInstanceOf(CredentialInfo::class, $info);
         self::assertTrue($info->isRevoked);
     }
@@ -449,9 +433,7 @@ final class CredentialTest extends TestCase
     {
         $credential = new Credential(uid: 1, label: 'Test');
         $info = $credential->toCredentialInfo();
-
         self::assertInstanceOf(CredentialInfo::class, $info);
-
         $serialized = $info->jsonSerialize();
         self::assertCount(6, $serialized);
         self::assertArrayHasKey('uid', $serialized);
@@ -469,13 +451,9 @@ final class CredentialTest extends TestCase
         // authenticator that stayed silent must not be reported as limited.
         $unknown = (new Credential(uid: 1, label: 'Test'))->toCredentialInfo();
         self::assertNull($unknown->jsonSerialize()['discoverable']);
-
-        $yes = (new Credential(uid: 2, discoverable: CredentialDiscoverability::Discoverable, label: 'Test'))
-            ->toCredentialInfo();
+        $yes = (new Credential(uid: 2, discoverable: CredentialDiscoverability::Discoverable, label: 'Test'))->toCredentialInfo();
         self::assertTrue($yes->jsonSerialize()['discoverable']);
-
-        $no = (new Credential(uid: 3, discoverable: CredentialDiscoverability::NotDiscoverable, label: 'Test'))
-            ->toCredentialInfo();
+        $no = (new Credential(uid: 3, discoverable: CredentialDiscoverability::NotDiscoverable, label: 'Test'))->toCredentialInfo();
         self::assertFalse($no->jsonSerialize()['discoverable']);
     }
 
@@ -512,9 +490,7 @@ final class CredentialTest extends TestCase
             revokedAt: 1700002000,
             revokedBy: 99,
         );
-
         $info = $credential->toAdminCredentialInfo();
-
         self::assertInstanceOf(AdminCredentialInfo::class, $info);
         self::assertSame(42, $info->uid);
         self::assertSame('My Key', $info->label);
@@ -536,9 +512,7 @@ final class CredentialTest extends TestCase
             revokedAt: 0,
             revokedBy: 0,
         );
-
         $info = $credential->toAdminCredentialInfo();
-
         self::assertInstanceOf(AdminCredentialInfo::class, $info);
         self::assertFalse($info->isRevoked);
         self::assertSame(0, $info->revokedAt);
@@ -550,9 +524,7 @@ final class CredentialTest extends TestCase
     {
         $credential = new Credential(uid: 1, label: 'Test');
         $info = $credential->toAdminCredentialInfo();
-
         self::assertInstanceOf(AdminCredentialInfo::class, $info);
-
         $serialized = $info->jsonSerialize();
         self::assertCount(7, $serialized);
         self::assertArrayHasKey('uid', $serialized);

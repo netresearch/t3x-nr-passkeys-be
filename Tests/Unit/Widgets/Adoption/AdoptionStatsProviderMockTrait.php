@@ -26,7 +26,9 @@ trait AdoptionStatsProviderMockTrait
     private function statsProvider(PasskeyAudienceStats $stats): PasskeyAdoptionStatsProviderInterface
     {
         $provider = $this->createMock(PasskeyAdoptionStatsProviderInterface::class);
-        $provider->method('getAudienceStats')->willReturn($stats);
+        $provider
+            ->method('getAudienceStats')
+            ->willReturn($stats);
 
         return $provider;
     }

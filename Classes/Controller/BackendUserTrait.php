@@ -28,16 +28,19 @@ trait BackendUserTrait
     private function getAuthenticatedUser(): ?AuthenticatedUser
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
+
         if (!$backendUser instanceof BackendUserAuthentication) {
             return null;
         }
 
         $userData = $backendUser->user;
+
         if (!\is_array($userData)) {
             return null;
         }
 
         $rawUid = $userData['uid'] ?? null;
+
         if (!\is_numeric($rawUid)) {
             return null;
         }
@@ -61,6 +64,7 @@ trait BackendUserTrait
     private function requireAdmin(): ?AuthenticatedUser
     {
         $user = $this->getAuthenticatedUser();
+
         if ($user === null || !$user->isAdmin) {
             return null;
         }
@@ -81,6 +85,7 @@ trait BackendUserTrait
     private function isSwitchUserMode(): bool
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
+
         if (!$backendUser instanceof BackendUserAuthentication) {
             return false;
         }
@@ -98,18 +103,21 @@ trait BackendUserTrait
     private function isManagementAllowedFor(int $targetUid): bool
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
+
         if (!$backendUser instanceof BackendUserAuthentication) {
             return false;
         }
 
         $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
-        $systemMaintainers = \is_array($sysConf) ? ($sysConf['systemMaintainers'] ?? []) : [];
+        $sysConf = \is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
+        $systemMaintainers = \is_array($sysConf) ? $sysConf['systemMaintainers'] ?? [] : [];
+
         if (!\is_array($systemMaintainers) || $systemMaintainers === []) {
             return true;
         }
 
         $systemMaintainerIds = [];
+
         foreach ($systemMaintainers as $maintainer) {
             if (\is_numeric($maintainer)) {
                 $systemMaintainerIds[] = (int) $maintainer;

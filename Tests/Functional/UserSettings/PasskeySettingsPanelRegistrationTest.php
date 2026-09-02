@@ -33,13 +33,9 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 #[CoversNothing]
 final class PasskeySettingsPanelRegistrationTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'setup',
-    ];
+    protected array $coreExtensionsToLoad = ['setup'];
 
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-    ];
+    protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
 
     /**
      * The node must resolve to our element via the registered renderType.
@@ -57,7 +53,6 @@ final class PasskeySettingsPanelRegistrationTest extends FunctionalTestCase
         // create() instantiates and calls setData() but does not call render(),
         // so a minimal data array carrying only the renderType is sufficient.
         $node = $nodeFactory->create(['renderType' => 'nrPasskeySettingsPanel']);
-
         self::assertInstanceOf(PasskeySettingsPanelElement::class, $node);
     }
 
@@ -74,7 +69,6 @@ final class PasskeySettingsPanelRegistrationTest extends FunctionalTestCase
         }
 
         $config = $GLOBALS['TCA']['be_users']['columns']['user_settings']['columns']['passkeys']['config'] ?? null;
-
         self::assertIsArray($config, 'passkeys user-settings column must be registered on v14+');
         self::assertSame('user', $config['type'] ?? null);
         self::assertSame(
@@ -96,12 +90,8 @@ final class PasskeySettingsPanelRegistrationTest extends FunctionalTestCase
         }
 
         $column = $GLOBALS['TYPO3_USER_SETTINGS']['columns']['passkeys'] ?? null;
-
         self::assertIsArray($column, 'passkeys user-settings column must be registered on v12/v13');
         self::assertSame('user', $column['type'] ?? null);
-        self::assertSame(
-            PasskeySettingsPanel::class . '->render',
-            $column['userFunc'] ?? null,
-        );
+        self::assertSame(PasskeySettingsPanel::class . '->render', $column['userFunc'] ?? null);
     }
 }

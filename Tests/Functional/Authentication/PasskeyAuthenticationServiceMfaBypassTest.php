@@ -35,24 +35,16 @@ use Webauthn\CredentialRecord;
 #[CoversClass(PasskeyAuthenticationService::class)]
 final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'setup',
-    ];
+    protected array $coreExtensionsToLoad = ['setup'];
 
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-    ];
+    protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
 
     protected array $configurationToUseInTestInstance = [
         'SYS' => [
             'caching' => [
                 'cacheConfigurations' => [
-                    'nr_passkeys_be_nonce' => [
-                        'backend' => NullBackend::class,
-                    ],
-                    'nr_passkeys_be_ratelimit' => [
-                        'backend' => NullBackend::class,
-                    ],
+                    'nr_passkeys_be_nonce' => ['backend' => NullBackend::class],
+                    'nr_passkeys_be_ratelimit' => ['backend' => NullBackend::class],
                 ],
             ],
         ],
@@ -75,27 +67,18 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
     public function successfulPasskeyAuthSetsMfaSessionKeyWhenSkipMfaOnPasskeyAuthEnabled(): void
     {
         $backendUser = $this->setUpBackendUser(5);
-
         $this->stubExtensionConfigServiceWithSkipMfaFlag(true);
         $this->stubWebAuthnServiceWithVerifiedAssertion();
         $this->stubRateLimiterService();
-
         $service = new PasskeyAuthenticationService();
         $service->pObj = $backendUser;
-        $service->login = [
-            'uname' => 'adminuser',
-            'uident' => $this->buildPasskeyPayload(),
-        ];
+        $service->login = ['uname' => 'adminuser', 'uident' => $this->buildPasskeyPayload()];
 
         $result = $service->authUser($backendUser->user ?? []);
-
         self::assertSame(200, $result);
         self::assertTrue(
             $backendUser->getSessionData('mfa'),
-            "The 'mfa' session key must be set to true after a successful "
-            . "passkey authentication when skipMfaOnPasskeyAuth is enabled. "
-            . "TYPO3's AbstractUserAuthentication::evaluateMfaRequirements() "
-            . 'uses this key to short-circuit the MFA challenge.',
+            "The 'mfa' session key must be set to true after a successful " . "passkey authentication when skipMfaOnPasskeyAuth is enabled. " . "TYPO3's AbstractUserAuthentication::evaluateMfaRequirements() " . 'uses this key to short-circuit the MFA challenge.',
         );
     }
 
@@ -103,26 +86,18 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
     public function successfulPasskeyAuthDoesNotSetMfaSessionKeyWhenSkipMfaOnPasskeyAuthDisabled(): void
     {
         $backendUser = $this->setUpBackendUser(5);
-
         $this->stubExtensionConfigServiceWithSkipMfaFlag(false);
         $this->stubWebAuthnServiceWithVerifiedAssertion();
         $this->stubRateLimiterService();
-
         $service = new PasskeyAuthenticationService();
         $service->pObj = $backendUser;
-        $service->login = [
-            'uname' => 'adminuser',
-            'uident' => $this->buildPasskeyPayload(),
-        ];
+        $service->login = ['uname' => 'adminuser', 'uident' => $this->buildPasskeyPayload()];
 
         $result = $service->authUser($backendUser->user ?? []);
-
         self::assertSame(200, $result);
         self::assertNull(
             $backendUser->getSessionData('mfa'),
-            "The 'mfa' session key must not be written when the admin has "
-            . 'opted out of the bypass via skipMfaOnPasskeyAuth=false. '
-            . "TYPO3's native MFA flow must remain untouched in that mode.",
+            "The 'mfa' session key must not be written when the admin has " . 'opted out of the bypass via skipMfaOnPasskeyAuth=false. ' . "TYPO3's native MFA flow must remain untouched in that mode.",
         );
     }
 
@@ -130,15 +105,10 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
     public function passwordLoginDoesNotSetMfaSessionKeyEvenWhenSkipMfaOnPasskeyAuthEnabled(): void
     {
         $backendUser = $this->setUpBackendUser(5);
-
         $this->stubExtensionConfigServiceWithSkipMfaFlag(true);
-
         $service = new PasskeyAuthenticationService();
         $service->pObj = $backendUser;
-        $service->login = [
-            'uname' => 'adminuser',
-            'uident' => 'regularPassword123',
-        ];
+        $service->login = ['uname' => 'adminuser', 'uident' => 'regularPassword123'];
 
         $result = $service->authUser($backendUser->user ?? []);
 
@@ -146,13 +116,11 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         self::assertSame(100, $result);
         self::assertNull(
             $backendUser->getSessionData('mfa'),
-            'Password logins must never trigger the MFA bypass. The bypass '
-            . 'is only valid when the primary authentication factor is a passkey.',
+            'Password logins must never trigger the MFA bypass. The bypass ' . 'is only valid when the primary authentication factor is a passkey.',
         );
     }
 
     // ── Helpers ──────────────────────────────────────────────
-
     /**
      * Wire a fresh ExtensionConfigurationService into the makeInstance FIFO
      * queue so that PasskeyAuthenticationService resolves our stubbed value
@@ -165,7 +133,6 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
             ->method('get')
             ->with('nr_passkeys_be')
             ->willReturn(['skipMfaOnPasskeyAuth' => $skipMfa ? 1 : 0]);
-
         $configService = new ExtensionConfigurationService($typo3ExtConfig);
         GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
     }
@@ -173,32 +140,31 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
     private function stubWebAuthnServiceWithVerifiedAssertion(): void
     {
         $credential = new Credential(uid: 10, beUser: 5, label: 'Functional Test Key');
-        $verified = new VerifiedAssertion(
-            credential: $credential,
-            source: $this->createMock(CredentialRecord::class),
-        );
-
+        $verified = new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class));
         $webAuthnService = $this->createMock(WebAuthnService::class);
         $webAuthnService
             ->method('verifyAssertionResponse')
             ->willReturn($verified);
-
         GeneralUtility::addInstance(WebAuthnService::class, $webAuthnService);
     }
 
     private function stubRateLimiterService(): void
     {
         $rateLimiterService = $this->createMock(RateLimiterService::class);
+
         // All methods are stubbed (void-ish), no explicit setup needed.
         GeneralUtility::addInstance(RateLimiterService::class, $rateLimiterService);
     }
 
     private function buildPasskeyPayload(): string
     {
-        return \json_encode([
-            '_type' => 'passkey',
-            'assertion' => ['functional' => 'test-assertion'],
-            'challengeToken' => 'functional-test-token',
-        ], JSON_THROW_ON_ERROR);
+        return \json_encode(
+            [
+                '_type' => 'passkey',
+                'assertion' => ['functional' => 'test-assertion'],
+                'challengeToken' => 'functional-test-token',
+            ],
+            JSON_THROW_ON_ERROR,
+        );
     }
 }

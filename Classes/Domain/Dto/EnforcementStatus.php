@@ -46,7 +46,7 @@ final readonly class EnforcementStatus
 
         $now = $currentTime > 0 ? $currentTime : \time();
         $elapsedSeconds = $now - $this->gracePeriodStart;
-        $elapsedDays = (int) \floor($elapsedSeconds / 86_400);
+        $elapsedDays = (int) \floor($elapsedSeconds / 86400);
         $remaining = $this->gracePeriodDays - $elapsedDays;
 
         return \max(0, $remaining);

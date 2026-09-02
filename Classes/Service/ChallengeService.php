@@ -36,20 +36,16 @@ final readonly class ChallengeService
 
     public function createChallengeToken(string $challenge): string
     {
-        $ttl = $this->configService->getConfiguration()->getChallengeTtlSeconds();
+        $ttl = $this->configService
+            ->getConfiguration()
+            ->getChallengeTtlSeconds();
         $expiresAt = \time() + $ttl;
         $nonce = \bin2hex(\random_bytes(16));
-
         $payload = \base64_encode($challenge) . '|' . $expiresAt . '|' . $nonce;
         $hmac = \hash_hmac(self::HMAC_ALGO, $payload, $this->getSigningKey());
 
         // Store nonce in cache to ensure single-use
-        $this->nonceCache->set(
-            $this->getNonceCacheKey($nonce),
-            'valid',
-            [],
-            $ttl + 60, // extra buffer for clock skew
-        );
+        $this->nonceCache->set($this->getNonceCacheKey($nonce), 'valid', [], $ttl + 60);
 
         return \base64_encode($payload . '|' . $hmac);
     }
@@ -60,11 +56,13 @@ final readonly class ChallengeService
     public function verifyChallengeToken(string $token): string
     {
         $decoded = \base64_decode($token, true);
+
         if ($decoded === false) {
             throw new RuntimeException('Invalid challenge token encoding', 1700000001);
         }
 
         $parts = \explode('|', $decoded);
+
         if (\count($parts) !== 4) {
             throw new RuntimeException('Invalid challenge token format', 1700000002);
         }
@@ -76,20 +74,22 @@ final readonly class ChallengeService
         $expectedHmac = \hash_hmac(self::HMAC_ALGO, $payload, $this->getSigningKey());
 
         if (!\hash_equals($expectedHmac, $hmac)) {
-            $this->logger->warning('Invalid HMAC signature on challenge token (possible tampering)', [
-                'noncePrefix' => \substr($nonce, 0, 8) . '...',
-            ]);
+            $this->logger->warning(
+                'Invalid HMAC signature on challenge token (possible tampering)',
+                ['noncePrefix' => \substr($nonce, 0, 8) . '...'],
+            );
 
             throw new RuntimeException('Challenge token signature invalid', 1700000003);
         }
 
         // Check TTL
         $expiresAt = (int) $expiresAtStr;
+
         if (\time() > $expiresAt) {
-            $this->logger->warning('Expired challenge token presented', [
-                'expiredAt' => $expiresAt,
-                'noncePrefix' => \substr($nonce, 0, 8) . '...',
-            ]);
+            $this->logger->warning(
+                'Expired challenge token presented',
+                ['expiredAt' => $expiresAt, 'noncePrefix' => \substr($nonce, 0, 8) . '...'],
+            );
 
             throw new RuntimeException('Challenge token expired', 1700000004);
         }
@@ -103,9 +103,7 @@ final readonly class ChallengeService
         );
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
-            $this->logger->error('Failed to acquire nonce lock', [
-                'nonceCacheKey' => $nonceCacheKey,
-            ]);
+            $this->logger->error('Failed to acquire nonce lock', ['nonceCacheKey' => $nonceCacheKey]);
 
             throw new RuntimeException('Failed to acquire nonce lock', 1700000007);
         }
@@ -118,14 +116,16 @@ final readonly class ChallengeService
         }
 
         if (!$nonceExisted) {
-            $this->logger->warning('Challenge nonce replay attempt (nonce already consumed or expired)', [
-                'noncePrefix' => \substr($nonce, 0, 8) . '...',
-            ]);
+            $this->logger->warning(
+                'Challenge nonce replay attempt (nonce already consumed or expired)',
+                ['noncePrefix' => \substr($nonce, 0, 8) . '...'],
+            );
 
             throw new RuntimeException('Challenge nonce already used or expired', 1700000005);
         }
 
         $challenge = \base64_decode($challengeB64, true);
+
         if ($challenge === false) {
             throw new RuntimeException('Invalid challenge data in token', 1700000006);
         }

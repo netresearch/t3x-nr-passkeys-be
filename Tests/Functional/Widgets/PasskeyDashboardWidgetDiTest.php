@@ -25,19 +25,13 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
  */
 final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'setup',
-        'dashboard',
-    ];
+    protected array $coreExtensionsToLoad = ['setup', 'dashboard'];
 
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-    ];
+    protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
 
     // No cache override needed: this DI smoke test resolves the stats
     // providers only and never invokes the nonce/rate-limit caches, so the
     // file-backend defaults registered in ext_localconf.php are fine.
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -51,9 +45,9 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
     {
         $provider = $this->get(BackendPasskeyAdoptionStatsProvider::class);
         self::assertInstanceOf(BackendPasskeyAdoptionStatsProvider::class, $provider);
-
         $stats = $provider->getAudienceStats();
         self::assertSame('backend', $stats->audienceKey);
+
         // be_users.csv: 5 active users; credential fixture: 2 distinct users
         // with active credentials, 3 active credentials of active users.
         self::assertSame(5, $stats->totalActiveUsers);
@@ -77,7 +71,6 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
     {
         $provider = $this->get(PasskeyAdoptionChartDataProvider::class);
         self::assertInstanceOf(PasskeyAdoptionChartDataProvider::class, $provider);
-
         $chartData = $provider->getChartData();
 
         // One provider in the iterator => one dataset (backend green/orange).

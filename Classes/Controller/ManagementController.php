@@ -48,6 +48,7 @@ final readonly class ManagementController
     public function registrationOptionsAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -70,18 +71,19 @@ final readonly class ManagementController
                 username: $user->username,
                 displayName: $user->realName !== '' ? $user->realName : $user->username,
             );
-
             $optionsJson = $this->webAuthnService->serializeCreationOptions($result->options);
 
-            return new JsonResponse([
-                'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
-                'challengeToken' => $result->challengeToken,
-            ]);
+            return new JsonResponse(
+                [
+                    'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
+                    'challengeToken' => $result->challengeToken,
+                ],
+            );
         } catch (Throwable $e) {
-            $this->logger->error('Failed to generate registration options', [
-                'be_user_uid' => $user->uid,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                'Failed to generate registration options',
+                ['be_user_uid' => $user->uid, 'error' => $e->getMessage()],
+            );
 
             return new JsonResponse(['error' => 'Failed to generate registration options'], 500);
         }
@@ -96,6 +98,7 @@ final readonly class ManagementController
     public function registrationVerifyAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -105,8 +108,8 @@ final readonly class ManagementController
         }
 
         $body = $this->getJsonBody($request);
-
         $credentialJson = $this->encodeBodySection($body['credential'] ?? null);
+
         if ($credentialJson === null) {
             return new JsonResponse(['error' => 'Invalid request body'], 400);
         }
@@ -128,6 +131,7 @@ final readonly class ManagementController
 
         // Sanitize label
         $label = \mb_substr(\trim($label), 0, 128);
+
         if ($label === '') {
             $label = 'Passkey';
         }
@@ -140,29 +144,23 @@ final readonly class ManagementController
                 username: $user->username,
                 displayName: $user->realName !== '' ? $user->realName : $user->username,
             );
-
             $credential = $this->webAuthnService->storeCredential(
                 source: $source,
                 beUserUid: $user->uid,
                 label: $label,
                 discoverable: $discoverable,
             );
+            $this->logger->info(
+                'Passkey registered',
+                ['be_user_uid' => $user->uid, 'credential_uid' => $credential->getUid(), 'label' => $label],
+            );
 
-            $this->logger->info('Passkey registered', [
-                'be_user_uid' => $user->uid,
-                'credential_uid' => $credential->getUid(),
-                'label' => $label,
-            ]);
-
-            return new JsonResponse([
-                'status' => 'ok',
-                'credential' => $credential->toCredentialInfo(),
-            ]);
+            return new JsonResponse(['status' => 'ok', 'credential' => $credential->toCredentialInfo()]);
         } catch (RuntimeException $e) {
-            $this->logger->error('Passkey registration failed', [
-                'be_user_uid' => $user->uid,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                'Passkey registration failed',
+                ['be_user_uid' => $user->uid, 'error' => $e->getMessage()],
+            );
 
             return new JsonResponse(['error' => 'Registration failed'], 400);
         }
@@ -176,21 +174,23 @@ final readonly class ManagementController
     public function listAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
         $credentials = $this->credentialRepository->findByBeUser($user->uid);
-        $list = \array_map(
-            static fn(Credential $cred): CredentialInfo => $cred->toCredentialInfo(),
-            $credentials,
-        );
+        $list = \array_map(static fn(Credential $cred): CredentialInfo => $cred->toCredentialInfo(), $credentials);
 
-        return new JsonResponse([
-            'credentials' => $list,
-            'count' => \count($list),
-            'enforcementEnabled' => $this->configService->getConfiguration()->isDisablePasswordLogin(),
-        ]);
+        return new JsonResponse(
+            [
+                'credentials' => $list,
+                'count' => \count($list),
+                'enforcementEnabled' => $this->configService
+                    ->getConfiguration()
+                    ->isDisablePasswordLogin(),
+            ],
+        );
     }
 
     /**
@@ -201,11 +201,13 @@ final readonly class ManagementController
     public function enforcementStatusAction(ServerRequestInterface $request): ResponseInterface
     {
         $backendUser = $GLOBALS['BE_USER'] ?? null;
+
         if (!$backendUser instanceof BackendUserAuthentication) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
         $userRow = $backendUser->user;
+
         if (!\is_array($userRow)) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -217,19 +219,18 @@ final readonly class ManagementController
         // A nudge only triggers the banner if the user has no passkeys yet —
         // once they register a passkey, the nudge becomes irrelevant.
         $nudgeUntil = $userRow['passkey_nudge_until'] ?? 0;
-        $hasActiveNudge = !$status->hasPasskeys
-            && \is_numeric($nudgeUntil)
-            && (int) $nudgeUntil > \time();
+        $hasActiveNudge = !$status->hasPasskeys && \is_numeric($nudgeUntil) && (int) $nudgeUntil > \time();
+        $requiresBanner = $status->level->requiresBanner() && !$status->hasPasskeys || $hasActiveNudge;
 
-        $requiresBanner = ($status->level->requiresBanner() && !$status->hasPasskeys) || $hasActiveNudge;
-
-        return new JsonResponse([
-            'level' => $status->level->value,
-            'hasPasskeys' => $status->hasPasskeys,
-            'requiresBanner' => $requiresBanner,
-            'gracePeriodRemainingDays' => $status->gracePeriodRemainingDays(),
-            'nudgeUntil' => $hasActiveNudge ? (int) $nudgeUntil : 0,
-        ]);
+        return new JsonResponse(
+            [
+                'level' => $status->level->value,
+                'hasPasskeys' => $status->hasPasskeys,
+                'requiresBanner' => $requiresBanner,
+                'gracePeriodRemainingDays' => $status->gracePeriodRemainingDays(),
+                'nudgeUntil' => $hasActiveNudge ? (int) $nudgeUntil : 0,
+            ],
+        );
     }
 
     /**
@@ -241,6 +242,7 @@ final readonly class ManagementController
     public function renameAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -259,23 +261,23 @@ final readonly class ManagementController
         }
 
         $label = \mb_substr(\trim($label), 0, 128);
+
         if ($label === '') {
             $label = 'Passkey';
         }
 
         // Verify ownership
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $user->uid);
+
         if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
         $this->credentialRepository->updateLabel($credentialUid, $label);
-
-        $this->logger->info('Passkey renamed', [
-            'be_user_uid' => $user->uid,
-            'credential_uid' => $credentialUid,
-            'new_label' => $label,
-        ]);
+        $this->logger->info(
+            'Passkey renamed',
+            ['be_user_uid' => $user->uid, 'credential_uid' => $credentialUid, 'new_label' => $label],
+        );
 
         return new JsonResponse(['status' => 'ok']);
     }
@@ -289,6 +291,7 @@ final readonly class ManagementController
     public function removeAction(ServerRequestInterface $request): ResponseInterface
     {
         $user = $this->getAuthenticatedUser();
+
         if (!$user instanceof AuthenticatedUser) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
@@ -306,24 +309,22 @@ final readonly class ManagementController
 
         // Verify ownership
         $credential = $this->credentialRepository->findByUidAndBeUser($credentialUid, $user->uid);
+
         if (!$credential instanceof Credential) {
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
         // Block removal of last passkey when enforcement is enabled
         $count = $this->credentialRepository->countByBeUser($user->uid);
-        if ($count <= 1 && $this->configService->getConfiguration()->isDisablePasswordLogin()) {
-            return new JsonResponse([
-                'error' => 'Cannot remove your last passkey when password login is disabled',
-            ], 409);
+
+        if ($count <= 1 && $this->configService
+            ->getConfiguration()
+            ->isDisablePasswordLogin()) {
+            return new JsonResponse(['error' => 'Cannot remove your last passkey when password login is disabled'], 409);
         }
 
         $this->credentialRepository->delete($credentialUid);
-
-        $this->logger->info('Passkey removed', [
-            'be_user_uid' => $user->uid,
-            'credential_uid' => $credentialUid,
-        ]);
+        $this->logger->info('Passkey removed', ['be_user_uid' => $user->uid, 'credential_uid' => $credentialUid]);
 
         return new JsonResponse(['status' => 'ok']);
     }
@@ -335,14 +336,11 @@ final readonly class ManagementController
      */
     private function denySwitchUserMode(string $operation, int $uid): ResponseInterface
     {
-        $this->logger->warning('Passkey management blocked in switch-user mode', [
-            'operation' => $operation,
-            'be_user_uid' => $uid,
-        ]);
-
-        return new JsonResponse(
-            ['error' => 'Passkeys cannot be managed while impersonating another user'],
-            403,
+        $this->logger->warning(
+            'Passkey management blocked in switch-user mode',
+            ['operation' => $operation, 'be_user_uid' => $uid],
         );
+
+        return new JsonResponse(['error' => 'Passkeys cannot be managed while impersonating another user'], 403);
     }
 }

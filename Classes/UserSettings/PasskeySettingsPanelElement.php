@@ -57,23 +57,23 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
     {
         /** @var array<string, mixed> $resultArray */
         $resultArray = $this->initializeResultArray();
-
         $backendUser = $GLOBALS['BE_USER'] ?? null;
+
         if (!$backendUser instanceof BackendUserAuthentication) {
             return $resultArray;
         }
 
         $rawUid = $backendUser->user['uid'] ?? null;
         $userId = \is_numeric($rawUid) ? (int) $rawUid : 0;
+
         if ($userId === 0) {
             return $resultArray;
         }
 
         $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? ($typo3Conf['SYS'] ?? null) : null;
-        $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null)
-            ? $sysConf['encryptionKey']
-            : '';
+        $sysConf = \is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
+        $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null) ? $sysConf['encryptionKey'] : '';
+
         if (\strlen($encryptionKey) < 32) {
             $warning = $this->translate(
                 'manage.warning.encryptionKey',
@@ -89,17 +89,14 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
             'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
             'js.',
         );
-
         $passkeyCount = $this->credentialRepository->countByBeUser($userId);
-
         $urls = [
-            'list'            => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
+            'list' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
             'registerOptions' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_options'),
-            'registerVerify'  => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_verify'),
-            'rename'          => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_rename'),
-            'remove'          => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_remove'),
+            'registerVerify' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_verify'),
+            'rename' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_rename'),
+            'remove' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_remove'),
         ];
-
         $resultArray['html'] = $this->panel->buildHtml($passkeyCount, $urls);
 
         return $resultArray;

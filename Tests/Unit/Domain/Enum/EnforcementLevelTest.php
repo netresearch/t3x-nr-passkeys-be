@@ -72,14 +72,23 @@ final class EnforcementLevelTest extends TestCase
     public static function strictestProvider(): iterable
     {
         yield 'off vs off' => [EnforcementLevel::Off, EnforcementLevel::Off, EnforcementLevel::Off];
+
         yield 'off vs encourage' => [EnforcementLevel::Off, EnforcementLevel::Encourage, EnforcementLevel::Encourage];
+
         yield 'encourage vs off' => [EnforcementLevel::Encourage, EnforcementLevel::Off, EnforcementLevel::Encourage];
+
         yield 'encourage vs required' => [EnforcementLevel::Encourage, EnforcementLevel::Required, EnforcementLevel::Required];
+
         yield 'required vs encourage' => [EnforcementLevel::Required, EnforcementLevel::Encourage, EnforcementLevel::Required];
+
         yield 'required vs enforced' => [EnforcementLevel::Required, EnforcementLevel::Enforced, EnforcementLevel::Enforced];
+
         yield 'enforced vs required' => [EnforcementLevel::Enforced, EnforcementLevel::Required, EnforcementLevel::Enforced];
+
         yield 'enforced vs enforced' => [EnforcementLevel::Enforced, EnforcementLevel::Enforced, EnforcementLevel::Enforced];
+
         yield 'off vs enforced' => [EnforcementLevel::Off, EnforcementLevel::Enforced, EnforcementLevel::Enforced];
+
         yield 'enforced vs off' => [EnforcementLevel::Enforced, EnforcementLevel::Off, EnforcementLevel::Enforced];
     }
 

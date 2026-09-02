@@ -52,7 +52,7 @@ final readonly class LoginController
      * above the real work (a be_users lookup plus challenge generation); a response
      * that exceeds it is returned immediately and would still be distinguishable.
      */
-    private const TIMING_BUDGET_NS = 150_000_000;
+    private const TIMING_BUDGET_NS = 150000000;
 
     public function __construct(
         private WebAuthnService $webAuthnService,
@@ -71,15 +71,14 @@ final readonly class LoginController
     public function optionsAction(ServerRequestInterface $request): ResponseInterface
     {
         $body = $this->getJsonBody($request);
-        $username = isset($body['username']) && \is_scalar($body['username'])
-            ? (string) $body['username']
-            : '';
-
+        $username = isset($body['username']) && \is_scalar($body['username']) ? (string) $body['username'] : '';
         $ip = $this->getRemoteAddress($request);
 
         // Discoverable (usernameless) login
         if ($username === '') {
-            if (!$this->configService->getConfiguration()->isDiscoverableLoginEnabled()) {
+            if (!$this->configService
+                ->getConfiguration()
+                ->isDiscoverableLoginEnabled()) {
                 return new JsonResponse(['error' => 'Username is required'], 400);
             }
 
@@ -91,17 +90,16 @@ final readonly class LoginController
 
             try {
                 $result = $this->webAuthnService->createDiscoverableAssertionOptions();
-
                 $optionsJson = $this->webAuthnService->serializeRequestOptions($result->options);
 
-                return new JsonResponse([
-                    'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
-                    'challengeToken' => $result->challengeToken,
-                ]);
+                return new JsonResponse(
+                    [
+                        'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
+                        'challengeToken' => $result->challengeToken,
+                    ],
+                );
             } catch (Throwable $e) {
-                $this->logger->error('Failed to generate discoverable assertion options', [
-                    'error' => $e->getMessage(),
-                ]);
+                $this->logger->error('Failed to generate discoverable assertion options', ['error' => $e->getMessage()]);
 
                 return new JsonResponse(['error' => 'Internal error'], 500);
             }
@@ -127,22 +125,19 @@ final readonly class LoginController
         $beUserUid = $this->findBeUserUid($username);
 
         try {
-            $result = $beUserUid === null
-                ? $this->webAuthnService->createDecoyAssertionOptions($username)
-                : $this->webAuthnService->createAssertionOptions($username, $beUserUid);
-
+            $result = $beUserUid === null ? $this->webAuthnService->createDecoyAssertionOptions($username) : $this->webAuthnService->createAssertionOptions($username, $beUserUid);
             $optionsJson = $this->webAuthnService->serializeRequestOptions($result->options);
-
-            $response = new JsonResponse([
-                'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
-                'challengeToken' => $result->challengeToken,
-            ]);
+            $response = new JsonResponse(
+                [
+                    'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
+                    'challengeToken' => $result->challengeToken,
+                ],
+            );
         } catch (Throwable $e) {
-            $this->logger->error('Failed to generate assertion options', [
-                'decoy' => $beUserUid === null,
-                'error' => $e->getMessage(),
-            ]);
-
+            $this->logger->error(
+                'Failed to generate assertion options',
+                ['decoy' => $beUserUid === null, 'error' => $e->getMessage()],
+            );
             $response = new JsonResponse(['error' => 'Internal error'], 500);
         }
 
@@ -171,28 +166,22 @@ final readonly class LoginController
     public function verifyAction(ServerRequestInterface $request): ResponseInterface
     {
         $body = $this->getJsonBody($request);
-        $username = isset($body['username']) && \is_scalar($body['username'])
-            ? (string) $body['username']
-            : '';
+        $username = isset($body['username']) && \is_scalar($body['username']) ? (string) $body['username'] : '';
 
         // null means the body could not be encoded (malformed UTF-8 from a form-encoded
         // request); this endpoint is public, so that must not escape as a 500.
         $assertion = $this->encodeBodySection($body['assertion'] ?? null);
-        $challengeToken = isset($body['challengeToken']) && \is_scalar($body['challengeToken'])
-            ? (string) $body['challengeToken']
-            : '';
+        $challengeToken = isset($body['challengeToken']) && \is_scalar($body['challengeToken']) ? (string) $body['challengeToken'] : '';
 
         if ($assertion === null || $assertion === '' || $challengeToken === '') {
-            return new JsonResponse(
-                ['error' => $assertion === null ? 'Invalid request body' : 'Missing required fields'],
-                400,
-            );
+            return new JsonResponse(['error' => $assertion === null ? 'Invalid request body' : 'Missing required fields'], 400);
         }
 
         $ip = $this->getRemoteAddress($request);
 
         try {
             $this->rateLimiterService->consumeRateLimit('login_verify', $ip);
+
             if ($username !== '') {
                 $this->rateLimiterService->checkLockout($username, $ip);
             }
@@ -200,9 +189,7 @@ final readonly class LoginController
             return $this->throttledResponse($e);
         }
 
-        return $username === ''
-            ? $this->verifyDiscoverable($assertion, $challengeToken, $ip)
-            : $this->verifyUsernameFirst($username, $assertion, $challengeToken, $ip);
+        return $username === '' ? $this->verifyDiscoverable($assertion, $challengeToken, $ip) : $this->verifyUsernameFirst($username, $assertion, $challengeToken, $ip);
     }
 
     /**
@@ -211,7 +198,9 @@ final readonly class LoginController
      */
     private function verifyDiscoverable(string $assertion, string $challengeToken, string $ip): ResponseInterface
     {
-        if (!$this->configService->getConfiguration()->isDiscoverableLoginEnabled()) {
+        if (!$this->configService
+            ->getConfiguration()
+            ->isDiscoverableLoginEnabled()) {
             return new JsonResponse(['error' => 'Username is required'], 400);
         }
 
@@ -219,6 +208,7 @@ final readonly class LoginController
         // A miss means the authenticator offered a passkey this server does not
         // know — safe to report: no username is involved, so no enumeration oracle.
         $beUserUid = $this->webAuthnService->findBeUserUidFromAssertion($assertion);
+
         if ($beUserUid === null) {
             \usleep(\random_int(50000, 150000));
 
@@ -233,10 +223,15 @@ final readonly class LoginController
      * username and for a known user with an unknown credential must be identical
      * to keep the decoy anti-enumeration defence intact.
      */
-    private function verifyUsernameFirst(string $username, string $assertion, string $challengeToken, string $ip): ResponseInterface
-    {
+    private function verifyUsernameFirst(
+        string $username,
+        string $assertion,
+        string $challengeToken,
+        string $ip,
+    ): ResponseInterface {
         $startedAt = \hrtime(true);
         $beUserUid = $this->findBeUserUid($username);
+
         if ($beUserUid === null) {
             $this->padToTimingBudget($startedAt);
 
@@ -263,6 +258,7 @@ final readonly class LoginController
     private function padToTimingBudget(int $startedAt): void
     {
         $remainingNs = self::TIMING_BUDGET_NS - (\hrtime(true) - $startedAt);
+
         if ($remainingNs > 0) {
             \usleep(\intdiv($remainingNs, 1000));
         }
@@ -273,8 +269,13 @@ final readonly class LoginController
      * issue the login token. Shared by the discoverable and username-first paths.
      * $username is '' for discoverable login.
      */
-    private function verifyAndIssueToken(string $assertion, string $challengeToken, int $beUserUid, string $username, string $ip): ResponseInterface
-    {
+    private function verifyAndIssueToken(
+        string $assertion,
+        string $challengeToken,
+        int $beUserUid,
+        string $username,
+        string $ip,
+    ): ResponseInterface {
         try {
             $this->webAuthnService->verifyAssertionResponse(
                 responseJson: $assertion,
@@ -291,13 +292,15 @@ final readonly class LoginController
             // Do not feed the cross-IP per-username lockout (passkey assertions are
             // unforgeable; counting them only enables an account-lockout DoS).
             $this->rateLimiterService->recordFailure($username, $ip, countUserLockout: false);
-
-            $this->logger->warning('Passkey assertion verification failed', [
-                'username_hash' => \hash('sha256', $username),
-                'ip' => $ip,
-                'error_code' => $e->getCode(),
-                'error_class' => $e::class,
-            ]);
+            $this->logger->warning(
+                'Passkey assertion verification failed',
+                [
+                    'username_hash' => \hash('sha256', $username),
+                    'ip' => $ip,
+                    'error_code' => $e->getCode(),
+                    'error_class' => $e::class,
+                ],
+            );
 
             return new JsonResponse(['error' => self::AUTH_FAILED], 401);
         }
@@ -321,11 +324,7 @@ final readonly class LoginController
     private function issueLoginToken(int $beUserUid): ResponseInterface
     {
         $token = \bin2hex(\random_bytes(32));
-        $payload = \json_encode(
-            ['uid' => $beUserUid, 'expiresAt' => \time() + self::LOGIN_TOKEN_TTL],
-            JSON_THROW_ON_ERROR,
-        );
-
+        $payload = \json_encode(['uid' => $beUserUid, 'expiresAt' => \time() + self::LOGIN_TOKEN_TTL], JSON_THROW_ON_ERROR);
         $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce');
         $cache->set('passkey_login_' . $token, $payload, [], self::LOGIN_TOKEN_TTL);
 
@@ -343,9 +342,7 @@ final readonly class LoginController
 
         return new JsonResponse(
             [
-                'error' => $locked
-                    ? 'Account temporarily locked. Please contact your administrator.'
-                    : 'Too many requests. Please try again later.',
+                'error' => $locked ? 'Account temporarily locked. Please contact your administrator.' : 'Too many requests. Please try again later.',
                 'locked' => $locked,
             ],
             429,
@@ -360,12 +357,15 @@ final readonly class LoginController
             ->select('uid')
             ->from('be_users')
             ->where(
-                $queryBuilder->expr()->eq(
-                    'username',
-                    $queryBuilder->createNamedParameter($username),
-                ),
-                $queryBuilder->expr()->eq('disable', 0),
-                $queryBuilder->expr()->eq('deleted', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('username', $queryBuilder->createNamedParameter($username)),
+                $queryBuilder
+                    ->expr()
+                    ->eq('disable', 0),
+                $queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0),
             )
             ->executeQuery()
             ->fetchAssociative();
@@ -385,16 +385,14 @@ final readonly class LoginController
     private function getRemoteAddress(ServerRequestInterface $request): string
     {
         $params = $request->getAttribute('normalizedParams');
+
         if ($params instanceof NormalizedParams) {
             return $params->getRemoteAddress();
         }
 
         $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS'])
-            ? $confVars['SYS']
-            : [];
+        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS']) ? $confVars['SYS'] : [];
 
         return NormalizedParams::createFromServerParams($_SERVER, $sysConf)->getRemoteAddress();
     }
-
 }

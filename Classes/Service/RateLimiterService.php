@@ -48,10 +48,10 @@ final readonly class RateLimiterService
             $this->atomicCheck($key, $maxAttempts, 'Rate limit exceeded', 1700000010);
         } catch (RuntimeException $e) {
             if ($e->getCode() === 1700000010) {
-                $this->logger->warning('Rate limit exceeded', [
-                    'endpoint' => $endpoint,
-                    'identifier' => \hash('sha256', $identifier),
-                ]);
+                $this->logger->warning(
+                    'Rate limit exceeded',
+                    ['endpoint' => $endpoint, 'identifier' => \hash('sha256', $identifier)],
+                );
             }
 
             throw $e;
@@ -69,7 +69,6 @@ final readonly class RateLimiterService
         $config = $this->configService->getConfiguration();
         $key = $this->buildKey($endpoint, $identifier);
         $windowSeconds = $config->getRateLimitWindowSeconds();
-
         $this->atomicIncrement($key, [], $windowSeconds);
     }
 
@@ -89,28 +88,25 @@ final readonly class RateLimiterService
         $key = $this->buildKey($endpoint, $identifier);
         $maxAttempts = $config->getRateLimitMaxAttempts();
         $windowSeconds = $config->getRateLimitWindowSeconds();
-
-        $locker = $this->lockFactory->createLocker(
-            'ratelimit_' . $key,
-            LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE,
-        );
+        $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
-            $this->logger->error('Failed to acquire rate limit lock', [
-                'operation' => 'consumeRateLimit',
-                'key' => $key,
-            ]);
+            $this->logger->error(
+                'Failed to acquire rate limit lock',
+                ['operation' => 'consumeRateLimit', 'key' => $key],
+            );
 
             throw new RuntimeException('Failed to acquire rate limit lock', 1700000012);
         }
 
         try {
             $current = $this->getAttemptCount($key);
+
             if ($current >= $maxAttempts) {
-                $this->logger->warning('Rate limit exceeded', [
-                    'endpoint' => $endpoint,
-                    'identifier' => \hash('sha256', $identifier),
-                ]);
+                $this->logger->warning(
+                    'Rate limit exceeded',
+                    ['endpoint' => $endpoint, 'identifier' => \hash('sha256', $identifier)],
+                );
 
                 throw new RuntimeException('Rate limit exceeded', 1700000010);
             }
@@ -147,11 +143,10 @@ final readonly class RateLimiterService
             );
         } catch (RuntimeException $e) {
             if ($e->getCode() === 1700000011) {
-                $this->logger->warning('Per-IP lockout triggered', [
-                    'usernameHash' => $usernameHash,
-                    'ip' => $ip,
-                    'threshold' => $threshold,
-                ]);
+                $this->logger->warning(
+                    'Per-IP lockout triggered',
+                    ['usernameHash' => $usernameHash, 'ip' => $ip, 'threshold' => $threshold],
+                );
             }
 
             throw $e;
@@ -170,11 +165,10 @@ final readonly class RateLimiterService
             );
         } catch (RuntimeException $e) {
             if ($e->getCode() === 1700000011) {
-                $this->logger->warning('Per-username lockout triggered', [
-                    'usernameHash' => $usernameHash,
-                    'ip' => $ip,
-                    'threshold' => $userThreshold,
-                ]);
+                $this->logger->warning(
+                    'Per-username lockout triggered',
+                    ['usernameHash' => $usernameHash, 'ip' => $ip, 'threshold' => $userThreshold],
+                );
             }
 
             throw $e;
@@ -219,6 +213,7 @@ final readonly class RateLimiterService
         if ($ip !== '') {
             $key = $this->buildLockoutKey($username, $ip);
             $this->rateLimitCache->remove($key);
+
             return;
         }
 
@@ -232,13 +227,12 @@ final readonly class RateLimiterService
     {
         $ipKey = $this->buildLockoutKey($username, $ip);
         $this->rateLimitCache->remove($ipKey);
-
         $userKey = $this->buildUserLockoutKey($username);
         $this->rateLimitCache->remove($userKey);
-
-        $this->logger->debug('Lockout counters reset after successful authentication', [
-            'usernameHash' => \hash('sha256', $username),
-        ]);
+        $this->logger->debug(
+            'Lockout counters reset after successful authentication',
+            ['usernameHash' => \hash('sha256', $username)],
+        );
     }
 
     /**
@@ -248,22 +242,17 @@ final readonly class RateLimiterService
      */
     private function atomicCheck(string $key, int $threshold, string $message, int $code): void
     {
-        $locker = $this->lockFactory->createLocker(
-            'ratelimit_' . $key,
-            LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE,
-        );
+        $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
-            $this->logger->error('Failed to acquire rate limit lock', [
-                'operation' => 'atomicCheck',
-                'key' => $key,
-            ]);
+            $this->logger->error('Failed to acquire rate limit lock', ['operation' => 'atomicCheck', 'key' => $key]);
 
             throw new RuntimeException('Failed to acquire rate limit lock', 1700000012);
         }
 
         try {
             $current = $this->getAttemptCount($key);
+
             if ($current >= $threshold) {
                 throw new RuntimeException($message, $code);
             }
@@ -281,16 +270,10 @@ final readonly class RateLimiterService
      */
     private function atomicIncrement(string $key, array $tags, int $ttlSeconds): void
     {
-        $locker = $this->lockFactory->createLocker(
-            'ratelimit_' . $key,
-            LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE,
-        );
+        $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
-            $this->logger->error('Failed to acquire rate limit lock', [
-                'operation' => 'atomicIncrement',
-                'key' => $key,
-            ]);
+            $this->logger->error('Failed to acquire rate limit lock', ['operation' => 'atomicIncrement', 'key' => $key]);
 
             throw new RuntimeException('Failed to acquire rate limit lock', 1700000012);
         }
@@ -306,6 +289,7 @@ final readonly class RateLimiterService
     private function getAttemptCount(string $key): int
     {
         $value = $this->rateLimitCache->get($key);
+
         if ($value === false) {
             return 0;
         }

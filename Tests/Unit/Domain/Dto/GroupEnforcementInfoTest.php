@@ -28,7 +28,6 @@ final class GroupEnforcementInfoTest extends TestCase
             totalUsers: 8,
             usersWithPasskeys: 6,
         );
-
         self::assertSame(5, $info->uid);
         self::assertSame('Administrators', $info->title);
         self::assertSame('enforced', $info->enforcement);
@@ -48,7 +47,6 @@ final class GroupEnforcementInfoTest extends TestCase
             totalUsers: 0,
             usersWithPasskeys: 0,
         );
-
         self::assertSame(0.0, $info->adoptionPercentage());
     }
 
@@ -63,7 +61,6 @@ final class GroupEnforcementInfoTest extends TestCase
             totalUsers: 10,
             usersWithPasskeys: 7,
         );
-
         self::assertSame(70.0, $info->adoptionPercentage());
     }
 
@@ -78,7 +75,6 @@ final class GroupEnforcementInfoTest extends TestCase
             totalUsers: 3,
             usersWithPasskeys: 1,
         );
-
         self::assertSame(33.3, $info->adoptionPercentage());
     }
 
@@ -93,7 +89,6 @@ final class GroupEnforcementInfoTest extends TestCase
             totalUsers: 20,
             usersWithPasskeys: 15,
         );
-
         $expected = [
             'uid' => 10,
             'title' => 'Editors',
@@ -103,7 +98,6 @@ final class GroupEnforcementInfoTest extends TestCase
             'usersWithPasskeys' => 15,
             'adoptionPercentage' => 75.0,
         ];
-
         self::assertSame($expected, $info->jsonSerialize());
     }
 
@@ -118,9 +112,7 @@ final class GroupEnforcementInfoTest extends TestCase
             totalUsers: 0,
             usersWithPasskeys: 0,
         );
-
         $serialized = $info->jsonSerialize();
-
         self::assertSame(0.0, $serialized['adoptionPercentage']);
     }
 
@@ -135,10 +127,8 @@ final class GroupEnforcementInfoTest extends TestCase
             totalUsers: 10,
             usersWithPasskeys: 5,
         );
-
         $json = \json_encode($info, \JSON_THROW_ON_ERROR);
         $decoded = \json_decode($json, true, 512, \JSON_THROW_ON_ERROR);
-
         self::assertSame(1, $decoded['uid']);
         self::assertSame('Test Group', $decoded['title']);
         self::assertEqualsWithDelta(50.0, $decoded['adoptionPercentage'], 0.01);

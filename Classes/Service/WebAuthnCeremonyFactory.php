@@ -52,13 +52,10 @@ final class WebAuthnCeremonyFactory
     public function createCeremonyFactory(): CeremonyStepManagerFactory
     {
         $factory = new CeremonyStepManagerFactory();
-
         $origin = $this->configService->getEffectiveOrigin();
         $factory->setAllowedOrigins([$origin]);
-
         $algorithmManager = $this->createAlgorithmManager();
         $factory->setAlgorithmManager($algorithmManager);
-
         $factory->setAttestationStatementSupportManager($this->createAttestationStatementSupportManager());
 
         return $factory;
@@ -74,7 +71,9 @@ final class WebAuthnCeremonyFactory
 
     private function createAlgorithmManager(): AlgorithmManager
     {
-        $algorithms = $this->configService->getConfiguration()->getAllowedAlgorithmsList();
+        $algorithms = $this->configService
+            ->getConfiguration()
+            ->getAllowedAlgorithmsList();
         $manager = AlgorithmManager::create();
 
         foreach ($algorithms as $algo) {

@@ -16,8 +16,5 @@ use Webauthn\PublicKeyCredentialCreationOptions;
  */
 final readonly class RegistrationOptions
 {
-    public function __construct(
-        public PublicKeyCredentialCreationOptions $options,
-        public string $challengeToken,
-    ) {}
+    public function __construct(public PublicKeyCredentialCreationOptions $options, public string $challengeToken) {}
 }

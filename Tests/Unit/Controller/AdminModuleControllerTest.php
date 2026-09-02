@@ -59,18 +59,24 @@ final class AdminModuleControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->moduleTemplateFactory = $this->createMock(ModuleTemplateFactory::class);
         $this->adoptionStatsService = $this->createMock(AdoptionStatsService::class);
         $this->configService = $this->createMock(ExtensionConfigurationService::class);
-        $this->configService->method('getConfiguration')->willReturn(new ExtensionConfigurationVO());
-        $this->configService->method('getEffectiveRpId')->willReturn('localhost');
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn(new ExtensionConfigurationVO());
+        $this->configService
+            ->method('getEffectiveRpId')
+            ->willReturn('localhost');
         $this->iconFactory = $this->createMock(IconFactory::class);
-        $this->iconFactory->method('getIcon')->willReturn($this->createMock(Icon::class));
+        $this->iconFactory
+            ->method('getIcon')
+            ->willReturn($this->createMock(Icon::class));
         $this->pageRenderer = $this->createMock(PageRenderer::class);
         $this->uriBuilder = $this->createMock(UriBuilder::class);
-        $this->uriBuilder->method('buildUriFromRoute')->willReturn('/typo3/record/edit?mocked=1');
-
+        $this->uriBuilder
+            ->method('buildUriFromRoute')
+            ->willReturn('/typo3/record/edit?mocked=1');
         $this->subject = new AdminModuleController(
             $this->moduleTemplateFactory,
             $this->adoptionStatsService,
@@ -87,25 +93,43 @@ final class AdminModuleControllerTest extends TestCase
     private function createModuleTemplateMock(): ModuleTemplate&MockObject
     {
         $menuItem = $this->createMock(MenuItem::class);
-        $menuItem->method('setTitle')->willReturnSelf();
-        $menuItem->method('setHref')->willReturnSelf();
-        $menuItem->method('setActive')->willReturnSelf();
-
+        $menuItem
+            ->method('setTitle')
+            ->willReturnSelf();
+        $menuItem
+            ->method('setHref')
+            ->willReturnSelf();
+        $menuItem
+            ->method('setActive')
+            ->willReturnSelf();
         $menu = $this->createMock(Menu::class);
-        $menu->method('setIdentifier')->willReturnSelf();
-        $menu->method('makeMenuItem')->willReturn($menuItem);
-
+        $menu
+            ->method('setIdentifier')
+            ->willReturnSelf();
+        $menu
+            ->method('makeMenuItem')
+            ->willReturn($menuItem);
         $menuRegistry = $this->createMock(MenuRegistry::class);
-        $menuRegistry->method('makeMenu')->willReturn($menu);
-
+        $menuRegistry
+            ->method('makeMenu')
+            ->willReturn($menu);
         $linkButton = $this->createMock(LinkButton::class);
-        $linkButton->method('setHref')->willReturnSelf();
-        $linkButton->method('setTitle')->willReturnSelf();
-        $linkButton->method('setIcon')->willReturnSelf();
-        $linkButton->method('setShowLabelText')->willReturnSelf();
-
+        $linkButton
+            ->method('setHref')
+            ->willReturnSelf();
+        $linkButton
+            ->method('setTitle')
+            ->willReturnSelf();
+        $linkButton
+            ->method('setIcon')
+            ->willReturnSelf();
+        $linkButton
+            ->method('setShowLabelText')
+            ->willReturnSelf();
         $buttonBar = $this->createMock(ButtonBar::class);
-        $buttonBar->method('makeLinkButton')->willReturn($linkButton);
+        $buttonBar
+            ->method('makeLinkButton')
+            ->willReturn($linkButton);
 
         // TYPO3 v14+: the controller resolves the docheader components via
         // ComponentFactory (GeneralUtility::makeInstance). Queue a mock returning the
@@ -113,18 +137,29 @@ final class AdminModuleControllerTest extends TestCase
         // above are used instead.
         if (\class_exists(ComponentFactory::class)) {
             $componentFactory = $this->createMock(ComponentFactory::class);
-            $componentFactory->method('createMenu')->willReturn($menu);
-            $componentFactory->method('createMenuItem')->willReturn($menuItem);
-            $componentFactory->method('createLinkButton')->willReturn($linkButton);
+            $componentFactory
+                ->method('createMenu')
+                ->willReturn($menu);
+            $componentFactory
+                ->method('createMenuItem')
+                ->willReturn($menuItem);
+            $componentFactory
+                ->method('createLinkButton')
+                ->willReturn($linkButton);
             GeneralUtility::addInstance(ComponentFactory::class, $componentFactory);
         }
 
         $docHeader = $this->createMock(DocHeaderComponent::class);
-        $docHeader->method('getMenuRegistry')->willReturn($menuRegistry);
-        $docHeader->method('getButtonBar')->willReturn($buttonBar);
-
+        $docHeader
+            ->method('getMenuRegistry')
+            ->willReturn($menuRegistry);
+        $docHeader
+            ->method('getButtonBar')
+            ->willReturn($buttonBar);
         $moduleTemplate = $this->createMock(ModuleTemplate::class);
-        $moduleTemplate->method('getDocHeaderComponent')->willReturn($docHeader);
+        $moduleTemplate
+            ->method('getDocHeaderComponent')
+            ->willReturn($docHeader);
 
         return $moduleTemplate;
     }
@@ -139,55 +174,44 @@ final class AdminModuleControllerTest extends TestCase
     #[Test]
     public function dashboardActionPassesStatsToView(): void
     {
-        $stats = new AdoptionStats(
-            totalUsers: 10,
-            usersWithPasskeys: 6,
-            groups: [],
-            usersWithoutPasskeys: [],
-        );
-
+        $stats = new AdoptionStats(totalUsers: 10, usersWithPasskeys: 6, groups: [], usersWithoutPasskeys: []);
         $this->adoptionStatsService
             ->expects(self::once())
             ->method('getStats')
             ->willReturn($stats);
-
         $moduleTemplate = $this->createModuleTemplateMock();
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('setTitle')
             ->with('Passkey Management');
-
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('assignMultiple')
-            ->with(self::callback(static fn(array $variables): bool => $variables['totalUsers'] === 10
-                && $variables['usersWithPasskeys'] === 6
-                && $variables['adoptionPercentage'] === 60.0
-                && $variables['groups'] === []
-                && $variables['usersWithoutPasskeys'] === []
-                && \is_array($variables['enforcementLevels'])
-                && isset($variables['enforcementLevels']['off'])
-                && isset($variables['enforcementLevels']['encourage'])
-                && isset($variables['enforcementLevels']['required'])
-                && isset($variables['enforcementLevels']['enforced'])
-                && \array_key_exists('helpUrl', $variables)
-                && \array_key_exists('configRpId', $variables)
-                && \array_key_exists('isNewInstallation', $variables)));
-
+            ->with(
+                self::callback(
+                    static fn(
+                        array $variables,
+                    ): bool => $variables['totalUsers'] === 10 && $variables['usersWithPasskeys'] === 6 && $variables['adoptionPercentage'] === 60.0 && $variables['groups'] === [] && $variables['usersWithoutPasskeys'] === [] && \is_array($variables['enforcementLevels']) && isset($variables['enforcementLevels']['off']) && isset($variables['enforcementLevels']['encourage']) && isset($variables['enforcementLevels']['required']) && isset($variables['enforcementLevels']['enforced']) && \array_key_exists('helpUrl', $variables) && \array_key_exists('configRpId', $variables) && \array_key_exists('isNewInstallation', $variables),
+                ),
+            );
         $expectedResponse = new HtmlResponse('<html></html>');
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('renderResponse')
             ->with('AdminModule/Dashboard')
-            ->willReturn($expectedResponse);
-
+            ->willReturn(
+                $expectedResponse,
+            );
         $this->moduleTemplateFactory
             ->expects(self::once())
             ->method('create')
             ->willReturn($moduleTemplate);
-
         $this->pageRenderer
             ->expects(self::once())
             ->method('loadJavaScriptModule')
-            ->with('@netresearch/nr-passkeys-be/PasskeyDashboard.js');
-
+            ->with(
+                '@netresearch/nr-passkeys-be/PasskeyDashboard.js',
+            );
         $this->pageRenderer
             ->expects(self::once())
             ->method('addInlineLanguageLabelFile')
@@ -197,7 +221,6 @@ final class AdminModuleControllerTest extends TestCase
             );
         $request = $this->createMock(ServerRequestInterface::class);
         $response = $this->subject->dashboardAction($request);
-
         self::assertSame($expectedResponse, $response);
     }
 
@@ -212,7 +235,6 @@ final class AdminModuleControllerTest extends TestCase
             totalUsers: 8,
             usersWithPasskeys: 3,
         );
-
         $user = new UserPasskeyStatus(
             uid: 42,
             username: 'editor',
@@ -221,33 +243,28 @@ final class AdminModuleControllerTest extends TestCase
             gracePeriodStart: 1700000000,
             gracePeriodRemainingDays: 7,
         );
-
-        $stats = new AdoptionStats(
-            totalUsers: 10,
-            usersWithPasskeys: 6,
-            groups: [$group],
-            usersWithoutPasskeys: [$user],
-        );
-
+        $stats = new AdoptionStats(totalUsers: 10, usersWithPasskeys: 6, groups: [$group], usersWithoutPasskeys: [$user]);
         $this->adoptionStatsService
             ->method('getStats')
             ->willReturn($stats);
-
         $capturedVariables = [];
         $moduleTemplate = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
-        $moduleTemplate->method('assignMultiple')
-            ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
-                $capturedVariables = $vars;
-                return $moduleTemplate;
-            });
-        $moduleTemplate->method('renderResponse')
-            ->willReturn(new HtmlResponse('<html></html>'));
+        $moduleTemplate
+            ->method('assignMultiple')
+            ->willReturnCallback(
+                static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
+                    $capturedVariables = $vars;
 
+                    return $moduleTemplate;
+                },
+            );
+        $moduleTemplate
+            ->method('renderResponse')
+            ->willReturn(new HtmlResponse('<html></html>'));
         $this->moduleTemplateFactory
             ->method('create')
             ->willReturn($moduleTemplate);
-
         $request = $this->createMock(ServerRequestInterface::class);
         $this->subject->dashboardAction($request);
 
@@ -281,128 +298,118 @@ final class AdminModuleControllerTest extends TestCase
     public function helpActionRendersHelpTemplate(): void
     {
         $moduleTemplate = $this->createModuleTemplateMock();
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('setTitle')
             ->with('Passkey Management – Help');
-
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('assignMultiple')
-            ->with(self::callback(static fn(array $vars): bool => \array_key_exists('dashboardUrl', $vars)))
+            ->with(
+                self::callback(static fn(array $vars): bool => \array_key_exists('dashboardUrl', $vars)),
+            )
             ->willReturnSelf();
-
         $expectedResponse = new HtmlResponse('<html></html>');
-        $moduleTemplate->expects(self::once())
+        $moduleTemplate
+            ->expects(self::once())
             ->method('renderResponse')
             ->with('AdminModule/Help')
-            ->willReturn($expectedResponse);
-
+            ->willReturn(
+                $expectedResponse,
+            );
         $this->moduleTemplateFactory
             ->expects(self::once())
             ->method('create')
             ->willReturn($moduleTemplate);
-
         $request = $this->createMock(ServerRequestInterface::class);
         $response = $this->subject->helpAction($request);
-
         self::assertSame($expectedResponse, $response);
     }
 
     #[Test]
     public function dashboardActionIncludesAllEnforcementLevels(): void
     {
-        $stats = new AdoptionStats(
-            totalUsers: 0,
-            usersWithPasskeys: 0,
-            groups: [],
-            usersWithoutPasskeys: [],
-        );
-
+        $stats = new AdoptionStats(totalUsers: 0, usersWithPasskeys: 0, groups: [], usersWithoutPasskeys: []);
         $this->adoptionStatsService
             ->method('getStats')
             ->willReturn($stats);
-
         $capturedVariables = [];
         $moduleTemplate = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
-        $moduleTemplate->method('assignMultiple')
-            ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
-                $capturedVariables = $vars;
-                return $moduleTemplate;
-            });
-        $moduleTemplate->method('renderResponse')
-            ->willReturn(new HtmlResponse('<html></html>'));
+        $moduleTemplate
+            ->method('assignMultiple')
+            ->willReturnCallback(
+                static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
+                    $capturedVariables = $vars;
 
+                    return $moduleTemplate;
+                },
+            );
+        $moduleTemplate
+            ->method('renderResponse')
+            ->willReturn(new HtmlResponse('<html></html>'));
         $this->moduleTemplateFactory
             ->method('create')
             ->willReturn($moduleTemplate);
-
         $request = $this->createMock(ServerRequestInterface::class);
         $this->subject->dashboardAction($request);
-
         self::assertArrayHasKey('enforcementLevels', $capturedVariables);
         $levels = $capturedVariables['enforcementLevels'];
-        self::assertSame([
-            'off' => 'Off',
-            'encourage' => 'Encourage',
-            'required' => 'Required',
-            'enforced' => 'Enforced',
-        ], $levels);
+        self::assertSame(
+            ['off' => 'Off', 'encourage' => 'Encourage', 'required' => 'Required', 'enforced' => 'Enforced'],
+            $levels,
+        );
     }
 
     #[Test]
     public function dashboardActionUsesTranslatedEnforcementLevels(): void
     {
         $languageService = $this->createMock(LanguageService::class);
-        $languageService->method('sL')->willReturnCallback(
-            static function (string $key): string {
-                $map = [
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.off' => 'Aus',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.encourage' => 'Empfehlen',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.required' => 'Erforderlich',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.enforced' => 'Erzwungen',
-                ];
-                return $map[$key] ?? '';
-            },
-        );
+        $languageService
+            ->method('sL')
+            ->willReturnCallback(
+                static function (string $key): string {
+                    $map = [
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.off' => 'Aus',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.encourage' => 'Empfehlen',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.required' => 'Erforderlich',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.enforced' => 'Erzwungen',
+                    ];
+
+                    return $map[$key] ?? '';
+                },
+            );
         $GLOBALS['LANG'] = $languageService;
-
-        $stats = new AdoptionStats(
-            totalUsers: 0,
-            usersWithPasskeys: 0,
-            groups: [],
-            usersWithoutPasskeys: [],
-        );
-
+        $stats = new AdoptionStats(totalUsers: 0, usersWithPasskeys: 0, groups: [], usersWithoutPasskeys: []);
         $this->adoptionStatsService
             ->method('getStats')
             ->willReturn($stats);
-
         $capturedVariables = [];
         $moduleTemplate = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
-        $moduleTemplate->method('assignMultiple')
-            ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
-                $capturedVariables = $vars;
-                return $moduleTemplate;
-            });
-        $moduleTemplate->method('renderResponse')
-            ->willReturn(new HtmlResponse('<html></html>'));
+        $moduleTemplate
+            ->method('assignMultiple')
+            ->willReturnCallback(
+                static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
+                    $capturedVariables = $vars;
 
+                    return $moduleTemplate;
+                },
+            );
+        $moduleTemplate
+            ->method('renderResponse')
+            ->willReturn(new HtmlResponse('<html></html>'));
         $this->moduleTemplateFactory
             ->method('create')
             ->willReturn($moduleTemplate);
-
         $request = $this->createMock(ServerRequestInterface::class);
         $this->subject->dashboardAction($request);
-
         self::assertArrayHasKey('enforcementLevels', $capturedVariables);
         $levels = $capturedVariables['enforcementLevels'];
-        self::assertSame([
-            'off' => 'Aus',
-            'encourage' => 'Empfehlen',
-            'required' => 'Erforderlich',
-            'enforced' => 'Erzwungen',
-        ], $levels);
+        self::assertSame(
+            ['off' => 'Aus', 'encourage' => 'Empfehlen', 'required' => 'Erforderlich', 'enforced' => 'Erzwungen'],
+            $levels,
+        );
     }
 
     /**
@@ -426,37 +433,40 @@ final class AdminModuleControllerTest extends TestCase
 
     #[Test]
     #[DataProvider('adoptionBadgeTierProvider')]
-    public function dashboardActionAssignsCorrectAdoptionBadge(int $totalUsers, int $withPasskeys, string $expectedLabel): void
-    {
+    public function dashboardActionAssignsCorrectAdoptionBadge(
+        int $totalUsers,
+        int $withPasskeys,
+        string $expectedLabel,
+    ): void {
         $stats = new AdoptionStats(
             totalUsers: $totalUsers,
             usersWithPasskeys: $withPasskeys,
             groups: [],
             usersWithoutPasskeys: [],
         );
-
         $this->adoptionStatsService
             ->method('getStats')
             ->willReturn($stats);
-
         $capturedVariables = [];
         $moduleTemplate = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
-        $moduleTemplate->method('assignMultiple')
-            ->willReturnCallback(static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
-                $capturedVariables = $vars;
-                return $moduleTemplate;
-            });
-        $moduleTemplate->method('renderResponse')
-            ->willReturn(new HtmlResponse('<html></html>'));
+        $moduleTemplate
+            ->method('assignMultiple')
+            ->willReturnCallback(
+                static function (array $vars) use (&$capturedVariables, $moduleTemplate): ModuleTemplate {
+                    $capturedVariables = $vars;
 
+                    return $moduleTemplate;
+                },
+            );
+        $moduleTemplate
+            ->method('renderResponse')
+            ->willReturn(new HtmlResponse('<html></html>'));
         $this->moduleTemplateFactory
             ->method('create')
             ->willReturn($moduleTemplate);
-
         $request = $this->createMock(ServerRequestInterface::class);
         $this->subject->dashboardAction($request);
-
         self::assertArrayHasKey('adoptionBadge', $capturedVariables);
         $badge = $capturedVariables['adoptionBadge'];
         self::assertIsArray($badge);

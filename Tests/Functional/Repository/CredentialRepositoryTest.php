@@ -20,24 +20,16 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 #[CoversClass(CredentialRepository::class)]
 final class CredentialRepositoryTest extends FunctionalTestCase
 {
-    protected array $coreExtensionsToLoad = [
-        'setup',
-    ];
+    protected array $coreExtensionsToLoad = ['setup'];
 
-    protected array $testExtensionsToLoad = [
-        'netresearch/nr-passkeys-be',
-    ];
+    protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
 
     protected array $configurationToUseInTestInstance = [
         'SYS' => [
             'caching' => [
                 'cacheConfigurations' => [
-                    'nr_passkeys_be_nonce' => [
-                        'backend' => NullBackend::class,
-                    ],
-                    'nr_passkeys_be_ratelimit' => [
-                        'backend' => NullBackend::class,
-                    ],
+                    'nr_passkeys_be_nonce' => ['backend' => NullBackend::class],
+                    'nr_passkeys_be_ratelimit' => ['backend' => NullBackend::class],
                 ],
             ],
         ],
@@ -66,9 +58,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             transports: '["usb","nfc"]',
             label: 'Test Credential',
         );
-
         $uid = $this->repository->save($credential);
-
         self::assertGreaterThan(0, $uid);
         self::assertSame(1, $uid, 'First inserted credential should have UID 1');
     }
@@ -87,9 +77,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             transports: '["internal","hybrid"]',
             label: 'Complete Credential',
         );
-
         $uid = $this->repository->save($credential);
-
         $found = $this->repository->findByCredentialId('cred-complete');
         self::assertNotNull($found);
         self::assertSame($uid, $found->getUid());
@@ -107,9 +95,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findByCredentialIdReturnsCredentialWhenFound(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $credential = $this->repository->findByCredentialId('credential-id-active-1');
-
         self::assertInstanceOf(Credential::class, $credential);
         self::assertSame(1, $credential->getUid());
         self::assertSame('credential-id-active-1', $credential->getCredentialId());
@@ -120,9 +106,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findByCredentialIdReturnsNullWhenNotFound(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $credential = $this->repository->findByCredentialId('non-existent-credential');
-
         self::assertNull($credential);
     }
 
@@ -130,9 +114,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findByCredentialIdReturnsNullForDeletedCredential(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $credential = $this->repository->findByCredentialId('credential-id-deleted');
-
         self::assertNull($credential);
     }
 
@@ -140,9 +122,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findByBeUserReturnsOnlyActiveCredentials(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $credentials = $this->repository->findByBeUser(1);
-
         self::assertCount(2, $credentials);
         self::assertSame('credential-id-active-1', $credentials[0]->getCredentialId());
         self::assertSame('credential-id-active-2', $credentials[1]->getCredentialId());
@@ -152,7 +132,6 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findByBeUserExcludesDeletedCredentials(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $credentials = $this->repository->findByBeUser(1);
 
         foreach ($credentials as $credential) {
@@ -164,7 +143,6 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findByBeUserExcludesRevokedCredentials(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $credentials = $this->repository->findByBeUser(1);
 
         foreach ($credentials as $credential) {
@@ -176,9 +154,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findByBeUserReturnsEmptyArrayWhenNoCredentials(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $credentials = $this->repository->findByBeUser(999);
-
         self::assertSame([], $credentials);
     }
 
@@ -186,9 +162,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findByBeUserOrdersByCreatedAtDescending(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $credentials = $this->repository->findByBeUser(1);
-
         self::assertGreaterThan(
             $credentials[1]->getCreatedAt(),
             $credentials[0]->getCreatedAt(),
@@ -200,9 +174,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function countByBeUserReturnsCorrectCount(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $count = $this->repository->countByBeUser(1);
-
         self::assertSame(2, $count);
     }
 
@@ -210,9 +182,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function countByBeUserExcludesDeletedAndRevokedCredentials(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $count = $this->repository->countByBeUser(1);
-
         self::assertSame(2, $count, 'Count should exclude deleted and revoked credentials');
     }
 
@@ -220,9 +190,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function countByBeUserReturnsZeroWhenNoActiveCredentials(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $count = $this->repository->countByBeUser(999);
-
         self::assertSame(0, $count);
     }
 
@@ -236,10 +204,8 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'To Delete',
         );
-
         $uid = $this->repository->save($credential);
         $this->repository->delete($uid);
-
         $found = $this->repository->findByCredentialId('cred-to-delete');
         self::assertNull($found, 'Deleted credential should not be found');
     }
@@ -254,20 +220,26 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'Soft Delete',
         );
-
         $uid = $this->repository->save($credential);
         $this->repository->delete($uid);
 
         // Query with restrictions removed to see deleted records
-        $queryBuilder = $this->getConnectionPool()->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
-        $queryBuilder->getRestrictions()->removeAll();
+        $queryBuilder = $this
+            ->getConnectionPool()
+            ->getQueryBuilderForTable('tx_nrpasskeysbe_credential');
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $row = $queryBuilder
             ->select('*')
             ->from('tx_nrpasskeysbe_credential')
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
+            ->where(
+                $queryBuilder
+                    ->expr()
+                    ->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)),
+            )
             ->executeQuery()
             ->fetchAssociative();
-
         self::assertNotFalse($row);
         self::assertSame(1, (int) $row['deleted']);
     }
@@ -282,18 +254,16 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'To Revoke',
         );
-
         $uid = $this->repository->save($credential);
         $adminUid = 42;
         $beforeRevoke = \time();
-
         $this->repository->revoke($uid, $adminUid);
-
         $afterRevoke = \time();
-        $connection = $this->getConnectionPool()->getConnectionForTable('tx_nrpasskeysbe_credential');
+        $connection = $this
+            ->getConnectionPool()
+            ->getConnectionForTable('tx_nrpasskeysbe_credential');
         $result = $connection->select(['*'], 'tx_nrpasskeysbe_credential', ['uid' => $uid]);
         $row = $result->fetchAssociative();
-
         self::assertNotFalse($row);
         $revokedAt = (int) $row['revoked_at'];
         self::assertGreaterThanOrEqual($beforeRevoke, $revokedAt);
@@ -311,16 +281,12 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'Revoke Exclude',
         );
-
         $uid = $this->repository->save($credential);
         $countBefore = $this->repository->countByBeUser(10);
         self::assertSame(1, $countBefore);
-
         $this->repository->revoke($uid, 1);
-
         $countAfter = $this->repository->countByBeUser(10);
         self::assertSame(0, $countAfter);
-
         $credentials = $this->repository->findByBeUser(10);
         self::assertEmpty($credentials);
     }
@@ -335,15 +301,11 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'Update Last Used',
         );
-
         $uid = $this->repository->save($credential);
         $beforeUpdate = \time();
-
         $this->repository->updateLastUsed($uid);
-
         $afterUpdate = \time();
         $found = $this->repository->findByCredentialId('cred-update-last-used');
-
         self::assertNotNull($found);
         self::assertGreaterThanOrEqual($beforeUpdate, $found->getLastUsedAt());
         self::assertLessThanOrEqual($afterUpdate, $found->getLastUsedAt());
@@ -360,14 +322,10 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             signCount: 5,
             label: 'Update Sign Count',
         );
-
         $uid = $this->repository->save($credential);
         $newCount = 42;
-
         $this->repository->updateSignCount($uid, $newCount);
-
         $found = $this->repository->findByCredentialId('cred-update-sign-count');
-
         self::assertNotNull($found);
         self::assertSame($newCount, $found->getSignCount());
     }
@@ -382,14 +340,10 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'Original Label',
         );
-
         $uid = $this->repository->save($credential);
         $newLabel = 'Updated Label';
-
         $this->repository->updateLabel($uid, $newLabel);
-
         $found = $this->repository->findByCredentialId('cred-update-label');
-
         self::assertNotNull($found);
         self::assertSame($newLabel, $found->getLabel());
     }
@@ -398,15 +352,14 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findAllByBeUserReturnsAllIncludingRevoked(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $all = $this->repository->findAllByBeUser(1);
-
         self::assertCount(3, $all, 'Should return active + revoked, but not deleted');
-
         $hasRevoked = false;
+
         foreach ($all as $credential) {
             if ($credential->isRevoked()) {
                 $hasRevoked = true;
+
                 break;
             }
         }
@@ -418,7 +371,6 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findAllByBeUserExcludesDeletedCredentials(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $all = $this->repository->findAllByBeUser(1);
 
         foreach ($all as $credential) {
@@ -430,7 +382,6 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     public function findAllByBeUserOrdersByCreatedAtDescending(): void
     {
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
-
         $all = $this->repository->findAllByBeUser(1);
 
         for ($i = 0; $i < \count($all) - 1; $i++) {

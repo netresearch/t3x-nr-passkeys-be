@@ -28,27 +28,34 @@ final class ChallengeTokenFuzzTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $encryptionKey = 'fuzz-test-encryption-key-' . \bin2hex(\random_bytes(16));
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $encryptionKey;
-
         $cache = $this->createMock(FrontendInterface::class);
-        $cache->method('has')->willReturn(true);
-        $cache->method('get')->willReturn('valid');
-
+        $cache
+            ->method('has')
+            ->willReturn(true);
+        $cache
+            ->method('get')
+            ->willReturn('valid');
         $configService = $this->createMock(ExtensionConfigurationService::class);
-        $config = new ExtensionConfiguration(
-            challengeTtlSeconds: 120,
-        );
-        $configService->method('getConfiguration')->willReturn($config);
-        $configService->method('getEncryptionKey')->willReturn($encryptionKey);
-
+        $config = new ExtensionConfiguration(challengeTtlSeconds: 120);
+        $configService
+            ->method('getConfiguration')
+            ->willReturn($config);
+        $configService
+            ->method('getEncryptionKey')
+            ->willReturn($encryptionKey);
         $lockFactory = $this->createMock(LockFactory::class);
         $locker = $this->createMock(LockingStrategyInterface::class);
-        $locker->method('acquire')->willReturn(true);
-        $locker->method('release')->willReturn(true);
-        $lockFactory->method('createLocker')->willReturn($locker);
-
+        $locker
+            ->method('acquire')
+            ->willReturn(true);
+        $locker
+            ->method('release')
+            ->willReturn(true);
+        $lockFactory
+            ->method('createLocker')
+            ->willReturn($locker);
         $this->challengeService = new ChallengeService($cache, $configService, $lockFactory, $this->createMock(LoggerInterface::class));
     }
 
@@ -64,25 +71,45 @@ final class ChallengeTokenFuzzTest extends TestCase
     public static function randomStringsProvider(): iterable
     {
         yield 'empty string' => [''];
+
         yield 'null byte' => ["\x00"];
+
         yield 'single char' => ['a'];
+
         yield 'long string' => [\str_repeat('A', 10000)];
+
         yield 'unicode' => ['Ünïcödé_Ström_🔑'];
+
         yield 'base64 chars' => ['ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='];
+
         yield 'pipe delimited' => ['foo|bar|baz|qux'];
+
         yield 'base64 encoded pipes' => [\base64_encode('a|b|c|d')];
+
         yield 'valid looking but wrong HMAC' => [\base64_encode('Y2hhbGxlbmdl|9999999999|abc123|fakehash')];
+
         yield 'partial token' => [\base64_encode('Y2hhbGxlbmdl|')];
+
         yield 'three parts only' => [\base64_encode('a|b|c')];
+
         yield 'five parts' => [\base64_encode('a|b|c|d|e')];
+
         yield 'binary data' => [\random_bytes(32)];
+
         yield 'negative timestamp' => [\base64_encode('Y2hhbGxlbmdl|-1|nonce123|hash')];
+
         yield 'zero timestamp' => [\base64_encode('Y2hhbGxlbmdl|0|nonce123|hash')];
+
         yield 'max int timestamp' => [\base64_encode('Y2hhbGxlbmdl|' . PHP_INT_MAX . '|nonce123|hash')];
+
         yield 'newlines' => ["line1\nline2\rline3"];
+
         yield 'HTML injection' => ['<script>alert(1)</script>'];
+
         yield 'SQL injection' => ["'; DROP TABLE be_users; --"];
+
         yield 'null chars in middle' => ["abc\x00def\x00ghi"];
+
         yield 'URL encoded' => ['%00%0a%0d%3c%3e'];
     }
 
@@ -99,6 +126,7 @@ final class ChallengeTokenFuzzTest extends TestCase
     {
         for ($i = 0; $i < 100; $i++) {
             $randomInput = \random_bytes(\random_int(1, 256));
+
             try {
                 $this->challengeService->verifyChallengeToken($randomInput);
                 self::fail('Expected RuntimeException for random bytes input');
@@ -117,12 +145,14 @@ final class ChallengeTokenFuzzTest extends TestCase
 
         // Try bit-flipping each byte of the token
         $tokenBytes = $token;
+
         for ($i = 0; $i < \min(\strlen($tokenBytes), 50); $i++) {
             $modified = $tokenBytes;
-            $modified[$i] = \chr(\ord($modified[$i]) ^ 0xFF);
+            $modified[$i] = \chr(\ord($modified[$i]) ^ 0xff);
 
             try {
                 $this->challengeService->verifyChallengeToken($modified);
+
                 // If it doesn't throw, the modification was in padding - that's ok
                 // as long as the underlying data validation catches it
             } catch (RuntimeException) {
@@ -135,6 +165,7 @@ final class ChallengeTokenFuzzTest extends TestCase
     public function generateChallengeProducesUniqueValues(): void
     {
         $challenges = [];
+
         for ($i = 0; $i < 1000; $i++) {
             $challenge = $this->challengeService->generateChallenge();
             $hex = \bin2hex($challenge);
@@ -146,13 +177,7 @@ final class ChallengeTokenFuzzTest extends TestCase
     #[Test]
     public function createTokenHandlesVariousChallenges(): void
     {
-        $testChallenges = [
-            \random_bytes(32),
-            \random_bytes(1),
-            \random_bytes(64),
-            \str_repeat("\x00", 32),
-            \str_repeat("\xFF", 32),
-        ];
+        $testChallenges = [\random_bytes(32), \random_bytes(1), \random_bytes(64), \str_repeat("\x00", 32), \str_repeat("\xff", 32)];
 
         foreach ($testChallenges as $challenge) {
             $token = $this->challengeService->createChallengeToken($challenge);

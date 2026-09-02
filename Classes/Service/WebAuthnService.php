@@ -38,8 +38,11 @@ final readonly class WebAuthnService
     /**
      * Create registration options for a backend user.
      */
-    public function createRegistrationOptions(int $beUserUid, string $username, string $displayName): RegistrationOptions
-    {
+    public function createRegistrationOptions(
+        int $beUserUid,
+        string $username,
+        string $displayName,
+    ): RegistrationOptions {
         return $this->attestationService->createRegistrationOptions($beUserUid, $username, $displayName);
     }
 

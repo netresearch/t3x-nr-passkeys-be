@@ -146,6 +146,7 @@ final class Credential
     public function getTransportsArray(): array
     {
         $decoded = \json_decode($this->transports, true);
+
         if (!\is_array($decoded)) {
             return [];
         }

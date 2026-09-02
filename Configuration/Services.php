@@ -6,7 +6,6 @@
  */
 
 declare(strict_types=1);
-
 use Netresearch\NrPasskeysBe\Widgets\Adoption\PasskeyAdoptionStatsProviderInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -21,7 +20,9 @@ return static function (ContainerConfigurator $containerConfigurator, ContainerB
     // to evaluate unconditionally.
     $containerBuilder
         ->registerForAutoconfiguration(PasskeyAdoptionStatsProviderInterface::class)
-        ->addTag('nr_passkeys_be.adoption_stats_provider');
+        ->addTag(
+            'nr_passkeys_be.adoption_stats_provider',
+        );
 
     // Dashboard widgets ship only when typo3/cms-dashboard is installed
     // (composer "suggest", not a hard requirement). Guarding here keeps

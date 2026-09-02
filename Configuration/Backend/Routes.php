@@ -6,7 +6,6 @@
  */
 
 declare(strict_types=1);
-
 use Netresearch\NrPasskeysBe\Controller\LoginController;
 
 return [

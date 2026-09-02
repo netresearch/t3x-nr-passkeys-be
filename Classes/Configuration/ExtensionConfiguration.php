@@ -34,9 +34,7 @@ final readonly class ExtensionConfiguration
         private int $lockoutDurationSeconds = 900,
         private string $allowedAlgorithms = 'ES256',
     ) {
-        $this->userVerification = \in_array($userVerification, self::VALID_USER_VERIFICATION, true)
-            ? $userVerification
-            : 'required';
+        $this->userVerification = \in_array($userVerification, self::VALID_USER_VERIFICATION, true) ? $userVerification : 'required';
     }
 
     public function getRpId(): string

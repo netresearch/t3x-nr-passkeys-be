@@ -44,17 +44,20 @@ trait JsonBodyTrait
     private function getJsonBody(ServerRequestInterface $request): array
     {
         $body = $request->getParsedBody();
+
         if (\is_array($body)) {
             /** @var array<string, mixed> $body */
             return $body;
         }
 
         $contentType = $request->getHeaderLine('Content-Type');
+
         if ($contentType !== '' && !\str_contains($contentType, 'application/json')) {
             return [];
         }
 
         $content = (string) $request->getBody();
+
         if ($content === '') {
             return [];
         }

@@ -6,7 +6,6 @@
  */
 
 declare(strict_types=1);
-
 use Netresearch\NrPasskeysBe\Controller\AdminController;
 use Netresearch\NrPasskeysBe\Controller\ManagementController;
 use TYPO3\CMS\Backend\Security\SudoMode\Access\AccessLifetime;
@@ -20,10 +19,7 @@ use TYPO3\CMS\Backend\Security\SudoMode\Access\AccessLifetime;
  * backend session alone was enough to enrol an authenticator or strip another
  * user's passkeys. Core gates its own MFA setup route the same way.
  */
-$sudoMode = [
-    'group' => 'passkeys',
-    'lifetime' => AccessLifetime::medium,
-];
+$sudoMode = ['group' => 'passkeys', 'lifetime' => AccessLifetime::medium];
 
 return [
     // Management write operations (authentication checked in controller)
@@ -51,14 +47,8 @@ return [
         'methods' => ['POST'],
         'sudoMode' => $sudoMode,
     ],
-
     // Management read
-    'passkeys_manage_list' => [
-        'path' => '/passkeys/manage/list',
-        'target' => ManagementController::class . '::listAction',
-        'methods' => ['GET'],
-    ],
-
+    'passkeys_manage_list' => ['path' => '/passkeys/manage/list', 'target' => ManagementController::class . '::listAction', 'methods' => ['GET']],
     // Admin write operations (admin-level authentication checked in controller)
     'passkeys_admin_remove' => [
         'path' => '/passkeys/admin/remove',
@@ -78,21 +68,14 @@ return [
         'methods' => ['POST'],
         'sudoMode' => $sudoMode,
     ],
-
     // Admin read
-    'passkeys_admin_list' => [
-        'path' => '/passkeys/admin/list',
-        'target' => AdminController::class . '::listAction',
-        'methods' => ['GET'],
-    ],
-
+    'passkeys_admin_list' => ['path' => '/passkeys/admin/list', 'target' => AdminController::class . '::listAction', 'methods' => ['GET']],
     // Enforcement status -- banner display decision
     'passkeys_enforcement_status' => [
         'path' => '/passkeys/enforcement/status',
         'target' => ManagementController::class . '::enforcementStatusAction',
         'methods' => ['GET'],
     ],
-
     // Admin dashboard -- update group enforcement level
     'passkeys_admin_update_enforcement' => [
         'path' => '/passkeys/admin/update-enforcement',
@@ -100,7 +83,6 @@ return [
         'methods' => ['POST'],
         'sudoMode' => $sudoMode,
     ],
-
     // Admin dashboard -- send passkey setup reminder to user
     'passkeys_admin_send_reminder' => [
         'path' => '/passkeys/admin/send-reminder',
@@ -108,7 +90,6 @@ return [
         'methods' => ['POST'],
         'sudoMode' => $sudoMode,
     ],
-
     // Admin dashboard -- clear an active passkey setup nudge
     'passkeys_admin_clear_nudge' => [
         'path' => '/passkeys/admin/clear-nudge',

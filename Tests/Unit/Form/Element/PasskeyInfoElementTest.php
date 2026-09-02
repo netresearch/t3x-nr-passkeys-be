@@ -45,51 +45,32 @@ final class PasskeyInfoElementTest extends TestCase
     #[Test]
     public function renderReturnsEmptyForNonBeUsersTable(): void
     {
-        $subject = $this->createSubject([
-            'tableName' => 'fe_users',
-            'databaseRow' => ['uid' => 42],
-        ]);
-
+        $subject = $this->createSubject(['tableName' => 'fe_users', 'databaseRow' => ['uid' => 42]]);
         $result = $subject->render();
-
         self::assertEmpty($result['html'] ?? '');
     }
 
     #[Test]
     public function renderReturnsEmptyForZeroUserId(): void
     {
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 0],
-        ]);
-
+        $subject = $this->createSubject(['tableName' => 'be_users', 'databaseRow' => ['uid' => 0]]);
         $result = $subject->render();
-
         self::assertEmpty($result['html'] ?? '');
     }
 
     #[Test]
     public function renderReturnsEmptyWhenDatabaseRowIsNull(): void
     {
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => null,
-        ]);
-
+        $subject = $this->createSubject(['tableName' => 'be_users', 'databaseRow' => null]);
         $result = $subject->render();
-
         self::assertEmpty($result['html'] ?? '');
     }
 
     #[Test]
     public function renderReturnsEmptyWhenDatabaseRowIsMissing(): void
     {
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-        ]);
-
+        $subject = $this->createSubject(['tableName' => 'be_users']);
         $result = $subject->render();
-
         self::assertEmpty($result['html'] ?? '');
     }
 
@@ -98,22 +79,20 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('findAllByBeUser')
             ->with(42)
             ->willReturn([]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
-
         self::assertStringContainsString('badge-danger', $html);
         self::assertStringContainsString('No passkeys', $html);
         self::assertStringNotContainsString('badge-success', $html);
@@ -124,24 +103,21 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-
         $cred = new Credential(uid: 10, beUser: 42, label: 'My Key', createdAt: 1700000000);
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('findAllByBeUser')
             ->with(42)
             ->willReturn([$cred]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
-
         self::assertStringContainsString('badge-success', $html);
         self::assertStringContainsString('1 Enabled', $html);
         self::assertStringContainsString('My Key', $html);
@@ -153,7 +129,6 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-
         $cred = new Credential(
             uid: 10,
             beUser: 42,
@@ -162,22 +137,21 @@ final class PasskeyInfoElementTest extends TestCase
             revokedAt: 1700001000,
             revokedBy: 1,
         );
-
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
-
         self::assertStringContainsString('Old Key', $html);
         self::assertStringContainsString('Revoked', $html);
+
         // No revoke button for already-revoked credential
         self::assertStringNotContainsString('data-credential-uid="10"', $html);
     }
@@ -187,22 +161,19 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-
         $cred = new Credential(uid: 10, beUser: 42, label: 'Active Key', createdAt: 1700000000);
-
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
-
         self::assertStringContainsString('t3js-passkey-revoke-button', $html);
         self::assertStringContainsString('data-credential-uid="10"', $html);
         self::assertStringContainsString('t3js-passkey-revoke-all-button', $html);
@@ -214,22 +185,19 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpNonAdminUser(42);
         $this->setUpLanguageService();
-
         $cred = new Credential(uid: 10, beUser: 42, label: 'Key', createdAt: 1700000000);
-
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
-
         self::assertStringNotContainsString('t3js-passkey-revoke-button', $html);
         self::assertStringNotContainsString('t3js-passkey-revoke-all-button', $html);
         self::assertStringNotContainsString('t3js-passkey-unlock-button', $html);
@@ -241,19 +209,17 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
-
         self::assertNotEmpty($result['javaScriptModules']);
         $jsModule = $result['javaScriptModules'][0];
         self::assertStringContainsString('PasskeyAdminInfo.js', $jsModule->getName());
@@ -264,28 +230,33 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-
         $cred1 = new Credential(uid: 10, beUser: 42, label: 'MacBook', createdAt: 1700000000, lastUsedAt: 1700001000);
         $cred2 = new Credential(uid: 11, beUser: 42, label: 'YubiKey', createdAt: 1700002000);
-        $cred3 = new Credential(uid: 12, beUser: 42, label: 'Old Key', createdAt: 1699000000, revokedAt: 1700003000, revokedBy: 1);
-
+        $cred3 = new Credential(
+            uid: 12,
+            beUser: 42,
+            label: 'Old Key',
+            createdAt: 1699000000,
+            revokedAt: 1700003000,
+            revokedBy: 1,
+        );
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred1, $cred2, $cred3]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
-
         self::assertStringContainsString('2 Enabled', $html);
         self::assertStringContainsString('MacBook', $html);
         self::assertStringContainsString('YubiKey', $html);
         self::assertStringContainsString('Old Key', $html);
+
         // Revoke buttons for active credentials only
         self::assertStringContainsString('data-credential-uid="10"', $html);
         self::assertStringContainsString('data-credential-uid="11"', $html);
@@ -297,22 +268,26 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-
-        $cred = new Credential(uid: 10, beUser: 42, label: 'Revoked', createdAt: 1700000000, revokedAt: 1700001000, revokedBy: 1);
-
+        $cred = new Credential(
+            uid: 10,
+            beUser: 42,
+            label: 'Revoked',
+            createdAt: 1700000000,
+            revokedAt: 1700001000,
+            revokedBy: 1,
+        );
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
-
         self::assertStringContainsString('t3js-passkey-revoke-all-button', $html);
         self::assertStringContainsString('disabled', $html);
     }
@@ -322,22 +297,19 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-
         $cred = new Credential(uid: 10, beUser: 42, label: 'New Key', createdAt: 1700000000, lastUsedAt: 0);
-
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
-
         self::assertStringContainsString('Never', $html);
     }
 
@@ -346,22 +318,19 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-
         $cred = new Credential(uid: 10, beUser: 42, label: '', createdAt: 1700000000);
-
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
-
         self::assertStringContainsString('Passkey #10', $html);
     }
 
@@ -371,26 +340,31 @@ final class PasskeyInfoElementTest extends TestCase
         // Current user is admin but NOT a system maintainer
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 2, 'admin' => 1];
-        $backendUser->method('isAdmin')->willReturn(true);
-        $backendUser->method('isSystemMaintainer')->willReturn(false);
-        $backendUser->method('shallDisplayDebugInformation')->willReturn(false);
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(true);
+        $backendUser
+            ->method('isSystemMaintainer')
+            ->willReturn(false);
+        $backendUser
+            ->method('shallDisplayDebugInformation')
+            ->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
         $this->setUpLanguageService();
 
         // Target user (uid=1) IS a system maintainer
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [1];
-
         $cred = new Credential(uid: 10, beUser: 1, label: 'Maintainer Key', createdAt: 1700000000);
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 1, 'username' => 'maintainer'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 1, 'username' => 'maintainer'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
 
@@ -411,18 +385,17 @@ final class PasskeyInfoElementTest extends TestCase
 
         // Target user (uid=2) IS also a system maintainer
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [1, 2];
-
         $cred = new Credential(uid: 10, beUser: 2, label: 'Maintainer Key', createdAt: 1700000000);
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
-
-        $subject = $this->createSubject([
-            'tableName' => 'be_users',
-            'databaseRow' => ['uid' => 2, 'username' => 'maintainer2'],
-            'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
-        ]);
-
+        $subject = $this->createSubject(
+            [
+                'tableName' => 'be_users',
+                'databaseRow' => ['uid' => 2, 'username' => 'maintainer2'],
+                'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
+            ],
+        );
         $result = $subject->render();
         $html = $result['html'];
 
@@ -438,6 +411,7 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $subject = new PasskeyInfoElement($this->credentialRepository);
         $subject->setData($data);
+
         return $subject;
     }
 
@@ -445,9 +419,15 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'admin' => 1];
-        $backendUser->method('isAdmin')->willReturn(true);
-        $backendUser->method('isSystemMaintainer')->willReturn(true);
-        $backendUser->method('shallDisplayDebugInformation')->willReturn(false);
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(true);
+        $backendUser
+            ->method('isSystemMaintainer')
+            ->willReturn(true);
+        $backendUser
+            ->method('shallDisplayDebugInformation')
+            ->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
@@ -455,39 +435,48 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'admin' => 0];
-        $backendUser->method('isAdmin')->willReturn(false);
-        $backendUser->method('isSystemMaintainer')->willReturn(false);
-        $backendUser->method('shallDisplayDebugInformation')->willReturn(false);
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(false);
+        $backendUser
+            ->method('isSystemMaintainer')
+            ->willReturn(false);
+        $backendUser
+            ->method('shallDisplayDebugInformation')
+            ->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
     private function setUpLanguageService(): void
     {
         $languageService = $this->createMock(LanguageService::class);
-        $languageService->method('sL')->willReturnCallback(
-            static function (string $key): string {
-                $map = [
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled' => 'Enabled',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.disabled' => 'No passkeys',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke' => 'Revoke',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll' => 'Revoke all passkeys',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.title' => 'Revoke all passkeys',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.text' => 'Are you sure?',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke.confirm.title' => 'Revoke passkey',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke.confirm.text' => 'Are you sure you want to revoke this passkey?',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock' => 'Unlock account',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.title' => 'Unlock account',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.text' => 'Reset the rate limiter?',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.active' => 'Active',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.revoked' => 'Revoked',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.created' => 'Created',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.lastUsed' => 'Last used',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.never' => 'Never',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.cancel' => 'Cancel',
-                ];
-                return $map[$key] ?? $key;
-            },
-        );
+        $languageService
+            ->method('sL')
+            ->willReturnCallback(
+                static function (string $key): string {
+                    $map = [
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled' => 'Enabled',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.disabled' => 'No passkeys',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke' => 'Revoke',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll' => 'Revoke all passkeys',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.title' => 'Revoke all passkeys',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.text' => 'Are you sure?',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke.confirm.title' => 'Revoke passkey',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke.confirm.text' => 'Are you sure you want to revoke this passkey?',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock' => 'Unlock account',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.title' => 'Unlock account',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.text' => 'Reset the rate limiter?',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.active' => 'Active',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.revoked' => 'Revoked',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.created' => 'Created',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.lastUsed' => 'Last used',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.never' => 'Never',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.cancel' => 'Cancel',
+                    ];
+
+                    return $map[$key] ?? $key;
+                },
+            );
         $GLOBALS['LANG'] = $languageService;
     }
 }

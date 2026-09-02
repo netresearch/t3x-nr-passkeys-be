@@ -24,18 +24,16 @@ final class EnforcementStatusTest extends TestCase
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
-            gracePeriodStart: 1_700_000_000,
+            gracePeriodStart: 1700000000,
             hasPasskeys: true,
         );
-
         self::assertSame(EnforcementLevel::Required, $status->level);
         self::assertSame(14, $status->gracePeriodDays);
-        self::assertSame(1_700_000_000, $status->gracePeriodStart);
+        self::assertSame(1700000000, $status->gracePeriodStart);
         self::assertTrue($status->hasPasskeys);
     }
 
     // --- gracePeriodRemainingDays() ---
-
     #[Test]
     public function gracePeriodRemainingDaysReturnsFullDaysWhenNotStarted(): void
     {
@@ -45,55 +43,48 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         self::assertSame(30, $status->gracePeriodRemainingDays());
     }
 
     #[Test]
     public function gracePeriodRemainingDaysCalculatesDaysLeft(): void
     {
-        $now = 1_700_000_000;
-        $fiveDaysAgo = $now - (5 * 86_400);
-
+        $now = 1700000000;
+        $fiveDaysAgo = $now - 5 * 86400;
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fiveDaysAgo,
             hasPasskeys: false,
         );
-
         self::assertSame(9, $status->gracePeriodRemainingDays($now));
     }
 
     #[Test]
     public function gracePeriodRemainingDaysReturnsZeroWhenExpired(): void
     {
-        $now = 1_700_000_000;
-        $twentyDaysAgo = $now - (20 * 86_400);
-
+        $now = 1700000000;
+        $twentyDaysAgo = $now - 20 * 86400;
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $twentyDaysAgo,
             hasPasskeys: false,
         );
-
         self::assertSame(0, $status->gracePeriodRemainingDays($now));
     }
 
     #[Test]
     public function gracePeriodRemainingDaysReturnsZeroWhenExactlyExpired(): void
     {
-        $now = 1_700_000_000;
-        $fourteenDaysAgo = $now - (14 * 86_400);
-
+        $now = 1700000000;
+        $fourteenDaysAgo = $now - 14 * 86400;
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fourteenDaysAgo,
             hasPasskeys: false,
         );
-
         self::assertSame(0, $status->gracePeriodRemainingDays($now));
     }
 
@@ -106,17 +97,16 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         self::assertSame(0, $status->gracePeriodRemainingDays());
     }
 
     #[Test]
     public function gracePeriodRemainingDaysUsesFloorForPartialDays(): void
     {
-        $now = 1_700_000_000;
-        // 5.5 days ago — floor(5.5)=5, ceil(5.5)=6, round(5.5)=6
-        $fiveAndHalfDaysAgo = $now - (5 * 86_400 + 43_200);
+        $now = 1700000000;
 
+        // 5.5 days ago — floor(5.5)=5, ceil(5.5)=6, round(5.5)=6
+        $fiveAndHalfDaysAgo = $now - (5 * 86400 + 43200);
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
@@ -131,10 +121,10 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function gracePeriodRemainingDaysUsesExactSecondsPerDay(): void
     {
-        $now = 1_700_000_000;
-        // Exactly 86399 seconds ago (1 second less than a full day)
-        $justUnderOneDay = $now - 86_399;
+        $now = 1700000000;
 
+        // Exactly 86399 seconds ago (1 second less than a full day)
+        $justUnderOneDay = $now - 86399;
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 1,
@@ -147,7 +137,6 @@ final class EnforcementStatusTest extends TestCase
     }
 
     // --- isGracePeriodExpired() ---
-
     #[Test]
     public function isGracePeriodExpiredReturnsFalseWhenNotStarted(): void
     {
@@ -157,39 +146,34 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         self::assertFalse($status->isGracePeriodExpired());
     }
 
     #[Test]
     public function isGracePeriodExpiredReturnsTrueWhenFullyExpired(): void
     {
-        $now = 1_700_000_000;
-        $twentyDaysAgo = $now - (20 * 86_400);
-
+        $now = 1700000000;
+        $twentyDaysAgo = $now - 20 * 86400;
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $twentyDaysAgo,
             hasPasskeys: false,
         );
-
         self::assertTrue($status->isGracePeriodExpired($now));
     }
 
     #[Test]
     public function isGracePeriodExpiredReturnsTrueWhenExactlyExpired(): void
     {
-        $now = 1_700_000_000;
-        $fourteenDaysAgo = $now - (14 * 86_400);
-
+        $now = 1700000000;
+        $fourteenDaysAgo = $now - 14 * 86400;
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fourteenDaysAgo,
             hasPasskeys: false,
         );
-
         self::assertTrue($status->isGracePeriodExpired($now));
     }
 
@@ -211,21 +195,18 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredReturnsFalseWhenStillActive(): void
     {
-        $now = 1_700_000_000;
-        $fiveDaysAgo = $now - (5 * 86_400);
-
+        $now = 1700000000;
+        $fiveDaysAgo = $now - 5 * 86400;
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fiveDaysAgo,
             hasPasskeys: false,
         );
-
         self::assertFalse($status->isGracePeriodExpired($now));
     }
 
     // --- requiresInterstitial() ---
-
     #[Test]
     public function requiresInterstitialReturnsFalseWhenHasPasskeys(): void
     {
@@ -235,20 +216,13 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: true,
         );
-
         self::assertFalse($status->requiresInterstitial());
     }
 
     #[Test]
     public function requiresInterstitialReturnsFalseForOffLevel(): void
     {
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Off,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
-
+        $status = new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         self::assertFalse($status->requiresInterstitial());
     }
 
@@ -261,7 +235,6 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         self::assertFalse($status->requiresInterstitial());
     }
 
@@ -274,7 +247,6 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         self::assertTrue($status->requiresInterstitial());
     }
 
@@ -287,12 +259,10 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         self::assertTrue($status->requiresInterstitial());
     }
 
     // --- canSkip() ---
-
     #[Test]
     public function canSkipReturnsFalseForEnforcedLevel(): void
     {
@@ -302,39 +272,34 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         self::assertFalse($status->canSkip());
     }
 
     #[Test]
     public function canSkipReturnsFalseForRequiredWithExpiredGracePeriod(): void
     {
-        $now = 1_700_000_000;
-        $twentyDaysAgo = $now - (20 * 86_400);
-
+        $now = 1700000000;
+        $twentyDaysAgo = $now - 20 * 86400;
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $twentyDaysAgo,
             hasPasskeys: false,
         );
-
         self::assertFalse($status->canSkip($now));
     }
 
     #[Test]
     public function canSkipReturnsTrueForRequiredWithActiveGracePeriod(): void
     {
-        $now = 1_700_000_000;
-        $fiveDaysAgo = $now - (5 * 86_400);
-
+        $now = 1700000000;
+        $fiveDaysAgo = $now - 5 * 86400;
         $status = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fiveDaysAgo,
             hasPasskeys: false,
         );
-
         self::assertTrue($status->canSkip($now));
     }
 
@@ -347,7 +312,6 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         self::assertTrue($status->canSkip());
     }
 
@@ -360,20 +324,13 @@ final class EnforcementStatusTest extends TestCase
             gracePeriodStart: 0,
             hasPasskeys: false,
         );
-
         self::assertTrue($status->canSkip());
     }
 
     #[Test]
     public function canSkipReturnsTrueForOffLevel(): void
     {
-        $status = new EnforcementStatus(
-            level: EnforcementLevel::Off,
-            gracePeriodDays: 0,
-            gracePeriodStart: 0,
-            hasPasskeys: false,
-        );
-
+        $status = new EnforcementStatus(level: EnforcementLevel::Off, gracePeriodDays: 0, gracePeriodStart: 0, hasPasskeys: false);
         self::assertTrue($status->canSkip());
     }
 }

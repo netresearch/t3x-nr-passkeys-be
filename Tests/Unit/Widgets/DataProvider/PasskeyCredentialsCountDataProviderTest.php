@@ -24,21 +24,19 @@ final class PasskeyCredentialsCountDataProviderTest extends TestCase
     #[Test]
     public function getNumberSumsActiveCredentialsAcrossSegments(): void
     {
-        $subject = new PasskeyCredentialsCountDataProvider([
-            $this->statsProvider(new PasskeyAudienceStats('backend', 0, 0, 12)),
-            $this->statsProvider(new PasskeyAudienceStats('frontend', 0, 0, 30)),
-        ]);
-
+        $subject = new PasskeyCredentialsCountDataProvider(
+            [
+                $this->statsProvider(new PasskeyAudienceStats('backend', 0, 0, 12)),
+                $this->statsProvider(new PasskeyAudienceStats('frontend', 0, 0, 30)),
+            ],
+        );
         self::assertSame(42, $subject->getNumber());
     }
 
     #[Test]
     public function getNumberReturnsSingleSegmentCountWhenOnlyBackendIsPresent(): void
     {
-        $subject = new PasskeyCredentialsCountDataProvider([
-            $this->statsProvider(new PasskeyAudienceStats('backend', 0, 0, 7)),
-        ]);
-
+        $subject = new PasskeyCredentialsCountDataProvider([$this->statsProvider(new PasskeyAudienceStats('backend', 0, 0, 7))]);
         self::assertSame(7, $subject->getNumber());
     }
 
@@ -46,7 +44,6 @@ final class PasskeyCredentialsCountDataProviderTest extends TestCase
     public function getNumberReturnsZeroForEmptyCollection(): void
     {
         $subject = new PasskeyCredentialsCountDataProvider([]);
-
         self::assertSame(0, $subject->getNumber());
     }
 }

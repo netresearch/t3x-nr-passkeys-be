@@ -23,9 +23,7 @@ use TYPO3\CMS\Core\Page\PageRenderer;
 #[AsEventListener(identifier: 'nr-passkeys-be/inject-passkey-banner')]
 final readonly class InjectPasskeyBanner
 {
-    public function __construct(
-        private PageRenderer $pageRenderer,
-    ) {}
+    public function __construct(private PageRenderer $pageRenderer) {}
 
     public function __invoke(AfterBackendPageRenderEvent $event): void
     {
@@ -33,6 +31,7 @@ final readonly class InjectPasskeyBanner
             'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
             'js.',
         );
+
         // Theme-aware banner styles (colors inherit from the core callout
         // component so the banner follows the v14 light/dark scheme).
         $this->pageRenderer->addCssFile('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');

@@ -18,9 +18,7 @@ use Netresearch\NrPasskeysBe\Widgets\Adoption\PasskeyAdoptionStatsProviderInterf
  */
 final readonly class BackendPasskeyAdoptionStatsProvider implements PasskeyAdoptionStatsProviderInterface
 {
-    public function __construct(
-        private AdoptionStatsService $adoptionStatsService,
-    ) {}
+    public function __construct(private AdoptionStatsService $adoptionStatsService) {}
 
     public function getAudienceStats(): PasskeyAudienceStats
     {

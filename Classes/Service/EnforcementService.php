@@ -41,10 +41,8 @@ final readonly class EnforcementService
         $uidValue = $userRow['uid'] ?? 0;
         $beUserUid = \is_numeric($uidValue) ? (int) $uidValue : 0;
         $passkeyCount = $this->credentialRepository->countByBeUser($beUserUid);
-
         $graceValue = $userRow['passkey_grace_period_start'] ?? 0;
         $gracePeriodStart = \is_numeric($graceValue) ? (int) $graceValue : 0;
-
         $usergroupValue = $userRow['usergroup'] ?? '';
         $groupUids = GeneralUtility::intExplode(',', \is_string($usergroupValue) ? $usergroupValue : '', true);
 
@@ -58,17 +56,13 @@ final readonly class EnforcementService
         }
 
         $groups = $this->fetchGroups(\array_values($groupUids));
-
         $effectiveLevel = EnforcementLevel::Off;
         $effectiveGraceDays = 0;
 
         foreach ($groups as $group) {
             $enforcementValue = $group['passkey_enforcement'] ?? '';
             $level = EnforcementLevel::tryFrom(\is_string($enforcementValue) ? $enforcementValue : '');
-
-            if ($level === null) {
-                $level = EnforcementLevel::Off;
-            }
+            $level ??= EnforcementLevel::Off;
 
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
             $graceDays = \is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
@@ -76,10 +70,7 @@ final readonly class EnforcementService
             if ($level->severity() > $effectiveLevel->severity()) {
                 $effectiveLevel = $level;
                 $effectiveGraceDays = $graceDays;
-            } elseif ($level->severity() === $effectiveLevel->severity()
-                && $level->severity() > 0
-                && ($effectiveGraceDays === 0 || $graceDays < $effectiveGraceDays)
-            ) {
+            } elseif ($level->severity() === $effectiveLevel->severity() && $level->severity() > 0 && ($effectiveGraceDays === 0 || $graceDays < $effectiveGraceDays)) {
                 $effectiveGraceDays = $graceDays;
             }
         }
@@ -103,15 +94,9 @@ final readonly class EnforcementService
     public function startGracePeriod(int $beUserUid): void
     {
         $connection = $this->connectionPool->getConnectionForTable('be_users');
-        $connection->update(
-            'be_users',
-            ['passkey_grace_period_start' => \time()],
-            ['uid' => $beUserUid],
-        );
+        $connection->update('be_users', ['passkey_grace_period_start' => \time()], ['uid' => $beUserUid]);
 
-        $this->logger->info('Grace period started', [
-            'beUserUid' => $beUserUid,
-        ]);
+        $this->logger->info('Grace period started', ['beUserUid' => $beUserUid]);
     }
 
     /**
@@ -128,15 +113,16 @@ final readonly class EnforcementService
         // Default restrictions (DeletedRestriction + HiddenRestriction + time restrictions)
         // are applied automatically by TYPO3's QueryBuilder, which is exactly what we need
         // for be_groups (respects deleted, hidden, starttime, endtime).
-
         return $queryBuilder
             ->select('uid', 'passkey_enforcement', 'passkey_grace_period_days')
             ->from('be_groups')
             ->where(
-                $queryBuilder->expr()->in(
-                    'uid',
-                    $queryBuilder->createNamedParameter($groupUids, ArrayParameterType::INTEGER),
-                ),
+                $queryBuilder
+                    ->expr()
+                    ->in(
+                        'uid',
+                        $queryBuilder->createNamedParameter($groupUids, ArrayParameterType::INTEGER),
+                    ),
             )
             ->executeQuery()
             ->fetchAllAssociative();

@@ -13,7 +13,5 @@ declare(strict_types=1);
  * installed.
  */
 return [
-    'nrpasskeys' => [
-        'title' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget_group.nrpasskeys',
-    ],
+    'nrpasskeys' => ['title' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget_group.nrpasskeys'],
 ];

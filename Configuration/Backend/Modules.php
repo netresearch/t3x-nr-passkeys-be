@@ -6,7 +6,6 @@
  */
 
 declare(strict_types=1);
-
 use Netresearch\NrPasskeysBe\Controller\AdminModuleController;
 
 return [
@@ -17,12 +16,8 @@ return [
         'iconIdentifier' => 'passkeys-be-module',
         'labels' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_module.xlf',
         'routes' => [
-            '_default' => [
-                'target' => AdminModuleController::class . '::dashboardAction',
-            ],
-            'help' => [
-                'target' => AdminModuleController::class . '::helpAction',
-            ],
+            '_default' => ['target' => AdminModuleController::class . '::dashboardAction'],
+            'help' => ['target' => AdminModuleController::class . '::helpAction'],
         ],
     ],
 ];

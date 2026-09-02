@@ -16,8 +16,5 @@ use Webauthn\PublicKeyCredentialRequestOptions;
  */
 final readonly class AssertionOptions
 {
-    public function __construct(
-        public PublicKeyCredentialRequestOptions $options,
-        public string $challengeToken,
-    ) {}
+    public function __construct(public PublicKeyCredentialRequestOptions $options, public string $challengeToken) {}
 }

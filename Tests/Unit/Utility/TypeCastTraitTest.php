@@ -27,7 +27,6 @@ final class TypeCastTraitTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-
         self::$subject = new class {
             use TypeCastTrait;
 
@@ -44,7 +43,6 @@ final class TypeCastTraitTest extends TestCase
     }
 
     // --- intVal tests ---
-
     /**
      * @return array<string, array{mixed, int, int}>
      */
@@ -67,7 +65,6 @@ final class TypeCastTraitTest extends TestCase
     public function intValConvertsNumericInputs(mixed $value, int $default, int $expected): void
     {
         $result = self::$subject::callIntVal($value, $default);
-
         self::assertSame($expected, $result);
     }
 
@@ -93,7 +90,6 @@ final class TypeCastTraitTest extends TestCase
     {
         $customDefault = 99;
         $result = self::$subject::callIntVal($value, $customDefault);
-
         self::assertSame($customDefault, $result);
     }
 
@@ -101,7 +97,6 @@ final class TypeCastTraitTest extends TestCase
     public function intValUsesZeroAsDefaultWhenNotProvided(): void
     {
         $result = self::$subject::callIntVal(null);
-
         self::assertSame(0, $result);
     }
 
@@ -109,12 +104,10 @@ final class TypeCastTraitTest extends TestCase
     public function intValUsesCustomDefault(): void
     {
         $result = self::$subject::callIntVal('not-a-number', 42);
-
         self::assertSame(42, $result);
     }
 
     // --- stringVal tests ---
-
     /**
      * @return array<string, array{mixed, string}>
      */
@@ -134,7 +127,6 @@ final class TypeCastTraitTest extends TestCase
     public function stringValReturnsStringInputUnchanged(mixed $value, string $expected): void
     {
         $result = self::$subject::callStringVal($value, 'default');
-
         self::assertSame($expected, $result);
     }
 
@@ -160,7 +152,6 @@ final class TypeCastTraitTest extends TestCase
     {
         $customDefault = 'my-default';
         $result = self::$subject::callStringVal($value, $customDefault);
-
         self::assertSame($customDefault, $result);
     }
 
@@ -168,7 +159,6 @@ final class TypeCastTraitTest extends TestCase
     public function stringValUsesEmptyStringAsDefaultWhenNotProvided(): void
     {
         $result = self::$subject::callStringVal(null);
-
         self::assertSame('', $result);
     }
 
@@ -176,7 +166,6 @@ final class TypeCastTraitTest extends TestCase
     public function stringValUsesCustomDefault(): void
     {
         $result = self::$subject::callStringVal(42, 'fallback');
-
         self::assertSame('fallback', $result);
     }
 }

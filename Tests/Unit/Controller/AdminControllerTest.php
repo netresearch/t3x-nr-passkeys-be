@@ -45,12 +45,10 @@ final class AdminControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
         $this->connectionPool = $this->createMock(ConnectionPool::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-
         $this->subject = new AdminController(
             $this->credentialRepository,
             $this->rateLimiterService,
@@ -69,17 +67,11 @@ final class AdminControllerTest extends TestCase
     public function listActionAsAdmin(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getQueryParams')->willReturn(['beUserUid' => '42']);
-
-        $cred1 = new Credential(
-            uid: 10,
-            beUser: 42,
-            label: 'Key 1',
-            createdAt: 1700000000,
-            lastUsedAt: 1700001000,
-        );
+        $request
+            ->method('getQueryParams')
+            ->willReturn(['beUserUid' => '42']);
+        $cred1 = new Credential(uid: 10, beUser: 42, label: 'Key 1', createdAt: 1700000000, lastUsedAt: 1700001000);
         $cred2 = new Credential(
             uid: 11,
             beUser: 42,
@@ -89,15 +81,14 @@ final class AdminControllerTest extends TestCase
             revokedAt: 1700003000,
             revokedBy: 1,
         );
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('findAllByBeUser')
             ->with(42)
-            ->willReturn([$cred1, $cred2]);
-
+            ->willReturn(
+                [$cred1, $cred2],
+            );
         $response = $this->subject->listAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame(42, $body['beUserUid']);
@@ -122,16 +113,14 @@ final class AdminControllerTest extends TestCase
     public function listActionAsNonAdmin(): void
     {
         $this->setUpNonAdminUser(42, 'editor');
-
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getQueryParams')->willReturn(['beUserUid' => '42']);
-
+        $request
+            ->method('getQueryParams')
+            ->willReturn(['beUserUid' => '42']);
         $this->credentialRepository
             ->expects(self::never())
             ->method('findAllByBeUser');
-
         $response = $this->subject->listAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -141,33 +130,31 @@ final class AdminControllerTest extends TestCase
     public function removeActionSuccess(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'credentialUid' => 10,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'credentialUid' => 10]);
         $cred = new Credential(uid: 10, beUser: 42, label: 'Key 1');
         $this->credentialRepository
             ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(10, 42)
-            ->willReturn($cred);
-
+            ->willReturn(
+                $cred,
+            );
         $this->credentialRepository
             ->expects(self::once())
             ->method('revoke')
             ->with(10, 1);
-
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin revoked passkey', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
-                && $context['be_user_uid'] === 42
-                && $context['credential_uid'] === 10));
-
+            ->with(
+                'Admin revoked passkey',
+                self::callback(
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['credential_uid'] === 10,
+                ),
+            );
         $response = $this->subject->removeAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -177,17 +164,14 @@ final class AdminControllerTest extends TestCase
     public function removeActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
         $this->setUpNonMaintainerAdminTargetingMaintainer();
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 99,
-            'credentialUid' => 5,
-        ]);
-
-        $this->credentialRepository->expects(self::never())->method('findByUidAndBeUser');
-        $this->credentialRepository->expects(self::never())->method('revoke');
-
+        $request = $this->createJsonRequest(['beUserUid' => 99, 'credentialUid' => 5]);
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('findByUidAndBeUser');
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('revoke');
         $response = $this->subject->removeAction($request);
-
         $this->assertManagementDenied($response);
     }
 
@@ -195,14 +179,14 @@ final class AdminControllerTest extends TestCase
     public function listActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
         $this->setUpNonMaintainerAdminTargetingMaintainer();
-
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getQueryParams')->willReturn(['beUserUid' => 99]);
-
-        $this->credentialRepository->expects(self::never())->method('findAllByBeUser');
-
+        $request
+            ->method('getQueryParams')
+            ->willReturn(['beUserUid' => 99]);
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('findAllByBeUser');
         $response = $this->subject->listAction($request);
-
         self::assertSame(403, $response->getStatusCode());
     }
 
@@ -211,12 +195,7 @@ final class AdminControllerTest extends TestCase
     {
         $this->setUpAdminUser(1, 'superadmin', isSystemMaintainer: true);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [99];
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 99,
-            'credentialUid' => 5,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 99, 'credentialUid' => 5]);
         $cred = new Credential(uid: 5, beUser: 99, label: 'Key');
         $this->credentialRepository
             ->expects(self::once())
@@ -227,9 +206,7 @@ final class AdminControllerTest extends TestCase
             ->expects(self::once())
             ->method('revoke')
             ->with(5, 1);
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(200, $response->getStatusCode());
     }
 
@@ -237,16 +214,11 @@ final class AdminControllerTest extends TestCase
     public function unlockActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
         $this->setUpNonMaintainerAdminTargetingMaintainer();
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 99,
-            'username' => 'maintainer',
-        ]);
-
-        $this->rateLimiterService->expects(self::never())->method('resetLockout');
-
+        $request = $this->createJsonRequest(['beUserUid' => 99, 'username' => 'maintainer']);
+        $this->rateLimiterService
+            ->expects(self::never())
+            ->method('resetLockout');
         $response = $this->subject->unlockAction($request);
-
         $this->assertManagementDenied($response);
     }
 
@@ -254,14 +226,14 @@ final class AdminControllerTest extends TestCase
     public function revokeAllActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
         $this->setUpNonMaintainerAdminTargetingMaintainer();
-
         $request = $this->createJsonRequest(['beUserUid' => 99]);
-
-        $this->credentialRepository->expects(self::never())->method('findAllByBeUser');
-        $this->credentialRepository->expects(self::never())->method('revoke');
-
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('findAllByBeUser');
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('revoke');
         $response = $this->subject->revokeAllAction($request);
-
         self::assertSame(403, $response->getStatusCode());
     }
 
@@ -269,14 +241,13 @@ final class AdminControllerTest extends TestCase
     public function sendReminderActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
         $this->setUpNonMaintainerAdminTargetingMaintainer();
-
         $request = $this->createJsonRequest(['beUserUid' => 99]);
 
         // The guard returns before any DB access.
-        $this->connectionPool->expects(self::never())->method('getConnectionForTable');
-
+        $this->connectionPool
+            ->expects(self::never())
+            ->method('getConnectionForTable');
         $response = $this->subject->sendReminderAction($request);
-
         $this->assertManagementDenied($response);
     }
 
@@ -284,13 +255,11 @@ final class AdminControllerTest extends TestCase
     public function clearNudgeActionDeniedWhenNonMaintainerTargetsSystemMaintainer(): void
     {
         $this->setUpNonMaintainerAdminTargetingMaintainer();
-
         $request = $this->createJsonRequest(['beUserUid' => 99]);
-
-        $this->connectionPool->expects(self::never())->method('getConnectionForTable');
-
+        $this->connectionPool
+            ->expects(self::never())
+            ->method('getConnectionForTable');
         $response = $this->subject->clearNudgeAction($request);
-
         self::assertSame(403, $response->getStatusCode());
     }
 
@@ -299,22 +268,18 @@ final class AdminControllerTest extends TestCase
     {
         // A non-empty systemMaintainers list must not block managing a NON-maintainer.
         $this->setUpNonMaintainerAdminTargetingMaintainer();
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'credentialUid' => 5,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'credentialUid' => 5]);
         $cred = new Credential(uid: 5, beUser: 42, label: 'Key');
         $this->credentialRepository
             ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(5, 42)
             ->willReturn($cred);
-        $this->credentialRepository->expects(self::once())->method('revoke')->with(5, 1);
-
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('revoke')
+            ->with(5, 1);
         $response = $this->subject->removeAction($request);
-
         self::assertSame(200, $response->getStatusCode());
     }
 
@@ -322,25 +287,20 @@ final class AdminControllerTest extends TestCase
     public function removeActionCredentialNotFound(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'credentialUid' => 999,
-        ]);
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'credentialUid' => 999]);
 
         // User 42 has credential 10, but not 999
         $this->credentialRepository
             ->expects(self::once())
             ->method('findByUidAndBeUser')
             ->with(999, 42)
-            ->willReturn(null);
-
+            ->willReturn(
+                null,
+            );
         $this->credentialRepository
             ->expects(self::never())
             ->method('revoke');
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(404, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Credential not found for this user', $body['error']);
@@ -351,26 +311,23 @@ final class AdminControllerTest extends TestCase
     {
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpFindBeUserByUid(42, ['uid' => 42, 'username' => 'lockeduser']);
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'username' => 'lockeduser',
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'username' => 'lockeduser']);
         $this->rateLimiterService
             ->expects(self::once())
             ->method('resetLockout')
             ->with('lockeduser');
-
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin unlocked user account', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
-                && $context['be_user_uid'] === 42
-                && $context['username'] === 'lockeduser'));
-
+            ->with(
+                'Admin unlocked user account',
+                self::callback(
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['username'] === 'lockeduser',
+                ),
+            );
         $response = $this->subject->unlockAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -381,18 +338,11 @@ final class AdminControllerTest extends TestCase
     {
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpFindBeUserByUid(42, ['uid' => 42, 'username' => 'differentuser']);
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'username' => 'lockeduser',
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'username' => 'lockeduser']);
         $this->rateLimiterService
             ->expects(self::never())
             ->method('resetLockout');
-
         $response = $this->subject->unlockAction($request);
-
         self::assertSame(404, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('User not found or username mismatch', $body['error']);
@@ -403,18 +353,11 @@ final class AdminControllerTest extends TestCase
     {
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpFindBeUserByUid(42, null);
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'username' => 'lockeduser',
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'username' => 'lockeduser']);
         $this->rateLimiterService
             ->expects(self::never())
             ->method('resetLockout');
-
         $response = $this->subject->unlockAction($request);
-
         self::assertSame(404, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('User not found or username mismatch', $body['error']);
@@ -426,13 +369,13 @@ final class AdminControllerTest extends TestCase
     private function setUpAdminUser(int $uid, string $username, bool $isSystemMaintainer = false): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = [
-            'uid' => $uid,
-            'username' => $username,
-            'admin' => 1,
-        ];
-        $backendUser->method('isAdmin')->willReturn(true);
-        $backendUser->method('isSystemMaintainer')->willReturn($isSystemMaintainer);
+        $backendUser->user = ['uid' => $uid, 'username' => $username, 'admin' => 1];
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(true);
+        $backendUser
+            ->method('isSystemMaintainer')
+            ->willReturn($isSystemMaintainer);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
@@ -451,10 +394,7 @@ final class AdminControllerTest extends TestCase
     private function assertManagementDenied(ResponseInterface $response): void
     {
         self::assertSame(403, $response->getStatusCode());
-        self::assertSame(
-            'Insufficient privileges to manage this user',
-            $this->decodeResponse($response)['error'],
-        );
+        self::assertSame('Insufficient privileges to manage this user', $this->decodeResponse($response)['error']);
     }
 
     /**
@@ -463,12 +403,10 @@ final class AdminControllerTest extends TestCase
     private function setUpNonAdminUser(int $uid, string $username): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = [
-            'uid' => $uid,
-            'username' => $username,
-            'admin' => 0,
-        ];
-        $backendUser->method('isAdmin')->willReturn(false);
+        $backendUser->user = ['uid' => $uid, 'username' => $username, 'admin' => 0];
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(false);
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
@@ -480,7 +418,6 @@ final class AdminControllerTest extends TestCase
     private function setUpFindBeUserByUid(int $uid, ?array $userRow): void
     {
         $queryBuilder = $this->createSingleRowQueryBuilder($uid, $userRow);
-
         $this->connectionPool
             ->method('getQueryBuilderForTable')
             ->with('be_users')
@@ -495,11 +432,16 @@ final class AdminControllerTest extends TestCase
     private function createJsonRequest(array $data): ServerRequestInterface&MockObject
     {
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getParsedBody')->willReturn($data);
-
+        $request
+            ->method('getParsedBody')
+            ->willReturn($data);
         $stream = $this->createMock(StreamInterface::class);
-        $stream->method('__toString')->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
-        $request->method('getBody')->willReturn($stream);
+        $stream
+            ->method('__toString')
+            ->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
+        $request
+            ->method('getBody')
+            ->willReturn($stream);
 
         return $request;
     }
@@ -508,22 +450,14 @@ final class AdminControllerTest extends TestCase
     public function removeActionAsNonAdmin(): void
     {
         $this->setUpNonAdminUser(42, 'editor');
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'credentialUid' => 10,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'credentialUid' => 10]);
         $this->credentialRepository
             ->expects(self::never())
             ->method('findByUidAndBeUser');
-
         $this->credentialRepository
             ->expects(self::never())
             ->method('revoke');
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -533,18 +467,11 @@ final class AdminControllerTest extends TestCase
     public function unlockActionAsNonAdmin(): void
     {
         $this->setUpNonAdminUser(42, 'editor');
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'username' => 'lockeduser',
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'username' => 'lockeduser']);
         $this->rateLimiterService
             ->expects(self::never())
             ->method('resetLockout');
-
         $response = $this->subject->unlockAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -554,16 +481,14 @@ final class AdminControllerTest extends TestCase
     public function listActionWithMissingBeUserUid(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getQueryParams')->willReturn([]);
-
+        $request
+            ->method('getQueryParams')
+            ->willReturn([]);
         $this->credentialRepository
             ->expects(self::never())
             ->method('findAllByBeUser');
-
         $response = $this->subject->listAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing beUserUid parameter', $body['error']);
@@ -573,15 +498,11 @@ final class AdminControllerTest extends TestCase
     public function removeActionWithMissingFields(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
         $request = $this->createJsonRequest([]);
-
         $this->credentialRepository
             ->expects(self::never())
             ->method('findByUidAndBeUser');
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -591,15 +512,11 @@ final class AdminControllerTest extends TestCase
     public function unlockActionWithMissingFields(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
         $request = $this->createJsonRequest([]);
-
         $this->rateLimiterService
             ->expects(self::never())
             ->method('resetLockout');
-
         $response = $this->subject->unlockAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -609,17 +526,11 @@ final class AdminControllerTest extends TestCase
     public function unlockActionWithMissingUsername(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
         $this->rateLimiterService
             ->expects(self::never())
             ->method('resetLockout');
-
         $response = $this->subject->unlockAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -629,17 +540,11 @@ final class AdminControllerTest extends TestCase
     public function unlockActionWithMissingBeUserUid(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'username' => 'lockeduser',
-        ]);
-
+        $request = $this->createJsonRequest(['username' => 'lockeduser']);
         $this->rateLimiterService
             ->expects(self::never())
             ->method('resetLockout');
-
         $response = $this->subject->unlockAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -649,17 +554,11 @@ final class AdminControllerTest extends TestCase
     public function removeActionWithMissingBeUserUid(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'credentialUid' => 10,
-        ]);
-
+        $request = $this->createJsonRequest(['credentialUid' => 10]);
         $this->credentialRepository
             ->expects(self::never())
             ->method('findByUidAndBeUser');
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -669,17 +568,11 @@ final class AdminControllerTest extends TestCase
     public function removeActionWithMissingCredentialUid(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
         $this->credentialRepository
             ->expects(self::never())
             ->method('findByUidAndBeUser');
-
         $response = $this->subject->removeAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -689,17 +582,15 @@ final class AdminControllerTest extends TestCase
     public function requireAdminReturnsNullWhenUserDataIsNotArray(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = null; // not an array
-        $backendUser->method('isAdmin')->willReturn(true);
+        $backendUser->user = null;
+
+        // not an array
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(true);
         $GLOBALS['BE_USER'] = $backendUser;
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'credentialUid' => 10,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'credentialUid' => 10]);
         $response = $this->subject->removeAction($request);
-
         self::assertSame(403, $response->getStatusCode());
     }
 
@@ -707,17 +598,15 @@ final class AdminControllerTest extends TestCase
     public function requireAdminReturnsNullWhenUserHasNoUid(): void
     {
         $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = ['username' => 'admin']; // no uid
-        $backendUser->method('isAdmin')->willReturn(true);
+        $backendUser->user = ['username' => 'admin'];
+
+        // no uid
+        $backendUser
+            ->method('isAdmin')
+            ->willReturn(true);
         $GLOBALS['BE_USER'] = $backendUser;
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'credentialUid' => 10,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'credentialUid' => 10]);
         $response = $this->subject->removeAction($request);
-
         self::assertSame(403, $response->getStatusCode());
     }
 
@@ -725,18 +614,16 @@ final class AdminControllerTest extends TestCase
     public function listActionReturnEmptyListForUserWithNoCredentials(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getQueryParams')->willReturn(['beUserUid' => '99']);
-
+        $request
+            ->method('getQueryParams')
+            ->willReturn(['beUserUid' => '99']);
         $this->credentialRepository
             ->expects(self::once())
             ->method('findAllByBeUser')
             ->with(99)
             ->willReturn([]);
-
         $response = $this->subject->listAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame(99, $body['beUserUid']);
@@ -749,10 +636,10 @@ final class AdminControllerTest extends TestCase
     {
         // Do NOT set $GLOBALS['BE_USER']
         $request = $this->createMock(ServerRequestInterface::class);
-        $request->method('getQueryParams')->willReturn(['beUserUid' => '42']);
-
+        $request
+            ->method('getQueryParams')
+            ->willReturn(['beUserUid' => '42']);
         $response = $this->subject->listAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -762,13 +649,8 @@ final class AdminControllerTest extends TestCase
     public function removeActionWithoutBeUser(): void
     {
         // Do NOT set $GLOBALS['BE_USER']
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'credentialUid' => 10,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'credentialUid' => 10]);
         $response = $this->subject->removeAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -778,13 +660,8 @@ final class AdminControllerTest extends TestCase
     public function unlockActionWithoutBeUser(): void
     {
         // Do NOT set $GLOBALS['BE_USER']
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-            'username' => 'lockeduser',
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42, 'username' => 'lockeduser']);
         $response = $this->subject->unlockAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -794,38 +671,38 @@ final class AdminControllerTest extends TestCase
     public function revokeAllActionSuccess(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
         $cred1 = new Credential(uid: 10, beUser: 42, label: 'Key 1');
         $cred2 = new Credential(uid: 11, beUser: 42, label: 'Key 2');
         $cred3 = new Credential(uid: 12, beUser: 42, label: 'Revoked', revokedAt: 1700000000, revokedBy: 1);
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('findAllByBeUser')
             ->with(42)
-            ->willReturn([$cred1, $cred2, $cred3]);
-
+            ->willReturn(
+                [$cred1, $cred2, $cred3],
+            );
         $this->credentialRepository
             ->expects(self::exactly(2))
             ->method('revoke')
-            ->willReturnCallback(static function (int $uid, int $adminUid): void {
-                \assert(\in_array($uid, [10, 11], true));
-                \assert($adminUid === 1);
-            });
-
+            ->willReturnCallback(
+                static function (int $uid, int $adminUid): void {
+                    \assert(\in_array($uid, [10, 11], true));
+                    \assert($adminUid === 1);
+                },
+            );
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin revoked all passkeys', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
-                && $context['be_user_uid'] === 42
-                && $context['revoked_count'] === 2));
-
+            ->with(
+                'Admin revoked all passkeys',
+                self::callback(
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['revoked_count'] === 2,
+                ),
+            );
         $response = $this->subject->revokeAllAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -836,15 +713,11 @@ final class AdminControllerTest extends TestCase
     public function revokeAllActionAsNonAdmin(): void
     {
         $this->setUpNonAdminUser(42, 'editor');
-
         $request = $this->createJsonRequest(['beUserUid' => 42]);
-
         $this->credentialRepository
             ->expects(self::never())
             ->method('findAllByBeUser');
-
         $response = $this->subject->revokeAllAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -854,15 +727,11 @@ final class AdminControllerTest extends TestCase
     public function revokeAllActionWithMissingBeUserUid(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
         $request = $this->createJsonRequest([]);
-
         $this->credentialRepository
             ->expects(self::never())
             ->method('findAllByBeUser');
-
         $response = $this->subject->revokeAllAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -872,23 +741,17 @@ final class AdminControllerTest extends TestCase
     public function revokeAllActionWithNoActiveCredentials(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
         $request = $this->createJsonRequest(['beUserUid' => 42]);
-
         $cred = new Credential(uid: 10, beUser: 42, label: 'Revoked', revokedAt: 1700000000, revokedBy: 1);
-
         $this->credentialRepository
             ->expects(self::once())
             ->method('findAllByBeUser')
             ->with(42)
             ->willReturn([$cred]);
-
         $this->credentialRepository
             ->expects(self::never())
             ->method('revoke');
-
         $response = $this->subject->revokeAllAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -900,9 +763,7 @@ final class AdminControllerTest extends TestCase
     {
         // Do NOT set $GLOBALS['BE_USER']
         $request = $this->createJsonRequest(['beUserUid' => 42]);
-
         $response = $this->subject->revokeAllAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -913,31 +774,32 @@ final class AdminControllerTest extends TestCase
     {
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpGroupLookup(5, ['uid' => 5]);
-
         $connection = $this->createMock(Connection::class);
-        $connection->expects(self::once())
+        $connection
+            ->expects(self::once())
             ->method('update')
-            ->with('be_groups', ['passkey_enforcement' => 'encourage'], ['uid' => 5]);
-
+            ->with(
+                'be_groups',
+                ['passkey_enforcement' => 'encourage'],
+                ['uid' => 5],
+            );
         $this->connectionPool
             ->method('getConnectionForTable')
             ->with('be_groups')
             ->willReturn($connection);
-
-        $request = $this->createJsonRequest([
-            'groupUid' => 5,
-            'enforcement' => 'encourage',
-        ]);
-
+        $request = $this->createJsonRequest(['groupUid' => 5, 'enforcement' => 'encourage']);
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin updated group enforcement', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
-                && $context['group_uid'] === 5
-                && $context['enforcement'] === 'encourage'));
-
+            ->with(
+                'Admin updated group enforcement',
+                self::callback(
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['group_uid'] === 5 && $context['enforcement'] === 'encourage',
+                ),
+            );
         $response = $this->subject->updateEnforcementAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -948,14 +810,8 @@ final class AdminControllerTest extends TestCase
     public function updateEnforcementActionAsNonAdmin(): void
     {
         $this->setUpNonAdminUser(42, 'editor');
-
-        $request = $this->createJsonRequest([
-            'groupUid' => 5,
-            'enforcement' => 'encourage',
-        ]);
-
+        $request = $this->createJsonRequest(['groupUid' => 5, 'enforcement' => 'encourage']);
         $response = $this->subject->updateEnforcementAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -965,13 +821,8 @@ final class AdminControllerTest extends TestCase
     public function updateEnforcementActionWithMissingGroupUid(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'enforcement' => 'encourage',
-        ]);
-
+        $request = $this->createJsonRequest(['enforcement' => 'encourage']);
         $response = $this->subject->updateEnforcementAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -981,13 +832,8 @@ final class AdminControllerTest extends TestCase
     public function updateEnforcementActionWithMissingEnforcement(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'groupUid' => 5,
-        ]);
-
+        $request = $this->createJsonRequest(['groupUid' => 5]);
         $response = $this->subject->updateEnforcementAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -997,14 +843,8 @@ final class AdminControllerTest extends TestCase
     public function updateEnforcementActionWithInvalidLevel(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
-        $request = $this->createJsonRequest([
-            'groupUid' => 5,
-            'enforcement' => 'invalid_level',
-        ]);
-
+        $request = $this->createJsonRequest(['groupUid' => 5, 'enforcement' => 'invalid_level']);
         $response = $this->subject->updateEnforcementAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Invalid enforcement level', $body['error']);
@@ -1015,14 +855,8 @@ final class AdminControllerTest extends TestCase
     {
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpGroupLookup(999, null);
-
-        $request = $this->createJsonRequest([
-            'groupUid' => 999,
-            'enforcement' => 'encourage',
-        ]);
-
+        $request = $this->createJsonRequest(['groupUid' => 999, 'enforcement' => 'encourage']);
         $response = $this->subject->updateEnforcementAction($request);
-
         self::assertSame(404, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Group not found', $body['error']);
@@ -1032,13 +866,8 @@ final class AdminControllerTest extends TestCase
     public function updateEnforcementActionWithoutBeUser(): void
     {
         // Do NOT set $GLOBALS['BE_USER']
-        $request = $this->createJsonRequest([
-            'groupUid' => 5,
-            'enforcement' => 'encourage',
-        ]);
-
+        $request = $this->createJsonRequest(['groupUid' => 5, 'enforcement' => 'encourage']);
         $response = $this->subject->updateEnforcementAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -1049,38 +878,36 @@ final class AdminControllerTest extends TestCase
     {
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
-
         $connection = $this->createMock(Connection::class);
-        $connection->expects(self::once())
+        $connection
+            ->expects(self::once())
             ->method('update')
             ->with(
                 'be_users',
-                self::callback(static fn(array $data): bool => isset($data['passkey_nudge_until'])
-                    && \is_int($data['passkey_nudge_until'])
-                    && $data['passkey_nudge_until'] > \time()),
+                self::callback(
+                    static fn(
+                        array $data,
+                    ): bool => isset($data['passkey_nudge_until']) && \is_int($data['passkey_nudge_until']) && $data['passkey_nudge_until'] > \time(),
+                ),
                 ['uid' => 42],
             );
-
         $this->connectionPool
             ->method('getConnectionForTable')
             ->with('be_users')
             ->willReturn($connection);
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin sent passkey reminder', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
-                && $context['be_user_uid'] === 42
-                && $context['username'] === 'editor'
-                && \is_int($context['nudge_until'])
-                && $context['nudge_until'] > \time()));
-
+            ->with(
+                'Admin sent passkey reminder',
+                self::callback(
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['username'] === 'editor' && \is_int($context['nudge_until']) && $context['nudge_until'] > \time(),
+                ),
+            );
         $response = $this->subject->sendReminderAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -1092,13 +919,8 @@ final class AdminControllerTest extends TestCase
     public function sendReminderActionAsNonAdmin(): void
     {
         $this->setUpNonAdminUser(42, 'editor');
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
         $response = $this->subject->sendReminderAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -1108,11 +930,8 @@ final class AdminControllerTest extends TestCase
     public function sendReminderActionWithMissingBeUserUid(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->sendReminderAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -1123,13 +942,8 @@ final class AdminControllerTest extends TestCase
     {
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpFindActiveBeUserByUid(999, null);
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 999,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 999]);
         $response = $this->subject->sendReminderAction($request);
-
         self::assertSame(404, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('User not found', $body['error']);
@@ -1139,52 +953,45 @@ final class AdminControllerTest extends TestCase
     public function sendReminderActionWithoutBeUser(): void
     {
         // Do NOT set $GLOBALS['BE_USER']
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
         $response = $this->subject->sendReminderAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
     }
 
     // ── clearNudgeAction ─────────────────────────────────────
-
     #[Test]
     public function clearNudgeActionSuccess(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpFindActiveBeUserByUid(42, ['uid' => 42, 'username' => 'editor']);
-
         $connection = $this->createMock(Connection::class);
-        $connection->expects(self::once())
+        $connection
+            ->expects(self::once())
             ->method('update')
             ->with(
                 'be_users',
                 ['passkey_nudge_until' => 0],
                 ['uid' => 42],
             );
-
         $this->connectionPool
             ->method('getConnectionForTable')
             ->with('be_users')
             ->willReturn($connection);
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
         $this->logger
             ->expects(self::once())
             ->method('info')
-            ->with('Admin cleared passkey nudge', self::callback(static fn(array $context): bool => $context['admin_uid'] === 1
-                && $context['be_user_uid'] === 42
-                && $context['username'] === 'editor'));
-
+            ->with(
+                'Admin cleared passkey nudge',
+                self::callback(
+                    static fn(
+                        array $context,
+                    ): bool => $context['admin_uid'] === 1 && $context['be_user_uid'] === 42 && $context['username'] === 'editor',
+                ),
+            );
         $response = $this->subject->clearNudgeAction($request);
-
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
@@ -1194,13 +1001,8 @@ final class AdminControllerTest extends TestCase
     public function clearNudgeActionAsNonAdmin(): void
     {
         $this->setUpNonAdminUser(42, 'editor');
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
         $response = $this->subject->clearNudgeAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -1210,11 +1012,8 @@ final class AdminControllerTest extends TestCase
     public function clearNudgeActionWithMissingBeUserUid(): void
     {
         $this->setUpAdminUser(1, 'superadmin');
-
         $request = $this->createJsonRequest([]);
-
         $response = $this->subject->clearNudgeAction($request);
-
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
@@ -1225,13 +1024,8 @@ final class AdminControllerTest extends TestCase
     {
         $this->setUpAdminUser(1, 'superadmin');
         $this->setUpFindActiveBeUserByUid(999, null);
-
-        $request = $this->createJsonRequest([
-            'beUserUid' => 999,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 999]);
         $response = $this->subject->clearNudgeAction($request);
-
         self::assertSame(404, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('User not found', $body['error']);
@@ -1241,12 +1035,8 @@ final class AdminControllerTest extends TestCase
     public function clearNudgeActionWithoutBeUser(): void
     {
         // Do NOT set $GLOBALS['BE_USER']
-        $request = $this->createJsonRequest([
-            'beUserUid' => 42,
-        ]);
-
+        $request = $this->createJsonRequest(['beUserUid' => 42]);
         $response = $this->subject->clearNudgeAction($request);
-
         self::assertSame(403, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Unauthorized', $body['error']);
@@ -1260,10 +1050,11 @@ final class AdminControllerTest extends TestCase
     private function setUpGroupLookup(int $uid, ?array $groupRow): void
     {
         $queryBuilder = $this->createSingleRowQueryBuilder($uid, $groupRow);
-        $queryBuilder->method('getRestrictions')->willReturn(
-            $this->createMock(QueryRestrictionContainerInterface::class),
-        );
-
+        $queryBuilder
+            ->method('getRestrictions')
+            ->willReturn(
+                $this->createMock(QueryRestrictionContainerInterface::class),
+            );
         $this->connectionPool
             ->method('getQueryBuilderForTable')
             ->with('be_groups')
@@ -1280,10 +1071,11 @@ final class AdminControllerTest extends TestCase
     private function setUpFindActiveBeUserByUid(int $uid, ?array $userRow): void
     {
         $queryBuilder = $this->createSingleRowQueryBuilder($uid, $userRow);
-        $queryBuilder->method('getRestrictions')->willReturn(
-            $this->createMock(QueryRestrictionContainerInterface::class),
-        );
-
+        $queryBuilder
+            ->method('getRestrictions')
+            ->willReturn(
+                $this->createMock(QueryRestrictionContainerInterface::class),
+            );
         $this->connectionPool
             ->method('getQueryBuilderForTable')
             ->with('be_users')
@@ -1300,6 +1092,7 @@ final class AdminControllerTest extends TestCase
         $body = (string) $response->getBody();
         $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);
         \assert(\is_array($decoded));
+
         return $decoded;
     }
 }

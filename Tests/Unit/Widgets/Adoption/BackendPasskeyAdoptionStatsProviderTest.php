@@ -22,12 +22,16 @@ final class BackendPasskeyAdoptionStatsProviderTest extends TestCase
     public function getAudienceStatsMapsTheThreeAggregatesToTheBackendSegment(): void
     {
         $adoptionStatsService = $this->createMock(AdoptionStatsService::class);
-        $adoptionStatsService->method('countTotalActiveUsers')->willReturn(10);
-        $adoptionStatsService->method('countUsersWithPasskeys')->willReturn(6);
-        $adoptionStatsService->method('countActiveCredentials')->willReturn(12);
-
+        $adoptionStatsService
+            ->method('countTotalActiveUsers')
+            ->willReturn(10);
+        $adoptionStatsService
+            ->method('countUsersWithPasskeys')
+            ->willReturn(6);
+        $adoptionStatsService
+            ->method('countActiveCredentials')
+            ->willReturn(12);
         $stats = (new BackendPasskeyAdoptionStatsProvider($adoptionStatsService))->getAudienceStats();
-
         self::assertSame('backend', $stats->audienceKey);
         self::assertSame(10, $stats->totalActiveUsers);
         self::assertSame(6, $stats->usersWithPasskeys);

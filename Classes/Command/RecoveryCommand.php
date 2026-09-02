@@ -47,8 +47,18 @@ final class RecoveryCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addOption('list', null, InputOption::VALUE_NONE, 'List all backend user groups and their passkey enforcement level')
-            ->addOption('disable-group', null, InputOption::VALUE_REQUIRED, 'Set passkey enforcement to "off" for the given be_groups UID')
+            ->addOption(
+                'list',
+                null,
+                InputOption::VALUE_NONE,
+                'List all backend user groups and their passkey enforcement level',
+            )
+            ->addOption(
+                'disable-group',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Set passkey enforcement to "off" for the given be_groups UID',
+            )
             ->addOption('disable-all', null, InputOption::VALUE_NONE, 'Set passkey enforcement to "off" for ALL backend user groups')
             ->addOption('unlock', null, InputOption::VALUE_REQUIRED, 'Reset the login lockout counters for the given username');
     }
@@ -64,6 +74,7 @@ final class RecoveryCommand extends Command
         }
 
         $disableGroup = $input->getOption('disable-group');
+
         if (\is_string($disableGroup) && $disableGroup !== '') {
             $uid = (int) $disableGroup;
             $count = $this->disableEnforcementForGroup($uid);
@@ -78,6 +89,7 @@ final class RecoveryCommand extends Command
         }
 
         $unlock = $input->getOption('unlock');
+
         if (\is_string($unlock) && $unlock !== '') {
             $this->rateLimiterService->resetLockout($unlock);
             $io->success(\sprintf('Login lockout reset for user "%s".', $unlock));
@@ -96,17 +108,22 @@ final class RecoveryCommand extends Command
     private function listGroups(SymfonyStyle $io): void
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable(self::TABLE_GROUPS);
-        $queryBuilder->getRestrictions()->removeAll();
-
+        $queryBuilder
+            ->getRestrictions()
+            ->removeAll();
         $rows = $queryBuilder
             ->select('uid', 'title', 'passkey_enforcement', 'passkey_grace_period_days')
-            ->from(self::TABLE_GROUPS)
-            ->where($queryBuilder->expr()->eq('deleted', 0))
+            ->from(
+                self::TABLE_GROUPS,
+            )
+            ->where($queryBuilder
+                    ->expr()
+                    ->eq('deleted', 0))
             ->orderBy('uid')
             ->executeQuery()
             ->fetchAllAssociative();
-
         $tableRows = [];
+
         foreach ($rows as $row) {
             $tableRows[] = [
                 (string) self::intVal($row['uid'] ?? null),
@@ -138,7 +155,9 @@ final class RecoveryCommand extends Command
      */
     private function disableEnforcementForAllGroups(): int
     {
-        $queryBuilder = $this->connectionPool->getConnectionForTable(self::TABLE_GROUPS)->createQueryBuilder();
+        $queryBuilder = $this->connectionPool
+            ->getConnectionForTable(self::TABLE_GROUPS)
+            ->createQueryBuilder();
         $queryBuilder
             ->update(self::TABLE_GROUPS)
             ->set('passkey_enforcement', 'off');

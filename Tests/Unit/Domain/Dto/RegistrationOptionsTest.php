@@ -23,12 +23,7 @@ final class RegistrationOptionsTest extends TestCase
     {
         $options = $this->createMock(PublicKeyCredentialCreationOptions::class);
         $token = 'challenge-token-xyz';
-
-        $dto = new RegistrationOptions(
-            options: $options,
-            challengeToken: $token,
-        );
-
+        $dto = new RegistrationOptions(options: $options, challengeToken: $token);
         self::assertSame($options, $dto->options);
         self::assertSame($token, $dto->challengeToken);
     }
