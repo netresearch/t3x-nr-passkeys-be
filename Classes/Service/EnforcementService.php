@@ -63,6 +63,7 @@ final readonly class EnforcementService
             $enforcementValue = $group['passkey_enforcement'] ?? '';
             $level = EnforcementLevel::tryFrom(\is_string($enforcementValue) ? $enforcementValue : '');
             $level ??= EnforcementLevel::Off;
+
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
             $graceDays = \is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
 
@@ -94,6 +95,7 @@ final readonly class EnforcementService
     {
         $connection = $this->connectionPool->getConnectionForTable('be_users');
         $connection->update('be_users', ['passkey_grace_period_start' => \time()], ['uid' => $beUserUid]);
+
         $this->logger->info('Grace period started', ['beUserUid' => $beUserUid]);
     }
 
