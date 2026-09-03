@@ -43,10 +43,17 @@ jobs:
           path: .printer
           persist-credentials: false
 
+      # The extension's floor, and the version its own Code Style job uses:
+      # typo3-ci-workflows resolves cgl-php-version to the first entry of
+      # php-versions, which is 8.2 here. There is no composer.lock, so the
+      # formatter's version is whatever composer resolves for the running PHP —
+      # setting up a different one would let this job and `ci / Code Style`
+      # disagree about the fixed point they both assert. It also matches the
+      # --php-version the printer is given below.
       - name: Set up PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
-          php-version: '8.4'
+          php-version: '8.2'
           tools: composer:v2
           coverage: none
 
