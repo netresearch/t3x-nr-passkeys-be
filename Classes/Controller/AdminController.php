@@ -266,7 +266,6 @@ final readonly class AdminController
 
         $connection = $this->connectionPool->getConnectionForTable('be_groups');
         $connection->update('be_groups', ['passkey_enforcement' => $level->value], ['uid' => $groupUid]);
-
         $this->logger->info(
             'Admin updated group enforcement',
             ['admin_uid' => $admin->uid, 'group_uid' => $groupUid, 'enforcement' => $level->value],
@@ -308,7 +307,6 @@ final readonly class AdminController
         $nudgeUntil = \time() + self::NUDGE_DURATION_DAYS * 86400;
         $connection = $this->connectionPool->getConnectionForTable('be_users');
         $connection->update('be_users', ['passkey_nudge_until' => $nudgeUntil], ['uid' => $beUserUid]);
-
         $usernameValue = $row['username'] ?? '';
         $username = \is_string($usernameValue) ? $usernameValue : '';
         $this->logger->info(
@@ -355,7 +353,6 @@ final readonly class AdminController
 
         $connection = $this->connectionPool->getConnectionForTable('be_users');
         $connection->update('be_users', ['passkey_nudge_until' => 0], ['uid' => $beUserUid]);
-
         $usernameValue = $row['username'] ?? '';
         $username = \is_string($usernameValue) ? $usernameValue : '';
         $this->logger->info(

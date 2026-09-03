@@ -68,7 +68,6 @@ final class PasskeySettingsPanel
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
         $pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyManagement.js');
         $pageRenderer->addInlineLanguageLabelFile('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
-
         $credentialRepository = GeneralUtility::makeInstance(CredentialRepository::class);
         $passkeyCount = $credentialRepository->countByBeUser($userId);
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);

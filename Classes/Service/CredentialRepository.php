@@ -125,7 +125,6 @@ final readonly class CredentialRepository
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
         $connection->update(self::TABLE, ['sign_count' => $newCount, 'tstamp' => \time()], ['uid' => $uid]);
-
         $this->logger->debug('Credential sign count updated', ['credentialUid' => $uid, 'newSignCount' => $newCount]);
     }
 
@@ -139,7 +138,6 @@ final readonly class CredentialRepository
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
         $connection->update(self::TABLE, ['deleted' => 1, 'tstamp' => \time()], ['uid' => $uid]);
-
         $this->logger->info('Passkey credential deleted (soft delete)', ['credentialUid' => $uid]);
     }
 

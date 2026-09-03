@@ -73,7 +73,6 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         $service = new PasskeyAuthenticationService();
         $service->pObj = $backendUser;
         $service->login = ['uname' => 'adminuser', 'uident' => $this->buildPasskeyPayload()];
-
         $result = $service->authUser($backendUser->user ?? []);
         self::assertSame(200, $result);
         self::assertTrue(
@@ -92,7 +91,6 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         $service = new PasskeyAuthenticationService();
         $service->pObj = $backendUser;
         $service->login = ['uname' => 'adminuser', 'uident' => $this->buildPasskeyPayload()];
-
         $result = $service->authUser($backendUser->user ?? []);
         self::assertSame(200, $result);
         self::assertNull(
@@ -109,7 +107,6 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         $service = new PasskeyAuthenticationService();
         $service->pObj = $backendUser;
         $service->login = ['uname' => 'adminuser', 'uident' => 'regularPassword123'];
-
         $result = $service->authUser($backendUser->user ?? []);
 
         // No passkey payload → auth passes through to the next service.

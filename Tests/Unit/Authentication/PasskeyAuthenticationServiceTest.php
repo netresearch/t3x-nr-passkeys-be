@@ -303,7 +303,6 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             );
         $subject->pObj = $pObj;
         $subject->login = ['uname' => 'admin', 'uident' => $this->buildPasskeyUident(['ok' => 'assertion'])];
-
         $result = $subject->authUser(['uid' => 42, 'username' => 'admin']);
         self::assertSame(200, $result);
     }
@@ -361,7 +360,6 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         // No passkey payload -> password path -> enforcement check throws -> fail open.
         $subject->login = ['uname' => 'admin', 'uident' => 'regularPassword123'];
-
         $result = $subject->authUser(['uid' => 42, 'username' => 'admin']);
         self::assertSame(100, $result, 'Enforcement-check failure must fail open (allow password auth)');
     }
