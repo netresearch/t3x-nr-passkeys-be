@@ -8,6 +8,12 @@ indent_style = space
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+[*.php]
+# The width the canonical printer breaks lines at. It is a project rule, not the
+# tool's: php-ast-edit reads it here and refuses to normalise a repository that
+# declares none, rather than picking a number nobody chose.
+max_line_length = 120
+
 [*.{yml,yaml}]
 indent_size = 2
 
