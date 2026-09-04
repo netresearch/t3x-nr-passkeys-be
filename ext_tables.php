@@ -11,7 +11,7 @@ use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanel;
 use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
-\defined('TYPO3') || die();
+\defined('TYPO3') || die;
 
 // Register passkey management panel in User Settings (Setup module).
 // Must be in ext_tables.php because cms-setup/ext_tables.php initializes
@@ -31,28 +31,15 @@ if ((new Typo3Version())->getMajorVersion() >= 14) {
     // addFieldsToUserSettings() call (deprecated since v14, removed in v15).
     ExtensionManagementUtility::addUserSetting(
         'passkeys',
-        [
-            'label' => $label,
-            'config' => [
-                'type' => 'user',
-                'renderType' => 'nrPasskeySettingsPanel',
-            ],
-        ],
+        ['label' => $label, 'config' => ['type' => 'user', 'renderType' => 'nrPasskeySettingsPanel']],
         'after:mfaProviders',
     );
 } else {
     // TYPO3 v12/v13: the legacy $GLOBALS['TYPO3_USER_SETTINGS'] format plus the
     // addFieldsToUserSettings() helper (not deprecated on these versions).
-    $GLOBALS['TYPO3_USER_SETTINGS']['columns']['passkeys'] = [
-        'type' => 'user',
-        'userFunc' => PasskeySettingsPanel::class . '->render',
-        'label' => $label,
-    ];
+    $GLOBALS['TYPO3_USER_SETTINGS']['columns']['passkeys'] = ['type' => 'user', 'userFunc' => PasskeySettingsPanel::class . '->render', 'label' => $label];
 
-    ExtensionManagementUtility::addFieldsToUserSettings(
-        'passkeys',
-        'after:mfaProviders',
-    );
+    ExtensionManagementUtility::addFieldsToUserSettings('passkeys', 'after:mfaProviders');
 }
 
 // Register CSH (Context-Sensitive Help) for the passkeys field in be_users records.

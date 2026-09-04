@@ -1,0 +1,76 @@
+name: Canonical formatting
+
+# The declaration in `.php-ast-edit.json` says this tree is what the canonical printer
+# produces. Nothing held it there. The formatter alone cannot: it accepts both the
+# collapsed and the expanded shape of the same code, so a hand edit is never reported and
+# the next AST edit reflows the file, putting somebody else's formatting into that
+# change's diff. Neither half is a check on its own — the printer undoes what the
+# formatter did last, and the formatter accepts shapes the printer would not produce. Run
+# both, then let the clean tree be the assertion.
+#
+# The printer is pinned. An unpinned one would move the fixed point under the repository
+# and turn an unrelated pull request red.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+
+permissions: {}
+
+env:
+  PRINTER_REF: v0.4.0
+
+jobs:
+  canonical:
+    name: Canonical formatting
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1  # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Checkout the canonical printer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: netresearch/php-ast-edit-skill
+          ref: ${{ env.PRINTER_REF }}
+          path: .printer
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240  # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: json, tokenizer
+          coverage: none
+
+      - name: Install the printer's dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda  # 4.0.0
+        with:
+          working-directory: .printer
+          composer-options: --no-dev
+
+      - name: Install the project's dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda  # 4.0.0
+
+      # `.printer` is a checkout inside the working tree, so it has to leave no trace: the
+      # printer skips it by way of `.php-ast-edit.json`, php-cs-fixer by way of its own
+      # finder, and the assertion below runs against the tracked tree only.
+      - name: Print canonically
+        run: php .printer/bin/php-ast-edit format --path .
+
+      - name: Apply the project's formatting rules
+        run: composer ci:cgl
+
+      - name: The tree must be unchanged
+        run: git diff --exit-code
