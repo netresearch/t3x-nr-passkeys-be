@@ -1,4 +1,5 @@
 {
     "canonical": true,
-    "printWidth": 120
+    "printWidth": 120,
+    "exclude": ["ext_emconf.php", ".Build", ".printer", "vendor", "node_modules", "var", "Documentation-GENERATED-temp"]
 }

@@ -7,16 +7,16 @@
 
 declare(strict_types=1);
 
-use TYPO3\CMS\Core\Log\LogLevel;
-use TYPO3\CMS\Core\Log\Writer\FileWriter;
-use TYPO3\CMS\Core\Core\Environment;
+use Netresearch\NrPasskeysBe\Authentication\PasskeyAuthenticationService;
 use Netresearch\NrPasskeysBe\Form\Element\PasskeyInfoElement;
 use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanelElement;
 use TYPO3\CMS\Core\Cache\Backend\FileBackend;
-use Netresearch\NrPasskeysBe\Authentication\PasskeyAuthenticationService;
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Log\LogLevel;
+use TYPO3\CMS\Core\Log\Writer\FileWriter;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
-defined('TYPO3') || die();
+\defined('TYPO3') || die;
 
 // Register passkey authentication service with priority 80 (higher than SaltedPasswordService at 50)
 ExtensionManagementUtility::addService(
@@ -33,7 +33,7 @@ ExtensionManagementUtility::addService(
         'os' => '',
         'exec' => '',
         'className' => PasskeyAuthenticationService::class,
-    ]
+    ],
 );
 
 // Security audit logging for passkey authentication events.
@@ -45,26 +45,14 @@ ExtensionManagementUtility::addService(
 // in containerized setups, the directory is often not writable by the PHP
 // user — an unwritable FileWriter throws and takes down every request that
 // logs a warning.
-$GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfiguration'][LogLevel::WARNING] ??= [
-    FileWriter::class => [
-        'logFile' => Environment::getVarPath() . '/log/passkey_auth.log',
-    ],
-];
+$GLOBALS['TYPO3_CONF_VARS']['LOG']['Netresearch']['NrPasskeysBe']['writerConfiguration'][LogLevel::WARNING] ??= [FileWriter::class => ['logFile' => Environment::getVarPath() . '/log/passkey_auth.log']];
 
 // Register custom FormEngine element for passkey info display in be_users records
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1739000000] = [
-    'nodeName' => 'passkeyInfo',
-    'priority' => 40,
-    'class' => PasskeyInfoElement::class,
-];
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1739000000] = ['nodeName' => 'passkeyInfo', 'priority' => 40, 'class' => PasskeyInfoElement::class];
 
 // Register FormEngine render type for the passkey management panel in User Settings (TYPO3 14+).
 // TYPO3 14 requires an explicit renderType on type="user" columns; userFunc alone triggers a warning.
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1748450000] = [
-    'nodeName' => 'nrPasskeySettingsPanel',
-    'priority' => 40,
-    'class' => PasskeySettingsPanelElement::class,
-];
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1748450000] = ['nodeName' => 'nrPasskeySettingsPanel', 'priority' => 40, 'class' => PasskeySettingsPanelElement::class];
 
 // Register cache for challenge nonces and single-use login tokens.
 // FileBackend, not SimpleFileBackend: the latter discards the lifetime passed to
@@ -73,16 +61,10 @@ $GLOBALS['TYPO3_CONF_VARS']['SYS']['formEngine']['nodeRegistry'][1748450000] = [
 // Entries here are security-relevant (a login token authenticates a backend user),
 // so the backend must actually enforce the requested TTL.
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce'] ??= [];
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['backend'] ??=
-    FileBackend::class;
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['options'] ??= [
-    'defaultLifetime' => 300,
-];
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['backend'] ??= FileBackend::class;
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_nonce']['options'] ??= ['defaultLifetime' => 300];
 
 // Register cache for rate limiting (FileBackend required for flushByTag support)
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_ratelimit'] ??= [];
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_ratelimit']['backend'] ??=
-    FileBackend::class;
-$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_ratelimit']['options'] ??= [
-    'defaultLifetime' => 600,
-];
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_ratelimit']['backend'] ??= FileBackend::class;
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nr_passkeys_be_ratelimit']['options'] ??= ['defaultLifetime' => 600];
