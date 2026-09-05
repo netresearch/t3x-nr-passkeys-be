@@ -1,5 +1,21 @@
 {
     "canonical": true,
     "printWidth": 120,
-    "exclude": ["ext_emconf.php", ".Build", ".printer", "vendor", "node_modules", "var", "Documentation-GENERATED-temp"]
+    "exclude": [
+        "ext_emconf.php",
+        ".Build",
+        ".printer",
+        "vendor",
+        "node_modules",
+        "var",
+        "Documentation-GENERATED-temp"
+    ],
+    "formatter": [
+        "php",
+        ".Build/bin/php-cs-fixer",
+        "fix",
+        "--config=Build/.php-cs-fixer.php",
+        "--path-mode=intersection",
+        "{files}"
+    ]
 }
