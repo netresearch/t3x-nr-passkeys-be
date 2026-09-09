@@ -17,5 +17,19 @@
         "--config=Build/.php-cs-fixer.php",
         "--path-mode=intersection",
         "{files}"
+    ],
+    "verify": [
+        {
+            "scope": "changed_files",
+            "command": [
+                "php",
+                ".Build/bin/phpstan",
+                "analyse",
+                "--configuration=Build/phpstan.neon",
+                "--no-progress",
+                "--memory-limit=1G",
+                "{files}"
+            ]
+        }
     ]
 }
