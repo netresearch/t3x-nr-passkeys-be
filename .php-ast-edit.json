@@ -20,15 +20,14 @@
     ],
     "verify": [
         {
-            "scope": "changed_files",
+            "scope": "project",
             "command": [
                 "php",
                 ".Build/bin/phpstan",
                 "analyse",
                 "--configuration=Build/phpstan.neon",
                 "--no-progress",
-                "--memory-limit=1G",
-                "{files}"
+                "--memory-limit=1G"
             ]
         }
     ]
