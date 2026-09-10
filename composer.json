@@ -35,7 +35,7 @@
         "netresearch/typo3-ci-workflows": "^1.12",
         "ergebnis/phpstan-rules": "^2.6",
         "dg/bypass-finals": "^1.9",
-        "phpunit/phpunit": "^10.5 || ^11.5",
+        "phpunit/phpunit": "^10.5 || ^11.5 || ^13.0",
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-phpunit": "^2.0",
         "phpstan/phpstan-strict-rules": "^2.0",
