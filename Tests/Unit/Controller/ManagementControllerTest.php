@@ -591,7 +591,7 @@ final class ManagementControllerTest extends TestCase
             ->expects(self::once())
             ->method('verifyRegistrationResponse')
             ->with(
-                self::isType('string'),
+                self::isString(),
                 'ct_reg_abc',
                 42,
                 'admin',

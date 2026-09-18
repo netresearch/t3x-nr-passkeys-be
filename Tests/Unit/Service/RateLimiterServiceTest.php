@@ -154,7 +154,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('set')
-            ->with(self::isType('string'), '1', [], 300);
+            ->with(self::isString(), '1', [], 300);
         $this->subject->recordAttempt('register', '192.168.1.1');
     }
 
@@ -168,7 +168,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('set')
-            ->with(self::isType('string'), '4', [], 300);
+            ->with(self::isString(), '4', [], 300);
         $this->subject->recordAttempt('register', '192.168.1.1');
     }
 
@@ -270,7 +270,7 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::exactly(2))
             ->method('set')
             ->with(
-                self::isType('string'),
+                self::isString(),
                 '1',
                 [$expectedTag],
                 900,
@@ -290,9 +290,9 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::once())
             ->method('set')
             ->with(
-                self::isType('string'),
+                self::isString(),
                 '1',
-                self::isType('array'),
+                self::isArray(),
                 900,
             );
         $this->subject->recordFailure('admin', '192.168.1.1', false);
@@ -309,7 +309,7 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::exactly(2))
             ->method('set')
             ->with(
-                self::isType('string'),
+                self::isString(),
                 '3',
                 self::callback(
                     static fn(array $tags): bool => \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_'),
@@ -339,7 +339,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('remove')
-            ->with(self::isType('string'));
+            ->with(self::isString());
 
         // flushByTag should NOT be called when IP is provided
         $this->rateLimitCacheMock
@@ -465,7 +465,7 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::exactly(2))
             ->method('set')
             ->with(
-                self::isType('string'),
+                self::isString(),
                 '2',
                 self::callback(
                     static fn(array $tags): bool => \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_'),
