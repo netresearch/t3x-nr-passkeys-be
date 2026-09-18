@@ -302,7 +302,7 @@ final class LoginControllerTest extends TestCase
             ->expects(self::once())
             ->method('verifyAssertionResponse')
             ->with(
-                responseJson: self::isType('string'),
+                responseJson: self::isString(),
                 challengeToken: 'ct_abc123',
                 beUserUid: 42,
             );
@@ -320,7 +320,7 @@ final class LoginControllerTest extends TestCase
             ->expects(self::once())
             ->method('set')
             ->with(
-                self::isType('string'),
+                self::isString(),
                 self::callback(
                     static function (mixed $value) use ($issuedAt): bool {
                         self::assertIsString($value);
@@ -589,7 +589,7 @@ final class LoginControllerTest extends TestCase
             ->expects(self::once())
             ->method('verifyAssertionResponse')
             ->with(
-                responseJson: self::isType('string'),
+                responseJson: self::isString(),
                 challengeToken: 'ct_abc123',
                 beUserUid: 7,
             );

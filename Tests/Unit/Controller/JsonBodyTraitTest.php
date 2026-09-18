@@ -10,13 +10,13 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
 use Netresearch\NrPasskeysBe\Controller\JsonBodyTrait;
-use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 
-#[CoversClass(JsonBodyTrait::class)]
+#[CoversTrait(JsonBodyTrait::class)]
 final class JsonBodyTraitTest extends TestCase
 {
     private object $subject;

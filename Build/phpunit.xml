@@ -5,7 +5,7 @@
          bootstrap="../Tests/bootstrap.php"
          cacheResult="false"
          colors="true"
-         executionOrder="depends,defects"
+         executionOrder="depends"
          failOnRisky="true"
          failOnWarning="true">
     <testsuites>
