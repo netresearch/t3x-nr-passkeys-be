@@ -28,7 +28,7 @@
         "php": "^8.2",
         "typo3/cms-core": "^12.4 || ^13.4 || ^14.3",
         "typo3/cms-backend": "^12.4 || ^13.4 || ^14.3",
-        "typo3/cms-setup": "^12.4 || ^13.4 || ^14.3",
+        "typo3/cms-setup": "^12.4 || ^13.4 || ^14.3 || ^14.0",
         "web-auth/webauthn-lib": "^5.3"
     },
     "require-dev": {
