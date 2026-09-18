@@ -27,5 +27,13 @@ jobs:
       functional-test-db: 'mysql'
       upload-coverage: true
       remove-dev-deps: '[{"dep":"netresearch/typo3-ci-workflows","only-for":"^13.4|^14.3"}]'
+      # The shared PHPStan job installs phpunit/phpunit:<13 as a migration
+      # window for the with*()-without-expects() deprecation. The advisory
+      # PHPStan (unpinned PHPUnit) job analyses one cell without that cap, and
+      # on this repository it is clean: PHPStan never sees the deprecation
+      # because these tests use createMock(), whose method() still returns an
+      # InvocationMocker carrying with*(). Blocking keeps it that way instead
+      # of letting the first createStub() rewrite reintroduce it unnoticed.
+      phpstan-unpinned-blocking: true
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
