@@ -17,7 +17,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-#[CoversClass(Credential::class)]
 #[CoversClass(CredentialInfo::class)]
 #[CoversClass(AdminCredentialInfo::class)]
 final class CredentialTest extends TestCase

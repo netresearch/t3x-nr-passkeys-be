@@ -10,13 +10,13 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Utility;
 
 use Netresearch\NrPasskeysBe\Utility\TypeCastTrait;
-use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use stdClass;
 
-#[CoversClass(TypeCastTrait::class)]
+#[CoversTrait(TypeCastTrait::class)]
 final class TypeCastTraitTest extends TestCase
 {
     /**

@@ -10,12 +10,12 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
 use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
-use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Localization\LanguageService;
 
-#[CoversClass(TranslationTrait::class)]
+#[CoversTrait(TranslationTrait::class)]
 final class TranslationTraitTest extends TestCase
 {
     /**
