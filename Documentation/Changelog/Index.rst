@@ -50,8 +50,14 @@ Tests
 -----
 
 - The test suite runs on PHPUnit 12 and 13 in addition to 11.
-- The end-to-end suite has a TYPO3 instance to run against again under
-  ``Build/Scripts/runTests.sh -s e2e``.
+- The end-to-end suite runs in continuous integration, against TYPO3 13 and
+  TYPO3 14, on every pull request and every push to the main branch. It ran
+  only on developer machines before, so a regression in the browser-side
+  ceremonies reached the main branch with every other check green.
+- All 69 end-to-end tests run. Seven were disabled, among them both full
+  WebAuthn ceremonies and the check that a passkey login never passes through
+  the multi-factor challenge, so the suite reported success without ever
+  performing a passkey login.
 
 0.12.1
 ======
