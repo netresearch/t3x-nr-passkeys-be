@@ -72,6 +72,13 @@ The extension uses a single table
         - text
         - JSON array of transport hints
 
+    *   - ``discoverable``
+        - tinyint(1)
+        - Whether the browser stored the passkey as a discoverable (resident)
+          credential: 1 yes, 0 no, NULL unknown. NULL covers passkeys
+          registered before 1.0.0 and authenticators that report nothing. Only
+          a discoverable passkey can appear in the browser's autofill menu.
+
     *   - ``label``
         - varchar(128)
         - User-assigned label

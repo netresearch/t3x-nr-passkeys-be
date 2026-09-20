@@ -15,10 +15,11 @@ Important
 - The extension state changes from ``beta`` to ``stable``. From this release
   on the public API follows semantic versioning: a removal or an incompatible
   change to a public class, method or configuration setting needs a new major
-  version. The dashboard widget identifiers, the AJAX route names, the
-  extension configuration keys and the
-  ``PasskeyAdoptionStatsProviderInterface`` extension point are covered by
-  that promise.
+  version.
+- Run the database schema update after upgrading from 0.12.x. The
+  ``tx_nrpasskeysbe_credential`` table gained the ``discoverable`` column (see
+  Features below). Use :guilabel:`Admin Tools > Maintenance > Analyze Database
+  Structure`, or ``vendor/bin/typo3 extension:setup``.
 - Removed the deprecated ``RateLimiterService::checkRateLimit()`` and
   ``RateLimiterService::recordAttempt()``. Callers use
   ``RateLimiterService::consumeRateLimit()``, which performs the limit check
