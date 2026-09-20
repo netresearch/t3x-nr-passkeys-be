@@ -497,6 +497,15 @@ test.describe('Passkey Login - Error Handling', () => {
     });
 
     test('shows error for non-existent user', async ({ page }) => {
+        // An unknown username gets decoy credentials the authenticator does not
+        // hold, so the ceremony runs until the timeout the server puts into the
+        // options — `timeout: 60000` in AssertionService — before the browser
+        // rejects it. That is longer than the 30 s default in
+        // playwright.config.ts, so this one test needs its own budget. The CDP
+        // virtual authenticator sometimes rejects in well under a second and
+        // sometimes waits the full minute; both stay inside this budget.
+        test.setTimeout(90_000);
+
         const { cdp, authenticatorId } = await setupVirtualAuthenticator(page);
 
         await page.goto('/typo3/login');
@@ -511,17 +520,15 @@ test.describe('Passkey Login - Error Handling', () => {
         await page.locator('#t3-username').fill('nonexistent_user_e2e_test_xyz');
         await loginBtn.click();
 
+        // Wait for the ceremony to return, not for a fixed number of seconds.
+        // PasskeyLogin.js calls setLoading(false) in the same catch block that
+        // then calls handleAuthError, so the button leaving its loading state is
+        // the event the message depends on. The budget covers the server's own
+        // 60 s ceremony timeout with room to spare.
+        await expect(loginBtn).toBeEnabled({ timeout: 75_000 });
+
         const error = page.locator('#passkey-error');
-        // Ten seconds, matching "shows error when WebAuthn ceremony fails"
-        // below, because the wait is on the same thing: the CDP virtual
-        // authenticator rejecting a credential it does not have. It usually
-        // answers in well under a second and sometimes takes longer than five,
-        // which failed this test in about half of the full-suite runs while
-        // the file on its own passed six times out of six. The page snapshot
-        // from a failure says it plainly — the button still reads
-        // "Authenticating…" and is disabled, so the ceremony had not returned
-        // yet and no error was due.
-        await expect(error).toBeVisible({ timeout: 10000 });
+        await expect(error).toBeVisible({ timeout: 5000 });
         // For an unknown user the server answers with decoy options instead of
         // saying so, which is the point — a caller cannot tell existing
         // usernames from invented ones. The ceremony therefore fails in the

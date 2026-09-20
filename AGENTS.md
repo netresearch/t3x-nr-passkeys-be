@@ -30,7 +30,7 @@ Per-group enforcement with gradual rollout (Off → Encourage → Required → E
 - Do NOT commit `composer.lock` (in `.gitignore`)
 - DO commit `package-lock.json`: the e2e runner reads the resolved Playwright version out of it to pick a browser image that matches
 - Do NOT use DDEV for running tests -- DDEV is for local development only
-- E2E tests run via `Build/Scripts/runTests.sh -s e2e`, which installs its own TYPO3 in containers (MariaDB + Apache + PHP-FPM); local-only, no CI e2e workflow at present
+- E2E tests run via `Build/Scripts/runTests.sh -s e2e`, which installs its own TYPO3 in containers (MariaDB + Apache + PHP-FPM). In CI the same suite runs from `.github/workflows/e2e.yml` against TYPO3 13 and 14, entered through `Build/Scripts/ci-e2e.sh`
 
 ## Commands (verified)
 > Source: `composer.json` scripts, `Makefile`, `package.json`, `Build/Scripts/runTests.sh`
