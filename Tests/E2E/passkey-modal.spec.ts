@@ -138,7 +138,12 @@ test.describe('Admin FormEngine - be_users Passkey Info', () => {
             expect(ariaErrors).toHaveLength(0);
 
             // Close modal via Cancel if visible
-            const modal = page.locator('.modal.show, .modal[style*="display: block"]');
+            // `.t3js-modal` is the one marker both generations of the Modal API
+        // carry. TYPO3 14 renders a <dialog class="modal t3js-modal …">
+        // inside a <typo3-backend-modal> element and opens it with
+        // showModal(), so neither `.show` nor an inline display style — the
+        // Bootstrap markup of v12 and v13 — exists there any more.
+        const modal = page.locator('.t3js-modal');
             if (await modal.isVisible().catch(() => false)) {
                 const cancelBtn = modal.locator('button', { hasText: /cancel/i });
                 if (await cancelBtn.isVisible().catch(() => false)) {
@@ -168,7 +173,12 @@ test.describe('Admin FormEngine - be_users Passkey Info', () => {
         await page.waitForTimeout(1000);
 
         // Modal should be visible
-        const modal = page.locator('.modal.show, .modal[style*="display: block"]');
+        // `.t3js-modal` is the one marker both generations of the Modal API
+        // carry. TYPO3 14 renders a <dialog class="modal t3js-modal …">
+        // inside a <typo3-backend-modal> element and opens it with
+        // showModal(), so neither `.show` nor an inline display style — the
+        // Bootstrap markup of v12 and v13 — exists there any more.
+        const modal = page.locator('.t3js-modal');
         await expect(modal).toBeVisible({ timeout: 5000 });
 
         // Modal should have Cancel button that works
