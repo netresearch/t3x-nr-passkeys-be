@@ -55,6 +55,18 @@ async function setupVirtualAuthenticator(
     return { cdp, authenticatorId };
 }
 
+/**
+ * Turn the authenticator's automatic user-presence simulation on or off.
+ *
+ * With it on, the virtual authenticator approves every ceremony the moment it
+ * is asked — including the conditional (autofill) one PasskeyLogin.js arms on
+ * the login page. Once a resident credential exists, opening /typo3/login then
+ * logs the browser straight back into the backend before any assertion runs.
+ */
+async function setAutomaticPresence(cdp: CDPSession, authenticatorId: string, enabled: boolean): Promise<void> {
+    await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled });
+}
+
 async function removeVirtualAuthenticator(cdp: CDPSession, authenticatorId: string): Promise<void> {
     try {
         await cdp.send('WebAuthn.removeVirtualAuthenticator', { authenticatorId });
@@ -70,15 +82,42 @@ async function getAjaxUrl(page: Page, routeKey: string): Promise<string | null> 
     }, routeKey);
 }
 
-async function registerPasskey(page: Page): Promise<boolean> {
+async function registerPasskey(page: Page): Promise<{ success: boolean; error?: string }> {
     const optionsUrl = await getAjaxUrl(page, 'passkeys_manage_registration_options');
-    if (!optionsUrl) return false;
+    if (!optionsUrl) {
+        return { success: false, error: 'AJAX URL passkeys_manage_registration_options not found in TYPO3.settings' };
+    }
 
-    const optResponse = await page.request.post(optionsUrl, {
+    let optResponse = await page.request.post(optionsUrl, {
         headers: { 'Content-Type': 'application/json' },
         data: {},
     });
-    if (!optResponse.ok()) return false;
+
+    // Enrolling a credential is a Sudo Mode route (see
+    // Configuration/Backend/AjaxRoutes.php): TYPO3 answers the first call with
+    // 422 and the URI that takes the step-up. A real user types their password
+    // into the modal at this point, so the test does the same and repeats the
+    // request.
+    if (optResponse.status() === 422) {
+        const initialization = (await optResponse.json()).sudoModeInitialization;
+        if (!initialization?.verifyActionUri) {
+            return { success: false, error: '422 without sudoModeInitialization.verifyActionUri' };
+        }
+        const verified = await page.request.post(initialization.verifyActionUri, {
+            form: { password: ADMIN_PASS },
+        });
+        if (!verified.ok()) {
+            return { success: false, error: `Sudo-mode step-up ${verified.status()}: ${(await verified.text()).substring(0, 200)}` };
+        }
+        optResponse = await page.request.post(optionsUrl, {
+            headers: { 'Content-Type': 'application/json' },
+            data: {},
+        });
+    }
+
+    if (!optResponse.ok()) {
+        return { success: false, error: `Options ${optResponse.status()}: ${(await optResponse.text()).substring(0, 200)}` };
+    }
     const optData = await optResponse.json();
 
     const credentialData = await page.evaluate(async (opts) => {
@@ -129,10 +168,14 @@ async function registerPasskey(page: Page): Promise<boolean> {
             },
         };
     }, optData.options);
-    if (!credentialData) return false;
+    if (!credentialData) {
+        return { success: false, error: 'navigator.credentials.create() returned null' };
+    }
 
     const verifyUrl = await getAjaxUrl(page, 'passkeys_manage_registration_verify');
-    if (!verifyUrl) return false;
+    if (!verifyUrl) {
+        return { success: false, error: 'AJAX URL passkeys_manage_registration_verify not found in TYPO3.settings' };
+    }
 
     const verifyResponse = await page.request.post(verifyUrl, {
         headers: { 'Content-Type': 'application/json' },
@@ -142,7 +185,11 @@ async function registerPasskey(page: Page): Promise<boolean> {
             label: 'E2E MFA Bypass Test Key',
         },
     });
-    return verifyResponse.ok();
+    if (!verifyResponse.ok()) {
+        return { success: false, error: `Verify ${verifyResponse.status()}: ${(await verifyResponse.text()).substring(0, 200)}` };
+    }
+
+    return { success: true };
 }
 
 async function cleanupTestCredentials(page: Page): Promise<void> {
@@ -166,18 +213,11 @@ async function cleanupTestCredentials(page: Page): Promise<void> {
 }
 
 test.describe('Passkey login — MFA bypass', () => {
-    // TODO: shares the rpId root cause with passkey-login-flow.spec.ts — the
-    // CDP virtual authenticator in the CI Chromium throws
-    //   SecurityError: The relying party ID is not a registrable domain suffix
-    //   of, nor equal to the current domain
-    // on navigator.credentials.create, because the WebAuthn rpId configured
-    // for the extension does not match the CI PHP server's localhost:8080.
-    // Unit + functional tests already cover the session-key contract for
-    // skipMfaOnPasskeyAuth; this E2E spec is supplementary and will be
-    // re-enabled once the shared rpId configuration is fixed in the E2E
-    // environment (same follow-up that re-enables the three .fixme() tests
-    // in passkey-login-flow.spec.ts).
-    test.fixme('passkey login never redirects through /auth/mfa', async ({ page }) => {
+    // Registers a real passkey, logs in with it and asserts that TYPO3 never
+    // routes the session through the MFA challenge. The unit and functional
+    // suites cover the session-key contract for skipMfaOnPasskeyAuth; this one
+    // covers the redirect a user would actually see.
+    test('passkey login never redirects through /auth/mfa', async ({ page }) => {
         const loggedIn = await loginAsAdmin(page);
         test.skip(!loggedIn, 'Password login failed');
 
@@ -187,11 +227,13 @@ test.describe('Passkey login — MFA bypass', () => {
         await page.waitForLoadState('networkidle');
 
         const registered = await registerPasskey(page);
-        if (!registered) {
+        if (!registered.success) {
             await removeVirtualAuthenticator(cdp, authenticatorId);
-            test.skip(true, 'Could not register passkey for test');
-            return;
         }
+        // A registration that does not work is this test's subject failing, not a
+        // reason to skip it: without a passkey there is no passkey login to check
+        // against the MFA redirect.
+        expect(registered.success, `Registration failed: ${registered.error}`).toBe(true);
 
         // Track every URL the browser visits from this point on. If TYPO3 ever
         // routes the passkey-authenticated user through the MFA challenge, we
@@ -203,12 +245,18 @@ test.describe('Passkey login — MFA bypass', () => {
             }
         });
 
+        // A resident credential now exists, so the conditional ceremony would log
+        // the browser back in the moment the login page loads.
+        await setAutomaticPresence(cdp, authenticatorId, false);
+
         await page.context().clearCookies();
         await page.goto('/typo3/login');
         await page.waitForLoadState('networkidle');
 
         await expect(page.locator('#passkey-login-container')).toBeVisible({ timeout: 5000 });
         await page.locator('#t3-username').fill(ADMIN_USER);
+        // The click is this test's ceremony, so the authenticator answers again.
+        await setAutomaticPresence(cdp, authenticatorId, true);
         await page.locator('#passkey-login-btn').click();
 
         await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });

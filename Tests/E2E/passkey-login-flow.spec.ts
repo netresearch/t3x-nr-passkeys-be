@@ -46,8 +46,24 @@ async function loginAsAdmin(page: Page): Promise<boolean> {
 
 async function logOut(page: Page): Promise<void> {
     // TYPO3's /typo3/logout route may require a CSRF token and fails silently
-    // in Playwright. Clearing cookies reliably destroys the session.
+    // in Playwright, so the session is ended by dropping its cookies.
     await page.context().clearCookies();
+    const afterClear = (await page.context().cookies()).map((c) => c.name).join(', ') || 'none';
+
+    // And then checked, because a surviving session is invisible here and shows
+    // up several steps later as a missing element on a page the test believes
+    // is the login screen: /typo3/login redirects an authenticated user
+    // straight back into the backend.
+    await page.goto('/typo3/login');
+    await page.waitForLoadState('networkidle');
+    const usernameInput = page.locator('input[name="username"]');
+    if (!await usernameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+        const afterGoto = (await page.context().cookies()).map((c) => c.name).join(', ') || 'none';
+        throw new Error(
+            `Log out did not end the session: still at ${page.url()}; `
+            + `cookies after clear [${afterClear}], after navigation [${afterGoto}]`,
+        );
+    }
 }
 
 /**
@@ -69,6 +85,25 @@ async function setupVirtualAuthenticator(
         },
     });
     return { cdp, authenticatorId };
+}
+
+/**
+ * Turn the authenticator's automatic user-presence simulation on or off.
+ *
+ * With it on — the default — the virtual authenticator approves every ceremony
+ * the moment it is asked, including the conditional (autofill) one that
+ * PasskeyLogin.js arms on the login page whenever discoverable login is
+ * enabled. Once a resident credential exists, merely opening /typo3/login then
+ * logs the browser straight into the backend: measured as
+ * POST /passkeys/login/options, POST /passkeys/login/verify,
+ * POST /typo3/login?loginProvider=… before any test code runs. That is the
+ * feature working, and it makes every assertion about the login page
+ * unreachable. A human sees a prompt here and has to choose; these tests switch
+ * the simulation off for that stretch and back on for the ceremony they drive
+ * themselves.
+ */
+async function setAutomaticPresence(cdp: CDPSession, authenticatorId: string, enabled: boolean): Promise<void> {
+    await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled });
 }
 
 async function removeVirtualAuthenticator(cdp: CDPSession, authenticatorId: string): Promise<void> {
@@ -103,10 +138,33 @@ async function registerPasskeyViaApi(page: Page): Promise<{ success: boolean; er
             return { success: false, error: 'AJAX URL passkeys_manage_registration_options not found in TYPO3.settings' };
         }
 
-        const optResponse = await page.request.post(optionsUrl, {
+        let optResponse = await page.request.post(optionsUrl, {
             headers: { 'Content-Type': 'application/json' },
             data: {},
         });
+
+        // Enrolling a credential is a Sudo Mode route (see
+        // Configuration/Backend/AjaxRoutes.php): TYPO3 answers the first call
+        // with 422 and the URI that takes the step-up. A real user types their
+        // password into the modal at this point, so the test does the same and
+        // repeats the request.
+        if (optResponse.status() === 422) {
+            const initialization = (await optResponse.json()).sudoModeInitialization;
+            if (!initialization?.verifyActionUri) {
+                return { success: false, error: '422 without sudoModeInitialization.verifyActionUri' };
+            }
+            const verified = await page.request.post(initialization.verifyActionUri, {
+                form: { password: ADMIN_PASS },
+            });
+            if (!verified.ok()) {
+                return { success: false, error: `Sudo-mode step-up ${verified.status()}: ${(await verified.text()).substring(0, 200)}` };
+            }
+            optResponse = await page.request.post(optionsUrl, {
+                headers: { 'Content-Type': 'application/json' },
+                data: {},
+            });
+        }
+
         if (!optResponse.ok()) {
             return { success: false, error: `Options ${optResponse.status()}: ${(await optResponse.text()).substring(0, 200)}` };
         }
@@ -233,20 +291,13 @@ async function cleanupTestCredentials(page: Page): Promise<void> {
     } catch { /* ignore cleanup errors */ }
 }
 
-// TODO: fix the three registration-based tests in this describe block.
-// Root cause surfaced once the shared E2E workflow was repaired
-// (typo3-ci-workflows #60/#61/#62): the registerPasskeyViaApi() path throws
-// `SecurityError: The relying party ID is not a registrable domain suffix
-// of, nor equal to the current domain` under the CI Chromium + CDP virtual
-// authenticator. Two orthogonal bugs compound:
-//   1. WebAuthn rpId in the CI environment does not match localhost:8080.
-//   2. The test code uses `test.fail(true, ...)` + early `return` to
-//      "acknowledge" registration failure, but that pattern reports
-//      "Expected to fail, but passed" whether registration fails or
-//      succeeds. The intended pattern is `test.skip(true, reason)`.
-// Re-enable after fixing rpId configuration and the test.fail/skip usage.
+// These three register a real passkey through the AJAX API, then drive the
+// login ceremony with the CDP virtual authenticator. The rpId mismatch that
+// once made registration throw `SecurityError` in the containerised
+// environment is gone: `E2E_SECURE_ALIAS_HOST` in Build/Scripts/runTests.conf
+// gives the instance a host the browser accepts as a secure context.
 test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
-    test.fixme('complete passkey login flow (username-first)', async ({ page }) => {
+    test('complete passkey login flow (username-first)', async ({ page }) => {
         const loggedIn = await loginAsAdmin(page);
         test.skip(!loggedIn, 'Password login failed');
 
@@ -259,9 +310,14 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
         const regResult = await registerPasskeyViaApi(page);
         if (!regResult.success) {
             await removeVirtualAuthenticator(cdp, authenticatorId);
-            test.fail(true, `Registration failed: ${regResult.error}`);
-            return;
         }
+        // A registration that does not work is this test's subject failing, not
+        // a reason to pass: the ceremony below has nothing to authenticate with.
+        expect(regResult.success, `Registration failed: ${regResult.error}`).toBe(true);
+
+        // A resident credential now exists, so the conditional ceremony would
+        // log the browser back in the moment the login page loads.
+        await setAutomaticPresence(cdp, authenticatorId, false);
 
         await logOut(page);
 
@@ -275,6 +331,8 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
         await expect(loginBtn).toBeEnabled();
 
         await page.locator('#t3-username').fill(ADMIN_USER);
+        // The click is this test's ceremony, so the authenticator answers again.
+        await setAutomaticPresence(cdp, authenticatorId, true);
         await loginBtn.click();
 
         await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });
@@ -284,7 +342,7 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
 
-    test.fixme('complete passkey login flow (discoverable/usernameless)', async ({ page }) => {
+    test('complete passkey login flow (discoverable/usernameless)', async ({ page }) => {
         const loggedIn = await loginAsAdmin(page);
         test.skip(!loggedIn, 'Password login failed');
 
@@ -298,9 +356,14 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
         const regResult = await registerPasskeyViaApi(page);
         if (!regResult.success) {
             await removeVirtualAuthenticator(cdp, authenticatorId);
-            test.fail(true, `Registration failed: ${regResult.error}`);
-            return;
         }
+        // A registration that does not work is this test's subject failing, not
+        // a reason to pass: the ceremony below has nothing to authenticate with.
+        expect(regResult.success, `Registration failed: ${regResult.error}`).toBe(true);
+
+        // A resident credential now exists, so the conditional ceremony would
+        // log the browser back in the moment the login page loads.
+        await setAutomaticPresence(cdp, authenticatorId, false);
 
         await logOut(page);
 
@@ -324,6 +387,8 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
         await expect(loginBtn).toBeEnabled();
 
         await page.locator('#t3-username').fill('');
+        // The click is this test's ceremony, so the authenticator answers again.
+        await setAutomaticPresence(cdp, authenticatorId, true);
         await loginBtn.click();
 
         await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });
@@ -334,9 +399,8 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
     });
 });
 
-// Same rpId + test.fail()/test.skip() issue as the describe block above.
 test.describe('Passkey Login - Form Integration', () => {
-    test.fixme('hidden fields are populated with assertion data before form submit', async ({ page }) => {
+    test('the login form carries the verified login token before submit', async ({ page }) => {
         const loggedIn = await loginAsAdmin(page);
         test.skip(!loggedIn, 'Password login failed');
 
@@ -348,9 +412,14 @@ test.describe('Passkey Login - Form Integration', () => {
         const regResult = await registerPasskeyViaApi(page);
         if (!regResult.success) {
             await removeVirtualAuthenticator(cdp, authenticatorId);
-            test.fail(true, `Registration failed: ${regResult.error}`);
-            return;
         }
+        // A registration that does not work is this test's subject failing, not
+        // a reason to pass: the ceremony below has nothing to authenticate with.
+        expect(regResult.success, `Registration failed: ${regResult.error}`).toBe(true);
+
+        // A resident credential now exists, so the conditional ceremony would
+        // log the browser back in the moment the login page loads.
+        await setAutomaticPresence(cdp, authenticatorId, false);
 
         await logOut(page);
         await page.goto('/typo3/login');
@@ -374,6 +443,8 @@ test.describe('Passkey Login - Form Integration', () => {
         });
 
         await page.locator('#t3-username').fill(ADMIN_USER);
+        // The click is this test's ceremony, so the authenticator answers again.
+        await setAutomaticPresence(cdp, authenticatorId, true);
         await page.locator('#passkey-login-btn').click();
 
         await page.waitForFunction(
@@ -383,24 +454,21 @@ test.describe('Passkey Login - Form Integration', () => {
 
         const submitData = await page.evaluate(() => (window as any).__passkeySubmitData);
 
-        expect(submitData.assertion).toBeTruthy();
-        const assertionData = JSON.parse(submitData.assertion);
-        expect(assertionData).toHaveProperty('id');
-        expect(assertionData).toHaveProperty('type', 'public-key');
-        expect(assertionData).toHaveProperty('response');
-        expect(assertionData.response).toHaveProperty('authenticatorData');
-        expect(assertionData.response).toHaveProperty('signature');
-        expect(assertionData.response).toHaveProperty('clientDataJSON');
-
-        expect(submitData.challengeToken).toBeTruthy();
-        expect(submitData.challengeToken.length).toBeGreaterThan(10);
-
+        // What the form carries is the single-use login token, not the
+        // assertion: PasskeyLogin.js sends the assertion to
+        // /passkeys/login/verify, and that endpoint answers with a token which
+        // submitLoginToken() packs into userident. The raw-assertion payload
+        // this test asserted before belongs to submitAssertion(), the fallback
+        // for an installation where no verify URL is injected.
         expect(submitData.userident).toBeTruthy();
         const passkeyPayload = JSON.parse(submitData.userident);
-        expect(passkeyPayload._type).toBe('passkey');
-        expect(passkeyPayload.assertion).toHaveProperty('id');
-        expect(passkeyPayload.assertion).toHaveProperty('type', 'public-key');
-        expect(passkeyPayload.challengeToken).toBeTruthy();
+        expect(passkeyPayload._type).toBe('passkey_token');
+        expect(typeof passkeyPayload.token).toBe('string');
+        expect(passkeyPayload.token.length).toBeGreaterThan(10);
+
+        // And the assertion stays out of the form on this path. A regression
+        // that puts it back would replay a ceremony the server already consumed.
+        expect(submitData.assertion).toBe('');
 
         await removeVirtualAuthenticator(cdp, authenticatorId);
         const loggedIn2 = await loginAsAdmin(page);

@@ -43,7 +43,14 @@ async function loginAsAdmin(page: Page): Promise<boolean> {
  * Returns the frame (or page) where the module content lives.
  */
 async function navigateToDashboard(page: Page): Promise<Page | ReturnType<Page['frame']>> {
-    await page.goto('/typo3/module/system/admin_passkeys');
+    // TYPO3 derives a module's route from its identifier, not from its parent:
+    // ModuleFactory turns `admin_passkeys` into `/module/admin/passkeys`
+    // (underscores become slashes) unless the registration sets an explicit
+    // `path`. Configuration/Backend/Modules.php sets none. The old URL
+    // `/module/system/admin_passkeys` does not resolve, and TYPO3 answers by
+    // redirecting to the user's start module — so every assertion here ran
+    // against TYPO3's own Dashboard instead of the passkey module.
+    await page.goto('/typo3/module/admin/passkeys');
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
 
@@ -103,13 +110,7 @@ test.describe('Admin Passkey Dashboard - Enforcement Table', () => {
         isLoggedIn = await loginAsAdmin(page);
     });
 
-    // TODO: fix the underlying content-detection logic. Surfaced once the
-    // shared E2E reusable workflow was repaired (typo3-ci-workflows #60/#61/#62)
-    // and the tests actually ran. The dashboard iframe body does not contain
-    // any of "enforcement", "group", or "passkey" when checked — either the
-    // frame/URL resolution differs from what navigateToDashboard returns, or
-    // the rendered content changed. Re-enable after root-causing.
-    test.fixme('dashboard has groups enforcement section', async ({ page }) => {
+    test('dashboard has groups enforcement section', async ({ page }) => {
         test.skip(!isLoggedIn, 'Login failed');
 
         const frame = await navigateToDashboard(page);
