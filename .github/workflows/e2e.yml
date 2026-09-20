@@ -1,0 +1,47 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+permissions: {}
+
+# A push to a PR branch otherwise leaves the previous run building two TYPO3
+# instances to validate a commit nobody will merge. merge_group and pushes to
+# main are never cancelled.
+# (e2e.yml is not part of the typo3-extension template, so
+# check-template-drift.yml does not byte-compare it — unlike checks.yml.)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  e2e:
+    uses: netresearch/typo3-ci-workflows/.github/workflows/e2e.yml@main
+    permissions:
+      contents: read
+    with:
+      # TYPO3 12 is absent on purpose: the shared provisioner builds e2e
+      # instances for 13 and 14 only, and asking it for 12 silently gives a 13.
+      # The v12 support this extension ships is covered by the unit and
+      # functional matrices in ci.yml.
+      typo3-versions: '["^13.4", "^14.3"]'
+      # setup-script mode: the script owns installation, provisioning and the
+      # test run, because the environment comes from the e2e_provision_* hooks
+      # in Build/Scripts/runTests.conf rather than from the workflow's default
+      # pipeline.
+      setup-script: 'Build/Scripts/ci-e2e.sh'
+      artifact-path: |
+        test-results/
+        playwright-report/
+      timeout-minutes: 45
+      # A documentation-only pull request need not build two TYPO3 instances.
+      # The job still runs and reports `skipped`, which keeps it usable as a
+      # required check.
+      skip-paths: |
+        Documentation/*
+        docs/*
+        *.md
