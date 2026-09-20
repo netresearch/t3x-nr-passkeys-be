@@ -511,17 +511,20 @@ test.describe('Passkey Login - Error Handling', () => {
         await page.locator('#t3-username').fill('nonexistent_user_e2e_test_xyz');
         await loginBtn.click();
 
+        // Wait for the ceremony to return, not for a number of seconds. The CDP
+        // virtual authenticator rejects a credential it does not have in well
+        // under a second locally, and took longer than ten on the TYPO3 14 CI
+        // cell — three attempts in a row, while TYPO3 13 passed in the same run.
+        // Every failure snapshot showed the same page: the button still reading
+        // "Authenticating…" and disabled, so the ceremony had not returned and
+        // no error was due yet. PasskeyLogin.js re-enables the button in the
+        // same catch block that renders the message (setLoading(false) directly
+        // before handleAuthError), so the button leaving its loading state is
+        // the event this assertion actually depends on.
+        await expect(loginBtn).toBeEnabled({ timeout: 60000 });
+
         const error = page.locator('#passkey-error');
-        // Ten seconds, matching "shows error when WebAuthn ceremony fails"
-        // below, because the wait is on the same thing: the CDP virtual
-        // authenticator rejecting a credential it does not have. It usually
-        // answers in well under a second and sometimes takes longer than five,
-        // which failed this test in about half of the full-suite runs while
-        // the file on its own passed six times out of six. The page snapshot
-        // from a failure says it plainly — the button still reads
-        // "Authenticating…" and is disabled, so the ceremony had not returned
-        // yet and no error was due.
-        await expect(error).toBeVisible({ timeout: 10000 });
+        await expect(error).toBeVisible({ timeout: 5000 });
         // For an unknown user the server answers with decoy options instead of
         // saying so, which is the point — a caller cannot tell existing
         // usernames from invented ones. The ceremony therefore fails in the
