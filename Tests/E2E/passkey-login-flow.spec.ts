@@ -497,6 +497,15 @@ test.describe('Passkey Login - Error Handling', () => {
     });
 
     test('shows error for non-existent user', async ({ page }) => {
+        // An unknown username gets decoy credentials the authenticator does not
+        // hold, so the ceremony runs until the timeout the server puts into the
+        // options — `timeout: 60000` in AssertionService — before the browser
+        // rejects it. That is longer than the 30 s default in
+        // playwright.config.ts, so this one test needs its own budget. The CDP
+        // virtual authenticator sometimes rejects in well under a second and
+        // sometimes waits the full minute; both stay inside this budget.
+        test.setTimeout(90_000);
+
         const { cdp, authenticatorId } = await setupVirtualAuthenticator(page);
 
         await page.goto('/typo3/login');
@@ -511,17 +520,12 @@ test.describe('Passkey Login - Error Handling', () => {
         await page.locator('#t3-username').fill('nonexistent_user_e2e_test_xyz');
         await loginBtn.click();
 
-        // Wait for the ceremony to return, not for a number of seconds. The CDP
-        // virtual authenticator rejects a credential it does not have in well
-        // under a second locally, and took longer than ten on the TYPO3 14 CI
-        // cell — three attempts in a row, while TYPO3 13 passed in the same run.
-        // Every failure snapshot showed the same page: the button still reading
-        // "Authenticating…" and disabled, so the ceremony had not returned and
-        // no error was due yet. PasskeyLogin.js re-enables the button in the
-        // same catch block that renders the message (setLoading(false) directly
-        // before handleAuthError), so the button leaving its loading state is
-        // the event this assertion actually depends on.
-        await expect(loginBtn).toBeEnabled({ timeout: 60000 });
+        // Wait for the ceremony to return, not for a fixed number of seconds.
+        // PasskeyLogin.js calls setLoading(false) in the same catch block that
+        // then calls handleAuthError, so the button leaving its loading state is
+        // the event the message depends on. The budget covers the server's own
+        // 60 s ceremony timeout with room to spare.
+        await expect(loginBtn).toBeEnabled({ timeout: 75_000 });
 
         const error = page.locator('#passkey-error');
         await expect(error).toBeVisible({ timeout: 5000 });
