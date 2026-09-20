@@ -3,7 +3,7 @@
 # AGENTS.md -- Tests
 
 ## Overview
-Six test suites: PHP Unit, Fuzz, Functional (PHPUnit ^10.5||^11.5 + TYPO3 testing-framework ^8.2||^9.0), JavaScript (Vitest), E2E (Playwright), and Architecture (PHPat, runs inside PHPStan).
+Six test suites: PHP Unit, Fuzz, Functional (PHPUnit ^11.5||^12.1||^13.0 + TYPO3 testing-framework ^8.2||^9.0), JavaScript (Vitest), E2E (Playwright), and Architecture (PHPat, runs inside PHPStan).
 
 ## Test Structure
 ```
