@@ -85,69 +85,9 @@ final class RateLimiterServiceTest extends TestCase
 
     // --- Rate Limit Tests ---
     #[Test]
-    public function checkRateLimitPassesUnderLimit(): void
+    public function consumeRateLimitCountsFromZeroWhenNoPreviousData(): void
     {
-        // Current count is 2, limit is 5 -- should pass
-        $this->rateLimitCacheMock
-            ->method('get')
-            ->willReturn('2');
-
-        // Should not throw
-        $this->subject->checkRateLimit('register', '192.168.1.1');
-        self::assertTrue(true, 'No exception was thrown');
-    }
-
-    #[Test]
-    public function checkRateLimitPassesWhenNoPreviousAttempts(): void
-    {
-        // No cache entry exists -- get() returns false
-        $this->rateLimitCacheMock
-            ->method('get')
-            ->willReturn(false);
-        $this->subject->checkRateLimit('register', '10.0.0.1');
-        self::assertTrue(true, 'No exception was thrown');
-    }
-
-    #[Test]
-    public function checkRateLimitThrowsWhenExceeded(): void
-    {
-        // Current count is 5, limit is 5 -- should throw (>= comparison)
-        $this->rateLimitCacheMock
-            ->method('get')
-            ->willReturn('5');
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionCode(1700000010);
-        $this->expectExceptionMessage('Rate limit exceeded');
-        $this->subject->checkRateLimit('register', '192.168.1.1');
-    }
-
-    #[Test]
-    public function checkRateLimitThrowsWhenOverLimit(): void
-    {
-        // Current count is 10, well above the limit of 5
-        $this->rateLimitCacheMock
-            ->method('get')
-            ->willReturn('10');
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionCode(1700000010);
-        $this->subject->checkRateLimit('login', '10.0.0.1');
-    }
-
-    #[Test]
-    public function checkRateLimitPassesAtBoundary(): void
-    {
-        // Current count is 4 (one below limit of 5) -- should pass
-        $this->rateLimitCacheMock
-            ->method('get')
-            ->willReturn('4');
-        $this->subject->checkRateLimit('register', '192.168.1.1');
-        self::assertTrue(true, 'No exception was thrown');
-    }
-
-    #[Test]
-    public function recordAttemptIncrementsCounter(): void
-    {
-        // No previous attempts -- get() returns false
+        // No previous attempts -- get() returns false, so the count starts at 0
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn(false);
@@ -155,21 +95,20 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::once())
             ->method('set')
             ->with(self::isString(), '1', [], 300);
-        $this->subject->recordAttempt('register', '192.168.1.1');
+        $this->subject->consumeRateLimit('register', '192.168.1.1');
     }
 
     #[Test]
-    public function recordAttemptIncrementsExistingCounter(): void
+    public function consumeRateLimitThrowsWhenOverLimit(): void
     {
-        // Previous count is 3
+        // Current count is 10, well above the limit of 5
         $this->rateLimitCacheMock
             ->method('get')
-            ->willReturn('3');
-        $this->rateLimitCacheMock
-            ->expects(self::once())
-            ->method('set')
-            ->with(self::isString(), '4', [], 300);
-        $this->subject->recordAttempt('register', '192.168.1.1');
+            ->willReturn('10');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000010);
+        $this->expectExceptionMessage('Rate limit exceeded');
+        $this->subject->consumeRateLimit('login', '10.0.0.1');
     }
 
     // --- Lockout Tests ---
@@ -378,7 +317,7 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::once())
             ->method('set')
             ->with($expectedKey, '1', [], 300);
-        $this->subject->recordAttempt('register/passkey', '192.168.1.1');
+        $this->subject->consumeRateLimit('register/passkey', '192.168.1.1');
     }
 
     #[Test]
@@ -452,7 +391,7 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::once())
             ->method('set')
             ->with($expectedKey, '1', [], 300);
-        $this->subject->recordAttempt('login:options/v2', '::1');
+        $this->subject->consumeRateLimit('login:options/v2', '::1');
     }
 
     #[Test]
@@ -476,19 +415,6 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
-    public function checkRateLimitCountsFromZeroWhenNoPreviousData(): void
-    {
-        // No cache data - get returns false - count should be 0, which is < 5
-        $this->rateLimitCacheMock
-            ->method('get')
-            ->willReturn(false);
-
-        // Should pass without exception
-        $this->subject->checkRateLimit('test_endpoint', '127.0.0.1');
-        self::assertTrue(true);
-    }
-
-    #[Test]
     public function checkLockoutCountsFromZeroWhenNoPreviousData(): void
     {
         $this->rateLimitCacheMock
@@ -499,39 +425,6 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     // --- Locking Tests ---
-    #[Test]
-    public function checkRateLimitAcquiresAndReleasesLock(): void
-    {
-        $this->rateLimitCacheMock
-            ->method('get')
-            ->willReturn('2');
-        $this->lockerMock
-            ->expects(self::atLeastOnce())
-            ->method('acquire')
-            ->willReturn(true);
-        $this->lockerMock
-            ->expects(self::atLeastOnce())
-            ->method('release');
-        $this->subject->checkRateLimit('register', '192.168.1.1');
-    }
-
-    #[Test]
-    public function checkRateLimitThrowsWhenLockCannotBeAcquired(): void
-    {
-        $failingLocker = $this->createMock(LockingStrategyInterface::class);
-        $failingLocker
-            ->method('acquire')
-            ->willReturn(false);
-        $failingLockFactory = $this->createMock(LockFactory::class);
-        $failingLockFactory
-            ->method('createLocker')
-            ->willReturn($failingLocker);
-        $subject = new RateLimiterService($this->rateLimitCacheMock, $this->configService, $failingLockFactory, $this->loggerMock);
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionCode(1700000012);
-        $subject->checkRateLimit('register', '192.168.1.1');
-    }
-
     #[Test]
     public function consumeRateLimitIncrementsUnderLimitInOneCriticalSection(): void
     {
@@ -594,7 +487,54 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
-    public function recordAttemptAcquiresAndReleasesLock(): void
+    public function checkLockoutThrowsWhenLockCannotBeAcquired(): void
+    {
+        // The lockout check reads its counter under the same lock discipline as
+        // the rate limit: an unavailable lock must fail closed, not wave the
+        // attempt through unchecked.
+        $subject = new RateLimiterService(
+            $this->rateLimitCacheMock,
+            $this->configService,
+            $this->createFailingLockFactory(),
+            $this->loggerMock,
+        );
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000012);
+        $subject->checkLockout('admin', '192.168.1.1');
+    }
+
+    #[Test]
+    public function recordFailureThrowsWhenLockCannotBeAcquired(): void
+    {
+        // A failed login that cannot increment its counter must surface the
+        // failure, or a lock outage silently disables the lockout counting.
+        $subject = new RateLimiterService(
+            $this->rateLimitCacheMock,
+            $this->configService,
+            $this->createFailingLockFactory(),
+            $this->loggerMock,
+        );
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000012);
+        $subject->recordFailure('admin', '192.168.1.1');
+    }
+
+    private function createFailingLockFactory(): LockFactory
+    {
+        $failingLocker = $this->createMock(LockingStrategyInterface::class);
+        $failingLocker
+            ->method('acquire')
+            ->willReturn(false);
+        $failingLockFactory = $this->createMock(LockFactory::class);
+        $failingLockFactory
+            ->method('createLocker')
+            ->willReturn($failingLocker);
+
+        return $failingLockFactory;
+    }
+
+    #[Test]
+    public function consumeRateLimitAcquiresAndReleasesLock(): void
     {
         $this->rateLimitCacheMock
             ->method('get')
@@ -609,7 +549,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('set');
-        $this->subject->recordAttempt('register', '192.168.1.1');
+        $this->subject->consumeRateLimit('register', '192.168.1.1');
     }
 
     #[Test]

@@ -28,51 +28,6 @@ final readonly class RateLimiterService
     ) {}
 
     /**
-     * Check if the rate limit for the given endpoint and identifier has been exceeded.
-     *
-     * @deprecated Use {@see consumeRateLimit()}, which checks and increments under a
-     *             single lock. This method only checks; pairing it with a separate
-     *             {@see recordAttempt()} leaves a check-then-record window where
-     *             concurrent requests can all pass the check before any increments,
-     *             overshooting the limit by the number of in-flight requests.
-     *
-     * @throws RuntimeException if rate limit exceeded or lock cannot be acquired
-     */
-    public function checkRateLimit(string $endpoint, string $identifier): void
-    {
-        $config = $this->configService->getConfiguration();
-        $key = $this->buildKey($endpoint, $identifier);
-        $maxAttempts = $config->getRateLimitMaxAttempts();
-
-        try {
-            $this->atomicCheck($key, $maxAttempts, 'Rate limit exceeded', 1700000010);
-        } catch (RuntimeException $e) {
-            if ($e->getCode() === 1700000010) {
-                $this->logger->warning(
-                    'Rate limit exceeded',
-                    ['endpoint' => $endpoint, 'identifier' => \hash('sha256', $identifier)],
-                );
-            }
-
-            throw $e;
-        }
-    }
-
-    /**
-     * Record a request attempt.
-     *
-     * @deprecated Use {@see consumeRateLimit()}, which records the attempt atomically
-     *             with the limit check.
-     */
-    public function recordAttempt(string $endpoint, string $identifier): void
-    {
-        $config = $this->configService->getConfiguration();
-        $key = $this->buildKey($endpoint, $identifier);
-        $windowSeconds = $config->getRateLimitWindowSeconds();
-        $this->atomicIncrement($key, [], $windowSeconds);
-    }
-
-    /**
      * Atomically check the rate limit AND record the attempt under a single lock.
      *
      * The read, threshold comparison and increment all happen inside one critical

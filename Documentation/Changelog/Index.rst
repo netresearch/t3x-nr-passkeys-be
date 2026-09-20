@@ -6,6 +6,88 @@
 Changelog
 =========
 
+1.0.0
+=====
+
+Important
+---------
+
+- The extension state changes from ``beta`` to ``stable``. From this release
+  on the public API follows semantic versioning: a removal or an incompatible
+  change to a public class, method or configuration setting needs a new major
+  version.
+- Run the database schema update after upgrading from 0.12.x. The
+  ``tx_nrpasskeysbe_credential`` table gained the ``discoverable`` column (see
+  Features below). Use :guilabel:`Admin Tools > Maintenance > Analyze Database
+  Structure`, or ``vendor/bin/typo3 extension:setup``.
+- Removed the deprecated ``RateLimiterService::checkRateLimit()`` and
+  ``RateLimiterService::recordAttempt()``. Callers use
+  ``RateLimiterService::consumeRateLimit()``, which performs the limit check
+  and the increment in one critical section. The removed pair left a
+  check-then-record window in which concurrent requests could all pass the
+  check before any of them incremented, overshooting the limit by the number
+  of requests in flight. No code inside this extension called either method.
+
+Features
+--------
+
+- Registration records whether the browser stored the passkey as a
+  discoverable (resident) credential. The value is kept in the new
+  ``CredentialDiscoverability`` enum, so a later release can tell a
+  discoverable-login-capable credential from one that needs a username.
+
+Bugfixes
+--------
+
+- The conditional-UI ceremony on the login screen no longer retries without
+  bound when the browser cannot serve it. A browser that declines with
+  ``NotSupportedError`` is treated as declining rather than as an error, a
+  ceremony that lost its turn while awaiting is dropped, a pending retry is
+  cancelled when the button ceremony takes over, and the challenge refresh
+  stops instead of looping.
+
+Tests
+-----
+
+- The test suite runs on PHPUnit 12 and 13 in addition to 11.
+- The end-to-end suite runs in continuous integration, against TYPO3 13 and
+  TYPO3 14, on every pull request and every push to the main branch. It ran
+  only on developer machines before, so a regression in the browser-side
+  ceremonies reached the main branch with every other check green.
+- All 69 end-to-end tests run. Seven were disabled, among them both full
+  WebAuthn ceremonies and the check that a passkey login never passes through
+  the multi-factor challenge, so the suite reported success without ever
+  performing a passkey login.
+
+0.12.1
+======
+
+Important
+---------
+
+- This section documents the 0.12.1 release, which shipped without a
+  changelog entry.
+
+Bugfixes
+--------
+
+- Closed nine findings of a security scan: a switch-user escalation, missing
+  Sudo Mode declarations, a login token whose expiry was not enforced in the
+  token value, and user-enumeration oracles. Passkey write routes now declare
+  Sudo Mode, and passkey writes are refused while an administrator is in
+  switch-user mode.
+- Decoy credentials for unknown users are indistinguishable from real ones:
+  the decoy credential IDs no longer encode their own shape, and both
+  login-options branches are padded to one timing budget.
+- A non-UTF-8 request body returns HTTP 400 instead of crashing the
+  controller.
+- Assertion verification catches every failure, not only ``RuntimeException``.
+- The nonce cache defaults to a backend that honours the TTL, so a challenge
+  nonce expires as intended.
+- The passkey autofill ceremony stays usable and no longer reports a false
+  failure.
+- Local DDEV tooling treats git ref names as untrusted input.
+
 0.12.0
 ======
 

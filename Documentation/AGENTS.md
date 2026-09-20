@@ -14,7 +14,7 @@ Documentation/
   Includes.rst.txt                   -> Shared substitutions and highlight directive
   Introduction/Index.rst             -> What the extension does, features, support matrix
   Installation/Index.rst             -> Composer install, activation, system requirements
-  Configuration/Index.rst            -> Extension settings (13 confvals)
+  Configuration/Index.rst            -> Extension settings (14 confvals)
   DeploymentScenarios/Index.rst      -> Multi-env setup, DB sync, shared rpId
   DeploymentScenarios/Onboarding.rst -> User onboarding, recovery, DDEV, containers
   Usage/Index.rst                    -> End-user guide: registering/using passkeys
