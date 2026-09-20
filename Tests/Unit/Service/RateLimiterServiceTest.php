@@ -487,6 +487,53 @@ final class RateLimiterServiceTest extends TestCase
     }
 
     #[Test]
+    public function checkLockoutThrowsWhenLockCannotBeAcquired(): void
+    {
+        // The lockout check reads its counter under the same lock discipline as
+        // the rate limit: an unavailable lock must fail closed, not wave the
+        // attempt through unchecked.
+        $subject = new RateLimiterService(
+            $this->rateLimitCacheMock,
+            $this->configService,
+            $this->createFailingLockFactory(),
+            $this->loggerMock,
+        );
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000012);
+        $subject->checkLockout('admin', '192.168.1.1');
+    }
+
+    #[Test]
+    public function recordFailureThrowsWhenLockCannotBeAcquired(): void
+    {
+        // A failed login that cannot increment its counter must surface the
+        // failure, or a lock outage silently disables the lockout counting.
+        $subject = new RateLimiterService(
+            $this->rateLimitCacheMock,
+            $this->configService,
+            $this->createFailingLockFactory(),
+            $this->loggerMock,
+        );
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000012);
+        $subject->recordFailure('admin', '192.168.1.1');
+    }
+
+    private function createFailingLockFactory(): LockFactory
+    {
+        $failingLocker = $this->createMock(LockingStrategyInterface::class);
+        $failingLocker
+            ->method('acquire')
+            ->willReturn(false);
+        $failingLockFactory = $this->createMock(LockFactory::class);
+        $failingLockFactory
+            ->method('createLocker')
+            ->willReturn($failingLocker);
+
+        return $failingLockFactory;
+    }
+
+    #[Test]
     public function consumeRateLimitAcquiresAndReleasesLock(): void
     {
         $this->rateLimitCacheMock
