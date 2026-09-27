@@ -367,41 +367,30 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <title>{$escapedTitle}</title>
             <style>
-                /* Scheme-aware palette: light defaults, dark values applied either by
-                   the OS preference (data-color-scheme="auto") or the user's explicit
-                   TYPO3 backend color scheme setting. Brand teal (#2F99A4) accents. */
+                /* Standalone page: core backend.css is not loaded here, so the
+                   palette is local. The scheme follows the user's TYPO3 setting
+                   the way core does it: data-color-scheme sets color-scheme, and
+                   light-dark() picks the value; "auto" leaves both schemes open
+                   for the browser to resolve. No media query of its own.
+                   White text sits on the brand fill #257880 (5.15:1); the brand
+                   #2F99A4 is 3.38:1 under white text. */
                 :root {
                     color-scheme: light dark;
-                    --int-bg: #ffffff;
-                    --int-text: #313131;
-                    --int-text-strong: #000000;
-                    --int-text-muted: #6a6a6a;
-                    --int-surface: #f5f5f5;
-                    --int-border: #cccccc;
-                    --int-accent: #2F99A4;
+                    --int-bg: light-dark(#ffffff, #1e1e1e);
+                    --int-text: light-dark(#313131, #e0e0e0);
+                    --int-text-strong: light-dark(#000000, #ffffff);
+                    --int-text-muted: light-dark(#6a6a6a, #b0b0b0);
+                    --int-surface: light-dark(#f5f5f5, #2a2a2a);
+                    --int-border: light-dark(#cccccc, #444444);
+                    --int-accent: #257880;
                     --int-accent-text: #ffffff;
+                    --int-focus: light-dark(#257880, #5fc6d2);
                 }
                 :root[data-color-scheme="light"] {
                     color-scheme: light;
                 }
-                @media (prefers-color-scheme: dark) {
-                    :root:not([data-color-scheme="light"]) {
-                        --int-bg: #1e1e1e;
-                        --int-text: #e0e0e0;
-                        --int-text-strong: #ffffff;
-                        --int-text-muted: #b0b0b0;
-                        --int-surface: #2a2a2a;
-                        --int-border: #444444;
-                    }
-                }
                 :root[data-color-scheme="dark"] {
                     color-scheme: dark;
-                    --int-bg: #1e1e1e;
-                    --int-text: #e0e0e0;
-                    --int-text-strong: #ffffff;
-                    --int-text-muted: #b0b0b0;
-                    --int-surface: #2a2a2a;
-                    --int-border: #444444;
                 }
                 body {
                     margin: 0;
@@ -475,7 +464,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
                 }
                 .btn-setup:focus-visible,
                 .btn-skip:focus-visible {
-                    outline: 2px solid var(--int-accent);
+                    outline: 2px solid var(--int-focus);
                     outline-offset: 2px;
                 }
             </style>

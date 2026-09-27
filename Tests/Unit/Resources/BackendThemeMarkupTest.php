@@ -45,7 +45,10 @@ final class BackendThemeMarkupTest extends TestCase
         );
 
         // The visible percentage stays.
-        self::assertStringContainsString('<span class="passkey-adoption-meter-value"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>', $html);
+        self::assertStringContainsString(
+            '<span class="passkey-adoption-meter-value"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>',
+            $html,
+        );
     }
 
     #[Test]
@@ -86,7 +89,11 @@ final class BackendThemeMarkupTest extends TestCase
     #[Test]
     public function mutedTextUsesTheCoreClass(): void
     {
-        foreach (['Resources/Private/Templates/AdminModule/Dashboard.html', 'Classes/Form/Element/PasskeyInfoElement.php', 'Classes/UserSettings/PasskeySettingsPanel.php'] as $path) {
+        foreach ([
+            'Resources/Private/Templates/AdminModule/Dashboard.html',
+            'Classes/Form/Element/PasskeyInfoElement.php',
+            'Classes/UserSettings/PasskeySettingsPanel.php',
+        ] as $path) {
             self::assertStringNotContainsString('text-body-secondary', $this->read($path), $path);
         }
     }

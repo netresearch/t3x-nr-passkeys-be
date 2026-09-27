@@ -103,16 +103,9 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
                 [$segment->usersWithPasskeys, $segment->usersWithoutPasskeys()],
                 \array_fill(0, $slots - 2 * $index - 2, 0),
             );
-            $datasets[] = [
-                'label' => $segmentLabels[$index],
-                'backgroundColor' => $colors,
-                'data' => $data,
-            ];
+            $datasets[] = ['label' => $segmentLabels[$index], 'backgroundColor' => $colors, 'data' => $data];
         }
 
-        return [
-            'labels' => $labels,
-            'datasets' => $datasets,
-        ];
+        return ['labels' => $labels, 'datasets' => $datasets];
     }
 }

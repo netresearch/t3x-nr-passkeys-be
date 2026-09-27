@@ -395,10 +395,17 @@ final class PasskeySetupInterstitialTest extends TestCase
         // Adapts to light AND dark schemes instead of a hardcoded dark palette
         self::assertStringContainsString('color-scheme: light dark', $body);
         self::assertStringContainsString('data-color-scheme="auto"', $body);
-        self::assertStringContainsString('prefers-color-scheme: dark', $body);
 
-        // Brand teal accent instead of the former off-brand blue
-        self::assertStringContainsString('#2F99A4', $body);
+        // The TYPO3 setting decides the scheme, as in core: color-scheme plus
+        // light-dark(), no media query of its own.
+        self::assertStringNotContainsString('prefers-color-scheme', $body);
+        self::assertStringContainsString('--int-bg: light-dark(#ffffff, #1e1e1e);', $body);
+
+        // White button text sits on the brand fill #257880 (5.15:1), not on
+        // #2F99A4 (3.38:1), and never on the former off-brand blue.
+        self::assertStringContainsString('--int-accent: #257880;', $body);
+        self::assertStringContainsString('--int-accent-text: #ffffff;', $body);
+        self::assertStringNotContainsString('#2F99A4;', $body);
         self::assertStringNotContainsString('#0078d4', $body);
     }
 

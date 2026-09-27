@@ -69,7 +69,12 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
 
         // One legend entry per audience and state, so the legend names every ring.
         self::assertSame(
-            ['Backend: With passkeys', 'Backend: Without passkeys', 'Frontend: With passkeys', 'Frontend: Without passkeys'],
+            [
+                'Backend: With passkeys',
+                'Backend: Without passkeys',
+                'Frontend: With passkeys',
+                'Frontend: Without passkeys',
+            ],
             $chartData['labels'],
         );
 
@@ -169,7 +174,7 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
                 \str_split(\ltrim($hex, '#'), 2),
             );
 
-            return 0.2126 * $channels[0] + 0.7152 * $channels[1] + 0.0722 * $channels[2];
+            return (2126 * $channels[0] + 7152 * $channels[1] + 722 * $channels[2]) / 10000;
         };
         $la = $luminance($a);
         $lb = $luminance($b);

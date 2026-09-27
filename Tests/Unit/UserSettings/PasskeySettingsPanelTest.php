@@ -19,6 +19,7 @@ use stdClass;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -455,9 +456,12 @@ final class PasskeySettingsPanelTest extends TestCase
     }
 
     #[Test]
-    public function panelUsesCoreCalloutsMutedTextAndAnH3BelowTheTabHeading(): void
+    public function panelUsesCoreCalloutsMutedTextAndAHeadingOneLevelBelowItsContext(): void
     {
-        $html = $this->subject->buildHtml(1, ['list' => '/l', 'registerOptions' => '/o', 'registerVerify' => '/v', 'rename' => '/r', 'remove' => '/d']);
+        $html = $this->subject->buildHtml(
+            1,
+            ['list' => '/l', 'registerOptions' => '/o', 'registerVerify' => '/v', 'rename' => '/r', 'remove' => '/d'],
+        );
 
         // .alert is Bootstrap markup; a module body uses core's callout.
         self::assertStringNotContainsString('class="alert', $html);
@@ -468,8 +472,10 @@ final class PasskeySettingsPanelTest extends TestCase
         self::assertStringNotContainsString('text-body-secondary', $html);
         self::assertStringContainsString('<p class="text-muted">', $html);
 
-        // The setup module's tab sections are h2, so the panel title is h3 (h4 skipped a level).
-        self::assertMatchesRegularExpression('#<h3>[^<]*<span class="badge #', $html);
+        // One level below what precedes the panel: the v14 setup module's h2 tab heading, the h1 on v12/v13 (h4 skipped levels).
+        $heading = (new Typo3Version())->getMajorVersion() >= 14 ? 'h3' : 'h2';
+        self::assertSame($heading, PasskeySettingsPanel::headingTag());
+        self::assertMatchesRegularExpression('#<' . $heading . '>[^<]*<span class="badge #', $html);
         self::assertStringNotContainsString('<h4', $html);
     }
 }

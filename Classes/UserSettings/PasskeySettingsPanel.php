@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -129,6 +130,7 @@ final class PasskeySettingsPanel
         $noPasskeys = \htmlspecialchars($noPasskeys, ENT_QUOTES, 'UTF-8');
         $nameHelp = \htmlspecialchars($nameHelp, ENT_QUOTES, 'UTF-8');
         $infoText = \htmlspecialchars($infoText, ENT_QUOTES, 'UTF-8');
+        $heading = self::headingTag();
 
         return <<<HTML
         <style>.passkey-name-input{max-width:200px}</style>
@@ -139,7 +141,7 @@ final class PasskeySettingsPanel
              data-register-verify-url="{$registerVerifyUrl}"
              data-rename-url="{$renameUrl}"
              data-remove-url="{$removeUrl}">
-            <h3>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h3>
+            <{$heading}>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></{$heading}>
             <p class="text-muted">{$description}</p>
             <div id="passkey-single-warning" class="callout callout-warning d-none" role="status" aria-live="polite"><div class="callout-content"><div class="callout-body">{$singleKeyWarning}</div></div></div>
             <div class="mb-3">
@@ -175,5 +177,15 @@ final class PasskeySettingsPanel
     public static function callout(string $state, string $message): string
     {
         return '<div class="callout callout-' . $state . '"><div class="callout-content"><div class="callout-body">' . $message . '</div></div></div>';
+    }
+
+    /**
+     * The setup module puts an h2 above each tab's fields on TYPO3 14 only; on
+     * 12 and 13 the fields follow the module's h1 directly. One level below
+     * whatever precedes the panel keeps the outline without a skipped level.
+     */
+    public static function headingTag(): string
+    {
+        return (new Typo3Version())->getMajorVersion() >= 14 ? 'h3' : 'h2';
     }
 }
