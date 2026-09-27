@@ -32,35 +32,51 @@ final class BackendThemeMarkupTest extends TestCase
     }
 
     #[Test]
-    public function adoptionMeterIsANamedProgressbarWithoutBootstrapProgressClasses(): void
+    public function adoptionBarIsANamedNativeProgressWithoutBootstrapProgressClasses(): void
     {
         $html = $this->read('Resources/Private/Templates/AdminModule/Dashboard.html');
 
         // Core 14.3 has no .progress / .progress-bar rules, so that markup draws no bar there.
         self::assertStringNotContainsString('class="progress', $html);
         self::assertStringNotContainsString('bg-success', $html);
+
+        // The native element carries role, value and name; no div with role="progressbar".
+        self::assertStringNotContainsString('role="progressbar"', $html);
         self::assertMatchesRegularExpression(
-            '#class="passkey-adoption-meter-track"\s+role="progressbar"\s+aria-label="[^"]+"\s+aria-valuenow="\{group\.adoptionPercentage\}"\s+aria-valuemin="0"\s+aria-valuemax="100"#',
+            '#<progress class="passkey-adoption-meter-bar"\s+max="100"\s+value="\{group\.adoptionPercentage\}"\s+aria-label="[^"]+"></progress>#',
             $html,
         );
 
-        // The visible percentage stays.
+        // The visible percentage stays, hidden from assistive technology (the element announces it).
         self::assertStringContainsString(
-            '<span class="passkey-adoption-meter-value"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>',
+            '<span class="passkey-adoption-meter-value" aria-hidden="true"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>',
             $html,
         );
     }
 
     #[Test]
-    public function adoptionMeterIsStyledWithCoreTokensOnly(): void
+    public function adoptionBarIsStyledWithCoreTokensInEveryEngine(): void
     {
         $css = $this->read('Resources/Public/Css/backend.css');
         $start = \strpos($css, '.passkey-adoption-meter');
         self::assertNotFalse($start);
         $rules = \substr($css, $start);
+        $track = 'background-color: var(--typo3-surface-container-high, var(--bs-secondary-bg));';
+        $fill = 'background-color: var(--typo3-component-primary-color);';
 
-        self::assertStringContainsString('background-color: var(--typo3-surface-container-high', $rules);
-        self::assertStringContainsString('background-color: var(--typo3-component-primary-color)', $rules);
+        foreach ([
+            '.passkey-adoption-meter-bar {' => $track,
+            '.passkey-adoption-meter-bar::-webkit-progress-bar {' => $track,
+            '.passkey-adoption-meter-bar::-webkit-progress-value {' => $fill,
+            '.passkey-adoption-meter-bar::-moz-progress-bar {' => $fill,
+        ] as $selector => $declaration) {
+            $at = \strpos($rules, $selector);
+            self::assertNotFalse($at, $selector);
+            $body = \substr($rules, $at, (int) \strpos($rules, '}', $at) - $at);
+            self::assertStringContainsString($declaration, $body, $selector);
+        }
+
+        self::assertStringContainsString('appearance: none;', $rules);
         self::assertDoesNotMatchRegularExpression('/#[0-9a-f]{3,8}\b/i', $rules);
         self::assertStringNotContainsString('prefers-color-scheme', $css);
     }

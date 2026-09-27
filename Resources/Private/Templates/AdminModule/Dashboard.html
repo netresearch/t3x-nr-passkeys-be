@@ -137,15 +137,11 @@
                                         <f:if condition="{group.totalUsers} > 0">
                                             <f:then>
                                                 <div class="passkey-adoption-meter">
-                                                    <div class="passkey-adoption-meter-track"
-                                                         role="progressbar"
-                                                         aria-label="{f:translate(key: 'dashboard.groups.adoption', extensionName: 'NrPasskeysBe')}: {group.title}"
-                                                         aria-valuenow="{group.adoptionPercentage}"
-                                                         aria-valuemin="0"
-                                                         aria-valuemax="100">
-                                                        <div class="passkey-adoption-meter-fill" style="width: {group.adoptionPercentage}%;"></div>
-                                                    </div>
-                                                    <span class="passkey-adoption-meter-value"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>
+                                                    <progress class="passkey-adoption-meter-bar"
+                                                              max="100"
+                                                              value="{group.adoptionPercentage}"
+                                                              aria-label="{f:translate(key: 'dashboard.groups.adoption', extensionName: 'NrPasskeysBe')}: {group.title}"></progress>
+                                                    <span class="passkey-adoption-meter-value" aria-hidden="true"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>
                                                 </div>
                                             </f:then>
                                             <f:else><span class="text-muted">-</span></f:else>
