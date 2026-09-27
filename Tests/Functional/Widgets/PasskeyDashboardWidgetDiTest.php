@@ -75,7 +75,7 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
 
         // One provider in the iterator => one dataset (backend green/orange).
         self::assertCount(1, $chartData['datasets']);
-        self::assertSame(['#4c7e3a', '#ff8700'], $chartData['datasets'][0]['backgroundColor']);
+        self::assertSame(['#3f7f35', '#bd5d00'], $chartData['datasets'][0]['backgroundColor']);
         self::assertSame([2, 3], $chartData['datasets'][0]['data']);
     }
 }
