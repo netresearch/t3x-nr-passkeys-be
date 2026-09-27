@@ -148,7 +148,7 @@ class PasskeyManagement {
       // which is not the same as "not discoverable" and stays unmarked.
       if (cred.discoverable === false) {
         const hint = document.createElement('span');
-        hint.className = 'badge bg-secondary ms-2';
+        hint.className = 'badge badge-default ms-2';
         hint.textContent = this.translate('js.manage.notDiscoverable', 'No autofill');
         hint.title = this.translate(
           'js.manage.notDiscoverable.title',
@@ -173,13 +173,13 @@ class PasskeyManagement {
       const actionsCell = document.createElement('td');
 
       const renameBtn = document.createElement('button');
-      renameBtn.className = 'btn btn-sm btn-outline-secondary me-1';
+      renameBtn.className = 'btn btn-sm btn-default me-1';
       renameBtn.textContent = this.translate('js.manage.rename', 'Rename');
       renameBtn.addEventListener('click', () => this.startRename(labelSpan, cred.uid));
       actionsCell.appendChild(renameBtn);
 
       const removeBtn = document.createElement('button');
-      removeBtn.className = 'btn btn-sm btn-outline-danger';
+      removeBtn.className = 'btn btn-sm btn-danger';
       removeBtn.textContent = this.translate('js.manage.remove', 'Remove');
       removeBtn.addEventListener('click', () => this.handleRemove(cred.uid, cred.label));
       actionsCell.appendChild(removeBtn);

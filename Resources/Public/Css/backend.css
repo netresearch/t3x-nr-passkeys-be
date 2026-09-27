@@ -80,3 +80,34 @@
   letter-spacing: 1px;
   opacity: 0.65;
 }
+
+/* Adoption meter in the admin dashboard's group table.
+   Plain markup with role="progressbar": core 14.3 ships no .progress rules,
+   and its <typo3-backend-progress-bar> cannot carry an accessible name.
+   Colors are core tokens only; the fallbacks cover TYPO3 12.4, which has
+   no --typo3-surface-container-high. */
+.passkey-adoption-meter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 100px;
+}
+
+.passkey-adoption-meter-track {
+  flex: 1 1 auto;
+  min-width: 60px;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 0.25rem;
+  background-color: var(--typo3-surface-container-high, var(--bs-secondary-bg));
+}
+
+.passkey-adoption-meter-fill {
+  height: 100%;
+  background-color: var(--typo3-component-primary-color);
+}
+
+.passkey-adoption-meter-value {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}

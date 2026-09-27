@@ -115,6 +115,7 @@ final class AdminModuleController
             ],
         );
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyDashboard.js');
+        $this->pageRenderer->addCssFile('EXT:nr_passkeys_be/Resources/Public/Css/backend.css');
         $this->pageRenderer->addInlineLanguageLabelFile(
             'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
             'js.',

@@ -714,7 +714,7 @@ function buildPasskeyUI(labels) {
   // "What are passkeys?" help toggle
   const helpContent = document.createElement('div');
   helpContent.id = 'passkey-help-content';
-  helpContent.className = 'alert alert-light small d-none mb-2';
+  helpContent.className = 'alert alert-notice small d-none mb-2';
   helpContent.textContent = labels.helpContent || 'Passkeys are a modern replacement for passwords. They use your device’s biometric sensors (fingerprint, face) or security keys to verify your identity. They’re faster and more secure than passwords because they can’t be phished or stolen.';
 
   const learnMore = document.createElement('a');

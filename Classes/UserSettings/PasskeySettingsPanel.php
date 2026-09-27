@@ -62,7 +62,7 @@ final class PasskeySettingsPanel
                 'Passkey management is unavailable. The TYPO3 encryption key is missing or too short (minimum 32 characters). Configure it in Admin Tools > Settings > Configure Installation-Wide Options.',
             );
 
-            return '<div class="alert alert-danger">' . \htmlspecialchars($warning, ENT_QUOTES, 'UTF-8') . '</div>';
+            return self::callout('danger', \htmlspecialchars($warning, ENT_QUOTES, 'UTF-8'));
         }
 
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
@@ -132,24 +132,24 @@ final class PasskeySettingsPanel
 
         return <<<HTML
         <style>.passkey-name-input{max-width:200px}</style>
-        <div class="alert alert-info">{$infoText}</div>
+        <div class="callout callout-info"><div class="callout-content"><div class="callout-body">{$infoText}</div></div></div>
         <div id="passkey-management-container"
              data-list-url="{$listUrl}"
              data-register-options-url="{$registerOptionsUrl}"
              data-register-verify-url="{$registerVerifyUrl}"
              data-rename-url="{$renameUrl}"
              data-remove-url="{$removeUrl}">
-            <h4>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h4>
-            <p class="text-body-secondary">{$description}</p>
-            <div id="passkey-single-warning" class="alert alert-warning d-none" role="status" aria-live="polite">{$singleKeyWarning}</div>
+            <h3>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h3>
+            <p class="text-muted">{$description}</p>
+            <div id="passkey-single-warning" class="callout callout-warning d-none" role="status" aria-live="polite"><div class="callout-content"><div class="callout-body">{$singleKeyWarning}</div></div></div>
             <div class="mb-3">
                 <div class="d-flex align-items-center gap-2">
                     <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" aria-describedby="passkey-name-help" />
                     <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
                 </div>
-                <small id="passkey-name-help" class="form-text text-body-secondary">{$nameHelp}</small>
+                <small id="passkey-name-help" class="form-text text-muted">{$nameHelp}</small>
             </div>
-            <div id="passkey-empty" class="alert alert-info d-none" role="status" aria-live="polite">{$noPasskeys}</div>
+            <div id="passkey-empty" class="callout callout-info d-none" role="status" aria-live="polite"><div class="callout-content"><div class="callout-body">{$noPasskeys}</div></div></div>
             <table class="table table-hover" id="passkey-list-table">
                 <thead>
                     <tr>
@@ -163,5 +163,17 @@ final class PasskeySettingsPanel
             </table>
         </div>
         HTML;
+    }
+
+    /**
+     * Core callout markup (the same structure f:be.infobox renders), without the
+     * Bootstrap .alert that has no place in a module body.
+     *
+     * @param string $state   callout state: info, warning, danger, success, notice
+     * @param string $message already escaped HTML
+     */
+    public static function callout(string $state, string $message): string
+    {
+        return '<div class="callout callout-' . $state . '"><div class="callout-content"><div class="callout-body">' . $message . '</div></div></div>';
     }
 }

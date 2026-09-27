@@ -7,7 +7,7 @@
             </trans-unit>
 
             <trans-unit id="widget.adoption.title">
-                <source>Passkey adoption (backend &amp; frontend)</source>
+                <source>Passkey adoption</source>
             </trans-unit>
             <trans-unit id="widget.adoption.description">
                 <source>Segmented doughnut of passkey adoption: an inner ring for backend users and, when the frontend passkeys extension is installed, an outer ring for frontend users. Each ring compares users with at least one active passkey against those without. Populations are shown separately, never combined.</source>

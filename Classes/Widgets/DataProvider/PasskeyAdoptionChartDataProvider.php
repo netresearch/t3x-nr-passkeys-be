@@ -27,18 +27,26 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
     /**
      * audienceKey => [withPasskeysColor, withoutPasskeysColor].
      *
+     * Chart.js paints on a canvas, so CSS variables cannot reach these. Every
+     * colour keeps at least 3:1 against the dashboard widget surface in both
+     * backend schemes (TYPO3 14.3: #f4f4f6 light, #1d1c21 dark), which bounds
+     * relative luminance to roughly 0.14-0.26. Two colours inside that band
+     * cannot reach 3:1 against each other, so adjacent segments are told apart
+     * by the border core draws between them (white in light, black in dark
+     * scheme) and by hue, never by lightness alone.
+     *
      * @var array<string, array{string, string}>
      */
     private const AUDIENCE_COLORS = [
-        'backend' => ['#4c7e3a', '#ff8700'],
-        // green / orange (current BE palette)
-        'frontend' => ['#2f99a4', '#c83c5a'],
+        'backend' => ['#3f7f35', '#bd5d00'],
+        // green / orange
+        'frontend' => ['#27808b', '#b8456b'],
     ];
 
     /**
      * @var array{string, string}
      */
-    private const FALLBACK_COLORS = ['#4c7e3a', '#ff8700'];
+    private const FALLBACK_COLORS = ['#3f7f35', '#bd5d00'];
 
     /**
      * @param iterable<PasskeyAdoptionStatsProviderInterface> $statsProviders
@@ -46,6 +54,12 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
     public function __construct(private iterable $statsProviders) {}
 
     /**
+     * One legend entry per audience and state ("Backend users: With passkeys"):
+     * the doughnut legend takes its entries from `labels` and its swatches from
+     * the first dataset, so shared labels would show only the first ring's
+     * colours. Each ring therefore carries the full label list, with zeros
+     * outside its own pair, and every ring carries the full colour list.
+     *
      * @return array{labels: list<string>, datasets: list<array{label: string, backgroundColor: list<string>, data: list<int>}>}
      */
     public function getChartData(): array
@@ -64,22 +78,40 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
                 PasskeyAudienceStats $b,
             ): int => \strcmp($a->audienceKey, $b->audienceKey),
         );
-        $datasets = [];
+        $withLabel = $this->translate('widget.adoption.label.with_passkeys', 'With passkeys');
+        $withoutLabel = $this->translate('widget.adoption.label.without_passkeys', 'Without passkeys');
+        $labels = [];
+        $colors = [];
+        $segmentLabels = [];
 
         foreach ($segments as $segment) {
-            $colors = self::AUDIENCE_COLORS[$segment->audienceKey] ?? self::FALLBACK_COLORS;
+            $segmentLabel = $this->translate('widget.adoption.segment.' . $segment->audienceKey, \ucfirst($segment->audienceKey));
+            $segmentLabels[] = $segmentLabel;
+            $pair = self::AUDIENCE_COLORS[$segment->audienceKey] ?? self::FALLBACK_COLORS;
+            $labels[] = $segmentLabel . ': ' . $withLabel;
+            $labels[] = $segmentLabel . ': ' . $withoutLabel;
+            $colors[] = $pair[0];
+            $colors[] = $pair[1];
+        }
+
+        $datasets = [];
+        $slots = \count($labels);
+
+        foreach ($segments as $index => $segment) {
+            $data = \array_merge(
+                \array_fill(0, 2 * $index, 0),
+                [$segment->usersWithPasskeys, $segment->usersWithoutPasskeys()],
+                \array_fill(0, $slots - 2 * $index - 2, 0),
+            );
             $datasets[] = [
-                'label' => $this->translate('widget.adoption.segment.' . $segment->audienceKey, \ucfirst($segment->audienceKey)),
-                'backgroundColor' => [$colors[0], $colors[1]],
-                'data' => [$segment->usersWithPasskeys, $segment->usersWithoutPasskeys()],
+                'label' => $segmentLabels[$index],
+                'backgroundColor' => $colors,
+                'data' => $data,
             ];
         }
 
         return [
-            'labels' => [
-                $this->translate('widget.adoption.label.with_passkeys', 'With passkeys'),
-                $this->translate('widget.adoption.label.without_passkeys', 'Without passkeys'),
-            ],
+            'labels' => $labels,
             'datasets' => $datasets,
         ];
     }
