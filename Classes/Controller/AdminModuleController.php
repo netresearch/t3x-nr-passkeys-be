@@ -153,6 +153,9 @@ final class AdminModuleController
         $menu = $this->createMenu($menuRegistry);
         $menu->setIdentifier('PasskeyManagementMenu');
 
+        // TYPO3 12/13 render this menu as a <select>; the label is its accessible name.
+        $menu->setLabel($this->translate('module.title', 'Passkey Management'));
+
         $dashboardItem = $this
             ->createMenuItem($menu)
             ->setTitle($this->translate('module.dashboard', 'Dashboard'))

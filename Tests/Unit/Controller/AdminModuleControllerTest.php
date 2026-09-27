@@ -56,6 +56,11 @@ final class AdminModuleControllerTest extends TestCase
 
     private UriBuilder&MockObject $uriBuilder;
 
+    /**
+     * @var list<Menu>
+     */
+    private array $addedMenus = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -106,6 +111,24 @@ final class AdminModuleControllerTest extends TestCase
         $menu
             ->method('setIdentifier')
             ->willReturnSelf();
+        $menuLabel = '';
+        $menu
+            ->method('setLabel')
+            ->willReturnCallback(
+                static function (string $label) use (&$menuLabel, $menu): Menu {
+                    $menuLabel = $label;
+
+                    return $menu;
+                },
+            );
+        $menu
+            ->method('getLabel')
+            ->willReturnCallback(
+                // By reference: an arrow function would capture the empty initial value.
+                static function () use (&$menuLabel): string {
+                    return $menuLabel;
+                },
+            );
         $menu
             ->method('makeMenuItem')
             ->willReturn($menuItem);
@@ -113,6 +136,16 @@ final class AdminModuleControllerTest extends TestCase
         $menuRegistry
             ->method('makeMenu')
             ->willReturn($menu);
+        $menuRegistry
+            ->method('addMenu')
+            ->willReturnCallback(
+                // addMenu() returns the registry on 14 and nothing on 12/13.
+                function (Menu $added) use ($menuRegistry): MenuRegistry {
+                    $this->addedMenus[] = $added;
+
+                    return $menuRegistry;
+                },
+            );
         $linkButton = $this->createMock(LinkButton::class);
         $linkButton
             ->method('setHref')
@@ -324,6 +357,22 @@ final class AdminModuleControllerTest extends TestCase
         $request = $this->createMock(ServerRequestInterface::class);
         $response = $this->subject->helpAction($request);
         self::assertSame($expectedResponse, $response);
+    }
+
+    #[Test]
+    public function docHeaderMenuCarriesALabelAsTheSelectsAccessibleName(): void
+    {
+        $moduleTemplate = $this->createModuleTemplateMock();
+        $moduleTemplate
+            ->method('renderResponse')
+            ->willReturn(new HtmlResponse('<html></html>'));
+        $this->moduleTemplateFactory
+            ->method('create')
+            ->willReturn($moduleTemplate);
+        $this->subject->helpAction($this->createMock(ServerRequestInterface::class));
+
+        self::assertCount(1, $this->addedMenus);
+        self::assertSame('Passkey Management', $this->addedMenus[0]->getLabel());
     }
 
     #[Test]
