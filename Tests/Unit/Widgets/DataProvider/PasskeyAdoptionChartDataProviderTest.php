@@ -128,9 +128,9 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
             ->method('sL')
             ->willReturnCallback(
                 static fn(string $key): string => match ($key) {
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:widget.adoption.label.with_passkeys' => 'Mit Passkeys',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:widget.adoption.label.without_passkeys' => 'Ohne Passkeys',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:widget.adoption.segment.backend' => 'Backend-Nutzer',
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.label.with_passkeys' => 'Mit Passkeys',
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.label.without_passkeys' => 'Ohne Passkeys',
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.segment.backend' => 'Backend-Nutzer',
                     default => '',
                 },
             );

@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Service\BackendPasskeyAdoptionStatsProvider;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyAdoptionChartDataProvider;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyCredentialsCountDataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -77,5 +78,20 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
         self::assertCount(1, $chartData['datasets']);
         self::assertSame(['#3f7f35', '#bd5d00'], $chartData['datasets'][0]['backgroundColor']);
         self::assertSame([2, 3], $chartData['datasets'][0]['data']);
+    }
+
+    #[Test]
+    public function adoptionChartLabelsRenderFromTheDashboardLanguageFile(): void
+    {
+        // A real LanguageService reading the shipped XLIFF, as in the backend.
+        $GLOBALS['LANG'] = $this
+            ->get(LanguageServiceFactory::class)
+            ->create('default');
+        $provider = $this->get(PasskeyAdoptionChartDataProvider::class);
+        self::assertInstanceOf(PasskeyAdoptionChartDataProvider::class, $provider);
+        $chartData = $provider->getChartData();
+
+        self::assertSame(['Backend users: With passkeys', 'Backend users: Without passkeys'], $chartData['labels']);
+        self::assertSame('Backend users', $chartData['datasets'][0]['label']);
     }
 }

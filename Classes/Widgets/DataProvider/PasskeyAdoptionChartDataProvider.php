@@ -10,8 +10,8 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Widgets\DataProvider;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\PasskeyAudienceStats;
-use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use Netresearch\NrPasskeysBe\Widgets\Adoption\PasskeyAdoptionStatsProviderInterface;
+use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Dashboard\Widgets\ChartDataProviderInterface;
 
 /**
@@ -22,7 +22,11 @@ use TYPO3\CMS\Dashboard\Widgets\ChartDataProviderInterface;
  */
 final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProviderInterface
 {
-    use TranslationTrait;
+    /**
+     * The widget's labels live beside its title and description; the shared
+     * TranslationTrait reads locallang.xlf, where the segment keys do not exist.
+     */
+    private const LABELS = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:';
 
     /**
      * audienceKey => [withPasskeysColor, withoutPasskeysColor].
@@ -78,14 +82,14 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
                 PasskeyAudienceStats $b,
             ): int => \strcmp($a->audienceKey, $b->audienceKey),
         );
-        $withLabel = $this->translate('widget.adoption.label.with_passkeys', 'With passkeys');
-        $withoutLabel = $this->translate('widget.adoption.label.without_passkeys', 'Without passkeys');
+        $withLabel = $this->label('widget.adoption.label.with_passkeys', 'With passkeys');
+        $withoutLabel = $this->label('widget.adoption.label.without_passkeys', 'Without passkeys');
         $labels = [];
         $colors = [];
         $segmentLabels = [];
 
         foreach ($segments as $segment) {
-            $segmentLabel = $this->translate('widget.adoption.segment.' . $segment->audienceKey, \ucfirst($segment->audienceKey));
+            $segmentLabel = $this->label('widget.adoption.segment.' . $segment->audienceKey, \ucfirst($segment->audienceKey));
             $segmentLabels[] = $segmentLabel;
             $pair = self::AUDIENCE_COLORS[$segment->audienceKey] ?? self::FALLBACK_COLORS;
             $labels[] = $segmentLabel . ': ' . $withLabel;
@@ -107,5 +111,20 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
         }
 
         return ['labels' => $labels, 'datasets' => $datasets];
+    }
+
+    private function label(string $key, string $fallback): string
+    {
+        $lang = $GLOBALS['LANG'] ?? null;
+
+        if ($lang instanceof LanguageService) {
+            $translated = $lang->sL(self::LABELS . $key);
+
+            if ($translated !== '') {
+                return $translated;
+            }
+        }
+
+        return $fallback;
     }
 }
