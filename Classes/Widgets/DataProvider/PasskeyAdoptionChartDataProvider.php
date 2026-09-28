@@ -58,7 +58,7 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
     public function __construct(private iterable $statsProviders) {}
 
     /**
-     * One legend entry per audience and state ("Backend users: With passkeys"):
+     * One legend entry per audience and state ("Backend: with passkeys"):
      * the doughnut legend takes its entries from `labels` and its swatches from
      * the first dataset, so shared labels would show only the first ring's
      * colours. Each ring therefore carries the full label list, with zeros
@@ -82,8 +82,8 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
                 PasskeyAudienceStats $b,
             ): int => \strcmp($a->audienceKey, $b->audienceKey),
         );
-        $withLabel = $this->label('widget.adoption.label.with_passkeys', 'With passkeys');
-        $withoutLabel = $this->label('widget.adoption.label.without_passkeys', 'Without passkeys');
+        $withLabel = $this->label('widget.adoption.label.with_passkeys', 'with passkeys');
+        $withoutLabel = $this->label('widget.adoption.label.without_passkeys', 'without passkeys');
         $labels = [];
         $colors = [];
         $segmentLabels = [];

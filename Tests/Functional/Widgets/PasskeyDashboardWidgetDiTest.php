@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Functional\Widgets;
 use Netresearch\NrPasskeysBe\Service\BackendPasskeyAdoptionStatsProvider;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyAdoptionChartDataProvider;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyCredentialsCountDataProvider;
+use Netresearch\NrPasskeysBe\Widgets\PasskeyAdoptionChartWidget;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
@@ -91,7 +92,32 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
         self::assertInstanceOf(PasskeyAdoptionChartDataProvider::class, $provider);
         $chartData = $provider->getChartData();
 
-        self::assertSame(['Backend users: With passkeys', 'Backend users: Without passkeys'], $chartData['labels']);
-        self::assertSame('Backend users', $chartData['datasets'][0]['label']);
+        self::assertSame(['Backend: with passkeys', 'Backend: without passkeys'], $chartData['labels']);
+        self::assertSame('Backend', $chartData['datasets'][0]['label']);
+
+        // The labels equal the English fallbacks, so prove they resolve from the file itself.
+        $file = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:';
+
+        foreach ([
+            'widget.adoption.segment.backend' => 'Backend',
+            'widget.adoption.label.with_passkeys' => 'with passkeys',
+            'widget.adoption.label.without_passkeys' => 'without passkeys',
+        ] as $key => $text) {
+            self::assertSame($text, $GLOBALS['LANG']->sL($file . $key), $key);
+        }
+    }
+
+    #[Test]
+    public function adoptionWidgetIsRegisteredWithTheCompactLegendOnEveryVersion(): void
+    {
+        // 12.4/13.4 register PasskeyAdoptionChartWidget, 14.3 its admin-only subclass.
+        $widget = $this->get('dashboard.widget.nrpasskeys.adoption');
+        self::assertInstanceOf(PasskeyAdoptionChartWidget::class, $widget);
+        $graphConfig = $widget->getEventData()['graphConfig'];
+        self::assertIsArray($graphConfig);
+        self::assertSame(
+            ['boxWidth' => 12, 'boxHeight' => 12],
+            $graphConfig['options']['plugins']['legend']['labels'] ?? null,
+        );
     }
 }

@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Widgets\DataProvider;
 
+use DOMDocument;
 use Netresearch\NrPasskeysBe\Domain\Dto\PasskeyAudienceStats;
 use Netresearch\NrPasskeysBe\Tests\Unit\Widgets\Adoption\AdoptionStatsProviderMockTrait;
 use Netresearch\NrPasskeysBe\Widgets\Adoption\PasskeyAdoptionStatsProviderInterface;
@@ -46,7 +47,7 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
         $chartData = $this
             ->subject([$this->statsProvider(new PasskeyAudienceStats('backend', 10, 6, 12))])
             ->getChartData();
-        self::assertSame(['Backend: With passkeys', 'Backend: Without passkeys'], $chartData['labels']);
+        self::assertSame(['Backend: with passkeys', 'Backend: without passkeys'], $chartData['labels']);
         self::assertCount(1, $chartData['datasets']);
         self::assertSame('Backend', $chartData['datasets'][0]['label']);
         self::assertSame(['#3f7f35', '#bd5d00'], $chartData['datasets'][0]['backgroundColor']);
@@ -70,10 +71,10 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
         // One legend entry per audience and state, so the legend names every ring.
         self::assertSame(
             [
-                'Backend: With passkeys',
-                'Backend: Without passkeys',
-                'Frontend: With passkeys',
-                'Frontend: Without passkeys',
+                'Backend: with passkeys',
+                'Backend: without passkeys',
+                'Frontend: with passkeys',
+                'Frontend: without passkeys',
             ],
             $chartData['labels'],
         );
@@ -207,7 +208,7 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
             )
             ->getChartData();
 
-        $xml = new \DOMDocument();
+        $xml = new DOMDocument();
         self::assertTrue($xml->load(__DIR__ . '/../../../../Resources/Private/Language/locallang_dashboard.xlf'));
         $ids = [];
 

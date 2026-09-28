@@ -15,17 +15,17 @@
 
             <!-- Per-audience segment labels (Chart.js dataset labels / tooltips) -->
             <trans-unit id="widget.adoption.segment.backend">
-                <source>Backend users</source>
+                <source>Backend</source>
             </trans-unit>
             <trans-unit id="widget.adoption.segment.frontend">
-                <source>Frontend users</source>
+                <source>Frontend</source>
             </trans-unit>
 
             <trans-unit id="widget.adoption.label.with_passkeys">
-                <source>With passkeys</source>
+                <source>with passkeys</source>
             </trans-unit>
             <trans-unit id="widget.adoption.label.without_passkeys">
-                <source>Without passkeys</source>
+                <source>without passkeys</source>
             </trans-unit>
 
             <trans-unit id="widget.credentials.title">

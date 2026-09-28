@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\Widgets;
 
 use Netresearch\NrPasskeysBe\Widgets\AdminOnlyDoughnutChartWidget;
 use Netresearch\NrPasskeysBe\Widgets\AdminOnlyNumberWithIconWidget;
+use Netresearch\NrPasskeysBe\Widgets\PasskeyAdoptionChartWidget;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Dashboard\Widgets\AdminOnlyWidgetInterface;
@@ -45,6 +46,7 @@ final class AdminOnlyWidgetWiringTest extends TestCase
     {
         self::assertTrue(\is_a(AdminOnlyDoughnutChartWidget::class, AdminOnlyWidgetInterface::class, true));
         self::assertTrue(\is_a(AdminOnlyDoughnutChartWidget::class, DoughnutChartWidget::class, true));
+        self::assertTrue(\is_a(AdminOnlyDoughnutChartWidget::class, PasskeyAdoptionChartWidget::class, true));
     }
 
     #[Test]
