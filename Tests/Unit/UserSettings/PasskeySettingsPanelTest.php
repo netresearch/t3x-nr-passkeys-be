@@ -473,7 +473,10 @@ final class PasskeySettingsPanelTest extends TestCase
         self::assertStringContainsString('<p class="text-muted">', $html);
 
         // One level below what precedes the panel: the v14 setup module's h2 tab heading, the h1 on v12/v13 (h4 skipped levels).
-        self::assertMatchesRegularExpression('#<' . PasskeySettingsPanel::headingTag() . '>[^<]*<span class="badge #', $html);
+        self::assertMatchesRegularExpression(
+            '#<' . PasskeySettingsPanel::headingTag() . '>[^<]*<span class="badge #',
+            $html,
+        );
         self::assertStringNotContainsString('<h4', $html);
 
         // Column headers name their column for assistive technology.
@@ -487,7 +490,9 @@ final class PasskeySettingsPanelTest extends TestCase
     public static function headingLevels(): iterable
     {
         yield 'TYPO3 12: follows the h1' => [12, 'h2'];
+
         yield 'TYPO3 13: follows the h1' => [13, 'h2'];
+
         yield 'TYPO3 14: follows the tab h2' => [14, 'h3'];
     }
 

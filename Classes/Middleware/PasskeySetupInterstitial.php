@@ -280,6 +280,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         $setup = $userTsConfig['setup.'] ?? null;
         $fields = \is_array($setup) ? $setup['fields.'] ?? null : null;
         $fields = \is_array($fields) ? $fields : [];
+
         $options = $fields['colorScheme.'] ?? null;
         $disabled = \is_array($options) ? $options['disabled'] ?? '0' : '0';
         $default = $fields['colorScheme'] ?? null;

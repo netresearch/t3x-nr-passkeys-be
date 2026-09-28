@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Resources;
 
+use DOMDocument;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -48,7 +49,14 @@ final class BackendThemeMarkupTest extends TestCase
         );
 
         // The name's label key has to exist, or the bar would be named by the bare key.
-        self::assertSame(1, \preg_match('#<progress [^>]*aria-label="\{f:translate\(key: \'([^\']+)\', extensionName: \'NrPasskeysBe\'\)\}: \{group\.title\}"#', $html, $key));
+        self::assertSame(
+            1,
+            \preg_match(
+                '#<progress [^>]*aria-label="\{f:translate\(key: \'([^\']+)\', extensionName: \'NrPasskeysBe\'\)\}: \{group\.title\}"#',
+                $html,
+                $key,
+            ),
+        );
         self::assertArrayHasKey($key[1], $this->xliffSources('Resources/Private/Language/locallang.xlf'));
 
         // The visible percentage stays, hidden from assistive technology (the element announces it).
@@ -111,7 +119,11 @@ final class BackendThemeMarkupTest extends TestCase
     {
         // Help.html renders these XLIFF sources raw, with the dashboard URL as argument.
         $help = $this->read('Resources/Private/Templates/AdminModule/Help.html');
-        \preg_match_all('#<f:translate key="([^"]+)" extensionName="NrPasskeysBe" arguments="\{0: dashboardUrl\}" />#', $help, $keys);
+        \preg_match_all(
+            '#<f:translate key="([^"]+)" extensionName="NrPasskeysBe" arguments="\{0: dashboardUrl\}" />#',
+            $help,
+            $keys,
+        );
         self::assertSame(['help.rollout.step3Body', 'help.rollout.step6Body', 'help.faq.answer4'], $keys[1]);
 
         $sources = [];
@@ -122,8 +134,12 @@ final class BackendThemeMarkupTest extends TestCase
 
         \ksort($sources);
         $withLinks = \array_filter($sources, static fn(string $source): bool => \str_contains($source, '<a '));
+
         // These three are the only inline links in the extension's texts (sorted by id).
-        self::assertSame(['help.faq.answer4', 'help.rollout.step3Body', 'help.rollout.step6Body'], \array_keys($withLinks));
+        self::assertSame(
+            ['help.faq.answer4', 'help.rollout.step3Body', 'help.rollout.step6Body'],
+            \array_keys($withLinks),
+        );
 
         foreach ($withLinks as $id => $source) {
             self::assertMatchesRegularExpression('#<a href="%1\$s" class="text-decoration-underline">#', $source, $id);
@@ -135,12 +151,14 @@ final class BackendThemeMarkupTest extends TestCase
      */
     private function xliffSources(string $path): array
     {
-        $xml = new \DOMDocument();
+        $xml = new DOMDocument();
         self::assertTrue($xml->loadXML($this->read($path)));
         $sources = [];
 
         foreach ($xml->getElementsByTagName('trans-unit') as $unit) {
-            $source = $unit->getElementsByTagName('source')->item(0);
+            $source = $unit
+                ->getElementsByTagName('source')
+                ->item(0);
             $sources[$unit->getAttribute('id')] = $source !== null ? $source->textContent : '';
         }
 
