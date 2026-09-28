@@ -39,6 +39,11 @@ final class AdminModuleController
     use TranslationTrait;
 
     /**
+     * English fallback for the module.title label.
+     */
+    private const MODULE_TITLE_FALLBACK = 'Passkey Management';
+
+    /**
      * Resolved docheader ComponentFactory (TYPO3 v14+), or null on v12/v13 where it
      * does not exist. false means "not yet resolved" (lazy, resolved at most once).
      */
@@ -59,7 +64,7 @@ final class AdminModuleController
     public function dashboardAction(ServerRequestInterface $request): ResponseInterface
     {
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
-        $moduleTemplate->setTitle($this->translate('module.title', 'Passkey Management'));
+        $moduleTemplate->setTitle($this->translate('module.title', self::MODULE_TITLE_FALLBACK));
         $this->buildDocHeaderMenu($moduleTemplate, 'dashboard');
         $this->addHelpButton($moduleTemplate);
         $stats = $this->adoptionStatsService->getStats();
@@ -131,7 +136,7 @@ final class AdminModuleController
     {
         $moduleTemplate = $this->moduleTemplateFactory->create($request);
         $moduleTemplate->setTitle(
-            $this->translate('module.title', 'Passkey Management') . ' – ' . $this->translate('module.help', 'Help'),
+            $this->translate('module.title', self::MODULE_TITLE_FALLBACK) . ' – ' . $this->translate('module.help', 'Help'),
         );
         $this->buildDocHeaderMenu($moduleTemplate, 'help');
         $this->addHelpButton($moduleTemplate);
@@ -154,7 +159,7 @@ final class AdminModuleController
         $menu->setIdentifier('PasskeyManagementMenu');
 
         // TYPO3 12/13 render this menu as a <select>; the label is its accessible name.
-        $menu->setLabel($this->translate('module.title', 'Passkey Management'));
+        $menu->setLabel($this->translate('module.title', self::MODULE_TITLE_FALLBACK));
 
         $dashboardItem = $this
             ->createMenuItem($menu)
