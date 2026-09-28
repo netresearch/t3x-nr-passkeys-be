@@ -476,6 +476,9 @@
             <trans-unit id="js.manage.rename" resname="js.manage.rename">
                 <source>Rename</source>
             </trans-unit>
+            <trans-unit id="js.manage.rename.input" resname="js.manage.rename.input">
+                <source>New name for this passkey</source>
+            </trans-unit>
             <trans-unit id="js.manage.remove" resname="js.manage.remove">
                 <source>Remove</source>
             </trans-unit>

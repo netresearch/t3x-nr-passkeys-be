@@ -310,6 +310,7 @@ class PasskeyManagement {
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'form-control form-control-sm';
+    input.setAttribute('aria-label', this.translate('js.manage.rename.input', 'New name for this passkey'));
     input.value = currentLabel;
     input.maxLength = 128;
 
