@@ -47,6 +47,10 @@ final class BackendThemeMarkupTest extends TestCase
             $html,
         );
 
+        // The name's label key has to exist, or the bar would be named by the bare key.
+        self::assertSame(1, \preg_match('#<progress [^>]*aria-label="\{f:translate\(key: \'([^\']+)\', extensionName: \'NrPasskeysBe\'\)\}: \{group\.title\}"#', $html, $key));
+        self::assertArrayHasKey($key[1], $this->xliffSources('Resources/Private/Language/locallang.xlf'));
+
         // The visible percentage stays, hidden from assistive technology (the element announces it).
         self::assertStringContainsString(
             '<span class="passkey-adoption-meter-value" aria-hidden="true"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>',

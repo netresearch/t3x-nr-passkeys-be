@@ -181,4 +181,47 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
 
         return (\max($la, $lb) + 0.05) / (\min($la, $lb) + 0.05);
     }
+
+    #[Test]
+    public function everyLabelKeyTheProviderRequestsExistsInTheDashboardLanguageFile(): void
+    {
+        $prefix = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:';
+        $requested = [];
+        $languageService = $this->createMock(LanguageService::class);
+        $languageService
+            ->method('sL')
+            ->willReturnCallback(
+                static function (string $key) use (&$requested): string {
+                    $requested[] = $key;
+
+                    return '';
+                },
+            );
+        $GLOBALS['LANG'] = $languageService;
+        $this
+            ->subject(
+                [
+                    $this->statsProvider(new PasskeyAudienceStats('backend', 1, 1, 1)),
+                    $this->statsProvider(new PasskeyAudienceStats('frontend', 1, 1, 1)),
+                ],
+            )
+            ->getChartData();
+
+        $xml = new \DOMDocument();
+        self::assertTrue($xml->load(__DIR__ . '/../../../../Resources/Private/Language/locallang_dashboard.xlf'));
+        $ids = [];
+
+        foreach ($xml->getElementsByTagName('trans-unit') as $unit) {
+            $ids[] = $prefix . $unit->getAttribute('id');
+        }
+
+        // A misspelt key would silently render the English fallback.
+        self::assertContains($prefix . 'widget.adoption.label.with_passkeys', $requested);
+        self::assertContains($prefix . 'widget.adoption.label.without_passkeys', $requested);
+        self::assertContains($prefix . 'widget.adoption.segment.frontend', $requested);
+
+        foreach (\array_unique($requested) as $key) {
+            self::assertContains($key, $ids, $key);
+        }
+    }
 }
