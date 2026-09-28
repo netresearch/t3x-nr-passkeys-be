@@ -103,6 +103,49 @@ final class BackendThemeMarkupTest extends TestCase
     }
 
     #[Test]
+    public function linksInsideHelpTextAreUnderlined(): void
+    {
+        // Help.html renders these XLIFF sources raw, with the dashboard URL as argument.
+        $help = $this->read('Resources/Private/Templates/AdminModule/Help.html');
+        \preg_match_all('#<f:translate key="([^"]+)" extensionName="NrPasskeysBe" arguments="\{0: dashboardUrl\}" />#', $help, $keys);
+        self::assertSame(['help.rollout.step3Body', 'help.rollout.step6Body', 'help.faq.answer4'], $keys[1]);
+
+        $sources = [];
+
+        foreach (\glob(self::ROOT . 'Resources/Private/Language/*.xlf') ?: [] as $file) {
+            $sources += $this->xliffSources('Resources/Private/Language/' . \basename($file));
+        }
+
+        \ksort($sources);
+        $withLinks = \array_filter($sources, static fn(string $source): bool => \str_contains($source, '<a '));
+        // These three are the only inline links in the extension's texts (sorted by id).
+        self::assertSame(['help.faq.answer4', 'help.rollout.step3Body', 'help.rollout.step6Body'], \array_keys($withLinks));
+
+        foreach ($withLinks as $id => $source) {
+            self::assertMatchesRegularExpression('#<a href="%1\$s" class="text-decoration-underline">#', $source, $id);
+        }
+    }
+
+    /**
+     * @return array<string, string> trans-unit id => source text (entities decoded)
+     */
+    private function xliffSources(string $path): array
+    {
+        $xml = new \DOMDocument();
+        self::assertTrue($xml->loadXML($this->read($path)));
+        $sources = [];
+
+        foreach ($xml->getElementsByTagName('trans-unit') as $unit) {
+            $source = $unit->getElementsByTagName('source')->item(0);
+            $sources[$unit->getAttribute('id')] = $source !== null ? $source->textContent : '';
+        }
+
+        \ksort($sources);
+
+        return $sources;
+    }
+
+    #[Test]
     public function mutedTextUsesTheCoreClass(): void
     {
         foreach ([

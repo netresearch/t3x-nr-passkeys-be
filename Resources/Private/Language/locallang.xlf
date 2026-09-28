@@ -639,7 +639,7 @@
                 <source>Step 3 — Set groups to &lt;em&gt;Encourage&lt;/em&gt;</source>
             </trans-unit>
             <trans-unit id="help.rollout.step3Body" resname="help.rollout.step3Body">
-                <source>On the &lt;a href="%1$s"&gt;Dashboard&lt;/a&gt; tab, change a group's enforcement level to &lt;strong&gt;Encourage&lt;/strong&gt;. Users in that group will see a non-blocking banner on every backend login reminding them to register a passkey. They can dismiss the banner and continue working normally.</source>
+                <source>On the &lt;a href="%1$s" class="text-decoration-underline"&gt;Dashboard&lt;/a&gt; tab, change a group's enforcement level to &lt;strong&gt;Encourage&lt;/strong&gt;. Users in that group will see a non-blocking banner on every backend login reminding them to register a passkey. They can dismiss the banner and continue working normally.</source>
             </trans-unit>
             <trans-unit id="help.rollout.step3TipTitle" resname="help.rollout.step3TipTitle">
                 <source>Tip</source>
@@ -666,7 +666,7 @@
                 <source>Step 6 — Monitor adoption</source>
             </trans-unit>
             <trans-unit id="help.rollout.step6Body" resname="help.rollout.step6Body">
-                <source>Use the &lt;a href="%1$s"&gt;Dashboard&lt;/a&gt; tab to track overall adoption rates, per-group progress, and identify users who have not yet registered passkeys.</source>
+                <source>Use the &lt;a href="%1$s" class="text-decoration-underline"&gt;Dashboard&lt;/a&gt; tab to track overall adoption rates, per-group progress, and identify users who have not yet registered passkeys.</source>
             </trans-unit>
             <trans-unit id="help.recovery.heading" resname="help.recovery.heading">
                 <source>Recovery procedures</source>
@@ -843,7 +843,7 @@
                 <source>How do I know how many users have adopted passkeys?</source>
             </trans-unit>
             <trans-unit id="help.faq.answer4" resname="help.faq.answer4">
-                <source>The &lt;a href="%1$s"&gt;Dashboard&lt;/a&gt; tab shows the overall adoption rate, per-group statistics, and a list of users who have not yet registered a passkey. Use these numbers to plan your enforcement timeline.</source>
+                <source>The &lt;a href="%1$s" class="text-decoration-underline"&gt;Dashboard&lt;/a&gt; tab shows the overall adoption rate, per-group statistics, and a list of users who have not yet registered a passkey. Use these numbers to plan your enforcement timeline.</source>
             </trans-unit>
             <trans-unit id="help.faq.question5" resname="help.faq.question5">
                 <source>Can users still use passwords during the grace period?</source>
