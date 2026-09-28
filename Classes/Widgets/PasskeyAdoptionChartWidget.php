@@ -29,7 +29,7 @@ class PasskeyAdoptionChartWidget extends DoughnutChartWidget
     public const LEGEND_BOX_SIZE = 12;
 
     /**
-     * @return array<string, mixed>
+     * @return array<array-key, mixed>
      */
     public function getEventData(): array
     {
