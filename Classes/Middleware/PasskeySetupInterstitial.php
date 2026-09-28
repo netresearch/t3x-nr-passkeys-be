@@ -22,6 +22,7 @@ use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\Locale;
 
@@ -250,16 +251,45 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
     }
 
     /**
-     * Resolve the user's backend color scheme preference (TYPO3 v13.3+).
-     *
-     * Returns 'light', 'dark' or 'auto'. On v12 (no colorScheme user setting)
-     * this returns 'auto', which follows the operating system preference.
+     * The backend colour scheme of this user, as core's PageRenderer decides it.
      */
     private function resolveColorScheme(BackendUserAuthentication $backendUser): string
     {
-        $scheme = $backendUser->uc['colorScheme'] ?? null;
+        return self::colorSchemeFor($backendUser->uc, $backendUser->getTSConfig(), (new Typo3Version())->getMajorVersion());
+    }
 
-        return \is_string($scheme) && \in_array($scheme, ['light', 'dark'], true) ? $scheme : 'auto';
+    /**
+     * Mirrors core's PageRenderer (13.4.35 and 14.3.7): the user setting wins,
+     * then the setup.fields.colorScheme TSconfig default, then "auto"; with
+     * setup.fields.colorScheme.disabled = 1 the TSconfig value is forced and
+     * falls back to "light". TYPO3 12 has a light backend only.
+     *
+     * @param array<array-key, mixed> $uc           backend user settings
+     * @param array<array-key, mixed> $userTsConfig backend user TSconfig
+     *
+     * @return 'light'|'dark'|'auto'
+     *
+     * @internal
+     */
+    public static function colorSchemeFor(array $uc, array $userTsConfig, int $majorVersion): string
+    {
+        if ($majorVersion < 13) {
+            return 'light';
+        }
+
+        $setup = $userTsConfig['setup.'] ?? null;
+        $fields = \is_array($setup) ? $setup['fields.'] ?? null : null;
+        $fields = \is_array($fields) ? $fields : [];
+        $options = $fields['colorScheme.'] ?? null;
+        $disabled = \is_array($options) ? $options['disabled'] ?? '0' : '0';
+        $default = $fields['colorScheme'] ?? null;
+        $scheme = $uc['colorScheme'] ?? $default ?? 'auto';
+
+        if ($disabled === '1') {
+            $scheme = $default ?? 'light';
+        }
+
+        return \in_array($scheme, ['light', 'dark', 'auto'], true) ? $scheme : 'auto';
     }
 
     /**
