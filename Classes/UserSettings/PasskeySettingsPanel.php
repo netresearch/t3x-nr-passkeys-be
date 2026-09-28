@@ -155,10 +155,10 @@ final class PasskeySettingsPanel
             <table class="table table-hover" id="passkey-list-table">
                 <thead>
                     <tr>
-                        <th>{$nameLabel}</th>
-                        <th>{$createdLabel}</th>
-                        <th>{$lastUsedLabel}</th>
-                        <th>{$actionsLabel}</th>
+                        <th scope="col">{$nameLabel}</th>
+                        <th scope="col">{$createdLabel}</th>
+                        <th scope="col">{$lastUsedLabel}</th>
+                        <th scope="col">{$actionsLabel}</th>
                     </tr>
                 </thead>
                 <tbody id="passkey-list-body"></tbody>
@@ -186,6 +186,14 @@ final class PasskeySettingsPanel
      */
     public static function headingTag(): string
     {
-        return (new Typo3Version())->getMajorVersion() >= 14 ? 'h3' : 'h2';
+        return self::headingTagFor((new Typo3Version())->getMajorVersion());
+    }
+
+    /**
+     * @internal
+     */
+    public static function headingTagFor(int $majorVersion): string
+    {
+        return $majorVersion >= 14 ? 'h3' : 'h2';
     }
 }

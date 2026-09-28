@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\UserSettings;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanel;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -19,7 +20,6 @@ use stdClass;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\Uri;
-use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -473,9 +473,28 @@ final class PasskeySettingsPanelTest extends TestCase
         self::assertStringContainsString('<p class="text-muted">', $html);
 
         // One level below what precedes the panel: the v14 setup module's h2 tab heading, the h1 on v12/v13 (h4 skipped levels).
-        $heading = (new Typo3Version())->getMajorVersion() >= 14 ? 'h3' : 'h2';
-        self::assertSame($heading, PasskeySettingsPanel::headingTag());
-        self::assertMatchesRegularExpression('#<' . $heading . '>[^<]*<span class="badge #', $html);
+        self::assertMatchesRegularExpression('#<' . PasskeySettingsPanel::headingTag() . '>[^<]*<span class="badge #', $html);
         self::assertStringNotContainsString('<h4', $html);
+
+        // Column headers name their column for assistive technology.
+        self::assertSame(4, \substr_count($html, '<th scope="col">'));
+        self::assertStringNotContainsString('<th>', $html);
+    }
+
+    /**
+     * @return iterable<string, array{int, string}>
+     */
+    public static function headingLevels(): iterable
+    {
+        yield 'TYPO3 12: follows the h1' => [12, 'h2'];
+        yield 'TYPO3 13: follows the h1' => [13, 'h2'];
+        yield 'TYPO3 14: follows the tab h2' => [14, 'h3'];
+    }
+
+    #[Test]
+    #[DataProvider('headingLevels')]
+    public function panelHeadingIsOneLevelBelowWhatPrecedesItOnEachVersion(int $major, string $expected): void
+    {
+        self::assertSame($expected, PasskeySettingsPanel::headingTagFor($major));
     }
 }
