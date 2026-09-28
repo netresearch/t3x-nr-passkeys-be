@@ -35,8 +35,9 @@ jobs:
       package-manager: npm
       node-version: '24'
       install-cmd: npm ci --no-audit --no-fund
-      # lcov for Codecov, text for the job log; vitest's own defaults write
-      # neither format.
+      # vitest.config.mjs already writes text, json, html and lcov; these flags
+      # replace that list with the two CI uses: lcov for Codecov, text for the
+      # job log.
       test-cmd: npm run test:js:coverage -- --coverage.reporter=lcov --coverage.reporter=text
       coverage-upload: true
       coverage-file: ./coverage/lcov.info

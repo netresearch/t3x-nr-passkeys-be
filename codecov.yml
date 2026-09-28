@@ -21,6 +21,10 @@ coverage:
     patch:
       default:
         target: auto
+        flags:
+          - unit
+          - functional
+          - fuzz
 
 flags:
   unit:
