@@ -14,6 +14,7 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 | `release.yml` | Release orchestrator -- tag push triggers build + TER publish + Packagist verify + docs verify + atomic GitHub release. Thin caller of `typo3-ci-workflows/release-typo3-extension.yml@main` |
 | `republish.yml` | `workflow_dispatch` manual re-run of TER / docs / Packagist verification for an existing tag. Never mutates the GitHub release. Thin caller of `typo3-ci-workflows/republish.yml@main` |
 | `docs.yml` | Documentation render check (`typo3-ci-workflows/docs.yml@main`) |
+| `js-tests.yml` | Vitest suite (`npm run test:js`) via the shared `netresearch/.github` `node-test.yml`; coverage to Codecov (no flag: `codecov.yml` declares PHP flags only) |
 | `check-template-drift.yml` | Enforces that `checks.yml` stays byte-identical to the org template |
 | `ddev-hardening.yml` | Local job: DDEV ref-name sanitization check |
 | `auto-merge-deps.yml` | Auto-merge dependency PRs (Dependabot/Renovate) |

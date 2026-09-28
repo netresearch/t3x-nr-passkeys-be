@@ -1,0 +1,44 @@
+name: JavaScript Tests
+
+# Runs the Vitest suite in Tests/JavaScript (`npm run test:js`). The ES
+# modules in Resources/Public/JavaScript have unit tests, but no workflow ran
+# them: the shared typo3-ci-workflows ci.yml has no JavaScript job.
+#
+# Thin caller of the shared node-test reusable, so the action pins and
+# harden-runner stay maintained centrally. Coverage (vitest.config.mjs
+# already counts every module in Resources/Public/JavaScript/) goes to
+# Codecov without a flag: codecov.yml declares flags for the PHP suites only,
+# and the reusable's default flag `unittests` is not one of them.
+# (js-tests.yml is not part of the typo3-extension template, so
+# check-template-drift.yml does not byte-compare it.)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  vitest:
+    uses: netresearch/.github/.github/workflows/node-test.yml@main
+    permissions:
+      contents: read
+    with:
+      package-manager: npm
+      node-version: '24'
+      install-cmd: npm ci --no-audit --no-fund
+      # lcov for Codecov, text for the job log; vitest's own defaults write
+      # neither format.
+      test-cmd: npm run test:js:coverage -- --coverage.reporter=lcov --coverage.reporter=text
+      coverage-upload: true
+      coverage-file: ./coverage/lcov.info
+      coverage-flags: ''
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
