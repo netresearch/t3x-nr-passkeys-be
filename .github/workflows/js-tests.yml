@@ -7,8 +7,9 @@ name: JavaScript Tests
 # Thin caller of the shared node-test reusable, so the action pins and
 # harden-runner stay maintained centrally. Coverage (vitest.config.mjs
 # already counts every module in Resources/Public/JavaScript/) goes to
-# Codecov without a flag: codecov.yml declares flags for the PHP suites only,
-# and the reusable's default flag `unittests` is not one of them.
+# Codecov under the `js` flag that codecov.yml declares for that directory;
+# its project status is informational, and the default project status
+# covers the PHP flags only.
 # (js-tests.yml is not part of the typo3-extension template, so
 # check-template-drift.yml does not byte-compare it.)
 
@@ -39,6 +40,6 @@ jobs:
       test-cmd: npm run test:js:coverage -- --coverage.reporter=lcov --coverage.reporter=text
       coverage-upload: true
       coverage-file: ./coverage/lcov.info
-      coverage-flags: ''
+      coverage-flags: js
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

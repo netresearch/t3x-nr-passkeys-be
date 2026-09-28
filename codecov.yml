@@ -4,9 +4,20 @@ codecov:
 coverage:
   status:
     project:
+      # PHP coverage keeps its own gate: the JavaScript modules are counted
+      # separately, so adding them does not move the PHP figure.
       default:
         target: auto
         threshold: 2%
+        flags:
+          - unit
+          - functional
+          - fuzz
+      js:
+        target: auto
+        informational: true
+        flags:
+          - js
     patch:
       default:
         target: auto
@@ -23,6 +34,10 @@ flags:
   fuzz:
     paths:
       - Classes/
+    carryforward: true
+  js:
+    paths:
+      - Resources/Public/JavaScript/
     carryforward: true
 
 component_management:
