@@ -11,7 +11,7 @@
   "license_location_status": "Met",
   "license_location_justification": "The licence file is in the repository root: https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/LICENSE",
   "release_notes_status": "Met",
-  "release_notes_justification": "Human-readable release notes per version are kept in https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Changelog/Index.rst; it covers the latest release, v1.0.0.",
+  "release_notes_justification": "Human-readable release notes per version are kept in https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Changelog/Index.rst; it covers the latest release, v1.0.1.",
   "repo_distributed_status": "Met",
   "repo_distributed_justification": "The repository uses git, hosted at https://github.com/netresearch/t3x-nr-passkeys-be",
   "repo_public_status": "Met",
