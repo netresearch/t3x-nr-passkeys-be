@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\UserSettings;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanel;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -315,7 +316,7 @@ final class PasskeySettingsPanelTest extends TestCase
         $this->setUpBackendUser(1);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short';
         $result = $this->subject->render([]);
-        self::assertStringContainsString('alert alert-danger', $result);
+        self::assertStringContainsString('callout callout-danger', $result);
         self::assertStringContainsString('encryption key', $result);
         self::assertStringNotContainsString('passkey-management-container', $result);
     }
@@ -326,7 +327,7 @@ final class PasskeySettingsPanelTest extends TestCase
         $this->setUpBackendUser(1);
         unset($GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey']);
         $result = $this->subject->render([]);
-        self::assertStringContainsString('alert alert-danger', $result);
+        self::assertStringContainsString('callout callout-danger', $result);
         self::assertStringNotContainsString('passkey-management-container', $result);
     }
 
@@ -341,7 +342,7 @@ final class PasskeySettingsPanelTest extends TestCase
             ->willReturn(0);
         $result = $this->subject->render([]);
         self::assertStringContainsString('passkey-management-container', $result);
-        self::assertStringNotContainsString('alert alert-danger', $result);
+        self::assertStringNotContainsString('callout callout-danger', $result);
     }
 
     #[Test]
@@ -353,12 +354,12 @@ final class PasskeySettingsPanelTest extends TestCase
             ->method('countByBeUser')
             ->willReturn(0);
         $result = $this->subject->render([]);
-        self::assertStringContainsString('class="alert alert-info"', $result);
+        self::assertStringContainsString('class="callout callout-info"', $result);
         self::assertStringContainsString('biometric or device-based authentication', $result);
         self::assertStringContainsString('at least two passkeys', $result);
 
         // Info box must appear BEFORE the management container
-        $infoBoxPos = \strpos($result, 'class="alert alert-info"');
+        $infoBoxPos = \strpos($result, 'class="callout callout-info"');
         $containerPos = \strpos($result, 'id="passkey-management-container"');
         self::assertNotFalse($infoBoxPos);
         self::assertNotFalse($containerPos);
@@ -436,7 +437,7 @@ final class PasskeySettingsPanelTest extends TestCase
 
         // Without LanguageService, the translate trait returns the fallback string
         $result = $this->subject->render([]);
-        self::assertStringContainsString('alert-danger', $result);
+        self::assertStringContainsString('callout-danger', $result);
         self::assertStringContainsString('encryption key is missing', $result);
     }
 
@@ -452,5 +453,53 @@ final class PasskeySettingsPanelTest extends TestCase
         GeneralUtility::setSingletonInstance(PageRenderer::class, $this->pageRenderer);
         GeneralUtility::addInstance(CredentialRepository::class, $this->credentialRepository);
         GeneralUtility::setSingletonInstance(UriBuilder::class, $this->uriBuilder);
+    }
+
+    #[Test]
+    public function panelUsesCoreCalloutsMutedTextAndAHeadingOneLevelBelowItsContext(): void
+    {
+        $html = $this->subject->buildHtml(
+            1,
+            ['list' => '/l', 'registerOptions' => '/o', 'registerVerify' => '/v', 'rename' => '/r', 'remove' => '/d'],
+        );
+
+        // .alert is Bootstrap markup; a module body uses core's callout.
+        self::assertStringNotContainsString('class="alert', $html);
+        self::assertStringContainsString('id="passkey-single-warning" class="callout callout-warning d-none"', $html);
+        self::assertStringContainsString('id="passkey-empty" class="callout callout-info d-none"', $html);
+
+        // text-body-secondary has no rule in core backend.css; text-muted has one in 12.4, 13.4 and 14.3.
+        self::assertStringNotContainsString('text-body-secondary', $html);
+        self::assertStringContainsString('<p class="text-muted">', $html);
+
+        // One level below what precedes the panel: the v14 setup module's h2 tab heading, the h1 on v12/v13 (h4 skipped levels).
+        self::assertMatchesRegularExpression(
+            '#<' . PasskeySettingsPanel::headingTag() . '>[^<]*<span class="badge #',
+            $html,
+        );
+        self::assertStringNotContainsString('<h4', $html);
+
+        // Column headers name their column for assistive technology.
+        self::assertSame(4, \substr_count($html, '<th scope="col">'));
+        self::assertStringNotContainsString('<th>', $html);
+    }
+
+    /**
+     * @return iterable<string, array{int, string}>
+     */
+    public static function headingLevels(): iterable
+    {
+        yield 'TYPO3 12: follows the h1' => [12, 'h2'];
+
+        yield 'TYPO3 13: follows the h1' => [13, 'h2'];
+
+        yield 'TYPO3 14: follows the tab h2' => [14, 'h3'];
+    }
+
+    #[Test]
+    #[DataProvider('headingLevels')]
+    public function panelHeadingIsOneLevelBelowWhatPrecedesItOnEachVersion(int $major, string $expected): void
+    {
+        self::assertSame($expected, PasskeySettingsPanel::headingTagFor($major));
     }
 }

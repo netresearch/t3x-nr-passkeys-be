@@ -5,7 +5,7 @@
 
 <f:section name="Content">
     <h1><f:translate key="dashboard.title" extensionName="NrPasskeysBe" /></h1>
-    <p class="text-body-secondary mb-4">
+    <p class="text-muted mb-4">
         <f:translate key="dashboard.description" extensionName="NrPasskeysBe">Overview of passkey adoption across backend user groups.</f:translate>
     </p>
 
@@ -20,7 +20,7 @@
                         <f:translate key="dashboard.gettingStarted.step1.bodyBefore" extensionName="NrPasskeysBe" /> <em>Admin Tools &gt; Settings &gt; Extension Configuration &gt; nr_passkeys_be</em>
                         <f:translate key="dashboard.gettingStarted.step1.bodyAfter" extensionName="NrPasskeysBe" />
                         <f:if condition="{configRpIdIsAutoDetected}">
-                            <br /><span class="text-body-secondary">
+                            <br /><span class="text-muted">
                                 <f:translate key="dashboard.gettingStarted.step1.autodetect" extensionName="NrPasskeysBe" arguments="{0: configRpId}" />
                             </span>
                         </f:if>
@@ -35,7 +35,7 @@
                     </li>
                     <li>
                         <strong><f:translate key="dashboard.gettingStarted.step4.title" extensionName="NrPasskeysBe" /></strong> &mdash;
-                        <f:translate key="dashboard.gettingStarted.step4.bodyBefore" extensionName="NrPasskeysBe" /> <a href="{helpUrl}"><f:translate key="dashboard.gettingStarted.step4.helpLink" extensionName="NrPasskeysBe" /></a> <f:translate key="dashboard.gettingStarted.step4.bodyAfter" extensionName="NrPasskeysBe" />
+                        <f:translate key="dashboard.gettingStarted.step4.bodyBefore" extensionName="NrPasskeysBe" /> <a href="{helpUrl}" class="text-decoration-underline"><f:translate key="dashboard.gettingStarted.step4.helpLink" extensionName="NrPasskeysBe" /></a> <f:translate key="dashboard.gettingStarted.step4.bodyAfter" extensionName="NrPasskeysBe" />
                     </li>
                 </ol>
             </f:be.infobox>
@@ -88,7 +88,7 @@
         <f:if condition="{usersWithPasskeys} > 0">
             <f:be.infobox title="{f:translate(key: 'dashboard.mfa.title', extensionName: 'NrPasskeysBe')}" state="{f:constant(name: 'TYPO3\CMS\Fluid\ViewHelpers\Be\InfoboxViewHelper::STATE_NOTICE')}">
                 <f:translate key="dashboard.mfa.body" extensionName="NrPasskeysBe" />
-                <a href="{helpUrl}"><f:translate key="dashboard.mfa.helpLink" extensionName="NrPasskeysBe" /></a>
+                <a href="{helpUrl}" class="text-decoration-underline"><f:translate key="dashboard.mfa.helpLink" extensionName="NrPasskeysBe" /></a>
             </f:be.infobox>
         </f:if>
 
@@ -128,7 +128,7 @@
                                     <td>
                                         <f:if condition="{group.gracePeriodDays} > 0">
                                             <f:then>{group.gracePeriodDays} <f:translate key="dashboard.usersWithout.days" extensionName="NrPasskeysBe" /></f:then>
-                                            <f:else><span class="text-body-secondary">-</span></f:else>
+                                            <f:else><span class="text-muted">-</span></f:else>
                                         </f:if>
                                     </td>
                                     <td>{group.totalUsers}</td>
@@ -136,18 +136,15 @@
                                     <td>
                                         <f:if condition="{group.totalUsers} > 0">
                                             <f:then>
-                                                <div class="progress" style="min-width: 60px;">
-                                                    <div class="progress-bar bg-success"
-                                                         role="progressbar"
-                                                         aria-valuenow="{group.adoptionPercentage}"
-                                                         aria-valuemin="0"
-                                                         aria-valuemax="100"
-                                                         style="width: {group.adoptionPercentage}%;">
-                                                        <f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%
-                                                    </div>
+                                                <div class="passkey-adoption-meter">
+                                                    <progress class="passkey-adoption-meter-bar"
+                                                              max="100"
+                                                              value="{group.adoptionPercentage}"
+                                                              aria-label="{f:translate(key: 'dashboard.groups.adoption', extensionName: 'NrPasskeysBe')}: {group.title}"></progress>
+                                                    <span class="passkey-adoption-meter-value" aria-hidden="true"><f:format.number decimals="0">{group.adoptionPercentage}</f:format.number>%</span>
                                                 </div>
                                             </f:then>
-                                            <f:else><span class="text-body-secondary">-</span></f:else>
+                                            <f:else><span class="text-muted">-</span></f:else>
                                         </f:if>
                                     </td>
                                 </tr>
@@ -191,7 +188,7 @@
                                     <td>
                                         <f:if condition="{user.groups}">
                                             <f:then>{user.groups}</f:then>
-                                            <f:else><span class="text-body-secondary">-</span></f:else>
+                                            <f:else><span class="text-muted">-</span></f:else>
                                         </f:if>
                                     </td>
                                     <td>
@@ -205,7 +202,7 @@
                                                         <span class="badge badge-danger"><f:translate key="dashboard.usersWithout.expired" extensionName="NrPasskeysBe" /></span>
                                                     </f:then>
                                                     <f:else>
-                                                        <span class="text-body-secondary">-</span>
+                                                        <span class="text-muted">-</span>
                                                     </f:else>
                                                 </f:if>
                                             </f:else>
@@ -217,7 +214,7 @@
                                                 <span class="badge badge-info"><f:translate key="dashboard.usersWithout.nudgeActive" extensionName="NrPasskeysBe">Active</f:translate></span>
                                             </f:then>
                                             <f:else>
-                                                <span class="text-body-secondary">-</span>
+                                                <span class="text-muted">-</span>
                                             </f:else>
                                         </f:if>
                                     </td>

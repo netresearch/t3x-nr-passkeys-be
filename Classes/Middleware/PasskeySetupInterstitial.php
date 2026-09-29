@@ -22,6 +22,7 @@ use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\Locale;
 
@@ -250,16 +251,46 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
     }
 
     /**
-     * Resolve the user's backend color scheme preference (TYPO3 v13.3+).
-     *
-     * Returns 'light', 'dark' or 'auto'. On v12 (no colorScheme user setting)
-     * this returns 'auto', which follows the operating system preference.
+     * The backend colour scheme of this user, as core's PageRenderer decides it.
      */
     private function resolveColorScheme(BackendUserAuthentication $backendUser): string
     {
-        $scheme = $backendUser->uc['colorScheme'] ?? null;
+        return self::colorSchemeFor($backendUser->uc, $backendUser->getTSConfig(), (new Typo3Version())->getMajorVersion());
+    }
 
-        return \is_string($scheme) && \in_array($scheme, ['light', 'dark'], true) ? $scheme : 'auto';
+    /**
+     * Mirrors core's PageRenderer (13.4.35 and 14.3.7): the user setting wins,
+     * then the setup.fields.colorScheme TSconfig default, then "auto"; with
+     * setup.fields.colorScheme.disabled = 1 the TSconfig value is forced and
+     * falls back to "light". TYPO3 12 has a light backend only.
+     *
+     * @param array<array-key, mixed> $uc           backend user settings
+     * @param array<array-key, mixed> $userTsConfig backend user TSconfig
+     *
+     * @return 'light'|'dark'|'auto'
+     *
+     * @internal
+     */
+    public static function colorSchemeFor(array $uc, array $userTsConfig, int $majorVersion): string
+    {
+        if ($majorVersion < 13) {
+            return 'light';
+        }
+
+        $setup = $userTsConfig['setup.'] ?? null;
+        $fields = \is_array($setup) ? $setup['fields.'] ?? null : null;
+        $fields = \is_array($fields) ? $fields : [];
+
+        $options = $fields['colorScheme.'] ?? null;
+        $disabled = \is_array($options) ? $options['disabled'] ?? '0' : '0';
+        $default = $fields['colorScheme'] ?? null;
+        $scheme = $uc['colorScheme'] ?? $default ?? 'auto';
+
+        if ($disabled === '1') {
+            $scheme = $default ?? 'light';
+        }
+
+        return \in_array($scheme, ['light', 'dark', 'auto'], true) ? $scheme : 'auto';
     }
 
     /**
@@ -367,41 +398,30 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <title>{$escapedTitle}</title>
             <style>
-                /* Scheme-aware palette: light defaults, dark values applied either by
-                   the OS preference (data-color-scheme="auto") or the user's explicit
-                   TYPO3 backend color scheme setting. Brand teal (#2F99A4) accents. */
+                /* Standalone page: core backend.css is not loaded here, so the
+                   palette is local. The scheme follows the user's TYPO3 setting
+                   the way core does it: data-color-scheme sets color-scheme, and
+                   light-dark() picks the value; "auto" leaves both schemes open
+                   for the browser to resolve. No media query of its own.
+                   White text sits on the brand fill #257880 (5.15:1); the brand
+                   #2F99A4 is 3.38:1 under white text. */
                 :root {
                     color-scheme: light dark;
-                    --int-bg: #ffffff;
-                    --int-text: #313131;
-                    --int-text-strong: #000000;
-                    --int-text-muted: #6a6a6a;
-                    --int-surface: #f5f5f5;
-                    --int-border: #cccccc;
-                    --int-accent: #2F99A4;
+                    --int-bg: light-dark(#ffffff, #1e1e1e);
+                    --int-text: light-dark(#313131, #e0e0e0);
+                    --int-text-strong: light-dark(#000000, #ffffff);
+                    --int-text-muted: light-dark(#6a6a6a, #b0b0b0);
+                    --int-surface: light-dark(#f5f5f5, #2a2a2a);
+                    --int-border: light-dark(#cccccc, #444444);
+                    --int-accent: #257880;
                     --int-accent-text: #ffffff;
+                    --int-focus: light-dark(#257880, #5fc6d2);
                 }
                 :root[data-color-scheme="light"] {
                     color-scheme: light;
                 }
-                @media (prefers-color-scheme: dark) {
-                    :root:not([data-color-scheme="light"]) {
-                        --int-bg: #1e1e1e;
-                        --int-text: #e0e0e0;
-                        --int-text-strong: #ffffff;
-                        --int-text-muted: #b0b0b0;
-                        --int-surface: #2a2a2a;
-                        --int-border: #444444;
-                    }
-                }
                 :root[data-color-scheme="dark"] {
                     color-scheme: dark;
-                    --int-bg: #1e1e1e;
-                    --int-text: #e0e0e0;
-                    --int-text-strong: #ffffff;
-                    --int-text-muted: #b0b0b0;
-                    --int-surface: #2a2a2a;
-                    --int-border: #444444;
                 }
                 body {
                     margin: 0;
@@ -475,7 +495,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
                 }
                 .btn-setup:focus-visible,
                 .btn-skip:focus-visible {
-                    outline: 2px solid var(--int-accent);
+                    outline: 2px solid var(--int-focus);
                     outline-offset: 2px;
                 }
             </style>

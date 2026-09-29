@@ -141,7 +141,7 @@ class PasskeyInfoElement extends AbstractFormElement
                 $neverLabel = \htmlspecialchars(
                     $lang->sL('LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.never'),
                 );
-                $childHtml[] = '<br><small class="text-body-secondary">';
+                $childHtml[] = '<br><small class="text-muted">';
                 $childHtml[] = $createdLabel . ': ' . ($createdAt > 0 ? \htmlspecialchars($this->formatTimestamp($createdAt)) : $neverLabel);
                 $childHtml[] = ' &middot; ' . $lastUsedLabel . ': ' . ($lastUsedAt > 0 ? \htmlspecialchars($this->formatTimestamp($lastUsedAt)) : $neverLabel);
                 $childHtml[] = '</small>';

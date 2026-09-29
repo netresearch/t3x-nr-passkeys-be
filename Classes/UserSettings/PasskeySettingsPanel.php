@@ -13,6 +13,7 @@ use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -62,7 +63,7 @@ final class PasskeySettingsPanel
                 'Passkey management is unavailable. The TYPO3 encryption key is missing or too short (minimum 32 characters). Configure it in Admin Tools > Settings > Configure Installation-Wide Options.',
             );
 
-            return '<div class="alert alert-danger">' . \htmlspecialchars($warning, ENT_QUOTES, 'UTF-8') . '</div>';
+            return self::callout('danger', \htmlspecialchars($warning, ENT_QUOTES, 'UTF-8'));
         }
 
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
@@ -129,39 +130,70 @@ final class PasskeySettingsPanel
         $noPasskeys = \htmlspecialchars($noPasskeys, ENT_QUOTES, 'UTF-8');
         $nameHelp = \htmlspecialchars($nameHelp, ENT_QUOTES, 'UTF-8');
         $infoText = \htmlspecialchars($infoText, ENT_QUOTES, 'UTF-8');
+        $heading = self::headingTag();
 
         return <<<HTML
         <style>.passkey-name-input{max-width:200px}</style>
-        <div class="alert alert-info">{$infoText}</div>
+        <div class="callout callout-info"><div class="callout-content"><div class="callout-body">{$infoText}</div></div></div>
         <div id="passkey-management-container"
              data-list-url="{$listUrl}"
              data-register-options-url="{$registerOptionsUrl}"
              data-register-verify-url="{$registerVerifyUrl}"
              data-rename-url="{$renameUrl}"
              data-remove-url="{$removeUrl}">
-            <h4>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></h4>
-            <p class="text-body-secondary">{$description}</p>
-            <div id="passkey-single-warning" class="alert alert-warning d-none" role="status" aria-live="polite">{$singleKeyWarning}</div>
+            <{$heading}>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></{$heading}>
+            <p class="text-muted">{$description}</p>
+            <div id="passkey-single-warning" class="callout callout-warning d-none" role="status" aria-live="polite"><div class="callout-content"><div class="callout-body">{$singleKeyWarning}</div></div></div>
             <div class="mb-3">
                 <div class="d-flex align-items-center gap-2">
                     <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" aria-describedby="passkey-name-help" />
                     <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
                 </div>
-                <small id="passkey-name-help" class="form-text text-body-secondary">{$nameHelp}</small>
+                <small id="passkey-name-help" class="form-text text-muted">{$nameHelp}</small>
             </div>
-            <div id="passkey-empty" class="alert alert-info d-none" role="status" aria-live="polite">{$noPasskeys}</div>
+            <div id="passkey-empty" class="callout callout-info d-none" role="status" aria-live="polite"><div class="callout-content"><div class="callout-body">{$noPasskeys}</div></div></div>
             <table class="table table-hover" id="passkey-list-table">
                 <thead>
                     <tr>
-                        <th>{$nameLabel}</th>
-                        <th>{$createdLabel}</th>
-                        <th>{$lastUsedLabel}</th>
-                        <th>{$actionsLabel}</th>
+                        <th scope="col">{$nameLabel}</th>
+                        <th scope="col">{$createdLabel}</th>
+                        <th scope="col">{$lastUsedLabel}</th>
+                        <th scope="col">{$actionsLabel}</th>
                     </tr>
                 </thead>
                 <tbody id="passkey-list-body"></tbody>
             </table>
         </div>
         HTML;
+    }
+
+    /**
+     * Core callout markup (the same structure f:be.infobox renders), without the
+     * Bootstrap .alert that has no place in a module body.
+     *
+     * @param string $state   callout state: info, warning, danger, success, notice
+     * @param string $message already escaped HTML
+     */
+    public static function callout(string $state, string $message): string
+    {
+        return '<div class="callout callout-' . $state . '"><div class="callout-content"><div class="callout-body">' . $message . '</div></div></div>';
+    }
+
+    /**
+     * The setup module puts an h2 above each tab's fields on TYPO3 14 only; on
+     * 12 and 13 the fields follow the module's h1 directly. One level below
+     * whatever precedes the panel keeps the outline without a skipped level.
+     */
+    public static function headingTag(): string
+    {
+        return self::headingTagFor((new Typo3Version())->getMajorVersion());
+    }
+
+    /**
+     * @internal
+     */
+    public static function headingTagFor(int $majorVersion): string
+    {
+        return $majorVersion >= 14 ? 'h3' : 'h2';
     }
 }

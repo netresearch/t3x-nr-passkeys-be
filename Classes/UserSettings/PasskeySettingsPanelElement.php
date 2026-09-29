@@ -79,7 +79,7 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
                 'manage.warning.encryptionKey',
                 'Passkey management is unavailable. The TYPO3 encryption key is missing or too short (minimum 32 characters). Configure it in Admin Tools > Settings > Configure Installation-Wide Options.',
             );
-            $resultArray['html'] = '<div class="alert alert-danger">' . \htmlspecialchars($warning, ENT_QUOTES, 'UTF-8') . '</div>';
+            $resultArray['html'] = PasskeySettingsPanel::callout('danger', \htmlspecialchars($warning, ENT_QUOTES, 'UTF-8'));
 
             return $resultArray;
         }

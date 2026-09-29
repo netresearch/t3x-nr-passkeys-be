@@ -12,7 +12,9 @@ namespace Netresearch\NrPasskeysBe\Tests\Functional\Widgets;
 use Netresearch\NrPasskeysBe\Service\BackendPasskeyAdoptionStatsProvider;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyAdoptionChartDataProvider;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyCredentialsCountDataProvider;
+use Netresearch\NrPasskeysBe\Widgets\PasskeyAdoptionChartWidget;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 /**
@@ -75,7 +77,47 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
 
         // One provider in the iterator => one dataset (backend green/orange).
         self::assertCount(1, $chartData['datasets']);
-        self::assertSame(['#4c7e3a', '#ff8700'], $chartData['datasets'][0]['backgroundColor']);
+        self::assertSame(['#3f7f35', '#bd5d00'], $chartData['datasets'][0]['backgroundColor']);
         self::assertSame([2, 3], $chartData['datasets'][0]['data']);
+    }
+
+    #[Test]
+    public function adoptionChartLabelsRenderFromTheDashboardLanguageFile(): void
+    {
+        // A real LanguageService reading the shipped XLIFF, as in the backend.
+        $GLOBALS['LANG'] = $this
+            ->get(LanguageServiceFactory::class)
+            ->create('default');
+        $provider = $this->get(PasskeyAdoptionChartDataProvider::class);
+        self::assertInstanceOf(PasskeyAdoptionChartDataProvider::class, $provider);
+        $chartData = $provider->getChartData();
+
+        self::assertSame(['Backend: with passkeys', 'Backend: without passkeys'], $chartData['labels']);
+        self::assertSame('Backend', $chartData['datasets'][0]['label']);
+
+        // The labels equal the English fallbacks, so prove they resolve from the file itself.
+        $file = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:';
+
+        foreach ([
+            'widget.adoption.segment.backend' => 'Backend',
+            'widget.adoption.label.with_passkeys' => 'with passkeys',
+            'widget.adoption.label.without_passkeys' => 'without passkeys',
+        ] as $key => $text) {
+            self::assertSame($text, $GLOBALS['LANG']->sL($file . $key), $key);
+        }
+    }
+
+    #[Test]
+    public function adoptionWidgetIsRegisteredWithTheCompactLegendOnEveryVersion(): void
+    {
+        // 12.4/13.4 register PasskeyAdoptionChartWidget, 14.3 its admin-only subclass.
+        $widget = $this->get('dashboard.widget.nrpasskeys.adoption');
+        self::assertInstanceOf(PasskeyAdoptionChartWidget::class, $widget);
+        $graphConfig = $widget->getEventData()['graphConfig'];
+        self::assertIsArray($graphConfig);
+        self::assertSame(
+            ['boxWidth' => 12, 'boxHeight' => 12],
+            $graphConfig['options']['plugins']['legend']['labels'] ?? null,
+        );
     }
 }

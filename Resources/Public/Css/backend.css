@@ -80,3 +80,51 @@
   letter-spacing: 1px;
   opacity: 0.65;
 }
+
+/* Adoption bar in the admin dashboard's group table: a native <progress>,
+   which carries the progressbar role, its value and its accessible name
+   itself. Core 14.3 ships no .progress rules, and core's
+   <typo3-backend-progress-bar> cannot carry an accessible name. Colours are
+   core tokens only; the track falls back to --bs-secondary-bg on TYPO3 12.4,
+   which has no --typo3-surface-container-high. Each engine draws the bar
+   through its own pseudo-elements, so every selector gets a rule of its own:
+   a selector list with one unknown pseudo-element would drop the whole rule. */
+.passkey-adoption-meter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 7rem;
+}
+
+.passkey-adoption-meter-bar {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  flex-grow: 1;
+  min-width: 4rem;
+  height: 0.5rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--typo3-component-border-radius);
+  background-color: var(--typo3-surface-container-high, var(--bs-secondary-bg));
+  color: var(--typo3-component-primary-color);
+}
+
+.passkey-adoption-meter-bar::-webkit-progress-bar {
+  background-color: var(--typo3-surface-container-high, var(--bs-secondary-bg));
+}
+
+.passkey-adoption-meter-bar::-webkit-progress-value {
+  background-color: var(--typo3-component-primary-color);
+}
+
+.passkey-adoption-meter-bar::-moz-progress-bar {
+  background-color: var(--typo3-component-primary-color);
+}
+
+.passkey-adoption-meter-value {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}

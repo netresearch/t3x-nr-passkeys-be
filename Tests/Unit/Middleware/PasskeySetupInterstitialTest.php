@@ -14,6 +14,7 @@ use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Middleware\PasskeySetupInterstitial;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -27,6 +28,7 @@ use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Http\RedirectResponse;
 use TYPO3\CMS\Core\Http\Response;
 use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\Locale;
 
@@ -394,11 +396,24 @@ final class PasskeySetupInterstitialTest extends TestCase
 
         // Adapts to light AND dark schemes instead of a hardcoded dark palette
         self::assertStringContainsString('color-scheme: light dark', $body);
-        self::assertStringContainsString('data-color-scheme="auto"', $body);
-        self::assertStringContainsString('prefers-color-scheme: dark', $body);
 
-        // Brand teal accent instead of the former off-brand blue
-        self::assertStringContainsString('#2F99A4', $body);
+        // No setting and no TSconfig: "auto" on 13/14, "light" on 12.
+        // The stylesheet names every scheme in its selectors, so match the <html> tag itself.
+        self::assertMatchesRegularExpression(
+            '#<html [^>]*data-color-scheme="' . $this->schemeOnThisVersion([]) . '"#',
+            $body,
+        );
+
+        // The TYPO3 setting decides the scheme, as in core: color-scheme plus
+        // light-dark(), no media query of its own.
+        self::assertStringNotContainsString('prefers-color-scheme', $body);
+        self::assertStringContainsString('--int-bg: light-dark(#ffffff, #1e1e1e);', $body);
+
+        // White button text sits on the brand fill #257880 (5.15:1), not on
+        // #2F99A4 (3.38:1), and never on the former off-brand blue.
+        self::assertStringContainsString('--int-accent: #257880;', $body);
+        self::assertStringContainsString('--int-accent-text: #ffffff;', $body);
+        self::assertStringNotContainsString('#2F99A4;', $body);
         self::assertStringNotContainsString('#0078d4', $body);
     }
 
@@ -406,7 +421,94 @@ final class PasskeySetupInterstitialTest extends TestCase
     public function interstitialHonorsUserDarkColorScheme(): void
     {
         $body = $this->renderInterstitialBody(['colorScheme' => 'dark']);
-        self::assertStringContainsString('data-color-scheme="dark"', $body);
+        self::assertMatchesRegularExpression(
+            '#<html [^>]*data-color-scheme="' . $this->schemeOnThisVersion(['colorScheme' => 'dark']) . '"#',
+            $body,
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $uc
+     */
+    private function schemeOnThisVersion(array $uc): string
+    {
+        return PasskeySetupInterstitial::colorSchemeFor($uc, [], (new Typo3Version())->getMajorVersion());
+    }
+
+    /**
+     * @return iterable<string, array{array<string, mixed>, array<string, mixed>, int, string}>
+     */
+    public static function colorSchemeCases(): iterable
+    {
+        $tsDefault = static fn(string $scheme): array => ['setup.' => ['fields.' => ['colorScheme' => $scheme]]];
+        $tsForced = static fn(?string $scheme): array => [
+            'setup.' => [
+                'fields.' => ($scheme !== null ? ['colorScheme' => $scheme] : []) + ['colorScheme.' => ['disabled' => '1']],
+            ],
+        ];
+
+        yield 'nothing set: auto' => [[], [], 14, 'auto'];
+
+        yield 'user setting wins over TSconfig default' => [['colorScheme' => 'dark'], $tsDefault('light'), 14, 'dark'];
+
+        yield 'TSconfig default without user setting' => [[], $tsDefault('dark'), 13, 'dark'];
+
+        yield 'disabled forces the TSconfig value over the user setting' => [['colorScheme' => 'dark'], $tsForced('light'), 14, 'light'];
+
+        yield 'disabled without a TSconfig value is light' => [['colorScheme' => 'dark'], $tsForced(null), 13, 'light'];
+
+        yield 'unknown value is auto' => [['colorScheme' => 'sepia'], [], 14, 'auto'];
+
+        yield 'TYPO3 12 has a light backend only' => [['colorScheme' => 'dark'], $tsDefault('dark'), 12, 'light'];
+    }
+
+    /**
+     * @param array<string, mixed> $uc
+     * @param array<string, mixed> $userTsConfig
+     */
+    #[Test]
+    #[DataProvider('colorSchemeCases')]
+    public function colorSchemeFollowsCorePageRendererRules(
+        array $uc,
+        array $userTsConfig,
+        int $major,
+        string $expected,
+    ): void {
+        self::assertSame($expected, PasskeySetupInterstitial::colorSchemeFor($uc, $userTsConfig, $major));
+    }
+
+    #[Test]
+    public function interstitialReadsTheUsersTsconfigForTheScheme(): void
+    {
+        $this->setUpBackendUser(1);
+        $backendUser = $GLOBALS['BE_USER'];
+        self::assertInstanceOf(MockObject::class, $backendUser);
+        self::assertInstanceOf(BackendUserAuthentication::class, $backendUser);
+        $backendUser->uc = ['colorScheme' => 'light'];
+
+        // An administrator forces the dark scheme and disables the user setting.
+        $backendUser
+            ->method('getTSConfig')
+            ->willReturn(
+                ['setup.' => ['fields.' => ['colorScheme' => 'dark', 'colorScheme.' => ['disabled' => '1']]]],
+            );
+        $this->enforcementService
+            ->method('getStatus')
+            ->willReturn(
+                new EnforcementStatus(
+                    level: EnforcementLevel::Required,
+                    gracePeriodDays: 14,
+                    gracePeriodStart: \time(),
+                    hasPasskeys: false,
+                ),
+            );
+        $body = (string) $this->subject
+            ->process($this->createMockRequest('main'), $this->createMockHandler())
+            ->getBody();
+
+        // TYPO3 12 has a light backend only; 13 and 14 honour the forced value.
+        $expected = (new Typo3Version())->getMajorVersion() < 13 ? 'light' : 'dark';
+        self::assertMatchesRegularExpression('#<html [^>]*data-color-scheme="' . $expected . '"#', $body);
     }
 
     /**

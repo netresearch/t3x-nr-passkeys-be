@@ -10,9 +10,9 @@ use Netresearch\NrPasskeysBe\Widgets\AdminOnlyDoughnutChartWidget;
 use Netresearch\NrPasskeysBe\Widgets\AdminOnlyNumberWithIconWidget;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyAdoptionChartDataProvider;
 use Netresearch\NrPasskeysBe\Widgets\DataProvider\PasskeyCredentialsCountDataProvider;
+use Netresearch\NrPasskeysBe\Widgets\PasskeyAdoptionChartWidget;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use TYPO3\CMS\Dashboard\Widgets\AdminOnlyWidgetInterface;
-use TYPO3\CMS\Dashboard\Widgets\DoughnutChartWidget;
 use TYPO3\CMS\Dashboard\Widgets\NumberWithIconWidget;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
@@ -75,7 +75,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
     $services
         ->set(
             'dashboard.widget.nrpasskeys.adoption',
-            $adminOnlySupported ? AdminOnlyDoughnutChartWidget::class : DoughnutChartWidget::class,
+            $adminOnlySupported ? AdminOnlyDoughnutChartWidget::class : PasskeyAdoptionChartWidget::class,
         )
         ->arg('$dataProvider', service(PasskeyAdoptionChartDataProvider::class))
         ->tag(

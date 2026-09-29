@@ -106,7 +106,7 @@ final class PasskeySettingsPanelElementTest extends TestCase
         $result = $this
             ->createSubject()
             ->render();
-        self::assertStringContainsString('alert alert-danger', $result['html'] ?? '');
+        self::assertStringContainsString('callout callout-danger', $result['html'] ?? '');
         self::assertStringNotContainsString('passkey-management-container', $result['html'] ?? '');
     }
 
@@ -118,7 +118,7 @@ final class PasskeySettingsPanelElementTest extends TestCase
         $result = $this
             ->createSubject()
             ->render();
-        self::assertStringContainsString('alert alert-danger', $result['html'] ?? '');
+        self::assertStringContainsString('callout callout-danger', $result['html'] ?? '');
     }
 
     #[Test]

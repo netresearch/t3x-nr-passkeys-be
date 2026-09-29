@@ -7,25 +7,25 @@
             </trans-unit>
 
             <trans-unit id="widget.adoption.title">
-                <source>Passkey adoption (backend &amp; frontend)</source>
+                <source>Passkey adoption</source>
             </trans-unit>
             <trans-unit id="widget.adoption.description">
-                <source>Segmented doughnut of passkey adoption: an inner ring for backend users and, when the frontend passkeys extension is installed, an outer ring for frontend users. Each ring compares users with at least one active passkey against those without. Populations are shown separately, never combined.</source>
+                <source>Segmented doughnut of passkey adoption: an outer ring for backend users and, when the frontend passkeys extension is installed, an inner ring for frontend users. Each ring compares users with at least one active passkey against those without. Populations are shown separately, never combined.</source>
             </trans-unit>
 
             <!-- Per-audience segment labels (Chart.js dataset labels / tooltips) -->
             <trans-unit id="widget.adoption.segment.backend">
-                <source>Backend users</source>
+                <source>Backend</source>
             </trans-unit>
             <trans-unit id="widget.adoption.segment.frontend">
-                <source>Frontend users</source>
+                <source>Frontend</source>
             </trans-unit>
 
             <trans-unit id="widget.adoption.label.with_passkeys">
-                <source>With passkeys</source>
+                <source>with passkeys</source>
             </trans-unit>
             <trans-unit id="widget.adoption.label.without_passkeys">
-                <source>Without passkeys</source>
+                <source>without passkeys</source>
             </trans-unit>
 
             <trans-unit id="widget.credentials.title">
