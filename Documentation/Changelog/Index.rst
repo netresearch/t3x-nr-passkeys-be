@@ -36,8 +36,9 @@ Bugfixes
 Tests
 -----
 
-- Continuous integration runs the JavaScript unit tests on every push and pull
-  request and reports their coverage under its own Codecov flag.
+- Continuous integration runs the JavaScript unit tests on every pull request
+  and every push to the main branch, and reports their coverage under its own
+  Codecov flag.
 
 1.0.0
 =====
