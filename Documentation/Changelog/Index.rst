@@ -6,6 +6,40 @@
 Changelog
 =========
 
+1.0.1
+=====
+
+Bugfixes
+--------
+
+- The admin module, the passkey panel in the user settings, the login help
+  box, the passkey setup interstitial and the adoption widget use only classes
+  and tokens that the TYPO3 backend defines in 12.4, 13.4 and 14.3, so they
+  follow the backend's light and dark scheme. Bootstrap alerts in the module
+  body are replaced by core callouts, and outline buttons, secondary text and
+  badges by their core counterparts.
+- The setup interstitial resolves its colour scheme the way core does: from
+  the user setting, then from ``setup.fields.colorScheme`` in TSconfig, forced
+  when that field is disabled. Its button text meets 4.5:1 contrast.
+- The adoption bar in the admin module is a native ``<progress>`` element with
+  an accessible name, drawn with core tokens. On TYPO3 14.3 it previously
+  showed no track at all.
+- The adoption widget uses colours with at least 3:1 contrast in both schemes,
+  a legend that names every segment of both rings, and a title that fits the
+  widget. Its segment labels are read from the dashboard language file, and
+  its description names the rings in the order Chart.js draws them.
+- Links inside callouts and inside the Help text are underlined.
+- The Help table and the passkey table declare their column headers, the
+  passkey panel heading follows the tab's heading level, and the inline
+  rename input and the admin module's menu have accessible names.
+
+Tests
+-----
+
+- Continuous integration runs the JavaScript unit tests on every pull request
+  and every push to the main branch, and reports their coverage under its own
+  Codecov flag.
+
 1.0.0
 =====
 
