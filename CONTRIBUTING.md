@@ -36,13 +36,14 @@ All contributions must pass the following quality gates:
 | Code style | `composer ci:test:php:cgl` | PER-CS3.0 compliance |
 | Static analysis | `composer ci:test:php:phpstan` | PHPStan level 10 |
 | Unit tests | `composer ci:test:php:unit` | All tests pass |
-| Mutation tests | `composer ci:mutation` | MSI >= 80%, covered MSI >= 80% |
+| Mutation tests | `composer ci:mutation` | MSI >= 80%, covered MSI >= 80% (run locally; no CI workflow runs it) |
 
 ### Writing Tests
 
 - New features must include unit tests
 - Bug fixes should include a regression test
-- Functional tests require MySQL (run in CI only)
+- Functional tests need a database: `Build/Scripts/runTests.sh -s functional -d mysql`
+  runs them locally in containers; CI runs them on MySQL in `.github/workflows/ci.yml`
 - Use `declare(strict_types=1)` in all PHP files
 
 ### Code Style

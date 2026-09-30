@@ -68,7 +68,10 @@ This project implements:
 The `main` branch requires:
 
 - Pull request with approving review
-- Passing CI status checks (lint, PHPStan, unit, functional, fuzz, mutation)
+- Passing status checks: `ci / All CI checks` (lint, code style, PHPStan,
+  Rector, unit, functional and documentation jobs of `ci.yml`),
+  `All security checks` (the jobs of `checks.yml`, including the fuzz tests),
+  `CodeQL`, `Opengrep OSS`, `betterleaks`, `zizmor`, `scorecard` and `DCO`
 - Signed commits
 - No force pushes
 
