@@ -105,7 +105,8 @@ Checks that run on every pull request in this repository:
   the PHP code); Betterleaks secret scanning; zizmor for the workflow
   files; the fuzz test suite; the pull request quality gate
   (`pr-quality.yml`: a size check on non-draft pull requests and the
-  solo-maintainer auto-approval for pull requests from this repository);
+  solo-maintainer auto-approval for non-draft pull requests that an owner,
+  member or collaborator opens from a branch of this repository);
   and the aggregate `All security checks` job, which fails unless every
   one of these jobs succeeded or was skipped.
 - `.github/workflows/ci.yml`: PHP lint, code style, PHPStan level 10,
