@@ -93,8 +93,8 @@ Checks that run on every pull request in this repository:
 
 - `.github/workflows/checks.yml`: Composer Audit (fails on a security
   advisory for an installed Composer package) and Opengrep SAST with the
-  `auto` rule set (fails on findings of severity WARNING or higher;
-  `.semgrepignore` names the paths this repository leaves out of the
+  `auto` rule set, run with `--error --severity WARNING` (fails on any
+  finding it reports; `.semgrepignore` names the paths this repository leaves out of the
   scan), both through `typo3-ci-workflows`'
   `security.yml`; Dependency Review (fails on a newly added dependency with
   a vulnerability of severity high or higher); the PHP licence check
