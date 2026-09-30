@@ -71,7 +71,7 @@ The `main` branch requires:
 - Passing status checks: `ci / All CI checks` (lint, code style, PHPStan,
   Rector, unit, functional and documentation jobs of `ci.yml`),
   `All security checks` (the jobs of `checks.yml`, including the fuzz tests),
-  `CodeQL`, `Opengrep OSS`, `betterleaks`, `zizmor`, `scorecard` and `DCO`
+  `CodeQL`, `Opengrep OSS`, `betterleaks`, `zizmor` and `DCO`
 - Signed commits
 - No force pushes
 
