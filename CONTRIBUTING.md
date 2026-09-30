@@ -92,20 +92,33 @@ repository to the `@netresearch/typo3` team.
 Checks that run on every pull request in this repository:
 
 - `.github/workflows/checks.yml`: Composer Audit (fails on a security
-  advisory for an installed Composer package) and Opengrep SAST with the
-  `auto` rule set, run with `--error --severity WARNING` (fails on any
-  finding it reports; `.semgrepignore` names the paths this repository
-  leaves out of the scan), both through `typo3-ci-workflows`'
-  `security.yml`; Dependency Review (fails on a newly added dependency with
-  a vulnerability of severity high or higher); the PHP licence check
-  (`license-check.yml`, fails when the `composer licenses` output matches
-  its forbidden-licence pattern, by default `"(SSPL|BSL)"`); CodeQL for the JavaScript and the workflow files (CodeQL
-  has no PHP analysis; PHPStan and Opengrep cover the PHP code);
-  Betterleaks secret scanning; zizmor for the workflow files; the fuzz
-  test suite; and the pull request quality check.
+  advisory for an installed Composer package) and Opengrep SAST, both
+  through `typo3-ci-workflows`' `security.yml` (`.semgrepignore` names the
+  paths this repository leaves out of the scan; which Opengrep findings
+  block a pull request is set by the organisation's
+  [static analysis rule](https://github.com/netresearch/.github/blob/main/SECURITY.md#static-analysis-sast));
+  Dependency Review (fails on a newly added dependency with a vulnerability
+  of severity high or higher); the PHP licence check (`license-check.yml`,
+  fails when the `composer licenses` output matches its forbidden-licence
+  pattern, by default `"(SSPL|BSL)"`); CodeQL for the JavaScript and the
+  workflow files (CodeQL has no PHP analysis; PHPStan and Opengrep cover
+  the PHP code); Betterleaks secret scanning; zizmor for the workflow
+  files; the fuzz test suite; the pull request quality gate
+  (`pr-quality.yml`: a size check on non-draft pull requests and the
+  solo-maintainer auto-approval for pull requests from this repository);
+  and the aggregate `All security checks` job, which fails unless every
+  one of these jobs succeeded or was skipped.
 - `.github/workflows/ci.yml`: PHP lint, code style, PHPStan level 10,
   Rector, unit tests and functional tests on MySQL for PHP 8.2 to 8.5
-  against TYPO3 12.4, 13.4 and 14.3, and the documentation rendering.
+  against TYPO3 12.4, 13.4 and 14.3, and the documentation rendering; and
+  the aggregate `All CI checks` job, which fails unless every CI job
+  succeeded or was skipped.
+- `.github/workflows/check-template-drift.yml`: Template drift compares
+  the `.github/` files managed by the organisation's typo3-extension
+  template with that template.
+- `.github/workflows/codeql.yml`, `dependency-review.yml` and
+  `pr-quality.yml`: standalone callers of the same organisation workflows
+  that `checks.yml` also runs.
 - `.github/workflows/canonical-formatting.yml`, `harness-verify.yml`,
   `js-tests.yml` (Vitest) and `e2e.yml` (Playwright against TYPO3 13.4 and
   14.3, skipped when a pull request changes only documentation);
