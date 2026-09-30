@@ -24,12 +24,13 @@ Tests/
     Command/                    # RecoveryCommand tests
     Widgets/                    # Dashboard widget wiring tests (v14.3+ interfaces)
     QueryBuilderMockTrait.php   # Shared QueryBuilder mock builder for unit tests
-  Functional/                   # Database tests (MySQL required, CI only)
+  Functional/                   # Database tests (runTests.sh -s functional -d mysql; CI: ci.yml)
+    Command/                    # RecoveryCommand against be_groups
     Controller/                 # AdminController functional tests
     Repository/                 # CredentialRepository functional tests
     Service/                    # AdoptionStatsService, EnforcementService functional tests
   Fuzz/                         # Fuzz tests (randomized input)
-  JavaScript/                   # JS unit tests (Vitest + jsdom)
+  JavaScript/                   # JS unit tests (Vitest + jsdom); Stubs/ stand in for @typo3/* modules
   E2E/                          # End-to-end tests (Playwright *.spec.ts)
   Architecture/                 # PHPat architecture rules (layer isolation, finality)
   Fixtures/                     # Shared test fixtures (CSV datasets)
@@ -45,7 +46,7 @@ Tests/
 |------|---------|-------|
 | Unit tests | `composer ci:test:php:unit` | Fast, no DB needed |
 | Fuzz tests | `composer ci:test:php:fuzz` | May flake due to random data |
-| Functional tests | `composer ci:test:php:functional` | MySQL required (CI only) |
+| Functional tests | `Build/Scripts/runTests.sh -s functional -d mysql` | Starts MySQL in a container; `composer ci:test:php:functional` needs a configured DB |
 | JS tests | `npm run test:js` | Fast, DOM testing with jsdom |
 | E2E tests | `Build/Scripts/runTests.sh -s e2e` | Installs its own TYPO3 in containers |
 | Mutation testing | `composer ci:mutation` | MSI >= 80%, covered-MSI >= 80% |
@@ -81,5 +82,5 @@ Tests/
 ## When stuck
 - Mocking `final` webauthn-lib classes: see `dg/bypass-finals` usage in `Unit/Service/ChallengeServiceTest.php`
 - QueryBuilder mocking: use `Tests/Unit/QueryBuilderMockTrait.php`
-- Functional DB failures locally: expected -- MySQL is CI-only, do not debug locally
+- Functional DB failures locally: run through `Build/Scripts/runTests.sh -s functional -d mysql`, which provides the database
 - Root `AGENTS.md` for project-wide commands and rules

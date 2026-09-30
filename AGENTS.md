@@ -66,7 +66,7 @@ Configuration/       -> TYPO3 config (TCA, Backend routes, Services.yaml, Servic
 Documentation/       -> TYPO3 RST documentation (docs.typo3.org format)
 Resources/Private/   -> Fluid templates (AdminModule, Interstitial, UserSettings), XLIFF files
 Resources/Public/    -> JS modules (Login, Management, Banner, Dashboard, AdminInfo), CSS, Icons
-Tests/               -> Unit, Functional (MySQL, CI only), Fuzz, JavaScript (Vitest),
+Tests/               -> Unit, Functional (MySQL), Fuzz, JavaScript (Vitest),
                         E2E (Playwright), Architecture (PHPat); see Tests/AGENTS.md
 docs/                -> ARCHITECTURE.md (component map + glossary), adr/, exec-plans/
 Makefile             -> Local dev + CI targets (see `make help`)
