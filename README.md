@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+
 <p align="center">
   <a href="https://www.netresearch.de/">
     <img src="Resources/Public/Icons/Extension.svg" alt="nr_passkeys_be extension icon" width="80" height="80">

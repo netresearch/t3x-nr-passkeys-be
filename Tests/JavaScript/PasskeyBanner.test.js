@@ -1,136 +1,57 @@
 /**
- * Unit tests for PasskeyBanner.js DOM rendering and behavior.
+ * Unit tests for the SHIPPED PasskeyBanner.js: DOM rendering, the translate
+ * helper, dismiss/navigation behaviour and the initialize() flow that asks the
+ * enforcement-status endpoint whether to show the banner.
  *
- * Tests the extracted showBanner logic, translate helper, and
- * dismiss/navigation behavior. The AJAX initialization is tested
- * via Playwright E2E tests.
+ * The module's constructor waits for DocumentService.ready(), which the stub
+ * never resolves, so each test drives initialize() or showBanner() itself.
  *
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { requests, respondWith, resetRequests } from '@typo3/core/ajax/ajax-request.js';
 
-// --- Extracted logic from PasskeyBanner.js ---
+const { default: banner } = await import('@netresearch/nr-passkeys-be/PasskeyBanner.js');
 
-function translate(key, fallback) {
-  return (globalThis.TYPO3 && globalThis.TYPO3.lang && globalThis.TYPO3.lang[key]) || fallback;
+const STATUS_URL = '/typo3/ajax/passkeys/enforcement-status';
+
+function resetBackend(overrides = {}) {
+  globalThis.TYPO3 = {
+    lang: {},
+    settings: { ajaxUrls: { passkeys_enforcement_status: STATUS_URL } },
+    ModuleMenu: { App: { showModule: vi.fn() } },
+    ...overrides,
+  };
 }
 
 function showBanner(data) {
-  const banner = document.createElement('div');
-  banner.className = 'callout callout-info passkey-setup-banner';
-  banner.setAttribute('role', 'status');
-  banner.setAttribute('aria-live', 'polite');
-
-  const body = document.createElement('div');
-  body.className = 'callout-body';
-
-  const textWrapper = document.createElement('div');
-  textWrapper.className = 'passkey-banner-text';
-
-  const title = document.createElement('strong');
-  title.textContent = data.gracePeriodRemainingDays > 0
-    ? translate('js.banner.title.remaining', 'Passkey setup \u2014 %d days remaining').replace('%d', data.gracePeriodRemainingDays)
-    : translate('js.banner.title.available', 'Passkeys available for your account');
-
-  const description = document.createElement('div');
-  description.className = 'passkey-banner-description';
-  description.textContent = translate('js.banner.description',
-    'Passkeys replace your password with fingerprint, face, or security key authentication \u2014 faster to use and resistant to phishing attacks.');
-
-  const learnMore = document.createElement('a');
-  learnMore.href = 'https://docs.typo3.org/p/netresearch/nr-passkeys-be/main/en-us/';
-  learnMore.target = '_blank';
-  learnMore.rel = 'noopener noreferrer';
-  learnMore.textContent = translate('js.banner.learnMore', 'Learn more');
-  description.appendChild(document.createTextNode(' '));
-  description.appendChild(learnMore);
-
-  const help = document.createElement('div');
-  help.className = 'passkey-banner-help';
-  help.textContent = translate('js.banner.help', 'Need help? Contact your administrator.');
-
-  textWrapper.appendChild(title);
-  textWrapper.appendChild(description);
-  textWrapper.appendChild(help);
-
-  const actions = document.createElement('span');
-  actions.className = 'passkey-banner-actions';
-
-  const setupLink = document.createElement('a');
-  setupLink.href = '#';
-  setupLink.className = 'btn btn-sm btn-primary';
-  setupLink.textContent = translate('js.banner.setup', 'Set up now');
-  setupLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (typeof top !== 'undefined' && top.TYPO3 && top.TYPO3.ModuleMenu && top.TYPO3.ModuleMenu.App) {
-      top.TYPO3.ModuleMenu.App.showModule('user_setup');
-    }
-  });
-
-  const dismissBtn = document.createElement('button');
-  dismissBtn.type = 'button';
-  dismissBtn.className = 'btn btn-sm btn-default';
-  dismissBtn.textContent = translate('js.banner.dismiss', 'Dismiss');
-
-  actions.appendChild(setupLink);
-  actions.appendChild(dismissBtn);
-  body.appendChild(textWrapper);
-  body.appendChild(actions);
-  banner.appendChild(body);
-
-  const container = document.querySelector('.scaffold-content-module')
-    || document.querySelector('.t3js-scaffold-content-module')
-    || document.querySelector('typo3-backend-module-router')?.parentElement;
-  if (container) {
-    container.style.flexDirection = 'column';
-    container.prepend(banner);
-
-    const router = container.querySelector('typo3-backend-module-router');
-    if (router) {
-      router.style.flex = '1 1 auto';
-      router.style.minHeight = '0';
-    }
-
-    dismissBtn.addEventListener('click', () => {
-      banner.remove();
-      container.style.flexDirection = '';
-      sessionStorage.setItem('nr-passkeys-banner-dismissed', String(data.nudgeUntil || 0));
-    });
-  }
-
-  return banner;
+  banner.showBanner(data);
+  return document.querySelector('.passkey-setup-banner');
 }
-
-// --- Tests ---
 
 describe('translate helper', () => {
   beforeEach(() => {
-    delete globalThis.TYPO3;
-  });
-
-  it('should return fallback when TYPO3 is undefined', () => {
-    expect(translate('js.banner.setup', 'Set up now')).toBe('Set up now');
+    resetBackend();
   });
 
   it('should return fallback when TYPO3.lang is undefined', () => {
     globalThis.TYPO3 = {};
-    expect(translate('js.banner.setup', 'Set up now')).toBe('Set up now');
+    expect(banner.translate('js.banner.setup', 'Set up now')).toBe('Set up now');
   });
 
   it('should return fallback when key is not in TYPO3.lang', () => {
-    globalThis.TYPO3 = { lang: {} };
-    expect(translate('js.banner.setup', 'Set up now')).toBe('Set up now');
+    expect(banner.translate('js.banner.setup', 'Set up now')).toBe('Set up now');
   });
 
   it('should return translated value when key exists', () => {
-    globalThis.TYPO3 = { lang: { 'js.banner.setup': 'Jetzt einrichten' } };
-    expect(translate('js.banner.setup', 'Set up now')).toBe('Jetzt einrichten');
+    globalThis.TYPO3.lang = { 'js.banner.setup': 'Jetzt einrichten' };
+    expect(banner.translate('js.banner.setup', 'Set up now')).toBe('Jetzt einrichten');
   });
 
   it('should return fallback when value is empty string (falsy)', () => {
-    globalThis.TYPO3 = { lang: { 'js.banner.setup': '' } };
-    expect(translate('js.banner.setup', 'Set up now')).toBe('Set up now');
+    globalThis.TYPO3.lang = { 'js.banner.setup': '' };
+    expect(banner.translate('js.banner.setup', 'Set up now')).toBe('Set up now');
   });
 });
 
@@ -142,26 +63,29 @@ describe('showBanner DOM rendering', () => {
     container = document.createElement('div');
     container.className = 'scaffold-content-module';
     document.body.appendChild(container);
-    delete globalThis.TYPO3;
+    resetBackend();
     sessionStorage.clear();
   });
 
   it('should create banner with correct CSS classes', () => {
-    const banner = showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
-    expect(banner.className).toBe('callout callout-info passkey-setup-banner');
+    const shown = showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    expect(shown.className).toBe('callout callout-info passkey-setup-banner');
   });
 
   it('should set accessibility attributes', () => {
-    const banner = showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
-    expect(banner.getAttribute('role')).toBe('status');
-    expect(banner.getAttribute('aria-live')).toBe('polite');
+    const shown = showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    expect(shown.getAttribute('role')).toBe('status');
+    expect(shown.getAttribute('aria-live')).toBe('polite');
   });
 
   it('should prepend banner to .scaffold-content-module container', () => {
+    const existing = document.createElement('p');
+    container.appendChild(existing);
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
     const found = container.querySelector('.passkey-setup-banner');
     expect(found).not.toBeNull();
     expect(container.firstChild).toBe(found);
+    expect(container.style.flexDirection).toBe('column');
   });
 
   it('should fall back to .t3js-scaffold-content-module when .scaffold-content-module is absent', () => {
@@ -171,9 +95,10 @@ describe('showBanner DOM rendering', () => {
     expect(found).not.toBeNull();
   });
 
-  it('should not throw when no matching container exists', () => {
+  it('should not insert a banner when no matching container exists', () => {
     container.className = 'unrelated';
-    expect(() => showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 })).not.toThrow();
+    expect(() => banner.showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 })).not.toThrow();
+    expect(document.querySelector('.passkey-setup-banner')).toBeNull();
   });
 
   it('should show title when no grace period', () => {
@@ -228,13 +153,13 @@ describe('showBanner DOM rendering', () => {
   });
 
   it('should use theme classes instead of hardcoded inline colors', () => {
-    const banner = showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    const shown = showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
     // Colors must come from the core callout-info theming + backend.css so
     // the banner adapts to the v14 light/dark schemes.
-    expect(banner.getAttribute('style')).toBeNull();
-    expect(banner.querySelector('.passkey-banner-text')).not.toBeNull();
-    expect(banner.querySelector('.passkey-banner-actions')).not.toBeNull();
-    expect(banner.querySelector('.passkey-banner-description a').getAttribute('style')).toBeNull();
+    expect(shown.getAttribute('style')).toBeNull();
+    expect(shown.querySelector('.passkey-banner-text')).not.toBeNull();
+    expect(shown.querySelector('.passkey-banner-actions')).not.toBeNull();
+    expect(shown.querySelector('.passkey-banner-description a').getAttribute('style')).toBeNull();
   });
 
   it('should render "Dismiss" button as default', () => {
@@ -254,15 +179,16 @@ describe('banner dismiss behavior', () => {
     container = document.createElement('div');
     container.className = 'scaffold-content-module';
     document.body.appendChild(container);
-    delete globalThis.TYPO3;
+    resetBackend();
     sessionStorage.clear();
   });
 
-  it('should remove banner from DOM on dismiss click', () => {
+  it('should remove banner from DOM and restore the layout on dismiss click', () => {
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
     const dismissBtn = container.querySelector('.btn-default');
     dismissBtn.click();
     expect(container.querySelector('.passkey-setup-banner')).toBeNull();
+    expect(container.style.flexDirection).toBe('');
   });
 
   it('should set sessionStorage flag on dismiss keyed to nudgeUntil', () => {
@@ -288,21 +214,16 @@ describe('banner "Set up now" navigation', () => {
     container = document.createElement('div');
     container.className = 'scaffold-content-module';
     document.body.appendChild(container);
-    delete globalThis.TYPO3;
+    resetBackend();
     sessionStorage.clear();
   });
 
   it('should call TYPO3 ModuleMenu.App.showModule on click', () => {
-    const showModuleMock = vi.fn();
-    globalThis.TYPO3 = {
-      ModuleMenu: { App: { showModule: showModuleMock } },
-    };
-
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
     const setupBtn = container.querySelector('.btn-primary');
     setupBtn.click();
 
-    expect(showModuleMock).toHaveBeenCalledWith('user_setup');
+    expect(globalThis.TYPO3.ModuleMenu.App.showModule).toHaveBeenCalledWith('user_setup');
   });
 
   it('should prevent default link behavior', () => {
@@ -313,18 +234,12 @@ describe('banner "Set up now" navigation', () => {
 
     expect(event.defaultPrevented).toBe(true);
   });
-
-  it('should not throw when TYPO3.ModuleMenu is unavailable', () => {
-    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
-    const setupBtn = container.querySelector('.btn-primary');
-    expect(() => setupBtn.click()).not.toThrow();
-  });
 });
 
 describe('banner placement specificity', () => {
   beforeEach(() => {
     document.body.textContent = '';
-    delete globalThis.TYPO3;
+    resetBackend();
     sessionStorage.clear();
   });
 
@@ -337,22 +252,24 @@ describe('banner placement specificity', () => {
     scaffoldModuleDiv.className = 'scaffold-content-module';
     document.body.appendChild(scaffoldModuleDiv);
 
-    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    banner.showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
 
     expect(scaffoldModuleDiv.querySelector('.passkey-setup-banner')).not.toBeNull();
     expect(t3jsDiv.querySelector('.passkey-setup-banner')).toBeNull();
   });
 
-  it('should fall back to typo3-backend-module-router parent (v14)', () => {
+  it('should fall back to typo3-backend-module-router parent (v14) and let the router fill the height', () => {
     const parentDiv = document.createElement('div');
     document.body.appendChild(parentDiv);
 
     const router = document.createElement('typo3-backend-module-router');
     parentDiv.appendChild(router);
 
-    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    banner.showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
 
     expect(parentDiv.querySelector('.passkey-setup-banner')).not.toBeNull();
+    expect(router.style.flex).toBe('1 1 auto');
+    expect(router.style.minHeight).toBe('0px');
   });
 
   it('should NOT place banner in .scaffold-content (flex-row parent)', () => {
@@ -360,7 +277,7 @@ describe('banner placement specificity', () => {
     scaffoldContent.className = 'scaffold-content';
     document.body.appendChild(scaffoldContent);
 
-    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    banner.showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
 
     expect(scaffoldContent.querySelector('.passkey-setup-banner')).toBeNull();
   });
@@ -370,7 +287,7 @@ describe('banner placement specificity', () => {
     moduleBody.className = 'module-body';
     document.body.appendChild(moduleBody);
 
-    showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
+    banner.showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
 
     expect(moduleBody.querySelector('.passkey-setup-banner')).toBeNull();
   });
@@ -384,19 +301,18 @@ describe('banner with TYPO3 language labels', () => {
     container = document.createElement('div');
     container.className = 'scaffold-content-module';
     document.body.appendChild(container);
+    resetBackend();
     sessionStorage.clear();
   });
 
   it('should use translated labels when available', () => {
-    globalThis.TYPO3 = {
-      lang: {
-        'js.banner.title.available': 'Passkeys verfuegbar',
-        'js.banner.description': 'Schneller und sicherer anmelden.',
-        'js.banner.help': 'Hilfe? Fragen Sie Ihren Administrator.',
-        'js.banner.learnMore': 'Mehr erfahren',
-        'js.banner.setup': 'Jetzt einrichten',
-        'js.banner.dismiss': 'Schliessen',
-      },
+    globalThis.TYPO3.lang = {
+      'js.banner.title.available': 'Passkeys verfuegbar',
+      'js.banner.description': 'Schneller und sicherer anmelden.',
+      'js.banner.help': 'Hilfe? Fragen Sie Ihren Administrator.',
+      'js.banner.learnMore': 'Mehr erfahren',
+      'js.banner.setup': 'Jetzt einrichten',
+      'js.banner.dismiss': 'Schliessen',
     };
 
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 0 });
@@ -421,15 +337,83 @@ describe('banner with TYPO3 language labels', () => {
   });
 
   it('should use translated remaining-days title with replacement', () => {
-    globalThis.TYPO3 = {
-      lang: {
-        'js.banner.title.remaining': 'Passkey-Einrichtung — noch %d Tage',
-      },
+    globalThis.TYPO3.lang = {
+      'js.banner.title.remaining': 'Passkey-Einrichtung — noch %d Tage',
     };
 
     showBanner({ requiresBanner: true, gracePeriodRemainingDays: 5 });
 
     const title = container.querySelector('.passkey-setup-banner strong');
     expect(title.textContent).toBe('Passkey-Einrichtung — noch 5 Tage');
+  });
+});
+
+describe('initialize() asks the enforcement-status endpoint', () => {
+  let container;
+
+  beforeEach(() => {
+    document.body.textContent = '';
+    container = document.createElement('div');
+    container.className = 'scaffold-content-module';
+    document.body.appendChild(container);
+    resetBackend();
+    resetRequests();
+    sessionStorage.clear();
+  });
+
+  it('should GET the enforcement-status URL', async () => {
+    respondWith(() => ({ requiresBanner: false }));
+    await banner.initialize();
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].url).toBe(STATUS_URL);
+    expect(requests[0].method).toBe('GET');
+  });
+
+  it('should show the banner when the status requires it', async () => {
+    respondWith(() => ({ requiresBanner: true, gracePeriodRemainingDays: 3 }));
+    await banner.initialize();
+
+    expect(container.querySelector('.passkey-setup-banner strong').textContent).toContain('3 days remaining');
+  });
+
+  it('should not show the banner when the status does not require it', async () => {
+    respondWith(() => ({ requiresBanner: false }));
+    await banner.initialize();
+
+    expect(container.querySelector('.passkey-setup-banner')).toBeNull();
+  });
+
+  it('should stay hidden when the same nudge was dismissed in this session', async () => {
+    sessionStorage.setItem('nr-passkeys-banner-dismissed', '1700000000');
+    respondWith(() => ({ requiresBanner: true, gracePeriodRemainingDays: 0, nudgeUntil: 1700000000 }));
+    await banner.initialize();
+
+    expect(container.querySelector('.passkey-setup-banner')).toBeNull();
+  });
+
+  it('should stay hidden when dismissed without a nudge and there still is none', async () => {
+    sessionStorage.setItem('nr-passkeys-banner-dismissed', '0');
+    respondWith(() => ({ requiresBanner: true, gracePeriodRemainingDays: 0 }));
+    await banner.initialize();
+
+    expect(container.querySelector('.passkey-setup-banner')).toBeNull();
+  });
+
+  it('should reappear for a new nudge after an earlier one was dismissed', async () => {
+    sessionStorage.setItem('nr-passkeys-banner-dismissed', '1700000000');
+    respondWith(() => ({ requiresBanner: true, gracePeriodRemainingDays: 0, nudgeUntil: 1800000000 }));
+    await banner.initialize();
+
+    expect(container.querySelector('.passkey-setup-banner')).not.toBeNull();
+  });
+
+  it('should show nothing and not throw when the request fails', async () => {
+    respondWith(() => {
+      throw new Error('network down');
+    });
+
+    await expect(banner.initialize()).resolves.toBeUndefined();
+    expect(container.querySelector('.passkey-setup-banner')).toBeNull();
   });
 });

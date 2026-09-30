@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+
 # Architecture
 
 Agent-facing component map for **nr_passkeys_be**. Facts here are verified against the tree; when in doubt, the code and `Tests/Architecture/ArchitectureTest.php` win.

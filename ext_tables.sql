@@ -1,3 +1,6 @@
+-- Copyright (c) 2025-2026 Netresearch DTT GmbH
+-- SPDX-License-Identifier: GPL-2.0-or-later
+
 CREATE TABLE tx_nrpasskeysbe_credential (
     be_user int(11) unsigned NOT NULL DEFAULT 0,
     credential_id varbinary(1024) NOT NULL,

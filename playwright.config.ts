@@ -8,6 +8,9 @@ import { defineConfig, devices } from '@playwright/test';
  *     passes its address in TYPO3_BASE_URL
  *   - set TYPO3_BASE_URL yourself to use an instance that already runs
  * No CI workflow runs this suite at present.
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 const target = process.env.TYPO3_BASE_URL || 'http://localhost:8080';

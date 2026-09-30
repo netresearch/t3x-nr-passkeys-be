@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Netresearch DTT GmbH
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 # cat=basic/100/100; type=string; label=Relying Party ID (rpId):The domain name of your TYPO3 backend (e.g., "example.com"). Leave empty to auto-detect from HTTP_HOST.
 rpId =
 

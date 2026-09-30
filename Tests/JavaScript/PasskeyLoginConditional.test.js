@@ -6,6 +6,9 @@
  * through a jsdom login form with a stubbed WebAuthn API, so the assertions
  * cover the real control flow. The module runs init() on import, which is why
  * each test resets the module registry and rebuilds the DOM first.
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 

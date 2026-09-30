@@ -3,6 +3,9 @@
  *
  * Shared by PasskeyLogin.js and PasskeyManagement.js so the encoding/decoding
  * is implemented (and unit-tested) exactly once.
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 /**

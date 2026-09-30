@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+
 # Contributing to nr_passkeys_be
 
 Thank you for considering contributing to the TYPO3 Passkeys Backend Authentication extension.
@@ -33,13 +36,14 @@ All contributions must pass the following quality gates:
 | Code style | `composer ci:test:php:cgl` | PER-CS3.0 compliance |
 | Static analysis | `composer ci:test:php:phpstan` | PHPStan level 10 |
 | Unit tests | `composer ci:test:php:unit` | All tests pass |
-| Mutation tests | `composer ci:mutation` | MSI >= 80%, covered MSI >= 80% |
+| Mutation tests | `composer ci:mutation` | MSI >= 80%, covered MSI >= 80% (run locally; no CI workflow runs it) |
 
 ### Writing Tests
 
 - New features must include unit tests
 - Bug fixes should include a regression test
-- Functional tests require MySQL (run in CI only)
+- Functional tests need a database: `Build/Scripts/runTests.sh -s functional -d mysql`
+  runs them locally in containers; CI runs them on MySQL in `.github/workflows/ci.yml`
 - Use `declare(strict_types=1)` in all PHP files
 
 ### Code Style
@@ -63,6 +67,63 @@ composer ci:cgl
 - **Bugs**: Use the [bug report template](https://github.com/netresearch/t3x-nr-passkeys-be/issues/new?template=bug_report.md)
 - **Features**: Use the [feature request template](https://github.com/netresearch/t3x-nr-passkeys-be/issues/new?template=feature_request.md)
 - **Security**: See [SECURITY.md](SECURITY.md) for responsible disclosure
+
+## Governance and policies
+
+This extension follows the organisation-wide Netresearch policies:
+
+- [Governance](https://github.com/netresearch/.github/blob/main/GOVERNANCE.md):
+  ownership, roles, how decisions are made and how conflicts are resolved.
+- [Roadmap](https://github.com/netresearch/.github/blob/main/ROADMAP.md):
+  planned and excluded work for the next twelve months.
+- [Handling of dependency and code analysis findings](https://github.com/netresearch/.github/blob/main/SECURITY.md#handling-of-dependency-and-code-analysis-findings):
+  which vulnerability, licence and static-analysis findings must be fixed,
+  by when, and how exceptions are recorded.
+- [Secret management](https://github.com/netresearch/.github/blob/main/SECURITY.md#secret-management):
+  where CI and release credentials are stored, who may use them, how
+  committed secrets are detected, and when secrets are rotated.
+- [Access roster](https://github.com/netresearch/.github/blob/main/docs/access-roster.md):
+  the people and teams with administrative or write access to this
+  repository.
+
+[`.github/CODEOWNERS`](.github/CODEOWNERS) assigns every path of this
+repository to the `@netresearch/typo3` team.
+
+Checks that run on every pull request in this repository:
+
+- `.github/workflows/checks.yml`: Composer Audit (fails on a security
+  advisory for an installed Composer package) and Opengrep SAST, both
+  through `typo3-ci-workflows`' `security.yml` (`.semgrepignore` names the
+  paths this repository leaves out of the scan; which Opengrep findings
+  block a pull request is set by the organisation's
+  [static analysis rule](https://github.com/netresearch/.github/blob/main/SECURITY.md#static-analysis-sast));
+  Dependency Review (fails on a newly added dependency with a vulnerability
+  of severity high or higher); the PHP licence check (`license-check.yml`,
+  fails when the `composer licenses` output matches its forbidden-licence
+  pattern, by default `"(SSPL|BSL)"`); CodeQL for the JavaScript and the
+  workflow files (CodeQL has no PHP analysis; PHPStan and Opengrep cover
+  the PHP code); Betterleaks secret scanning; zizmor for the workflow
+  files; the fuzz test suite; the pull request quality gate
+  (`pr-quality.yml`: a size check on non-draft pull requests and the
+  solo-maintainer auto-approval for non-draft pull requests that an owner,
+  member or collaborator opens from a branch of this repository);
+  and the aggregate `All security checks` job, which fails unless every
+  one of these jobs succeeded or was skipped.
+- `.github/workflows/ci.yml`: PHP lint, code style, PHPStan level 10,
+  Rector, unit tests and functional tests on MySQL for PHP 8.2 to 8.5
+  against TYPO3 12.4, 13.4 and 14.3, and the documentation rendering; and
+  the aggregate `All CI checks` job, which fails unless every CI job
+  succeeded or was skipped.
+- `.github/workflows/check-template-drift.yml`: Template drift compares
+  the `.github/` files managed by the organisation's typo3-extension
+  template with that template.
+- `.github/workflows/codeql.yml`, `dependency-review.yml` and
+  `pr-quality.yml`: standalone callers of the same organisation workflows
+  that `checks.yml` also runs.
+- `.github/workflows/canonical-formatting.yml`, `harness-verify.yml`,
+  `js-tests.yml` (Vitest) and `e2e.yml` (Playwright against TYPO3 13.4 and
+  14.3, skipped when a pull request changes only documentation);
+  `docs.yml` and `ddev-hardening.yml` run when their paths change.
 
 ## License
 

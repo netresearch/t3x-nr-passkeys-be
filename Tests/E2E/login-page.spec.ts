@@ -8,6 +8,9 @@ import { test, expect } from './fixtures';
  *
  * Prerequisites:
  *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh -s e2e` or TYPO3_BASE_URL)
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 test.describe('Passkey Login on Standard Form', () => {

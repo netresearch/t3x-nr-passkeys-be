@@ -1,3 +1,5 @@
+<!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
 <!-- FOR AI AGENTS - Human readability is a side effect, not a goal -->
 <!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-08-19 -->
 <!-- Drift-prone fields (versions, test counts, dates) are intentionally absent -- verify on demand: `gh release view --json tagName,isLatest`; run the relevant suite for counts. -->
@@ -64,7 +66,7 @@ Configuration/       -> TYPO3 config (TCA, Backend routes, Services.yaml, Servic
 Documentation/       -> TYPO3 RST documentation (docs.typo3.org format)
 Resources/Private/   -> Fluid templates (AdminModule, Interstitial, UserSettings), XLIFF files
 Resources/Public/    -> JS modules (Login, Management, Banner, Dashboard, AdminInfo), CSS, Icons
-Tests/               -> Unit, Functional (MySQL, CI only), Fuzz, JavaScript (Vitest),
+Tests/               -> Unit, Functional (MySQL), Fuzz, JavaScript (Vitest),
                         E2E (Playwright), Architecture (PHPat); see Tests/AGENTS.md
 docs/                -> ARCHITECTURE.md (component map + glossary), adr/, exec-plans/
 Makefile             -> Local dev + CI targets (see `make help`)

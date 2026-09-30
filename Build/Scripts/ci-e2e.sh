@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 #
+# Copyright (c) 2025-2026 Netresearch DTT GmbH
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
 # CI wrapper for `runTests.sh -s e2e`.
 #
 # The reusable workflow netresearch/typo3-ci-workflows/.github/workflows/e2e.yml

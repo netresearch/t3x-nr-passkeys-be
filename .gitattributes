@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Netresearch DTT GmbH
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 # Keep development files out of the release archive.
 #
 # `git archive` drops every path marked export-ignore. That governs the release
@@ -31,6 +34,11 @@
 /.gitattributes     export-ignore
 /.gitignore         export-ignore
 /.semgrepignore     export-ignore
+/.php-ast-edit.json export-ignore
+/.sonarcloud.properties export-ignore
+/.bestpractices.json export-ignore
+/renovate.json      export-ignore
+/package-lock.json  export-ignore
 /Makefile           export-ignore
 
 # Architecture decision records — not user documentation
