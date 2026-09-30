@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+
 # Contributing to nr_passkeys_be
 
 Thank you for considering contributing to the TYPO3 Passkeys Backend Authentication extension.

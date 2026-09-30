@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Copyright (c) 2025-2026 Netresearch DTT GmbH
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
 # Remove stale Debian default index.html if it exists
 # This ensures index.php is served instead
 # The index.html can persist in Docker volumes across rebuilds

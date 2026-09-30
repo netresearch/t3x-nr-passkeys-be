@@ -11,6 +11,9 @@
  * 3. Fetch assertion options from server
  * 4. Call navigator.credentials.get()
  * 5. Submit result via the standard TYPO3 login form (#typo3-login-form)
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 import { base64urlToBuffer, bufferToBase64url, bufferToBase64 } from '@netresearch/nr-passkeys-be/Util/Base64.js';
 

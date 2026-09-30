@@ -1,3 +1,6 @@
+<!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
+
 # Copilot Instructions -- nr_passkeys_be
 
 TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passkeys.

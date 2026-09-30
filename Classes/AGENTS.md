@@ -1,3 +1,5 @@
+<!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
 <!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-08-19 -->
 
 # AGENTS.md -- Classes

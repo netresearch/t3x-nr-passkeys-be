@@ -1,2 +1,5 @@
+# Copyright (c) 2025-2026 Netresearch DTT GmbH
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 # python.django.security.django-no-csrf-token false-positive: Fluid template misdetected as Django (--config auto). Not Django; TYPO3 Fluid.
 Resources/Private/Templates/Interstitial/Setup.html

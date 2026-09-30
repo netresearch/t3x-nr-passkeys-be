@@ -2,6 +2,9 @@
  * Passkey Admin Info - FormEngine element for managing passkeys in be_users records.
  *
  * Handles revoke, revoke-all, and unlock interactions via AJAX with sudo mode.
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 import AjaxRequest from '@typo3/core/ajax/ajax-request.js';
 import DocumentService from '@typo3/core/document-service.js';

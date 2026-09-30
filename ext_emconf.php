@@ -1,5 +1,10 @@
 <?php
 
+/*
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 // Do NOT add declare(strict_types=1) — TER cannot parse ext_emconf.php with it.
 
 $EM_CONF[$_EXTKEY] = [

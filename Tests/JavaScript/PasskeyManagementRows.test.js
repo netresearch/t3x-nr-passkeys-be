@@ -2,6 +2,9 @@
  * Row markup of the shipped PasskeyManagement module: the classes each row
  * button and badge carries have to exist in TYPO3's backend.css, or the element
  * renders without the intended styling in the light and dark schemes.
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';

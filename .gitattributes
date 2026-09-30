@@ -1,3 +1,6 @@
+# Copyright (c) 2025-2026 Netresearch DTT GmbH
+# SPDX-License-Identifier: GPL-2.0-or-later
+
 # Keep development files out of the release archive.
 #
 # `git archive` drops every path marked export-ignore. That governs the release

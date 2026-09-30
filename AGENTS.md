@@ -1,3 +1,5 @@
+<!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
+<!-- SPDX-License-Identifier: GPL-2.0-or-later -->
 <!-- FOR AI AGENTS - Human readability is a side effect, not a goal -->
 <!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-08-19 -->
 <!-- Drift-prone fields (versions, test counts, dates) are intentionally absent -- verify on demand: `gh release view --json tagName,isLatest`; run the relevant suite for counts. -->

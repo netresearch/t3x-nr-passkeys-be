@@ -4,6 +4,9 @@
  * These import the SHIPPED helpers from Util/Base64.js — the exact code the login
  * module (PasskeyLogin.js) runs — so the tests exercise the real implementation, not
  * a copy. Full DOM/WebAuthn behaviour is covered by the Playwright E2E tests.
+ *
+ * Copyright (c) 2025-2026 Netresearch DTT GmbH
+ * SPDX-License-Identifier: GPL-2.0-or-later
  */
 import { describe, it, expect } from 'vitest';
 import { base64urlToBuffer, bufferToBase64url, bufferToBase64 } from '../../Resources/Public/JavaScript/Util/Base64.js';
