@@ -94,12 +94,12 @@ Checks that run on every pull request in this repository:
 - `.github/workflows/checks.yml`: Composer Audit (fails on a security
   advisory for an installed Composer package) and Opengrep SAST with the
   `auto` rule set, run with `--error --severity WARNING` (fails on any
-  finding it reports; `.semgrepignore` names the paths this repository leaves out of the
-  scan), both through `typo3-ci-workflows`'
+  finding it reports; `.semgrepignore` names the paths this repository
+  leaves out of the scan), both through `typo3-ci-workflows`'
   `security.yml`; Dependency Review (fails on a newly added dependency with
   a vulnerability of severity high or higher); the PHP licence check
-  (`license-check.yml`, fails on an SSPL or BSL licensed Composer
-  dependency); CodeQL for the JavaScript and the workflow files (CodeQL
+  (`license-check.yml`, fails when the `composer licenses` output matches
+  its forbidden-licence pattern, by default `"(SSPL|BSL)"`); CodeQL for the JavaScript and the workflow files (CodeQL
   has no PHP analysis; PHPStan and Opengrep cover the PHP code);
   Betterleaks secret scanning; zizmor for the workflow files; the fuzz
   test suite; and the pull request quality check.
