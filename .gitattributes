@@ -34,6 +34,11 @@
 /.gitattributes     export-ignore
 /.gitignore         export-ignore
 /.semgrepignore     export-ignore
+/.php-ast-edit.json export-ignore
+/.sonarcloud.properties export-ignore
+/.bestpractices.json export-ignore
+/renovate.json      export-ignore
+/package-lock.json  export-ignore
 /Makefile           export-ignore
 
 # Architecture decision records — not user documentation
