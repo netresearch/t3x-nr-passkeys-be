@@ -11,7 +11,7 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 | File | Purpose |
 |------|---------|
 | `ci.yml` | Test matrix (PHP 8.2-8.5 x TYPO3 ^12.4/^13.4/^14.3). Thin caller of `typo3-ci-workflows/ci.yml@main`: lint, cgl, phpstan (+ unpinned advisory), rector, unit, functional (MySQL), docs render, gate `ci / All CI checks` |
-| `checks.yml` | Security/quality gate. Calls security (composer-audit + opengrep), betterleaks, zizmor, fuzz (fuzz + mutation testing), license-check, codeql, scorecard, dependency-review, pr-quality; gate `All security checks` |
+| `checks.yml` | Security/quality gate. Calls security (composer-audit + opengrep), betterleaks, zizmor, fuzz (fuzz tests; `run-mutation-tests` is not set, so no mutation testing), license-check, codeql, scorecard, dependency-review, pr-quality; gate `All security checks` |
 | `harness-verify.yml` | Agent-harness consistency check via `Build/Scripts/verify-harness.sh` (thin caller of `netresearch/.github` script-check) |
 | `release.yml` | Release orchestrator -- tag push triggers build + TER publish + Packagist verify + docs verify + atomic GitHub release. Thin caller of `typo3-ci-workflows/release-typo3-extension.yml@main` |
 | `republish.yml` | `workflow_dispatch` manual re-run of TER / docs / Packagist verification for an existing tag. Never mutates the GitHub release. Thin caller of `typo3-ci-workflows/republish.yml@main` |
@@ -28,7 +28,7 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 - Any job added to `checks.yml` MUST also be added to its `gate.needs` list -- a job missing there can fail without blocking a merge (silent coverage loss)
 - Branch rulesets require the stable gate names (`ci / All CI checks`, `All security checks`), never per-matrix job names: matrix/PR-only job contexts never materialize on a `merge_group` ref and would stall the merge queue until timeout
 - E2E tests run from `e2e.yml`, a thin caller of the shared `typo3-ci-workflows/.github/workflows/e2e.yml` in `setup-script` mode: `Build/Scripts/ci-e2e.sh` hands over to `Build/Scripts/runTests.sh -s e2e`, which installs its own TYPO3 in containers. The same command is what runs the suite locally. **NEVER use DDEV in CI.**
-- Mutation testing runs in CI inside the `fuzz` reusable (thresholds MSI >= 80%, covered-MSI >= 80%, from `Build/infection.json5`)
+- Mutation testing does not run in CI: `checks.yml` calls the `fuzz` reusable without `run-mutation-tests`, which defaults to false. Run it locally with `composer ci:mutation` (thresholds MSI >= 80%, covered-MSI >= 80%, from `Build/infection.json5`)
 
 ## Conventions
 - Action SHA-pinning, harden-runner, and tool setup are maintained centrally in the reusables; locally-defined steps (e.g. in `ddev-hardening.yml`, the `gate` job) pin to full SHA with version comment
