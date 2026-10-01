@@ -100,9 +100,11 @@ Checks that run on every pull request in this repository:
   Dependency Review (fails on a newly added dependency with a vulnerability
   of severity high or higher); the PHP licence check (`license-check.yml`,
   fails when the `composer licenses` output matches its forbidden-licence
-  pattern, by default `"(SSPL|BSL)"`); CodeQL for the JavaScript and the
-  workflow files (CodeQL has no PHP analysis; PHPStan and Opengrep cover
-  the PHP code); Betterleaks secret scanning; zizmor for the workflow
+  pattern, which by default refuses `SSPL`, `BSL` and `BUSL` and every
+  `SSPL-` or `BUSL-` identifier of any version (`BSL-1.0` passes)); CodeQL
+  for the JavaScript and the workflow files (CodeQL has no PHP analysis;
+  PHPStan and Opengrep cover the PHP code); Betterleaks secret scanning;
+  zizmor for the workflow
   files; the fuzz test suite; the pull request quality gate
   (`pr-quality.yml`: a size check on non-draft pull requests and the
   solo-maintainer auto-approval for non-draft pull requests that an owner,
