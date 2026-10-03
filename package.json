@@ -13,8 +13,8 @@
     },
     "devDependencies": {
         "@playwright/test": "^1.50",
-        "@vitest/coverage-v8": "^4.0",
+        "@vitest/coverage-v8": "^5.0.0",
         "jsdom": "^29.0",
-        "vitest": "^4.0"
+        "vitest": "^5.0.0"
     }
 }
