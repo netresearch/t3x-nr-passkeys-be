@@ -159,7 +159,7 @@ final class BackendThemeMarkupTest extends TestCase
             $source = $unit
                 ->getElementsByTagName('source')
                 ->item(0);
-            $sources[$unit->getAttribute('id')] = $source !== null ? $source->textContent : '';
+            $sources[$unit->getAttribute('id')] = $source?->textContent ?? '';
         }
 
         \ksort($sources);
