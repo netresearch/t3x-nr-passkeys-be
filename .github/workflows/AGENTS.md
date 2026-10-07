@@ -1,6 +1,6 @@
 <!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
 <!-- SPDX-License-Identifier: GPL-2.0-or-later -->
-<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-08-19 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-10-07 -->
 
 # AGENTS.md -- .github/workflows
 
@@ -21,7 +21,6 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 | `ddev-hardening.yml` | Local job: DDEV ref-name sanitization check |
 | `auto-merge-deps.yml` | Auto-merge dependency PRs (Dependabot/Renovate) |
 | `community.yml`, `labeler.yml` | Stale/lock/greetings, PR labeler (org reusables) |
-| `codeql.yml`, `scorecard.yml`, `dependency-review.yml`, `pr-quality.yml` | Standalone thin callers of the same org reusables that `checks.yml` also invokes |
 
 ## Common patterns
 - Every job in a caller grants exactly the reusable's permission contract; `permissions: {}` at workflow level

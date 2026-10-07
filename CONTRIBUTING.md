@@ -119,9 +119,6 @@ Checks that run on every pull request in this repository:
 - `.github/workflows/check-template-drift.yml`: Template drift compares
   the `.github/` files managed by the organisation's typo3-extension
   template with that template.
-- `.github/workflows/codeql.yml`, `dependency-review.yml` and
-  `pr-quality.yml`: standalone callers of the same organisation workflows
-  that `checks.yml` also runs.
 - `.github/workflows/canonical-formatting.yml`, `harness-verify.yml`,
   `js-tests.yml` (Vitest) and `e2e.yml` (Playwright against TYPO3 13.4 and
   14.3, skipped when a pull request changes only documentation);

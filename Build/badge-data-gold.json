@@ -54,7 +54,7 @@
   "hardened_site_justification": "GitHub repository with branch protection (signed commits, required reviews, required CI, no force pushes). CI uses step-security/harden-runner and SHA-pinned actions. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
 
   "security_review_status": "Met",
-  "security_review_justification": "Continuous security analysis: CodeQL SAST on every PR, PHPStan level 10, fuzz testing (3 suites), mutation testing, dependency-review blocking vulnerable dependencies. Security measures documented in Security/Index.rst. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/codeql.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst",
+  "security_review_justification": "Continuous security analysis: CodeQL SAST on every PR, PHPStan level 10, fuzz testing (3 suites), mutation testing, dependency-review blocking vulnerable dependencies. Security measures documented in Security/Index.rst. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/checks.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst",
 
   "hardening_status": "Met",
   "hardening_justification": "step-security/harden-runner on all CI jobs. SHA-pinned GitHub Actions. Minimal token permissions (contents: read). Branch protection requires signed commits. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
