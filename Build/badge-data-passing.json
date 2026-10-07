@@ -171,7 +171,7 @@
   "vulnerabilities_fixed_60_days_justification": "SECURITY.md commits to fixing critical vulnerabilities within 7 days, high within 30 days, and medium within 90 days. All timelines are within or equal to the 60-day expectation for critical/high issues. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
 
   "vulnerabilities_critical_fixed_status": "Met",
-  "vulnerabilities_critical_fixed_justification": "SECURITY.md commits to fixing critical vulnerabilities within 7 days. No known unpatched critical vulnerabilities exist. Dependency vulnerabilities are monitored via Dependabot, composer audit in CI, and dependency-review action. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
+  "vulnerabilities_critical_fixed_justification": "SECURITY.md commits to fixing critical vulnerabilities within 7 days. No known unpatched critical vulnerabilities exist. Dependency vulnerabilities are monitored via Dependabot alerts, composer audit in CI, and dependency-review action. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
 
   "no_leaked_credentials_status": "Met",
   "no_leaked_credentials_justification": "The repository contains no credentials or secrets. .gitignore excludes build artifacts. CI secrets are stored in GitHub encrypted secrets. The TYPO3 encryption key is read from server configuration, never committed. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.gitignore",
