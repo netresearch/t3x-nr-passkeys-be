@@ -1,6 +1,6 @@
 <!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
 <!-- SPDX-License-Identifier: GPL-2.0-or-later -->
-<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-08-19 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-10-07 -->
 
 # AGENTS.md -- Tests
 
@@ -39,7 +39,8 @@ Tests/
 
 ## Setup
 - PHP suites: `composer install`, then run phpunit via the composer scripts below (configs in `Build/phpunit.xml` / `Build/phpunit.functional.xml`)
-- JS/E2E suites: `npm ci` (Vitest config in `vitest.config.mjs`, Playwright specs in `Tests/E2E/`)
+- JS suite: `npm ci` (Vitest config in `vitest.config.mjs`)
+- E2E suite: no host `npm ci` for the containerised run. `Build/Scripts/runTests.sh -s e2e` runs `npm ci` inside the Playwright container; a host `npm ci` is needed only for `npm run test:e2e` against an instance that already runs (`TYPO3_BASE_URL`). Specs in `Tests/E2E/`, config in `playwright.config.ts`
 
 ## Running Tests
 | Type | Command | Notes |

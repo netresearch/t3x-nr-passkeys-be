@@ -56,10 +56,9 @@ export function resetRateLimiter(): string[] {
             // Expected against the instance `-s e2e` provisions: PHP-FPM runs
             // as root there, so the counter files belong to root and their
             // directory is not group-writable — EACCES from the Playwright
-            // container, which runs as somebody else. That instance keeps its
-            // budget fresh a different way: runTests.conf configures a short
-            // rateLimitWindowSeconds, so the counters expire between tests
-            // instead of being deleted.
+            // container, which runs as somebody else. That instance does not
+            // need the reset: runTests.conf raises rateLimitMaxAttempts to 500
+            // per window, more than one suite run spends.
             //
             // Renaming the directory looks like a way around the permission
             // (the parent is world-writable) and is not one: PHP-FPM resolves
@@ -76,7 +75,7 @@ export function resetRateLimiter(): string[] {
         warnedAboutPermissions = true;
         console.warn(
             `Rate limit cache is not writable from here (${notPermitted.join(', ')}); `
-            + 'relying on rateLimitWindowSeconds to expire the counters.',
+            + 'relying on the instance\'s rateLimitMaxAttempts budget.',
         );
     }
 

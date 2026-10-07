@@ -7,7 +7,9 @@ import { defineConfig, devices } from '@playwright/test';
  *   - `./Build/Scripts/runTests.sh -s e2e` installs one in containers and
  *     passes its address in TYPO3_BASE_URL
  *   - set TYPO3_BASE_URL yourself to use an instance that already runs
- * No CI workflow runs this suite at present.
+ * Without either, `npm run test:e2e` targets http://localhost:8080.
+ * CI runs the suite from .github/workflows/e2e.yml against TYPO3 13 and 14,
+ * through Build/Scripts/ci-e2e.sh, which calls `runTests.sh -s e2e`.
  *
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
