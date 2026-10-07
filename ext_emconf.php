@@ -9,7 +9,7 @@
 
 $EM_CONF[$_EXTKEY] = [
     'title' => 'Passkeys Backend Authentication',
-    'description' => 'Passwordless TYPO3 backend authentication via Passkeys (WebAuthn/FIDO2). Enables one-click login with TouchID, FaceID, YubiKey, Windows Hello. By Netresearch.',
+    'description' => 'Passwordless backend login with Passkeys (WebAuthn/FIDO2): one-click sign-in with Touch ID, Face ID, YubiKey or Windows Hello.',
     'category' => 'be',
     'author' => 'Netresearch DTT GmbH',
     'author_email' => '',
