@@ -84,10 +84,10 @@
   "external_dependencies_justification": "All PHP dependencies are declared in composer.json. JavaScript dependencies are declared in package.json. No undeclared external dependencies. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/package.json",
 
   "dependency_monitoring_status": "Met",
-  "dependency_monitoring_justification": "Dependabot is enabled for both Composer and npm ecosystems, automatically creating PRs for dependency updates. The dependency-review action checks for vulnerabilities on every PR. Composer audit runs in CI. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/dependabot.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/dependency-review.yml",
+  "dependency_monitoring_justification": "Renovate (renovate.json, extending netresearch/renovate-config) opens pull requests for Composer and npm dependency updates. The dependency-review action checks for vulnerabilities on every PR. Composer audit runs in CI. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/renovate.json and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/checks.yml",
 
   "updateable_reused_components_status": "Met",
-  "updateable_reused_components_justification": "Composer manages all dependency updates. Dependabot automatically creates PRs for security and version updates. Dependencies are pinned with semver ranges allowing patch updates. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/dependabot.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
+  "updateable_reused_components_justification": "Composer manages all dependency updates. Renovate opens pull requests for dependency updates. Dependencies are pinned with semver ranges allowing patch updates. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/renovate.json and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
 
   "interfaces_current_status": "Met",
   "interfaces_current_justification": "API endpoints are documented in the README (login, self-service, admin routes with HTTP methods and paths) and in the DeveloperGuide RST chapter (controllers, data flow, domain model). See https://github.com/netresearch/t3x-nr-passkeys-be#api-endpoints and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/DeveloperGuide/Index.rst",
@@ -96,13 +96,13 @@
   "automated_integration_testing_justification": "24 functional tests run with a real MySQL database in CI, testing actual database operations (credential CRUD, authentication flow). See https://github.com/netresearch/t3x-nr-passkeys-be/tree/main/Tests/Functional and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
 
   "regression_tests_added50_status": "Met",
-  "regression_tests_added50_justification": "CONTRIBUTING.md states 'Bug fixes should include a regression test'. The PR template includes a test checklist. CI enforces test coverage via mutation testing (MSI >= 80%). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+  "regression_tests_added50_justification": "CONTRIBUTING.md states 'Bug fixes should include a regression test'. The PR template includes a test checklist. Mutation testing (Infection, MSI >= 80%) is available as a local check (`composer ci:mutation`); CI does not run it. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
 
   "test_statement_coverage80_status": "Met",
   "test_statement_coverage80_justification": "93.14% statement coverage measured by Codecov, well above the 80% threshold. Coverage is tracked per PR and enforced via Codecov integration. See https://app.codecov.io/gh/netresearch/t3x-nr-passkeys-be and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
 
   "test_policy_mandated_status": "Met",
-  "test_policy_mandated_justification": "CONTRIBUTING.md mandates tests: 'New features must include unit tests' and 'Bug fixes should include a regression test'. The PR template includes a test checklist item. Mutation testing enforces test quality. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+  "test_policy_mandated_justification": "CONTRIBUTING.md mandates tests: 'New features must include unit tests' and 'Bug fixes should include a regression test'. The PR template includes a test checklist item. Mutation testing (`composer ci:mutation`) is a local quality check; CI does not run it. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
 
   "implement_secure_design_status": "Met",
   "implement_secure_design_justification": "The extension implements OWASP secure design principles: HMAC-SHA256 challenge tokens prevent forgery, nonce replay protection prevents reuse attacks, rate limiting prevents brute force, randomized timing prevents user enumeration, credential ownership verification prevents unauthorized access. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst",

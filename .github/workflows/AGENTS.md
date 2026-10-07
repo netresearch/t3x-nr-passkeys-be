@@ -1,6 +1,6 @@
 <!-- Copyright (c) 2025-2026 Netresearch DTT GmbH -->
 <!-- SPDX-License-Identifier: GPL-2.0-or-later -->
-<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-08-19 -->
+<!-- Managed by agent: keep sections and order; edit content, not structure. Last updated: 2026-10-07 -->
 
 # AGENTS.md -- .github/workflows
 
@@ -16,12 +16,11 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 | `release.yml` | Release orchestrator -- tag push triggers build + TER publish + Packagist verify + docs verify + atomic GitHub release. Thin caller of `typo3-ci-workflows/release-typo3-extension.yml@main` |
 | `republish.yml` | `workflow_dispatch` manual re-run of TER / docs / Packagist verification for an existing tag. Never mutates the GitHub release. Thin caller of `typo3-ci-workflows/republish.yml@main` |
 | `docs.yml` | Documentation render check (`typo3-ci-workflows/docs.yml@main`) |
-| `js-tests.yml` | Vitest suite (`npm run test:js`) via the shared `netresearch/.github` `node-test.yml`; coverage to Codecov flag `js` (informational project status; the default project status covers the PHP flags) |
+| `js-tests.yml` | Vitest suite (`npm run test:js:coverage`) via the shared `netresearch/.github` `node-test.yml`; coverage to Codecov flag `js` (informational project status; the default project status covers the PHP flags) |
 | `check-template-drift.yml` | Enforces that `checks.yml` stays byte-identical to the org template |
 | `ddev-hardening.yml` | Local job: DDEV ref-name sanitization check |
 | `auto-merge-deps.yml` | Auto-merge dependency PRs (Dependabot/Renovate) |
 | `community.yml`, `labeler.yml` | Stale/lock/greetings, PR labeler (org reusables) |
-| `codeql.yml`, `scorecard.yml`, `dependency-review.yml`, `pr-quality.yml` | Standalone thin callers of the same org reusables that `checks.yml` also invokes |
 
 ## Common patterns
 - Every job in a caller grants exactly the reusable's permission contract; `permissions: {}` at workflow level

@@ -15,7 +15,7 @@
   "code_review_standards_justification": "CONTRIBUTING.md documents code review requirements: PHPStan level 10, PER-CS3.0 code style, test coverage, conventional commits. PR template includes quality checklist. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
 
   "two_person_review_status": "Met",
-  "two_person_review_justification": "All PRs require review before merge. Branch protection enforces required reviews. GitHub Copilot is assigned as automated reviewer. Automated quality gates include PHPStan level 10, 309+ tests, fuzz tests, mutation testing (MSI >= 80%), and CodeQL SAST. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
+  "two_person_review_justification": "All PRs require review before merge. Branch protection enforces required reviews. GitHub Copilot is assigned as automated reviewer. Automated quality gates in CI include PHPStan level 10, 309+ tests, fuzz tests and CodeQL SAST; mutation testing (MSI >= 80%) is a local check (`composer ci:mutation`). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
 
   "build_reproducible_status": "N/A",
   "build_reproducible_justification": "Source-distributed PHP library via Composer/Packagist. No compiled binary artifacts are produced. Dependency reproducibility is the consuming application's responsibility via their composer.lock. See https://packagist.org/packages/netresearch/nr-passkeys-be and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
@@ -24,7 +24,7 @@
   "test_invocation_justification": "Tests are invoked via standard Composer scripts: 'composer ci:test:php:unit', 'composer ci:test:php:functional', 'composer ci:test:php:fuzz'. JavaScript tests: 'npm run test:js'. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
 
   "test_continuous_integration_status": "Met",
-  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional, fuzz, and mutation testing jobs. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional and fuzz jobs; mutation testing is not part of CI and runs locally (`composer ci:mutation`). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
 
   "test_statement_coverage90_status": "Met",
   "test_statement_coverage90_justification": "93.14% statement coverage measured by Codecov, exceeding the 90% threshold. Coverage tracked on every PR. See https://app.codecov.io/gh/netresearch/t3x-nr-passkeys-be and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
@@ -54,7 +54,7 @@
   "hardened_site_justification": "GitHub repository with branch protection (signed commits, required reviews, required CI, no force pushes). CI uses step-security/harden-runner and SHA-pinned actions. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",
 
   "security_review_status": "Met",
-  "security_review_justification": "Continuous security analysis: CodeQL SAST on every PR, PHPStan level 10, fuzz testing (3 suites), mutation testing, dependency-review blocking vulnerable dependencies. Security measures documented in Security/Index.rst. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/codeql.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst",
+  "security_review_justification": "Continuous security analysis: CodeQL SAST on every PR, PHPStan level 10, fuzz testing (3 suites), dependency-review blocking vulnerable dependencies. Security measures documented in Security/Index.rst. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/checks.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Documentation/Security/Index.rst",
 
   "hardening_status": "Met",
   "hardening_justification": "step-security/harden-runner on all CI jobs. SHA-pinned GitHub Actions. Minimal token permissions (contents: read). Branch protection requires signed commits. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection",

@@ -108,13 +108,13 @@
   "test_most_justification": "The test suite covers unit, fuzz, functional, and mutation testing across all major code paths. Mutation testing (Infection) enforces MSI >= 80% and covered MSI >= 80%, ensuring most branches are tested. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/infection.json5",
 
   "test_continuous_integration_status": "Met",
-  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. The CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional, fuzz, and mutation jobs. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. The CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional and fuzz jobs; mutation testing is not part of CI and runs locally (`composer ci:mutation`). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
 
   "test_policy_status": "Met",
   "test_policy_justification": "CONTRIBUTING.md states: 'New features must include unit tests' and 'Bug fixes should include a regression test'. PR template includes checkbox 'I have added tests covering my changes'. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests",
 
   "tests_are_added_status": "Met",
-  "tests_are_added_justification": "CONTRIBUTING.md requires tests for all contributions, enforced by the PR checklist and CI quality gates including mutation testing. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+  "tests_are_added_justification": "CONTRIBUTING.md requires tests for all contributions, enforced by the PR checklist and CI quality gates. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
 
   "tests_documented_added_status": "Met",
   "tests_documented_added_justification": "CONTRIBUTING.md requires tests for all new features and bug fixes. Tests are documented with PHPDoc comments and organized in structured directories (Unit, Functional, Fuzz). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests",
@@ -171,7 +171,7 @@
   "vulnerabilities_fixed_60_days_justification": "SECURITY.md commits to fixing critical vulnerabilities within 7 days, high within 30 days, and medium within 90 days. All timelines are within or equal to the 60-day expectation for critical/high issues. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
 
   "vulnerabilities_critical_fixed_status": "Met",
-  "vulnerabilities_critical_fixed_justification": "SECURITY.md commits to fixing critical vulnerabilities within 7 days. No known unpatched critical vulnerabilities exist. Dependency vulnerabilities are monitored via Dependabot, composer audit in CI, and dependency-review action. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
+  "vulnerabilities_critical_fixed_justification": "SECURITY.md commits to fixing critical vulnerabilities within 7 days. No known unpatched critical vulnerabilities exist. Dependency vulnerabilities are monitored via Dependabot alerts, composer audit in CI, and dependency-review action. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#response-timeline",
 
   "no_leaked_credentials_status": "Met",
   "no_leaked_credentials_justification": "The repository contains no credentials or secrets. .gitignore excludes build artifacts. CI secrets are stored in GitHub encrypted secrets. The TYPO3 encryption key is read from server configuration, never committed. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.gitignore",
@@ -180,10 +180,10 @@
   "hardened_site_justification": "The project site (GitHub) uses HTTPS, two-factor authentication, branch protection rules (signed commits, required reviews, required CI checks, no force pushes). GitHub Actions use SHA-pinned dependencies and step-security/harden-runner on every job. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/SECURITY.md#branch-protection and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
 
   "static_analysis_status": "Met",
-  "static_analysis_justification": "PHPStan level 10 (maximum) with ergebnis/phpstan-rules runs in CI. PHP-CS-Fixer enforces PER-CS3.0 coding standard. CodeQL analyzes JavaScript/TypeScript and GitHub Actions. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/codeql.yml",
+  "static_analysis_justification": "PHPStan level 10 (maximum) with ergebnis/phpstan-rules runs in CI. PHP-CS-Fixer enforces PER-CS3.0 coding standard. CodeQL analyzes JavaScript/TypeScript and GitHub Actions. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/checks.yml",
 
   "static_analysis_common_vulnerabilities_status": "Met",
-  "static_analysis_common_vulnerabilities_justification": "CodeQL (SAST) analyzes for common vulnerability patterns in JavaScript and Actions. PHPStan level 10 catches type errors, null references, and dead code. dependency-review-action blocks high-severity vulnerable dependencies. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/codeql.yml and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/dependency-review.yml",
+  "static_analysis_common_vulnerabilities_justification": "CodeQL (SAST) analyzes for common vulnerability patterns in JavaScript and Actions. PHPStan level 10 catches type errors, null references, and dead code. dependency-review-action blocks high-severity vulnerable dependencies. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/checks.yml",
 
   "static_analysis_fixed_status": "Met",
   "static_analysis_fixed_justification": "PHPStan level 10 with 0 errors enforced in CI (pipeline fails on any issue). PHP-CS-Fixer enforced in CI (fails on style violations). All static analysis findings are fixed before merge. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
@@ -201,5 +201,5 @@
   "dynamic_analysis_enable_assertions_justification": "PHP assertions are used in production code for type safety (assert for LanguageService and LoggerInterface types). PHP's strict_types=1 is enabled in all 23 source files, providing runtime type checking. PHPUnit runs with assertions enabled. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/Authentication/PasskeyAuthenticationService.php and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/UserSettings/PasskeySettingsPanel.php",
 
   "dynamic_analysis_fixed_status": "Met",
-  "dynamic_analysis_fixed_justification": "All dynamic analysis issues are fixed: fuzz tests, functional tests, and mutation tests must pass in CI before merge. Mutation testing enforces MSI >= 80% ensuring surviving mutants are addressed. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml"
+  "dynamic_analysis_fixed_justification": "All dynamic analysis issues are fixed: fuzz tests and functional tests must pass in CI before merge. Mutation testing is a local check (`composer ci:mutation`, MSI >= 80%) and is not run by CI. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml"
 }
