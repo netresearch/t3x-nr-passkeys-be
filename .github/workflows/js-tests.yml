@@ -3,7 +3,7 @@
 
 name: JavaScript Tests
 
-# Runs the Vitest suite in Tests/JavaScript (`npm run test:js`). The ES
+# Runs the Vitest suite in Tests/JavaScript (`npm run test:js:coverage`). The ES
 # modules in Resources/Public/JavaScript have unit tests, but no workflow ran
 # them: the shared typo3-ci-workflows ci.yml has no JavaScript job.
 #
