@@ -108,13 +108,13 @@
   "test_most_justification": "The test suite covers unit, fuzz, functional, and mutation testing across all major code paths. Mutation testing (Infection) enforces MSI >= 80% and covered MSI >= 80%, ensuring most branches are tested. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/infection.json5",
 
   "test_continuous_integration_status": "Met",
-  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. The CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional, fuzz, and mutation jobs. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. The CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional and fuzz jobs; mutation testing is not part of CI and runs locally (`composer ci:mutation`). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
 
   "test_policy_status": "Met",
   "test_policy_justification": "CONTRIBUTING.md states: 'New features must include unit tests' and 'Bug fixes should include a regression test'. PR template includes checkbox 'I have added tests covering my changes'. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests",
 
   "tests_are_added_status": "Met",
-  "tests_are_added_justification": "CONTRIBUTING.md requires tests for all contributions, enforced by the PR checklist and CI quality gates including mutation testing. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
+  "tests_are_added_justification": "CONTRIBUTING.md requires tests for all contributions, enforced by the PR checklist and CI quality gates. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/PULL_REQUEST_TEMPLATE.md",
 
   "tests_documented_added_status": "Met",
   "tests_documented_added_justification": "CONTRIBUTING.md requires tests for all new features and bug fixes. Tests are documented with PHPDoc comments and organized in structured directories (Unit, Functional, Fuzz). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests",
@@ -201,5 +201,5 @@
   "dynamic_analysis_enable_assertions_justification": "PHP assertions are used in production code for type safety (assert for LanguageService and LoggerInterface types). PHP's strict_types=1 is enabled in all 23 source files, providing runtime type checking. PHPUnit runs with assertions enabled. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/Authentication/PasskeyAuthenticationService.php and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Classes/UserSettings/PasskeySettingsPanel.php",
 
   "dynamic_analysis_fixed_status": "Met",
-  "dynamic_analysis_fixed_justification": "All dynamic analysis issues are fixed: fuzz tests, functional tests, and mutation tests must pass in CI before merge. Mutation testing enforces MSI >= 80% ensuring surviving mutants are addressed. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml"
+  "dynamic_analysis_fixed_justification": "All dynamic analysis issues are fixed: fuzz tests and functional tests must pass in CI before merge. Mutation testing is a local check (`composer ci:mutation`, MSI >= 80%) and is not run by CI. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml"
 }
