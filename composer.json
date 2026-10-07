@@ -1,6 +1,6 @@
 {
     "name": "netresearch/nr-passkeys-be",
-    "description": "Passkeys Backend Authentication - Passwordless TYPO3 backend authentication via Passkeys (WebAuthn/FIDO2) - by Netresearch",
+    "description": "Passkeys Backend Authentication - Passwordless backend login with Passkeys (WebAuthn/FIDO2): one-click sign-in with Touch ID, Face ID, YubiKey or Windows Hello.",
     "license": "GPL-2.0-or-later",
     "type": "typo3-cms-extension",
     "keywords": [

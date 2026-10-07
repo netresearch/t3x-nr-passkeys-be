@@ -7,7 +7,7 @@
   </a>
 </p>
 
-<h1 align="center">Passkeys Backend Authentication</h1>
+<h1 align="center">Passkeys Backend Authentication for TYPO3</h1>
 
 <p align="center">
   Passwordless TYPO3 backend login via WebAuthn/FIDO2 Passkeys.<br>

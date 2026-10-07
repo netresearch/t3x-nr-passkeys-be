@@ -3,9 +3,9 @@
 
 ..  include:: Includes.rst.txt
 
-==================================
+===============================
 Passkeys Backend Authentication
-==================================
+===============================
 
 :Extension key:
     nr_passkeys_be
