@@ -17,6 +17,10 @@ use ReflectionMethod;
 use TYPO3\CMS\Core\Cache\Backend\FileBackend;
 use TYPO3\CMS\Core\Cache\Backend\SimpleFileBackend;
 
+use function define;
+use function defined;
+use function dirname;
+
 /**
  * Guards the cache backend defaults registered in ext_localconf.php.
  *
@@ -38,8 +42,8 @@ final class ExtLocalconfCacheTest extends TestCase
      */
     private function loadCacheConfiguration(): array
     {
-        if (!\defined('TYPO3')) {
-            \define('TYPO3', true);
+        if (!defined('TYPO3')) {
+            define('TYPO3', true);
         }
 
         $GLOBALS['TYPO3_CONF_VARS'] = [];
@@ -48,7 +52,7 @@ final class ExtLocalconfCacheTest extends TestCase
         // resulting cache configuration matters here. Each test method runs in its own
         // process (see the class attributes), so a single include per process is
         // enough and require_once cannot swallow a needed re-execution.
-        require_once \dirname(__DIR__, 3) . '/ext_localconf.php';
+        require_once dirname(__DIR__, 3) . '/ext_localconf.php';
         $caching = $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations'] ?? null;
         self::assertIsArray($caching);
 
@@ -74,7 +78,7 @@ final class ExtLocalconfCacheTest extends TestCase
     public function nonceCacheBackendEnforcesExpiryAndCollectsGarbage(): void
     {
         $caching = $this->loadCacheConfiguration();
-        $nonce = $caching['nr_passkeys_be_nonce'];
+        $nonce   = $caching['nr_passkeys_be_nonce'];
         self::assertIsArray($nonce);
         $backend = $nonce['backend'] ?? null;
         self::assertIsString($backend);
@@ -101,7 +105,7 @@ final class ExtLocalconfCacheTest extends TestCase
     public function nonceCacheKeepsItsDefaultLifetime(): void
     {
         $caching = $this->loadCacheConfiguration();
-        $nonce = $caching['nr_passkeys_be_nonce'];
+        $nonce   = $caching['nr_passkeys_be_nonce'];
         self::assertIsArray($nonce);
         $options = $nonce['options'] ?? null;
         self::assertIsArray($options);

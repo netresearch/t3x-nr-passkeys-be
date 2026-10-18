@@ -17,6 +17,8 @@ use RuntimeException;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function str_repeat;
+
 #[CoversClass(ExtensionConfigurationService::class)]
 final class ExtensionConfigurationServiceTest extends TestCase
 {
@@ -58,7 +60,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getConfigurationReturnsDefaultValuesWithEmptySettings(): void
     {
         $service = $this->createService([]);
-        $config = $service->getConfiguration();
+        $config  = $service->getConfiguration();
         self::assertSame('', $config->getRpId());
         self::assertSame('TYPO3 Backend', $config->getRpName());
         self::assertSame('', $config->getOrigin());
@@ -85,19 +87,19 @@ final class ExtensionConfigurationServiceTest extends TestCase
     {
         $service = $this->createService(
             [
-                'rpId' => 'example.com',
-                'rpName' => 'My TYPO3 Site',
-                'origin' => 'https://example.com',
-                'challengeTtlSeconds' => 60,
-                'userVerification' => 'preferred',
+                'rpId'                     => 'example.com',
+                'rpName'                   => 'My TYPO3 Site',
+                'origin'                   => 'https://example.com',
+                'challengeTtlSeconds'      => 60,
+                'userVerification'         => 'preferred',
                 'discoverableLoginEnabled' => true,
-                'disablePasswordLogin' => true,
-                'skipMfaOnPasskeyAuth' => false,
-                'rateLimitMaxAttempts' => 20,
-                'rateLimitWindowSeconds' => 600,
-                'lockoutThreshold' => 10,
-                'lockoutDurationSeconds' => 1800,
-                'allowedAlgorithms' => 'ES256,RS256',
+                'disablePasswordLogin'     => true,
+                'skipMfaOnPasskeyAuth'     => false,
+                'rateLimitMaxAttempts'     => 20,
+                'rateLimitWindowSeconds'   => 600,
+                'lockoutThreshold'         => 10,
+                'lockoutDurationSeconds'   => 1800,
+                'allowedAlgorithms'        => 'ES256,RS256',
             ],
         );
         $config = $service->getConfiguration();
@@ -120,7 +122,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getConfigurationHandlesNonArrayReturnFromExtensionConfig(): void
     {
         $service = $this->createService(null);
-        $config = $service->getConfiguration();
+        $config  = $service->getConfiguration();
 
         // Should fall back to all defaults
         self::assertSame('', $config->getRpId());
@@ -164,7 +166,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     #[Test]
     public function getEffectiveOriginBuildsHttpsOriginFromServerVars(): void
     {
-        $_SERVER['HTTPS'] = 'on';
+        $_SERVER['HTTPS']     = 'on';
         $_SERVER['HTTP_HOST'] = 'secure.example.com';
         GeneralUtility::flushInternalRuntimeCaches();
         $service = $this->createService(['origin' => '']);
@@ -174,7 +176,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     #[Test]
     public function getEffectiveOriginBuildsHttpOriginWhenHttpsOff(): void
     {
-        $_SERVER['HTTPS'] = '';
+        $_SERVER['HTTPS']     = '';
         $_SERVER['HTTP_HOST'] = 'plain.example.com';
         GeneralUtility::flushInternalRuntimeCaches();
         $service = $this->createService(['origin' => '']);
@@ -204,7 +206,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getEffectiveOriginIgnoresConfiguredRpIdForOrigin(): void
     {
         // Even when rpId is set, origin should not use it -- origin is a separate setting
-        $_SERVER['HTTPS'] = 'on';
+        $_SERVER['HTTPS']     = 'on';
         $_SERVER['HTTP_HOST'] = 'host.example.com';
         GeneralUtility::flushInternalRuntimeCaches();
         $service = $this->createService(['rpId' => 'rpid.example.com', 'origin' => '']);
@@ -218,7 +220,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     {
         // trustedHostsPattern '.*' makes VerifyHostHeader accept any Host header,
         // so the request-derived rpId would be attacker-controllable.
-        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $_SERVER['HTTP_HOST']                                     = 'attacker.evil.example';
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
         GeneralUtility::flushInternalRuntimeCaches();
         $service = $this->createService(['rpId' => '']);
@@ -231,7 +233,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getEffectiveOriginThrowsWhenHostTrustDisabledByEmptyPattern(): void
     {
         // Empty trustedHostsPattern is also treated as allow-all by VerifyHostHeader.
-        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $_SERVER['HTTP_HOST']                                     = 'attacker.evil.example';
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '';
         GeneralUtility::flushInternalRuntimeCaches();
         $service = $this->createService(['origin' => '']);
@@ -243,7 +245,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     #[Test]
     public function getEffectiveRpIdThrowsWhenHostTrustDisabledByEmptyPattern(): void
     {
-        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $_SERVER['HTTP_HOST']                                     = 'attacker.evil.example';
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '';
         GeneralUtility::flushInternalRuntimeCaches();
         $service = $this->createService(['rpId' => '']);
@@ -255,7 +257,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     #[Test]
     public function getEffectiveOriginThrowsWhenHostTrustDisabledByAllowAllPattern(): void
     {
-        $_SERVER['HTTP_HOST'] = 'attacker.evil.example';
+        $_SERVER['HTTP_HOST']                                     = 'attacker.evil.example';
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['trustedHostsPattern'] = '.*';
         GeneralUtility::flushInternalRuntimeCaches();
         $service = $this->createService(['origin' => '']);
@@ -299,10 +301,10 @@ final class ExtensionConfigurationServiceTest extends TestCase
     #[Test]
     public function getEncryptionKeyReturnsValidKey(): void
     {
-        $key = \str_repeat('a', 32);
+        $key                                                = str_repeat('a', 32);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $key;
-        $service = $this->createService();
-        $result = $service->getEncryptionKey();
+        $service                                            = $this->createService();
+        $result                                             = $service->getEncryptionKey();
         self::assertSame($key, $result);
         unset($GLOBALS['TYPO3_CONF_VARS']);
     }
@@ -310,10 +312,10 @@ final class ExtensionConfigurationServiceTest extends TestCase
     #[Test]
     public function getEncryptionKeyReturnsLongerKeyUnchanged(): void
     {
-        $key = \str_repeat('x', 64);
+        $key                                                = str_repeat('x', 64);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $key;
-        $service = $this->createService();
-        $result = $service->getEncryptionKey();
+        $service                                            = $this->createService();
+        $result                                             = $service->getEncryptionKey();
         self::assertSame($key, $result);
         unset($GLOBALS['TYPO3_CONF_VARS']);
     }
@@ -337,7 +339,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getEncryptionKeyThrowsWhenKeyIsEmpty(): void
     {
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = '';
-        $service = $this->createService();
+        $service                                            = $this->createService();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000050);
 
@@ -352,7 +354,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getEncryptionKeyThrowsWhenKeyIsTooShort(): void
     {
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short-key-under-32';
-        $service = $this->createService();
+        $service                                            = $this->createService();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000050);
 
@@ -367,8 +369,8 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getEncryptionKeyThrowsWhenKeyIsExactly31Chars(): void
     {
         // 31 chars -- one short of the minimum
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('z', 31);
-        $service = $this->createService();
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = str_repeat('z', 31);
+        $service                                            = $this->createService();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000050);
 
@@ -382,10 +384,10 @@ final class ExtensionConfigurationServiceTest extends TestCase
     #[Test]
     public function getEncryptionKeyPassesWhenKeyIsExactly32Chars(): void
     {
-        $key = \str_repeat('k', 32);
+        $key                                                = str_repeat('k', 32);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $key;
-        $service = $this->createService();
-        $result = $service->getEncryptionKey();
+        $service                                            = $this->createService();
+        $result                                             = $service->getEncryptionKey();
         self::assertSame($key, $result);
         unset($GLOBALS['TYPO3_CONF_VARS']);
     }
@@ -394,7 +396,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getEncryptionKeyThrowsWhenTypo3ConfVarsIsNotArray(): void
     {
         $GLOBALS['TYPO3_CONF_VARS'] = 'not-an-array';
-        $service = $this->createService();
+        $service                    = $this->createService();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000050);
 
@@ -409,7 +411,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getEncryptionKeyThrowsWhenSysKeyIsMissing(): void
     {
         $GLOBALS['TYPO3_CONF_VARS'] = ['SYS' => []];
-        $service = $this->createService();
+        $service                    = $this->createService();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000050);
 
@@ -424,7 +426,7 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function getEncryptionKeyThrowsWhenEncryptionKeyIsNotString(): void
     {
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 12345;
-        $service = $this->createService();
+        $service                                            = $this->createService();
         $this->expectException(RuntimeException::class);
         $this->expectExceptionCode(1700000050);
 

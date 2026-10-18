@@ -24,6 +24,10 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
+use function implode;
+use function is_array;
+use function is_int;
+
 #[CoversClass(EnforcementService::class)]
 final class EnforcementServiceTest extends TestCase
 {
@@ -36,9 +40,9 @@ final class EnforcementServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->connectionPool = $this->createMock(ConnectionPool::class);
+        $this->connectionPool       = $this->createMock(ConnectionPool::class);
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
-        $this->subject = new EnforcementService(
+        $this->subject              = new EnforcementService(
             $this->connectionPool,
             $this->credentialRepository,
             $this->createMock(LoggerInterface::class),
@@ -167,9 +171,9 @@ final class EnforcementServiceTest extends TestCase
             ->with(
                 'be_users',
                 self::callback(
-                    static fn(
+                    static fn (
                         array $data,
-                    ): bool => isset($data['passkey_grace_period_start']) && \is_int($data['passkey_grace_period_start']) && $data['passkey_grace_period_start'] > 0,
+                    ): bool => isset($data['passkey_grace_period_start']) && is_int($data['passkey_grace_period_start']) && $data['passkey_grace_period_start'] > 0,
                 ),
                 ['uid' => 42],
             );
@@ -247,7 +251,7 @@ final class EnforcementServiceTest extends TestCase
         $queryBuilder
             ->method('createNamedParameter')
             ->willReturnCallback(
-                static fn(mixed $value): string => \is_array($value) ? \implode(',', $value) : (string) $value,
+                static fn (mixed $value): string => is_array($value) ? implode(',', $value) : (string) $value,
             );
         $queryBuilder
             ->method('executeQuery')

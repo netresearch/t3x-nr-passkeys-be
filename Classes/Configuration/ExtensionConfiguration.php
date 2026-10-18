@@ -9,6 +9,10 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Configuration;
 
+use function array_map;
+use function explode;
+use function in_array;
+
 /**
  * Typed, immutable value object for the extension's configuration settings.
  */
@@ -34,7 +38,7 @@ final readonly class ExtensionConfiguration
         private int $lockoutDurationSeconds = 900,
         private string $allowedAlgorithms = 'ES256',
     ) {
-        $this->userVerification = \in_array($userVerification, self::VALID_USER_VERIFICATION, true) ? $userVerification : 'required';
+        $this->userVerification = in_array($userVerification, self::VALID_USER_VERIFICATION, true) ? $userVerification : 'required';
     }
 
     public function getRpId(): string
@@ -122,6 +126,6 @@ final readonly class ExtensionConfiguration
      */
     public function getAllowedAlgorithmsList(): array
     {
-        return \array_map(trim(...), \explode(',', $this->allowedAlgorithms));
+        return array_map(trim(...), explode(',', $this->allowedAlgorithms));
     }
 }

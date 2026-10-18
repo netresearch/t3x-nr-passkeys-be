@@ -16,6 +16,11 @@ use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function array_values;
+use function is_numeric;
+use function is_string;
+use function time;
+
 /**
  * Resolves the effective passkey enforcement status for a backend user.
  *
@@ -38,13 +43,13 @@ final readonly class EnforcementService
      */
     public function getStatus(array $userRow): EnforcementStatus
     {
-        $uidValue = $userRow['uid'] ?? 0;
-        $beUserUid = \is_numeric($uidValue) ? (int) $uidValue : 0;
-        $passkeyCount = $this->credentialRepository->countByBeUser($beUserUid);
-        $graceValue = $userRow['passkey_grace_period_start'] ?? 0;
-        $gracePeriodStart = \is_numeric($graceValue) ? (int) $graceValue : 0;
-        $usergroupValue = $userRow['usergroup'] ?? '';
-        $groupUids = GeneralUtility::intExplode(',', \is_string($usergroupValue) ? $usergroupValue : '', true);
+        $uidValue         = $userRow['uid'] ?? 0;
+        $beUserUid        = is_numeric($uidValue) ? (int) $uidValue : 0;
+        $passkeyCount     = $this->credentialRepository->countByBeUser($beUserUid);
+        $graceValue       = $userRow['passkey_grace_period_start'] ?? 0;
+        $gracePeriodStart = is_numeric($graceValue) ? (int) $graceValue : 0;
+        $usergroupValue   = $userRow['usergroup'] ?? '';
+        $groupUids        = GeneralUtility::intExplode(',', is_string($usergroupValue) ? $usergroupValue : '', true);
 
         if ($groupUids === []) {
             return new EnforcementStatus(
@@ -55,20 +60,20 @@ final readonly class EnforcementService
             );
         }
 
-        $groups = $this->fetchGroups(\array_values($groupUids));
-        $effectiveLevel = EnforcementLevel::Off;
+        $groups             = $this->fetchGroups(array_values($groupUids));
+        $effectiveLevel     = EnforcementLevel::Off;
         $effectiveGraceDays = 0;
 
         foreach ($groups as $group) {
             $enforcementValue = $group['passkey_enforcement'] ?? '';
-            $level = EnforcementLevel::tryFrom(\is_string($enforcementValue) ? $enforcementValue : '');
+            $level            = EnforcementLevel::tryFrom(is_string($enforcementValue) ? $enforcementValue : '');
             $level ??= EnforcementLevel::Off;
 
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
-            $graceDays = \is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
+            $graceDays      = is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
 
             if ($level->severity() > $effectiveLevel->severity()) {
-                $effectiveLevel = $level;
+                $effectiveLevel     = $level;
                 $effectiveGraceDays = $graceDays;
             } elseif ($level->severity() === $effectiveLevel->severity() && $level->severity() > 0 && ($effectiveGraceDays === 0 || $graceDays < $effectiveGraceDays)) {
                 $effectiveGraceDays = $graceDays;
@@ -94,7 +99,7 @@ final readonly class EnforcementService
     public function startGracePeriod(int $beUserUid): void
     {
         $connection = $this->connectionPool->getConnectionForTable('be_users');
-        $connection->update('be_users', ['passkey_grace_period_start' => \time()], ['uid' => $beUserUid]);
+        $connection->update('be_users', ['passkey_grace_period_start' => time()], ['uid' => $beUserUid]);
 
         $this->logger->info('Grace period started', ['beUserUid' => $beUserUid]);
     }

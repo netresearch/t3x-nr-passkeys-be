@@ -49,9 +49,9 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function gracePeriodRemainingDaysCalculatesDaysLeft(): void
     {
-        $now = 1700000000;
+        $now         = 1700000000;
         $fiveDaysAgo = $now - 5 * 86400;
-        $status = new EnforcementStatus(
+        $status      = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fiveDaysAgo,
@@ -63,9 +63,9 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function gracePeriodRemainingDaysReturnsZeroWhenExpired(): void
     {
-        $now = 1700000000;
+        $now           = 1700000000;
         $twentyDaysAgo = $now - 20 * 86400;
-        $status = new EnforcementStatus(
+        $status        = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $twentyDaysAgo,
@@ -77,9 +77,9 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function gracePeriodRemainingDaysReturnsZeroWhenExactlyExpired(): void
     {
-        $now = 1700000000;
+        $now             = 1700000000;
         $fourteenDaysAgo = $now - 14 * 86400;
-        $status = new EnforcementStatus(
+        $status          = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fourteenDaysAgo,
@@ -107,7 +107,7 @@ final class EnforcementStatusTest extends TestCase
 
         // 5.5 days ago — floor(5.5)=5, ceil(5.5)=6, round(5.5)=6
         $fiveAndHalfDaysAgo = $now - (5 * 86400 + 43200);
-        $status = new EnforcementStatus(
+        $status             = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fiveAndHalfDaysAgo,
@@ -125,7 +125,7 @@ final class EnforcementStatusTest extends TestCase
 
         // Exactly 86399 seconds ago (1 second less than a full day)
         $justUnderOneDay = $now - 86399;
-        $status = new EnforcementStatus(
+        $status          = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 1,
             gracePeriodStart: $justUnderOneDay,
@@ -152,9 +152,9 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredReturnsTrueWhenFullyExpired(): void
     {
-        $now = 1700000000;
+        $now           = 1700000000;
         $twentyDaysAgo = $now - 20 * 86400;
-        $status = new EnforcementStatus(
+        $status        = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $twentyDaysAgo,
@@ -166,9 +166,9 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredReturnsTrueWhenExactlyExpired(): void
     {
-        $now = 1700000000;
+        $now             = 1700000000;
         $fourteenDaysAgo = $now - 14 * 86400;
-        $status = new EnforcementStatus(
+        $status          = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fourteenDaysAgo,
@@ -195,9 +195,9 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredReturnsFalseWhenStillActive(): void
     {
-        $now = 1700000000;
+        $now         = 1700000000;
         $fiveDaysAgo = $now - 5 * 86400;
-        $status = new EnforcementStatus(
+        $status      = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fiveDaysAgo,
@@ -278,9 +278,9 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function canSkipReturnsFalseForRequiredWithExpiredGracePeriod(): void
     {
-        $now = 1700000000;
+        $now           = 1700000000;
         $twentyDaysAgo = $now - 20 * 86400;
-        $status = new EnforcementStatus(
+        $status        = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $twentyDaysAgo,
@@ -292,9 +292,9 @@ final class EnforcementStatusTest extends TestCase
     #[Test]
     public function canSkipReturnsTrueForRequiredWithActiveGracePeriod(): void
     {
-        $now = 1700000000;
+        $now         = 1700000000;
         $fiveDaysAgo = $now - 5 * 86400;
-        $status = new EnforcementStatus(
+        $status      = new EnforcementStatus(
             level: EnforcementLevel::Required,
             gracePeriodDays: 14,
             gracePeriodStart: $fiveDaysAgo,

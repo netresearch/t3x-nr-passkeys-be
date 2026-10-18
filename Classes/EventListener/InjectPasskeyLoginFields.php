@@ -16,6 +16,8 @@ use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
+use function json_encode;
+
 #[AsEventListener(identifier: 'nr-passkeys-be/inject-passkey-login-fields')]
 final readonly class InjectPasskeyLoginFields
 {
@@ -41,10 +43,10 @@ final readonly class InjectPasskeyLoginFields
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyLogin.js');
 
         $passkeyConfig = [
-            'loginOptionsUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_options'),
-            'loginVerifyUrl' => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_verify'),
-            'rpId' => $this->configService->getEffectiveRpId(),
-            'origin' => $this->configService->getEffectiveOrigin(),
+            'loginOptionsUrl'     => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_options'),
+            'loginVerifyUrl'      => (string) $this->uriBuilder->buildUriFromRoute('passkeys_login_verify'),
+            'rpId'                => $this->configService->getEffectiveRpId(),
+            'origin'              => $this->configService->getEffectiveOrigin(),
             'discoverableEnabled' => $config->isDiscoverableLoginEnabled(),
             // The conditional-UI (autofill) ceremony holds its challenge from
             // page load until the user picks a passkey, which can be far later
@@ -55,33 +57,33 @@ final readonly class InjectPasskeyLoginFields
             // pre-authentication, so labels are injected here rather than via
             // addInlineLanguageLabelFile/TYPO3.lang). JS keeps English fallbacks.
             'labels' => [
-                'signIn' => $this->translate('login.provider.label', 'Sign in with a passkey'),
-                'loading' => $this->translate('login.button.passkey.loading', 'Authenticating…'),
+                'signIn'           => $this->translate('login.provider.label', 'Sign in with a passkey'),
+                'loading'          => $this->translate('login.button.passkey.loading', 'Authenticating…'),
                 'errorUnsupported' => $this->translate('login.error.unsupported', 'Your browser does not support Passkeys (WebAuthn).'),
-                'errorInsecure' => $this->translate('login.error.insecure', 'Passkeys require a secure connection (HTTPS).'),
-                'errorRateLimit' => $this->translate('login.error.rateLimit', 'Too many attempts. Please try again later.'),
-                'errorLocked' => $this->translate('login.error.locked', 'Account temporarily locked. Please contact your administrator.'),
-                'errorGeneric' => $this->translate('login.error.generic', 'Authentication failed. Please try again.'),
-                'errorCancelled' => $this->translate('login.error.cancelled', 'Authentication was cancelled.'),
-                'errorNotAllowed' => $this->translate(
+                'errorInsecure'    => $this->translate('login.error.insecure', 'Passkeys require a secure connection (HTTPS).'),
+                'errorRateLimit'   => $this->translate('login.error.rateLimit', 'Too many attempts. Please try again later.'),
+                'errorLocked'      => $this->translate('login.error.locked', 'Account temporarily locked. Please contact your administrator.'),
+                'errorGeneric'     => $this->translate('login.error.generic', 'Authentication failed. Please try again.'),
+                'errorCancelled'   => $this->translate('login.error.cancelled', 'Authentication was cancelled.'),
+                'errorNotAllowed'  => $this->translate(
                     'login.error.notAllowed',
                     'Authentication was cancelled or no passkey found for this site. Have you registered a passkey?',
                 ),
-                'errorSecurity' => $this->translate('login.error.security', 'Security error. Please check your connection.'),
+                'errorSecurity'         => $this->translate('login.error.security', 'Security error. Please check your connection.'),
                 'errorUsernameRequired' => $this->translate('login.error.usernameRequired', 'Please enter your username.'),
-                'errorVerifyFailed' => $this->translate(
+                'errorVerifyFailed'     => $this->translate(
                     'login.error.verifyFailed',
                     'Passkey authentication failed. Your passkey was not accepted. Please try again or sign in with your password.',
                 ),
-                'dividerOr' => $this->translate('login.divider.or', 'or'),
-                'helpTitle' => $this->translate('login.help.title', 'What are passkeys?'),
-                'helpContent' => $this->translate('login.help.content', 'Passkeys are a modern replacement for passwords.'),
+                'dividerOr'     => $this->translate('login.divider.or', 'or'),
+                'helpTitle'     => $this->translate('login.help.title', 'What are passkeys?'),
+                'helpContent'   => $this->translate('login.help.content', 'Passkeys are a modern replacement for passwords.'),
                 'helpLearnMore' => $this->translate('login.help.learnMore', 'Learn more about passkeys'),
             ],
         ];
         $this->pageRenderer->addJsInlineCode(
             'nr-passkeys-be-config',
-            'window.NrPasskeysBeConfig = ' . \json_encode($passkeyConfig, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP) . ';',
+            'window.NrPasskeysBeConfig = ' . json_encode($passkeyConfig, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP) . ';',
             false,
             true,
             true,

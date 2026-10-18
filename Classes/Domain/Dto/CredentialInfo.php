@@ -32,11 +32,11 @@ final readonly class CredentialInfo implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'uid' => $this->uid,
-            'label' => $this->label,
-            'createdAt' => $this->createdAt,
-            'lastUsedAt' => $this->lastUsedAt,
-            'isRevoked' => $this->isRevoked,
+            'uid'          => $this->uid,
+            'label'        => $this->label,
+            'createdAt'    => $this->createdAt,
+            'lastUsedAt'   => $this->lastUsedAt,
+            'isRevoked'    => $this->isRevoked,
             'discoverable' => $this->discoverability->toJsonValue(),
         ];
     }

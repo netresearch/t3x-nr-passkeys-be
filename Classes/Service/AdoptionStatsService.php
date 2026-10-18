@@ -14,6 +14,17 @@ use Netresearch\NrPasskeysBe\Domain\Dto\GroupEnforcementInfo;
 use Netresearch\NrPasskeysBe\Domain\Dto\UserPasskeyStatus;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
+use function array_fill_keys;
+use function array_filter;
+use function array_flip;
+use function array_map;
+use function array_slice;
+use function count;
+use function explode;
+use function implode;
+use function is_numeric;
+use function is_string;
+
 /**
  * Queries passkey adoption statistics for the admin dashboard.
  *
@@ -42,17 +53,17 @@ final readonly class AdoptionStatsService
      */
     public function getStats(): AdoptionStats
     {
-        $totalUsers = $this->countTotalActiveUsers();
-        $usersWithPasskeys = $this->countUsersWithPasskeys();
+        $totalUsers               = $this->countTotalActiveUsers();
+        $usersWithPasskeys        = $this->countUsersWithPasskeys();
         [$groups, $groupTitleMap] = $this->getGroupStats();
-        $usersWithoutPasskeys = $this->getUsersWithoutPasskeys($groupTitleMap);
+        $usersWithoutPasskeys     = $this->getUsersWithoutPasskeys($groupTitleMap);
 
         // The query fetches one extra row past the cap so we can tell the UI the
         // list was truncated rather than silently showing only the first N (ADMIN-4).
-        $truncated = \count($usersWithoutPasskeys) > self::USERS_WITHOUT_PASSKEYS_LIMIT;
+        $truncated = count($usersWithoutPasskeys) > self::USERS_WITHOUT_PASSKEYS_LIMIT;
 
         if ($truncated) {
-            $usersWithoutPasskeys = \array_slice($usersWithoutPasskeys, 0, self::USERS_WITHOUT_PASSKEYS_LIMIT);
+            $usersWithoutPasskeys = array_slice($usersWithoutPasskeys, 0, self::USERS_WITHOUT_PASSKEYS_LIMIT);
         }
 
         return new AdoptionStats(
@@ -90,7 +101,7 @@ final readonly class AdoptionStatsService
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -119,7 +130,7 @@ final readonly class AdoptionStatsService
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -165,7 +176,7 @@ final readonly class AdoptionStatsService
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -192,34 +203,34 @@ final readonly class AdoptionStatsService
             ->executeQuery()
             ->fetchAllAssociative();
         $groupUids = [];
-        $titleMap = [];
+        $titleMap  = [];
 
         foreach ($groups as $group) {
             $uidValue = $group['uid'] ?? 0;
-            $groupUid = \is_numeric($uidValue) ? (int) $uidValue : 0;
+            $groupUid = is_numeric($uidValue) ? (int) $uidValue : 0;
 
             if ($groupUid > 0) {
-                $groupUids[] = $groupUid;
-                $titleValue = $group['title'] ?? '';
-                $titleMap[$groupUid] = \is_string($titleValue) ? $titleValue : '';
+                $groupUids[]         = $groupUid;
+                $titleValue          = $group['title'] ?? '';
+                $titleMap[$groupUid] = is_string($titleValue) ? $titleValue : '';
             }
         }
 
         // Batch-fetch user counts per group (avoids N+1 queries)
-        $totalCountMap = $this->countUsersPerGroup($groupUids);
+        $totalCountMap   = $this->countUsersPerGroup($groupUids);
         $passkeyCountMap = $this->countUsersWithPasskeysPerGroup($groupUids);
-        $result = [];
+        $result          = [];
 
         foreach ($groups as $group) {
-            $uidValue = $group['uid'] ?? 0;
-            $groupUid = \is_numeric($uidValue) ? (int) $uidValue : 0;
-            $titleValue = $group['title'] ?? '';
-            $title = \is_string($titleValue) ? $titleValue : '';
+            $uidValue         = $group['uid'] ?? 0;
+            $groupUid         = is_numeric($uidValue) ? (int) $uidValue : 0;
+            $titleValue       = $group['title'] ?? '';
+            $title            = is_string($titleValue) ? $titleValue : '';
             $enforcementValue = $group['passkey_enforcement'] ?? 'off';
-            $enforcement = \is_string($enforcementValue) ? $enforcementValue : 'off';
-            $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
-            $gracePeriodDays = \is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
-            $result[] = new GroupEnforcementInfo(
+            $enforcement      = is_string($enforcementValue) ? $enforcementValue : 'off';
+            $graceDaysValue   = $group['passkey_grace_period_days'] ?? 0;
+            $gracePeriodDays  = is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
+            $result[]         = new GroupEnforcementInfo(
                 uid: $groupUid,
                 title: $title,
                 enforcement: $enforcement,
@@ -328,22 +339,22 @@ final readonly class AdoptionStatsService
      */
     private function countGroupMembership(array $rows, array $groupUids): array
     {
-        $groupSet = \array_flip($groupUids);
-        $counts = \array_fill_keys($groupUids, 0);
+        $groupSet = array_flip($groupUids);
+        $counts   = array_fill_keys($groupUids, 0);
 
         foreach ($rows as $row) {
             $usergroupValue = $row['usergroup'] ?? '';
-            $usergroup = \is_string($usergroupValue) ? $usergroupValue : '';
+            $usergroup      = is_string($usergroupValue) ? $usergroupValue : '';
 
             if ($usergroup === '') {
                 continue;
             }
 
-            foreach (\explode(',', $usergroup) as $gid) {
-                $intGid = \is_numeric($gid) ? (int) $gid : 0;
+            foreach (explode(',', $usergroup) as $gid) {
+                $intGid = is_numeric($gid) ? (int) $gid : 0;
 
                 if ($intGid > 0 && isset($groupSet[$intGid])) {
-                    $counts[$intGid]++;
+                    ++$counts[$intGid];
                 }
             }
         }
@@ -411,22 +422,22 @@ final readonly class AdoptionStatsService
         $result = [];
 
         foreach ($rows as $row) {
-            $uidValue = $row['uid'] ?? 0;
-            $uid = \is_numeric($uidValue) ? (int) $uidValue : 0;
-            $usergroupValue = $row['usergroup'] ?? '';
-            $usergroup = \is_string($usergroupValue) ? $usergroupValue : '';
+            $uidValue        = $row['uid'] ?? 0;
+            $uid             = is_numeric($uidValue) ? (int) $uidValue : 0;
+            $usergroupValue  = $row['usergroup'] ?? '';
+            $usergroup       = is_string($usergroupValue) ? $usergroupValue : '';
             $graceStartValue = $row['passkey_grace_period_start'] ?? 0;
-            $graceStart = \is_numeric($graceStartValue) ? (int) $graceStartValue : 0;
-            $usernameValue = $row['username'] ?? '';
-            $username = \is_string($usernameValue) ? $usernameValue : '';
-            $realNameValue = $row['realName'] ?? '';
-            $realName = \is_string($realNameValue) ? $realNameValue : '';
-            $userRow = ['uid' => $uid, 'usergroup' => $usergroup, 'passkey_grace_period_start' => $graceStart];
-            $status = $this->enforcementService->getStatus($userRow);
-            $groupTitles = $this->resolveGroupTitles($usergroup, $groupTitleMap);
+            $graceStart      = is_numeric($graceStartValue) ? (int) $graceStartValue : 0;
+            $usernameValue   = $row['username'] ?? '';
+            $username        = is_string($usernameValue) ? $usernameValue : '';
+            $realNameValue   = $row['realName'] ?? '';
+            $realName        = is_string($realNameValue) ? $realNameValue : '';
+            $userRow         = ['uid' => $uid, 'usergroup' => $usergroup, 'passkey_grace_period_start' => $graceStart];
+            $status          = $this->enforcementService->getStatus($userRow);
+            $groupTitles     = $this->resolveGroupTitles($usergroup, $groupTitleMap);
             $nudgeUntilValue = $row['passkey_nudge_until'] ?? 0;
-            $nudgeUntil = \is_numeric($nudgeUntilValue) ? (int) $nudgeUntilValue : 0;
-            $result[] = new UserPasskeyStatus(
+            $nudgeUntil      = is_numeric($nudgeUntilValue) ? (int) $nudgeUntilValue : 0;
+            $result[]        = new UserPasskeyStatus(
                 uid: $uid,
                 username: $username,
                 realName: $realName,
@@ -451,17 +462,17 @@ final readonly class AdoptionStatsService
             return '';
         }
 
-        $uids = \array_filter(\array_map(trim(...), \explode(',', $uidList)));
+        $uids   = array_filter(array_map(trim(...), explode(',', $uidList)));
         $titles = [];
 
         foreach ($uids as $uid) {
-            $intUid = \is_numeric($uid) ? (int) $uid : 0;
+            $intUid = is_numeric($uid) ? (int) $uid : 0;
 
             if ($intUid > 0 && isset($groupTitleMap[$intUid])) {
                 $titles[] = $groupTitleMap[$intUid];
             }
         }
 
-        return \implode(', ', $titles);
+        return implode(', ', $titles);
     }
 }

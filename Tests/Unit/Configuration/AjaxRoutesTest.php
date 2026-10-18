@@ -14,6 +14,11 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Backend\Security\SudoMode\Access\AccessLifetime;
 
+use function dirname;
+use function implode;
+use function in_array;
+use function is_array;
+
 /**
  * Guards the Sudo Mode declaration on the backend AJAX routes.
  *
@@ -42,7 +47,7 @@ final class AjaxRoutesTest extends TestCase
     private function routes(): array
     {
         if (self::$routes === null) {
-            $routes = require_once \dirname(__DIR__, 3) . '/Configuration/Backend/AjaxRoutes.php';
+            $routes = require_once dirname(__DIR__, 3) . '/Configuration/Backend/AjaxRoutes.php';
             self::assertIsArray($routes, 'AjaxRoutes.php must be included exactly once per process');
             self::$routes = $routes;
         }
@@ -94,20 +99,20 @@ final class AjaxRoutesTest extends TestCase
         $missing = [];
 
         foreach ($this->routes() as $identifier => $route) {
-            if (!\is_array($route)) {
+            if (!is_array($route)) {
                 continue;
             }
 
-            if (!\in_array('POST', (array) ($route['methods'] ?? []), true)) {
+            if (!in_array('POST', (array) ($route['methods'] ?? []), true)) {
                 continue;
             }
 
-            if (!\is_array($route['sudoMode'] ?? null)) {
+            if (!is_array($route['sudoMode'] ?? null)) {
                 $missing[] = (string) $identifier;
             }
         }
 
-        self::assertSame([], $missing, 'POST routes without a sudoMode option: ' . \implode(', ', $missing));
+        self::assertSame([], $missing, 'POST routes without a sudoMode option: ' . implode(', ', $missing));
     }
 
     /**

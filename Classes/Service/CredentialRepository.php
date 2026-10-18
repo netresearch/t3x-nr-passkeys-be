@@ -15,6 +15,10 @@ use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 
+use function array_map;
+use function is_numeric;
+use function time;
+
 /**
  * Data access layer for WebAuthn passkey credentials (tx_nrpasskeysbe_credential).
  */
@@ -27,7 +31,7 @@ final readonly class CredentialRepository
     public function findByCredentialId(string $credentialId): ?Credential
     {
         $queryBuilder = $this->getQueryBuilder();
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('*')
             ->from(self::TABLE)
             ->where(
@@ -60,7 +64,7 @@ final readonly class CredentialRepository
     public function findByBeUser(int $beUserUid): array
     {
         $queryBuilder = $this->getQueryBuilder();
-        $rows = $queryBuilder
+        $rows         = $queryBuilder
             ->select('*')
             ->from(self::TABLE)
             ->where(
@@ -81,17 +85,17 @@ final readonly class CredentialRepository
             ->executeQuery()
             ->fetchAllAssociative();
 
-        return \array_map(Credential::fromArray(...), $rows);
+        return array_map(Credential::fromArray(...), $rows);
     }
 
     public function save(Credential $credential): int
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $now = \time();
-        $data = $credential->toArray();
+        $now        = time();
+        $data       = $credential->toArray();
         unset($data['uid']);
-        $data['tstamp'] = $now;
-        $data['crdate'] = $now;
+        $data['tstamp']     = $now;
+        $data['crdate']     = $now;
         $data['created_at'] = $now;
 
         // Bind the binary columns by their schema type so the stored storage class
@@ -100,9 +104,9 @@ final readonly class CredentialRepository
             self::TABLE,
             $data,
             [
-                'credential_id' => ParameterType::BINARY,
+                'credential_id'   => ParameterType::BINARY,
                 'public_key_cose' => ParameterType::LARGE_OBJECT,
-                'user_handle' => ParameterType::BINARY,
+                'user_handle'     => ParameterType::BINARY,
             ],
         );
         $uid = (int) $connection->lastInsertId();
@@ -117,14 +121,14 @@ final readonly class CredentialRepository
     public function updateLastUsed(int $uid): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $now = \time();
+        $now        = time();
         $connection->update(self::TABLE, ['last_used_at' => $now, 'tstamp' => $now], ['uid' => $uid]);
     }
 
     public function updateSignCount(int $uid, int $newCount): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $connection->update(self::TABLE, ['sign_count' => $newCount, 'tstamp' => \time()], ['uid' => $uid]);
+        $connection->update(self::TABLE, ['sign_count' => $newCount, 'tstamp' => time()], ['uid' => $uid]);
 
         $this->logger->debug('Credential sign count updated', ['credentialUid' => $uid, 'newSignCount' => $newCount]);
     }
@@ -132,13 +136,13 @@ final readonly class CredentialRepository
     public function updateLabel(int $uid, string $label): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $connection->update(self::TABLE, ['label' => $label, 'tstamp' => \time()], ['uid' => $uid]);
+        $connection->update(self::TABLE, ['label' => $label, 'tstamp' => time()], ['uid' => $uid]);
     }
 
     public function delete(int $uid): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $connection->update(self::TABLE, ['deleted' => 1, 'tstamp' => \time()], ['uid' => $uid]);
+        $connection->update(self::TABLE, ['deleted' => 1, 'tstamp' => time()], ['uid' => $uid]);
 
         $this->logger->info('Passkey credential deleted (soft delete)', ['credentialUid' => $uid]);
     }
@@ -146,7 +150,7 @@ final readonly class CredentialRepository
     public function revoke(int $uid, int $adminUid): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
-        $now = \time();
+        $now        = time();
         $connection->update(
             self::TABLE,
             ['revoked_at' => $now, 'revoked_by' => $adminUid, 'tstamp' => $now],
@@ -161,7 +165,7 @@ final readonly class CredentialRepository
     public function countByBeUser(int $beUserUid): int
     {
         $queryBuilder = $this->getQueryBuilder();
-        $result = $queryBuilder
+        $result       = $queryBuilder
             ->count('uid')
             ->from(self::TABLE)
             ->where(
@@ -181,7 +185,7 @@ final readonly class CredentialRepository
             ->executeQuery()
             ->fetchOne();
 
-        return \is_numeric($result) ? (int) $result : 0;
+        return is_numeric($result) ? (int) $result : 0;
     }
 
     /**
@@ -190,7 +194,7 @@ final readonly class CredentialRepository
     public function findAllByBeUser(int $beUserUid): array
     {
         $queryBuilder = $this->getQueryBuilder();
-        $rows = $queryBuilder
+        $rows         = $queryBuilder
             ->select('*')
             ->from(self::TABLE)
             ->where(
@@ -208,13 +212,13 @@ final readonly class CredentialRepository
             ->executeQuery()
             ->fetchAllAssociative();
 
-        return \array_map(Credential::fromArray(...), $rows);
+        return array_map(Credential::fromArray(...), $rows);
     }
 
     public function findByUidAndBeUser(int $uid, int $beUserUid): ?Credential
     {
         $queryBuilder = $this->getQueryBuilder();
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('*')
             ->from(self::TABLE)
             ->where(

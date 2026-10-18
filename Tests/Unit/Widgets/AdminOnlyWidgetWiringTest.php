@@ -18,6 +18,9 @@ use TYPO3\CMS\Dashboard\Widgets\AdminOnlyWidgetInterface;
 use TYPO3\CMS\Dashboard\Widgets\DoughnutChartWidget;
 use TYPO3\CMS\Dashboard\Widgets\NumberWithIconWidget;
 
+use function interface_exists;
+use function is_a;
+
 /**
  * The dashboard's DashboardWidgetPass derives the adminOnly flag from the
  * widget class implementing AdminOnlyWidgetInterface. These tests pin the
@@ -36,7 +39,7 @@ final class AdminOnlyWidgetWiringTest extends TestCase
     {
         parent::setUp();
 
-        if (!\interface_exists(AdminOnlyWidgetInterface::class)) {
+        if (!interface_exists(AdminOnlyWidgetInterface::class)) {
             self::markTestSkipped('AdminOnlyWidgetInterface requires TYPO3 v14.3+');
         }
     }
@@ -44,15 +47,15 @@ final class AdminOnlyWidgetWiringTest extends TestCase
     #[Test]
     public function doughnutWidgetIsAdminOnlyAndExtendsCoreWidget(): void
     {
-        self::assertTrue(\is_a(AdminOnlyDoughnutChartWidget::class, AdminOnlyWidgetInterface::class, true));
-        self::assertTrue(\is_a(AdminOnlyDoughnutChartWidget::class, DoughnutChartWidget::class, true));
-        self::assertTrue(\is_a(AdminOnlyDoughnutChartWidget::class, PasskeyAdoptionChartWidget::class, true));
+        self::assertTrue(is_a(AdminOnlyDoughnutChartWidget::class, AdminOnlyWidgetInterface::class, true));
+        self::assertTrue(is_a(AdminOnlyDoughnutChartWidget::class, DoughnutChartWidget::class, true));
+        self::assertTrue(is_a(AdminOnlyDoughnutChartWidget::class, PasskeyAdoptionChartWidget::class, true));
     }
 
     #[Test]
     public function numberWithIconWidgetIsAdminOnlyAndExtendsCoreWidget(): void
     {
-        self::assertTrue(\is_a(AdminOnlyNumberWithIconWidget::class, AdminOnlyWidgetInterface::class, true));
-        self::assertTrue(\is_a(AdminOnlyNumberWithIconWidget::class, NumberWithIconWidget::class, true));
+        self::assertTrue(is_a(AdminOnlyNumberWithIconWidget::class, AdminOnlyWidgetInterface::class, true));
+        self::assertTrue(is_a(AdminOnlyNumberWithIconWidget::class, NumberWithIconWidget::class, true));
     }
 }

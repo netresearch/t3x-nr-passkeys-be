@@ -11,6 +11,8 @@ namespace Netresearch\NrPasskeysBe\Domain\Dto;
 
 use JsonSerializable;
 
+use function round;
+
 /**
  * Read-only projection of a backend user group's passkey enforcement status.
  *
@@ -38,7 +40,7 @@ final readonly class GroupEnforcementInfo implements JsonSerializable
             return 0.0;
         }
 
-        return \round($this->usersWithPasskeys / $this->totalUsers * 100, 1);
+        return round($this->usersWithPasskeys / $this->totalUsers * 100, 1);
     }
 
     /**
@@ -47,12 +49,12 @@ final readonly class GroupEnforcementInfo implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'uid' => $this->uid,
-            'title' => $this->title,
-            'enforcement' => $this->enforcement,
-            'gracePeriodDays' => $this->gracePeriodDays,
-            'totalUsers' => $this->totalUsers,
-            'usersWithPasskeys' => $this->usersWithPasskeys,
+            'uid'                => $this->uid,
+            'title'              => $this->title,
+            'enforcement'        => $this->enforcement,
+            'gracePeriodDays'    => $this->gracePeriodDays,
+            'totalUsers'         => $this->totalUsers,
+            'usersWithPasskeys'  => $this->usersWithPasskeys,
             'adoptionPercentage' => $this->adoptionPercentage(),
         ];
     }

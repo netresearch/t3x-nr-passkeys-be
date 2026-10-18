@@ -24,6 +24,17 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Webauthn\PublicKeyCredentialDescriptor;
 
+use function array_keys;
+use function array_map;
+use function array_values;
+use function count;
+use function hash;
+use function ord;
+use function sprintf;
+use function str_repeat;
+use function strlen;
+use function substr;
+
 /**
  * The decoy assertion options are the anti-enumeration defence for the public
  * login-options endpoint, so what matters is that an observer cannot tell a decoy
@@ -89,13 +100,13 @@ final class AssertionDecoyTest extends TestCase
         $challengeService = $this->createMock(ChallengeService::class);
         $challengeService
             ->method('generateChallenge')
-            ->willReturn(\str_repeat("\x01", 32));
+            ->willReturn(str_repeat("\x01", 32));
         $challengeService
             ->method('createChallengeToken')
             ->willReturn('challenge-token');
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
-        $logger = $this->createMock(LoggerInterface::class);
-        $this->subject = new AssertionService(
+        $logger                     = $this->createMock(LoggerInterface::class);
+        $this->subject              = new AssertionService(
             $configService,
             $challengeService,
             $this->credentialRepository,
@@ -109,17 +120,17 @@ final class AssertionDecoyTest extends TestCase
      */
     private function decoysFor(string $username): array
     {
-        return \array_values($this->subject->createDecoyAssertionOptions($username)->options->allowCredentials);
+        return array_values($this->subject->createDecoyAssertionOptions($username)->options->allowCredentials);
     }
 
     #[Test]
     public function decoysAreStableForTheSameUsername(): void
     {
-        $first = $this->decoysFor('alice');
+        $first  = $this->decoysFor('alice');
         $second = $this->decoysFor('alice');
         self::assertSame(
-            \array_map(static fn(PublicKeyCredentialDescriptor $d): string => $d->id, $first),
-            \array_map(static fn(PublicKeyCredentialDescriptor $d): string => $d->id, $second),
+            array_map(static fn (PublicKeyCredentialDescriptor $d): string => $d->id, $first),
+            array_map(static fn (PublicKeyCredentialDescriptor $d): string => $d->id, $second),
             'Repeated requests for the same unknown username must not change the answer',
         );
     }
@@ -140,12 +151,12 @@ final class AssertionDecoyTest extends TestCase
         $counts = [];
 
         foreach (self::SAMPLE_USERNAMES as $username) {
-            $counts[\count($this->decoysFor($username))] = true;
+            $counts[count($this->decoysFor($username))] = true;
         }
 
-        self::assertGreaterThan(1, \count($counts), 'Decoy descriptor count must not be fixed');
+        self::assertGreaterThan(1, count($counts), 'Decoy descriptor count must not be fixed');
 
-        foreach (\array_keys($counts) as $count) {
+        foreach (array_keys($counts) as $count) {
             self::assertGreaterThanOrEqual(1, $count);
             self::assertLessThanOrEqual(3, $count);
         }
@@ -162,13 +173,13 @@ final class AssertionDecoyTest extends TestCase
 
         foreach (self::SAMPLE_USERNAMES as $username) {
             foreach ($this->decoysFor($username) as $descriptor) {
-                $lengths[\strlen($descriptor->id)] = true;
+                $lengths[strlen($descriptor->id)] = true;
             }
         }
 
-        self::assertGreaterThan(1, \count($lengths), 'Decoy credential-ID length must not be fixed');
+        self::assertGreaterThan(1, count($lengths), 'Decoy credential-ID length must not be fixed');
 
-        foreach (\array_keys($lengths) as $length) {
+        foreach (array_keys($lengths) as $length) {
             self::assertContains($length, [16, 20, 32, 64], 'Decoy IDs must use realistic byte lengths');
         }
     }
@@ -181,7 +192,7 @@ final class AssertionDecoyTest extends TestCase
     public function someDecoysCarryPlausibleTransports(): void
     {
         $withTransports = 0;
-        $seen = [];
+        $seen           = [];
 
         foreach (self::SAMPLE_USERNAMES as $username) {
             foreach ($this->decoysFor($username) as $descriptor) {
@@ -199,7 +210,7 @@ final class AssertionDecoyTest extends TestCase
 
         self::assertGreaterThan(0, $withTransports, 'Decoys must sometimes report transports');
 
-        foreach (\array_keys($seen) as $transport) {
+        foreach (array_keys($seen) as $transport) {
             self::assertContains($transport, ['internal', 'hybrid', 'usb', 'nfc']);
         }
     }
@@ -233,7 +244,7 @@ final class AssertionDecoyTest extends TestCase
         self::assertIsArray($sets);
         self::assertNotSame([], $lengths);
         self::assertNotSame([], $sets);
-        $total = 0;
+        $total           = 0;
         $selfIdentifying = 0;
 
         foreach (self::SAMPLE_USERNAMES as $username) {
@@ -242,9 +253,9 @@ final class AssertionDecoyTest extends TestCase
 
                 // Exactly the test an attacker can run, using only what the endpoint
                 // returns: the raw credential id and the transports beside it.
-                $id = $descriptor->id;
-                $lengthMatches = \strlen($id) === $lengths[\ord($id[0]) % \count($lengths)];
-                $transportsMatch = $descriptor->transports === $sets[\ord($id[1]) % \count($sets)];
+                $id              = $descriptor->id;
+                $lengthMatches   = strlen($id) === $lengths[ord($id[0]) % count($lengths)];
+                $transportsMatch = $descriptor->transports === $sets[ord($id[1]) % count($sets)];
 
                 if ($lengthMatches && $transportsMatch) {
                     ++$selfIdentifying;
@@ -259,7 +270,7 @@ final class AssertionDecoyTest extends TestCase
         self::assertLessThan(
             $total / 2,
             $selfIdentifying,
-            \sprintf(
+            sprintf(
                 'A decoy id must not encode its own shape: %d of %d descriptors are still self-identifying',
                 $selfIdentifying,
                 $total,
@@ -285,14 +296,14 @@ final class AssertionDecoyTest extends TestCase
             foreach ($this->decoysFor($username) as $descriptor) {
                 $id = $descriptor->id;
 
-                if (\strlen($id) <= 32) {
+                if (strlen($id) <= 32) {
                     continue;
                 }
 
                 ++$longIds;
                 self::assertNotSame(
-                    \substr($id, 32),
-                    \hash('sha256', \substr($id, 0, 32) . '|1', true),
+                    substr($id, 32),
+                    hash('sha256', substr($id, 0, 32) . '|1', true),
                     'A decoy id longer than one block must not let its tail be computed from its head',
                 );
             }
@@ -322,10 +333,10 @@ final class AssertionDecoyTest extends TestCase
             'An existing user without a passkey must not answer with an empty allowCredentials',
         );
         self::assertSame(
-            \array_map(static fn(PublicKeyCredentialDescriptor $d): string => $d->id, $this->decoysFor('alice')),
-            \array_map(
-                static fn(PublicKeyCredentialDescriptor $d): string => $d->id,
-                \array_values($options->allowCredentials),
+            array_map(static fn (PublicKeyCredentialDescriptor $d): string => $d->id, $this->decoysFor('alice')),
+            array_map(
+                static fn (PublicKeyCredentialDescriptor $d): string => $d->id,
+                array_values($options->allowCredentials),
             ),
             'A passkey-less known user must be indistinguishable from an unknown username',
         );
@@ -340,6 +351,6 @@ final class AssertionDecoyTest extends TestCase
             ->willReturn([$credential]);
         $options = $this->subject->createAssertionOptions('alice', 42)->options;
         self::assertCount(1, $options->allowCredentials);
-        self::assertSame('real-credential-id', \array_values($options->allowCredentials)[0]->id);
+        self::assertSame('real-credential-id', array_values($options->allowCredentials)[0]->id);
     }
 }

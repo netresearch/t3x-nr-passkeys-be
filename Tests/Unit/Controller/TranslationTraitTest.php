@@ -53,7 +53,7 @@ final class TranslationTraitTest extends TestCase
                 'Translated value',
             );
         $GLOBALS['LANG'] = $langMock;
-        $result = $this->subject->callTranslate('some.key', 'Fallback value');
+        $result          = $this->subject->callTranslate('some.key', 'Fallback value');
         self::assertSame('Translated value', $result);
     }
 
@@ -69,7 +69,7 @@ final class TranslationTraitTest extends TestCase
     public function translateReturnsFallbackWhenGlobalsLangIsNotLanguageService(): void
     {
         $GLOBALS['LANG'] = 'not-a-language-service-object';
-        $result = $this->subject->callTranslate('some.key', 'Fallback value');
+        $result          = $this->subject->callTranslate('some.key', 'Fallback value');
         self::assertSame('Fallback value', $result);
     }
 
@@ -77,7 +77,7 @@ final class TranslationTraitTest extends TestCase
     public function translateReturnsFallbackWhenGlobalsLangIsNull(): void
     {
         $GLOBALS['LANG'] = null;
-        $result = $this->subject->callTranslate('some.key', 'Fallback value');
+        $result          = $this->subject->callTranslate('some.key', 'Fallback value');
         self::assertSame('Fallback value', $result);
     }
 
@@ -89,7 +89,7 @@ final class TranslationTraitTest extends TestCase
             ->method('sL')
             ->willReturn('');
         $GLOBALS['LANG'] = $langMock;
-        $result = $this->subject->callTranslate('missing.key', 'My fallback');
+        $result          = $this->subject->callTranslate('missing.key', 'My fallback');
         self::assertSame('My fallback', $result);
     }
 
@@ -120,7 +120,7 @@ final class TranslationTraitTest extends TestCase
             )
             ->willReturn('');
         $GLOBALS['LANG'] = $langMock;
-        $result = $this->subject->callTranslate('', 'empty key fallback');
+        $result          = $this->subject->callTranslate('', 'empty key fallback');
         self::assertSame('empty key fallback', $result);
     }
 }

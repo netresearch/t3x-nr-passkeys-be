@@ -22,6 +22,10 @@ use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
+use function count;
+use function hash;
+use function str_starts_with;
+
 #[CoversClass(RateLimiterService::class)]
 final class RateLimiterServiceTest extends TestCase
 {
@@ -41,12 +45,12 @@ final class RateLimiterServiceTest extends TestCase
     {
         parent::setUp();
         $this->rateLimitCacheMock = $this->createMock(FrontendInterface::class);
-        $this->configService = $this->createConfigService(
+        $this->configService      = $this->createConfigService(
             [
-                'rateLimitMaxAttempts' => 5,
+                'rateLimitMaxAttempts'   => 5,
                 'rateLimitWindowSeconds' => 300,
-                'lockoutThreshold' => 3,
-                'lockoutUserThreshold' => 10,
+                'lockoutThreshold'       => 3,
+                'lockoutUserThreshold'   => 10,
                 'lockoutDurationSeconds' => 900,
             ],
         );
@@ -59,7 +63,7 @@ final class RateLimiterServiceTest extends TestCase
             ->method('createLocker')
             ->willReturn($this->lockerMock);
         $this->loggerMock = $this->createMock(LoggerInterface::class);
-        $this->subject = new RateLimiterService(
+        $this->subject    = new RateLimiterService(
             $this->rateLimitCacheMock,
             $this->configService,
             $this->lockFactoryMock,
@@ -173,8 +177,8 @@ final class RateLimiterServiceTest extends TestCase
     #[Test]
     public function checkLockoutThrowsWhenPerUserThresholdExceeded(): void
     {
-        $ipKey = 'lo_' . \hash('sha256', 'admin|192.168.1.1');
-        $userKey = 'lou_' . \hash('sha256', 'admin');
+        $ipKey   = 'lo_' . hash('sha256', 'admin|192.168.1.1');
+        $userKey = 'lou_' . hash('sha256', 'admin');
 
         // Per-IP counter is under threshold (2 < 3) but per-user counter is at threshold (10 >= 10)
         $this->rateLimitCacheMock
@@ -204,7 +208,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn(false);
-        $expectedTag = 'lockout_' . \hash('sha256', 'admin');
+        $expectedTag = 'lockout_' . hash('sha256', 'admin');
         $this->rateLimitCacheMock
             ->expects(self::exactly(2))
             ->method('set')
@@ -250,9 +254,7 @@ final class RateLimiterServiceTest extends TestCase
             ->with(
                 self::isString(),
                 '3',
-                self::callback(
-                    static fn(array $tags): bool => \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_'),
-                ),
+                self::callback(static fn (array $tags): bool => count($tags) === 1 && str_starts_with($tags[0], 'lockout_')),
                 900,
             );
         $this->subject->recordFailure('admin', '192.168.1.1');
@@ -261,13 +263,13 @@ final class RateLimiterServiceTest extends TestCase
     #[Test]
     public function recordSuccessClearsBothLockoutKeys(): void
     {
-        $ipKey = 'lo_' . \hash('sha256', 'admin|192.168.1.1');
-        $userKey = 'lou_' . \hash('sha256', 'admin');
+        $ipKey   = 'lo_' . hash('sha256', 'admin|192.168.1.1');
+        $userKey = 'lou_' . hash('sha256', 'admin');
         $this->rateLimitCacheMock
             ->expects(self::exactly(2))
             ->method('remove')
             ->with(
-                self::callback(static fn(string $key): bool => $key === $ipKey || $key === $userKey),
+                self::callback(static fn (string $key): bool => $key === $ipKey || $key === $userKey),
             );
         $this->subject->recordSuccess('admin', '192.168.1.1');
     }
@@ -295,7 +297,7 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::once())
             ->method('flushByTag')
             ->with(
-                'lockout_' . \hash('sha256', 'admin'),
+                'lockout_' . hash('sha256', 'admin'),
             );
 
         // remove() should NOT be called (it only does flushByTag path)
@@ -312,7 +314,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn(false);
-        $expectedKey = 'rl_' . \hash('sha256', 'register/passkey|192.168.1.1');
+        $expectedKey = 'rl_' . hash('sha256', 'register/passkey|192.168.1.1');
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('set')
@@ -326,9 +328,9 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn(false);
-        $expectedIpKey = 'lo_' . \hash('sha256', 'user@example.com|2001:db8::1');
-        $expectedUserKey = 'lou_' . \hash('sha256', 'user@example.com');
-        $setCalls = [];
+        $expectedIpKey   = 'lo_' . hash('sha256', 'user@example.com|2001:db8::1');
+        $expectedUserKey = 'lou_' . hash('sha256', 'user@example.com');
+        $setCalls        = [];
         $this->rateLimitCacheMock
             ->expects(self::exactly(2))
             ->method('set')
@@ -350,7 +352,7 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::once())
             ->method('flushByTag')
             ->with(
-                'lockout_' . \hash('sha256', 'testuser'),
+                'lockout_' . hash('sha256', 'testuser'),
             );
         $this->rateLimitCacheMock
             ->expects(self::never())
@@ -361,9 +363,9 @@ final class RateLimiterServiceTest extends TestCase
     #[Test]
     public function recordSuccessClearsCorrectKeys(): void
     {
-        $expectedIpKey = 'lo_' . \hash('sha256', 'admin|192.168.1.1');
-        $expectedUserKey = 'lou_' . \hash('sha256', 'admin');
-        $removedKeys = [];
+        $expectedIpKey   = 'lo_' . hash('sha256', 'admin|192.168.1.1');
+        $expectedUserKey = 'lou_' . hash('sha256', 'admin');
+        $removedKeys     = [];
         $this->rateLimitCacheMock
             ->expects(self::exactly(2))
             ->method('remove')
@@ -386,7 +388,7 @@ final class RateLimiterServiceTest extends TestCase
         $this->rateLimitCacheMock
             ->method('get')
             ->willReturn(false);
-        $expectedKey = 'rl_' . \hash('sha256', 'login:options/v2|::1');
+        $expectedKey = 'rl_' . hash('sha256', 'login:options/v2|::1');
         $this->rateLimitCacheMock
             ->expects(self::once())
             ->method('set')
@@ -406,9 +408,7 @@ final class RateLimiterServiceTest extends TestCase
             ->with(
                 self::isString(),
                 '2',
-                self::callback(
-                    static fn(array $tags): bool => \count($tags) === 1 && \str_starts_with($tags[0], 'lockout_'),
-                ),
+                self::callback(static fn (array $tags): bool => count($tags) === 1 && str_starts_with($tags[0], 'lockout_')),
                 900,
             );
         $this->subject->recordFailure('testuser', '10.0.0.1');

@@ -25,6 +25,10 @@ use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
+use function random_bytes;
+use function random_int;
+use function str_repeat;
+
 final class RequestPayloadFuzzTest extends TestCase
 {
     private LoginController $controller;
@@ -47,8 +51,8 @@ final class RequestPayloadFuzzTest extends TestCase
         $configService
             ->method('getConfiguration')
             ->willReturn(new ExtensionConfiguration());
-        $rateLimiter = $this->createMock(RateLimiterService::class);
-        $connectionPool = $this->createMock(ConnectionPool::class);
+        $rateLimiter      = $this->createMock(RateLimiterService::class);
+        $connectionPool   = $this->createMock(ConnectionPool::class);
         $this->controller = new LoginController($webAuthnService, $configService, $rateLimiter, $connectionPool, new NullLogger());
     }
 
@@ -73,9 +77,9 @@ final class RequestPayloadFuzzTest extends TestCase
 
         yield 'boolean' => ['true'];
 
-        yield 'deeply nested' => [\str_repeat('{"a":', 100) . '1' . \str_repeat('}', 100)];
+        yield 'deeply nested' => [str_repeat('{"a":', 100) . '1' . str_repeat('}', 100)];
 
-        yield 'huge string value' => ['{"username":"' . \str_repeat('A', 100000) . '"}'];
+        yield 'huge string value' => ['{"username":"' . str_repeat('A', 100000) . '"}'];
 
         yield 'unicode username' => ['{"username":"ünïcödé_üser_🔑"}'];
 
@@ -108,7 +112,7 @@ final class RequestPayloadFuzzTest extends TestCase
     #[DataProvider('malformedJsonProvider')]
     public function optionsActionHandlesMalformedInput(string $body): void
     {
-        $request = $this->createRequestWithBody($body);
+        $request  = $this->createRequestWithBody($body);
         $response = $this->controller->optionsAction($request);
         self::assertInstanceOf(ResponseInterface::class, $response);
         $statusCode = $response->getStatusCode();
@@ -119,7 +123,7 @@ final class RequestPayloadFuzzTest extends TestCase
     #[DataProvider('malformedJsonProvider')]
     public function verifyActionHandlesMalformedInput(string $body): void
     {
-        $request = $this->createRequestWithBody($body);
+        $request  = $this->createRequestWithBody($body);
         $response = $this->controller->verifyAction($request);
         self::assertInstanceOf(ResponseInterface::class, $response);
         $statusCode = $response->getStatusCode();
@@ -129,9 +133,9 @@ final class RequestPayloadFuzzTest extends TestCase
     #[Test]
     public function optionsActionHandlesRandomBytes(): void
     {
-        for ($i = 0; $i < 50; $i++) {
-            $randomBody = \random_bytes(\random_int(1, 1024));
-            $request = $this->createRequestWithBody($randomBody);
+        for ($i = 0; $i < 50; ++$i) {
+            $randomBody = random_bytes(random_int(1, 1024));
+            $request    = $this->createRequestWithBody($randomBody);
 
             try {
                 $response = $this->controller->optionsAction($request);

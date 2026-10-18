@@ -81,13 +81,13 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->tag(
             'dashboard.widget',
             [
-                'identifier' => 'nrpasskeys-adoption',
-                'groupNames' => 'nrpasskeys',
-                'title' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.title',
-                'description' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.description',
+                'identifier'     => 'nrpasskeys-adoption',
+                'groupNames'     => 'nrpasskeys',
+                'title'          => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.title',
+                'description'    => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.description',
                 'iconIdentifier' => 'passkeys-adoption',
-                'height' => 'medium',
-                'width' => 'small',
+                'height'         => 'medium',
+                'width'          => 'small',
             ],
         );
     $services
@@ -99,21 +99,21 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->arg(
             '$options',
             [
-                'icon' => 'passkeys-credentials',
-                'title' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.title',
+                'icon'     => 'passkeys-credentials',
+                'title'    => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.title',
                 'subtitle' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.subtitle',
             ],
         )
         ->tag(
             'dashboard.widget',
             [
-                'identifier' => 'nrpasskeys-credentials',
-                'groupNames' => 'nrpasskeys',
-                'title' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.title',
-                'description' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.description',
+                'identifier'     => 'nrpasskeys-credentials',
+                'groupNames'     => 'nrpasskeys',
+                'title'          => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.title',
+                'description'    => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.credentials.description',
                 'iconIdentifier' => 'passkeys-credentials',
-                'height' => 'small',
-                'width' => 'small',
+                'height'         => 'small',
+                'width'          => 'small',
             ],
         );
 };

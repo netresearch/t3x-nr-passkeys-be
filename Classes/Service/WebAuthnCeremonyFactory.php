@@ -21,6 +21,9 @@ use Webauthn\AttestationStatement\NoneAttestationStatementSupport;
 use Webauthn\CeremonyStep\CeremonyStepManagerFactory;
 use Webauthn\Denormalizer\WebauthnSerializerFactory;
 
+use function strtoupper;
+use function trim;
+
 /**
  * Shared WebAuthn library plumbing used by both the attestation (registration)
  * and assertion (authentication) ceremonies.
@@ -42,8 +45,8 @@ final class WebAuthnCeremonyFactory
     {
         if (!$this->serializer instanceof SerializerInterface) {
             $attestationManager = $this->createAttestationStatementSupportManager();
-            $factory = new WebauthnSerializerFactory($attestationManager);
-            $this->serializer = $factory->create();
+            $factory            = new WebauthnSerializerFactory($attestationManager);
+            $this->serializer   = $factory->create();
         }
 
         return $this->serializer;
@@ -52,7 +55,7 @@ final class WebAuthnCeremonyFactory
     public function createCeremonyFactory(): CeremonyStepManagerFactory
     {
         $factory = new CeremonyStepManagerFactory();
-        $origin = $this->configService->getEffectiveOrigin();
+        $origin  = $this->configService->getEffectiveOrigin();
         $factory->setAllowedOrigins([$origin]);
         $algorithmManager = $this->createAlgorithmManager();
         $factory->setAlgorithmManager($algorithmManager);
@@ -77,7 +80,7 @@ final class WebAuthnCeremonyFactory
         $manager = AlgorithmManager::create();
 
         foreach ($algorithms as $algo) {
-            match (\strtoupper(\trim($algo))) {
+            match (strtoupper(trim($algo))) {
                 'ES256' => $manager->add(ES256::create()),
                 'ES384' => $manager->add(ES384::create()),
                 'ES512' => $manager->add(ES512::create()),

@@ -26,6 +26,22 @@ use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\Locale;
 
+use function bin2hex;
+use function hash_equals;
+use function htmlspecialchars;
+use function in_array;
+use function is_array;
+use function is_int;
+use function is_numeric;
+use function is_object;
+use function is_string;
+use function method_exists;
+use function random_bytes;
+use function rtrim;
+use function sprintf;
+use function str_starts_with;
+use function time;
+
 /**
  * Intercepts backend requests to enforce passkey setup when required.
  *
@@ -98,20 +114,20 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         /** @var array<string, mixed>|null $userRow */
         $userRow = $backendUser->user;
 
-        if (!\is_array($userRow)) {
+        if (!is_array($userRow)) {
             return $handler->handle($request);
         }
 
         $rawUid = $userRow['uid'] ?? null;
-        $uid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $uid    = is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($uid === 0) {
             return $handler->handle($request);
         }
 
         // Read session data once for both passkey-auth and skip checks
-        $sessionData = $backendUser->getSessionData(self::SESSION_KEY);
-        $sessionArray = \is_array($sessionData) ? $sessionData : [];
+        $sessionData  = $backendUser->getSessionData(self::SESSION_KEY);
+        $sessionArray = is_array($sessionData) ? $sessionData : [];
 
         // Users who authenticated via passkey should never see the interstitial
         if (($sessionArray['passkey_authenticated'] ?? false) === true) {
@@ -135,11 +151,11 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         if ($request->getMethod() === 'POST') {
             $parsedBody = $request->getParsedBody();
 
-            if (\is_array($parsedBody) && ($parsedBody['passkey_setup_skip'] ?? '') === '1') {
+            if (is_array($parsedBody) && ($parsedBody['passkey_setup_skip'] ?? '') === '1') {
                 $submittedNonce = $parsedBody['passkey_setup_nonce'] ?? '';
-                $storedNonce = $sessionArray['skip_nonce'] ?? '';
+                $storedNonce    = $sessionArray['skip_nonce'] ?? '';
 
-                if (\is_string($submittedNonce) && \is_string($storedNonce) && $storedNonce !== '' && \hash_equals($storedNonce, $submittedNonce)) {
+                if (is_string($submittedNonce) && is_string($storedNonce) && $storedNonce !== '' && hash_equals($storedNonce, $submittedNonce)) {
                     $sessionArray['setup_skipped'] = true;
                     unset($sessionArray['skip_nonce']);
                     $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
@@ -149,7 +165,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
 
                 // Invalid nonce — fall through to re-render the interstitial
                 $serverParams = $request->getServerParams();
-                $clientIp = \is_string($serverParams['REMOTE_ADDR'] ?? null) ? $serverParams['REMOTE_ADDR'] : 'unknown';
+                $clientIp     = is_string($serverParams['REMOTE_ADDR'] ?? null) ? $serverParams['REMOTE_ADDR'] : 'unknown';
                 $this->logger->warning(
                     'CSRF nonce validation failed on passkey setup skip form',
                     ['ip' => $clientIp, 'beUserUid' => $uid],
@@ -161,10 +177,10 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         // re-querying the database on every backend request. The short TTL bounds how
         // long a stale decision (e.g. enforcement raised, or passkeys revoked) can
         // suppress the interstitial, so it cannot be permanently suppressed.
-        $now = \time();
+        $now       = time();
         $decidedAt = $sessionArray['enforcement_ok_at'] ?? 0;
 
-        if (\is_int($decidedAt) && $decidedAt > 0 && $now - $decidedAt < self::ENFORCEMENT_CACHE_TTL) {
+        if (is_int($decidedAt) && $decidedAt > 0 && $now - $decidedAt < self::ENFORCEMENT_CACHE_TTL) {
             return $handler->handle($request);
         }
 
@@ -187,7 +203,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         // Start grace period on first intercept — construct updated status
         // directly instead of re-querying the database
         if ($status->gracePeriodStart === 0) {
-            $now = \time();
+            $now = time();
             $this->enforcementService->startGracePeriod($uid);
             $status = new EnforcementStatus(
                 level: $status->level,
@@ -198,8 +214,8 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
             $this->logger->info(
                 'Grace period started for passkey setup',
                 [
-                    'beUserUid' => $uid,
-                    'gracePeriodDays' => $status->gracePeriodDays,
+                    'beUserUid'        => $uid,
+                    'gracePeriodDays'  => $status->gracePeriodDays,
                     'enforcementLevel' => $status->level->value,
                 ],
             );
@@ -211,7 +227,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         }
 
         // Generate CSRF nonce for the skip form and store it in session
-        $nonce = \bin2hex(\random_bytes(16));
+        $nonce                      = bin2hex(random_bytes(16));
         $sessionArray['skip_nonce'] = $nonce;
         $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
         $backendPath = $this->resolveBackendPath($request);
@@ -237,12 +253,12 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
 
         $identifier = $route->getOption('_identifier');
 
-        if (!\is_string($identifier)) {
+        if (!is_string($identifier)) {
             return true;
         }
 
         foreach (self::EXEMPT_ROUTE_PREFIXES as $prefix) {
-            if (\str_starts_with($identifier, $prefix)) {
+            if (str_starts_with($identifier, $prefix)) {
                 return true;
             }
         }
@@ -277,20 +293,20 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
             return 'light';
         }
 
-        $setup = $userTsConfig['setup.'] ?? null;
-        $fields = \is_array($setup) ? $setup['fields.'] ?? null : null;
-        $fields = \is_array($fields) ? $fields : [];
+        $setup  = $userTsConfig['setup.'] ?? null;
+        $fields = is_array($setup) ? $setup['fields.'] ?? null : null;
+        $fields = is_array($fields) ? $fields : [];
 
-        $options = $fields['colorScheme.'] ?? null;
-        $disabled = \is_array($options) ? $options['disabled'] ?? '0' : '0';
-        $default = $fields['colorScheme'] ?? null;
-        $scheme = $uc['colorScheme'] ?? $default ?? 'auto';
+        $options  = $fields['colorScheme.'] ?? null;
+        $disabled = is_array($options) ? $options['disabled'] ?? '0' : '0';
+        $default  = $fields['colorScheme'] ?? null;
+        $scheme   = $uc['colorScheme'] ?? $default ?? 'auto';
 
         if ($disabled === '1') {
             $scheme = $default ?? 'light';
         }
 
-        return \in_array($scheme, ['light', 'dark', 'auto'], true) ? $scheme : 'auto';
+        return in_array($scheme, ['light', 'dark', 'auto'], true) ? $scheme : 'auto';
     }
 
     /**
@@ -302,11 +318,11 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
     {
         $normalizedParams = $request->getAttribute('normalizedParams');
 
-        if (\is_object($normalizedParams) && \method_exists($normalizedParams, 'getSitePath')) {
+        if (is_object($normalizedParams) && method_exists($normalizedParams, 'getSitePath')) {
             $sitePath = $normalizedParams->getSitePath();
 
-            if (\is_string($sitePath) && $sitePath !== '') {
-                return \rtrim($sitePath, '/') . '/typo3/';
+            if (is_string($sitePath) && $sitePath !== '') {
+                return rtrim($sitePath, '/') . '/typo3/';
             }
         }
 
@@ -325,18 +341,18 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         string $nonce,
         string $colorScheme,
     ): HtmlResponse {
-        $remainingDays = $status->gracePeriodRemainingDays();
-        $canSkip = $status->canSkip();
-        $escapedBackendPath = \htmlspecialchars($backendPath, ENT_QUOTES, 'UTF-8');
-        $escapedNonce = \htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8');
+        $remainingDays      = $status->gracePeriodRemainingDays();
+        $canSkip            = $status->canSkip();
+        $escapedBackendPath = htmlspecialchars($backendPath, ENT_QUOTES, 'UTF-8');
+        $escapedNonce       = htmlspecialchars($nonce, ENT_QUOTES, 'UTF-8');
 
         // Link to the real User Settings module (identifier "user_setup") where the
         // passkey registration panel is rendered. The module is exempt from this
         // middleware (see EXEMPT_ROUTE_PREFIXES) so the user can actually reach it.
-        $setupUrl = (string) $this->uriBuilder->buildUriFromRoute('user_setup');
-        $escapedSetupUrl = \htmlspecialchars($setupUrl, ENT_QUOTES, 'UTF-8');
-        $title = $this->translate('interstitial.title', 'Set up your passkey');
-        $description = $this->translate(
+        $setupUrl        = (string) $this->uriBuilder->buildUriFromRoute('user_setup');
+        $escapedSetupUrl = htmlspecialchars($setupUrl, ENT_QUOTES, 'UTF-8');
+        $title           = $this->translate('interstitial.title', 'Set up your passkey');
+        $description     = $this->translate(
             'interstitial.description',
             "Passkeys provide a more secure and convenient way to sign in without passwords. They use your device's built-in biometric sensors or security keys to verify your identity, making your account resistant to phishing attacks.",
         );
@@ -344,37 +360,37 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
 
         if ($remainingDays > 0 && $canSkip) {
             $graceTemplate = $this->translate('interstitial.grace.remaining', 'You have %d days remaining to set up your passkey.');
-            $graceMessage = \sprintf($graceTemplate, $remainingDays);
+            $graceMessage  = sprintf($graceTemplate, $remainingDays);
         } else {
             $graceMessage = $this->translate('interstitial.grace.required', 'Passkey setup is now required.');
         }
 
-        $escapedTitle = \htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-        $escapedDescription = \htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
-        $escapedSetupLabel = \htmlspecialchars($setupLabel, ENT_QUOTES, 'UTF-8');
-        $escapedGraceMessage = \htmlspecialchars($graceMessage, ENT_QUOTES, 'UTF-8');
-        $skipButton = '';
+        $escapedTitle        = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+        $escapedDescription  = htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
+        $escapedSetupLabel   = htmlspecialchars($setupLabel, ENT_QUOTES, 'UTF-8');
+        $escapedGraceMessage = htmlspecialchars($graceMessage, ENT_QUOTES, 'UTF-8');
+        $skipButton          = '';
 
         if ($canSkip) {
             if ($remainingDays > 0) {
                 $skipTemplate = $this->translate('interstitial.button.skipRemaining', 'Skip for now (%d days remaining)');
-                $skipLabel = \sprintf($skipTemplate, $remainingDays);
+                $skipLabel    = sprintf($skipTemplate, $remainingDays);
             } else {
                 $skipLabel = $this->translate('interstitial.button.skip', 'Skip for now');
             }
 
-            $escapedSkipLabel = \htmlspecialchars($skipLabel, ENT_QUOTES, 'UTF-8');
-            $skipButton = <<<HTML
-                                    <form method="post" action="{$escapedBackendPath}" class="skip-form">
-                                        <input type="hidden" name="passkey_setup_skip" value="1" />
-                                        <input type="hidden" name="passkey_setup_nonce" value="{$escapedNonce}" />
-                                        <button type="submit" class="btn-skip">{$escapedSkipLabel}</button>
-                                    </form>
-            HTML;
+            $escapedSkipLabel = htmlspecialchars($skipLabel, ENT_QUOTES, 'UTF-8');
+            $skipButton       = <<<HTML
+                                        <form method="post" action="{$escapedBackendPath}" class="skip-form">
+                                            <input type="hidden" name="passkey_setup_skip" value="1" />
+                                            <input type="hidden" name="passkey_setup_nonce" value="{$escapedNonce}" />
+                                            <button type="submit" class="btn-skip">{$escapedSkipLabel}</button>
+                                        </form>
+                HTML;
         }
 
         $htmlLang = 'en';
-        $lang = $GLOBALS['LANG'] ?? null;
+        $lang     = $GLOBALS['LANG'] ?? null;
 
         if ($lang instanceof LanguageService) {
             $locale = $lang->getLocale();
@@ -388,131 +404,131 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
             }
         }
 
-        $escapedHtmlLang = \htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8');
-        $escapedColorScheme = \htmlspecialchars($colorScheme, ENT_QUOTES, 'UTF-8');
-        $html = <<<HTML
-        <!DOCTYPE html>
-        <html lang="{$escapedHtmlLang}" data-color-scheme="{$escapedColorScheme}">
-        <head>
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <title>{$escapedTitle}</title>
-            <style>
-                /* Standalone page: core backend.css is not loaded here, so the
-                   palette is local. The scheme follows the user's TYPO3 setting
-                   the way core does it: data-color-scheme sets color-scheme, and
-                   light-dark() picks the value; "auto" leaves both schemes open
-                   for the browser to resolve. No media query of its own.
-                   White text sits on the brand fill #257880 (5.15:1); the brand
-                   #2F99A4 is 3.38:1 under white text. */
-                :root {
-                    color-scheme: light dark;
-                    --int-bg: light-dark(#ffffff, #1e1e1e);
-                    --int-text: light-dark(#313131, #e0e0e0);
-                    --int-text-strong: light-dark(#000000, #ffffff);
-                    --int-text-muted: light-dark(#6a6a6a, #b0b0b0);
-                    --int-surface: light-dark(#f5f5f5, #2a2a2a);
-                    --int-border: light-dark(#cccccc, #444444);
-                    --int-accent: #257880;
-                    --int-accent-text: #ffffff;
-                    --int-focus: light-dark(#257880, #5fc6d2);
-                }
-                :root[data-color-scheme="light"] {
-                    color-scheme: light;
-                }
-                :root[data-color-scheme="dark"] {
-                    color-scheme: dark;
-                }
-                body {
-                    margin: 0;
-                    padding: 0;
-                    background: var(--int-bg);
-                    color: var(--int-text);
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 100vh;
-                }
-                .interstitial-container {
-                    max-width: 520px;
-                    padding: 48px;
-                    text-align: center;
-                }
-                h1 {
-                    font-size: 28px;
-                    font-weight: 600;
-                    margin-bottom: 16px;
-                    color: var(--int-text-strong);
-                }
-                .description {
-                    font-size: 15px;
-                    line-height: 1.6;
-                    color: var(--int-text-muted);
-                    margin-bottom: 24px;
-                }
-                .grace-period {
-                    font-size: 14px;
-                    padding: 12px 20px;
-                    border-radius: 6px;
-                    margin-bottom: 32px;
-                    background: var(--int-surface);
-                    border: 1px solid var(--int-border);
-                }
-                .actions {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 12px;
-                    align-items: center;
-                }
-                .skip-form {
-                    display: inline;
-                }
-                .btn-setup {
-                    display: inline-block;
-                    padding: 12px 32px;
-                    background: var(--int-accent);
-                    color: var(--int-accent-text);
-                    border: none;
-                    border-radius: 4px;
-                    font-size: 15px;
-                    font-weight: 600;
-                    text-decoration: none;
-                    cursor: pointer;
-                }
-                .btn-setup:hover {
-                    filter: brightness(0.92);
-                }
-                .btn-skip {
-                    padding: 10px 24px;
-                    background: transparent;
-                    color: var(--int-text-muted);
-                    border: 1px solid var(--int-border);
-                    border-radius: 4px;
-                    font-size: 14px;
-                    cursor: pointer;
-                    text-decoration: none;
-                }
-                .btn-setup:focus-visible,
-                .btn-skip:focus-visible {
-                    outline: 2px solid var(--int-focus);
-                    outline-offset: 2px;
-                }
-            </style>
-        </head>
-        <body>
-            <main class="interstitial-container" role="main">
-                <h1>{$escapedTitle}</h1>
-                <p class="description">{$escapedDescription}</p>
-                <div class="grace-period">{$escapedGraceMessage}</div>
-                <div class="actions">
-                    <a href="{$escapedSetupUrl}" class="btn-setup" autofocus>{$escapedSetupLabel}</a>
-                    {$skipButton}
-                </div>
-            </main>
-        </body>
-        </html>
-        HTML;
+        $escapedHtmlLang    = htmlspecialchars($htmlLang, ENT_QUOTES, 'UTF-8');
+        $escapedColorScheme = htmlspecialchars($colorScheme, ENT_QUOTES, 'UTF-8');
+        $html               = <<<HTML
+            <!DOCTYPE html>
+            <html lang="{$escapedHtmlLang}" data-color-scheme="{$escapedColorScheme}">
+            <head>
+                <meta charset="UTF-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <title>{$escapedTitle}</title>
+                <style>
+                    /* Standalone page: core backend.css is not loaded here, so the
+                       palette is local. The scheme follows the user's TYPO3 setting
+                       the way core does it: data-color-scheme sets color-scheme, and
+                       light-dark() picks the value; "auto" leaves both schemes open
+                       for the browser to resolve. No media query of its own.
+                       White text sits on the brand fill #257880 (5.15:1); the brand
+                       #2F99A4 is 3.38:1 under white text. */
+                    :root {
+                        color-scheme: light dark;
+                        --int-bg: light-dark(#ffffff, #1e1e1e);
+                        --int-text: light-dark(#313131, #e0e0e0);
+                        --int-text-strong: light-dark(#000000, #ffffff);
+                        --int-text-muted: light-dark(#6a6a6a, #b0b0b0);
+                        --int-surface: light-dark(#f5f5f5, #2a2a2a);
+                        --int-border: light-dark(#cccccc, #444444);
+                        --int-accent: #257880;
+                        --int-accent-text: #ffffff;
+                        --int-focus: light-dark(#257880, #5fc6d2);
+                    }
+                    :root[data-color-scheme="light"] {
+                        color-scheme: light;
+                    }
+                    :root[data-color-scheme="dark"] {
+                        color-scheme: dark;
+                    }
+                    body {
+                        margin: 0;
+                        padding: 0;
+                        background: var(--int-bg);
+                        color: var(--int-text);
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-height: 100vh;
+                    }
+                    .interstitial-container {
+                        max-width: 520px;
+                        padding: 48px;
+                        text-align: center;
+                    }
+                    h1 {
+                        font-size: 28px;
+                        font-weight: 600;
+                        margin-bottom: 16px;
+                        color: var(--int-text-strong);
+                    }
+                    .description {
+                        font-size: 15px;
+                        line-height: 1.6;
+                        color: var(--int-text-muted);
+                        margin-bottom: 24px;
+                    }
+                    .grace-period {
+                        font-size: 14px;
+                        padding: 12px 20px;
+                        border-radius: 6px;
+                        margin-bottom: 32px;
+                        background: var(--int-surface);
+                        border: 1px solid var(--int-border);
+                    }
+                    .actions {
+                        display: flex;
+                        flex-direction: column;
+                        gap: 12px;
+                        align-items: center;
+                    }
+                    .skip-form {
+                        display: inline;
+                    }
+                    .btn-setup {
+                        display: inline-block;
+                        padding: 12px 32px;
+                        background: var(--int-accent);
+                        color: var(--int-accent-text);
+                        border: none;
+                        border-radius: 4px;
+                        font-size: 15px;
+                        font-weight: 600;
+                        text-decoration: none;
+                        cursor: pointer;
+                    }
+                    .btn-setup:hover {
+                        filter: brightness(0.92);
+                    }
+                    .btn-skip {
+                        padding: 10px 24px;
+                        background: transparent;
+                        color: var(--int-text-muted);
+                        border: 1px solid var(--int-border);
+                        border-radius: 4px;
+                        font-size: 14px;
+                        cursor: pointer;
+                        text-decoration: none;
+                    }
+                    .btn-setup:focus-visible,
+                    .btn-skip:focus-visible {
+                        outline: 2px solid var(--int-focus);
+                        outline-offset: 2px;
+                    }
+                </style>
+            </head>
+            <body>
+                <main class="interstitial-container" role="main">
+                    <h1>{$escapedTitle}</h1>
+                    <p class="description">{$escapedDescription}</p>
+                    <div class="grace-period">{$escapedGraceMessage}</div>
+                    <div class="actions">
+                        <a href="{$escapedSetupUrl}" class="btn-setup" autofocus>{$escapedSetupLabel}</a>
+                        {$skipButton}
+                    </div>
+                </main>
+            </body>
+            </html>
+            HTML;
 
         return new HtmlResponse($html);
     }

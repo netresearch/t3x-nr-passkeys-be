@@ -19,6 +19,9 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
+use function is_string;
+use function sprintf;
+
 /**
  * Emergency, out-of-band recovery from the CLI.
  *
@@ -65,7 +68,7 @@ final class RecoveryCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
+        $io           = new SymfonyStyle($input, $output);
         $didSomething = false;
 
         if ($input->getOption('list') === true) {
@@ -75,24 +78,24 @@ final class RecoveryCommand extends Command
 
         $disableGroup = $input->getOption('disable-group');
 
-        if (\is_string($disableGroup) && $disableGroup !== '') {
-            $uid = (int) $disableGroup;
+        if (is_string($disableGroup) && $disableGroup !== '') {
+            $uid   = (int) $disableGroup;
             $count = $this->disableEnforcementForGroup($uid);
-            $io->success(\sprintf('Passkey enforcement set to "off" for group %d (%d row(s) updated).', $uid, $count));
+            $io->success(sprintf('Passkey enforcement set to "off" for group %d (%d row(s) updated).', $uid, $count));
             $didSomething = true;
         }
 
         if ($input->getOption('disable-all') === true) {
             $count = $this->disableEnforcementForAllGroups();
-            $io->success(\sprintf('Passkey enforcement set to "off" for all groups (%d row(s) updated).', $count));
+            $io->success(sprintf('Passkey enforcement set to "off" for all groups (%d row(s) updated).', $count));
             $didSomething = true;
         }
 
         $unlock = $input->getOption('unlock');
 
-        if (\is_string($unlock) && $unlock !== '') {
+        if (is_string($unlock) && $unlock !== '') {
             $this->rateLimiterService->resetLockout($unlock);
-            $io->success(\sprintf('Login lockout reset for user "%s".', $unlock));
+            $io->success(sprintf('Login lockout reset for user "%s".', $unlock));
             $didSomething = true;
         }
 

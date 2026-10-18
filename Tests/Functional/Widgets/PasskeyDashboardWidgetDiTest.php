@@ -99,8 +99,8 @@ final class PasskeyDashboardWidgetDiTest extends FunctionalTestCase
         $file = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:';
 
         foreach ([
-            'widget.adoption.segment.backend' => 'Backend',
-            'widget.adoption.label.with_passkeys' => 'with passkeys',
+            'widget.adoption.segment.backend'        => 'Backend',
+            'widget.adoption.label.with_passkeys'    => 'with passkeys',
             'widget.adoption.label.without_passkeys' => 'without passkeys',
         ] as $key => $text) {
             self::assertSame($text, $GLOBALS['LANG']->sL($file . $key), $key);

@@ -23,6 +23,20 @@ use TYPO3\CMS\Core\Http\JsonResponse;
 use TYPO3\CMS\Core\Http\NormalizedParams;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function bin2hex;
+use function hash;
+use function hrtime;
+use function intdiv;
+use function is_array;
+use function is_numeric;
+use function is_scalar;
+use function json_decode;
+use function json_encode;
+use function random_bytes;
+use function random_int;
+use function time;
+use function usleep;
+
 final readonly class LoginController
 {
     use JsonBodyTrait;
@@ -70,9 +84,9 @@ final readonly class LoginController
      */
     public function optionsAction(ServerRequestInterface $request): ResponseInterface
     {
-        $body = $this->getJsonBody($request);
-        $username = isset($body['username']) && \is_scalar($body['username']) ? (string) $body['username'] : '';
-        $ip = $this->getRemoteAddress($request);
+        $body     = $this->getJsonBody($request);
+        $username = isset($body['username']) && is_scalar($body['username']) ? (string) $body['username'] : '';
+        $ip       = $this->getRemoteAddress($request);
 
         // Discoverable (usernameless) login
         if ($username === '') {
@@ -89,12 +103,12 @@ final readonly class LoginController
             }
 
             try {
-                $result = $this->webAuthnService->createDiscoverableAssertionOptions();
+                $result      = $this->webAuthnService->createDiscoverableAssertionOptions();
                 $optionsJson = $this->webAuthnService->serializeRequestOptions($result->options);
 
                 return new JsonResponse(
                     [
-                        'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
+                        'options'        => json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
                         'challengeToken' => $result->challengeToken,
                     ],
                 );
@@ -121,15 +135,15 @@ final readonly class LoginController
         // against the decoy fails exactly as a wrong passkey would. Every branch
         // below is padded to the same wall-clock budget, so the response time does
         // not reveal which one ran.
-        $startedAt = \hrtime(true);
+        $startedAt = hrtime(true);
         $beUserUid = $this->findBeUserUid($username);
 
         try {
-            $result = $beUserUid === null ? $this->webAuthnService->createDecoyAssertionOptions($username) : $this->webAuthnService->createAssertionOptions($username, $beUserUid);
+            $result      = $beUserUid === null ? $this->webAuthnService->createDecoyAssertionOptions($username) : $this->webAuthnService->createAssertionOptions($username, $beUserUid);
             $optionsJson = $this->webAuthnService->serializeRequestOptions($result->options);
-            $response = new JsonResponse(
+            $response    = new JsonResponse(
                 [
-                    'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
+                    'options'        => json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
                     'challengeToken' => $result->challengeToken,
                 ],
             );
@@ -165,13 +179,13 @@ final readonly class LoginController
      */
     public function verifyAction(ServerRequestInterface $request): ResponseInterface
     {
-        $body = $this->getJsonBody($request);
-        $username = isset($body['username']) && \is_scalar($body['username']) ? (string) $body['username'] : '';
+        $body     = $this->getJsonBody($request);
+        $username = isset($body['username']) && is_scalar($body['username']) ? (string) $body['username'] : '';
 
         // null means the body could not be encoded (malformed UTF-8 from a form-encoded
         // request); this endpoint is public, so that must not escape as a 500.
-        $assertion = $this->encodeBodySection($body['assertion'] ?? null);
-        $challengeToken = isset($body['challengeToken']) && \is_scalar($body['challengeToken']) ? (string) $body['challengeToken'] : '';
+        $assertion      = $this->encodeBodySection($body['assertion'] ?? null);
+        $challengeToken = isset($body['challengeToken']) && is_scalar($body['challengeToken']) ? (string) $body['challengeToken'] : '';
 
         if ($assertion === null || $assertion === '' || $challengeToken === '') {
             return new JsonResponse(['error' => $assertion === null ? 'Invalid request body' : 'Missing required fields'], 400);
@@ -210,7 +224,7 @@ final readonly class LoginController
         $beUserUid = $this->webAuthnService->findBeUserUidFromAssertion($assertion);
 
         if ($beUserUid === null) {
-            \usleep(\random_int(50000, 150000));
+            usleep(random_int(50000, 150000));
 
             return new JsonResponse(['error' => self::AUTH_FAILED, 'reason' => 'unknown_credential'], 401);
         }
@@ -229,7 +243,7 @@ final readonly class LoginController
         string $challengeToken,
         string $ip,
     ): ResponseInterface {
-        $startedAt = \hrtime(true);
+        $startedAt = hrtime(true);
         $beUserUid = $this->findBeUserUid($username);
 
         if ($beUserUid === null) {
@@ -257,10 +271,10 @@ final readonly class LoginController
      */
     private function padToTimingBudget(int $startedAt): void
     {
-        $remainingNs = self::TIMING_BUDGET_NS - (\hrtime(true) - $startedAt);
+        $remainingNs = self::TIMING_BUDGET_NS - (hrtime(true) - $startedAt);
 
         if ($remainingNs > 0) {
-            \usleep(\intdiv($remainingNs, 1000));
+            usleep(intdiv($remainingNs, 1000));
         }
     }
 
@@ -295,10 +309,10 @@ final readonly class LoginController
             $this->logger->warning(
                 'Passkey assertion verification failed',
                 [
-                    'username_hash' => \hash('sha256', $username),
-                    'ip' => $ip,
-                    'error_code' => $e->getCode(),
-                    'error_class' => $e::class,
+                    'username_hash' => hash('sha256', $username),
+                    'ip'            => $ip,
+                    'error_code'    => $e->getCode(),
+                    'error_class'   => $e::class,
                 ],
             );
 
@@ -323,9 +337,9 @@ final readonly class LoginController
      */
     private function issueLoginToken(int $beUserUid): ResponseInterface
     {
-        $token = \bin2hex(\random_bytes(32));
-        $payload = \json_encode(['uid' => $beUserUid, 'expiresAt' => \time() + self::LOGIN_TOKEN_TTL], JSON_THROW_ON_ERROR);
-        $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce');
+        $token   = bin2hex(random_bytes(32));
+        $payload = json_encode(['uid' => $beUserUid, 'expiresAt' => time() + self::LOGIN_TOKEN_TTL], JSON_THROW_ON_ERROR);
+        $cache   = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce');
         $cache->set('passkey_login_' . $token, $payload, [], self::LOGIN_TOKEN_TTL);
 
         return new JsonResponse(['status' => 'ok', 'loginToken' => $token]);
@@ -342,7 +356,7 @@ final readonly class LoginController
 
         return new JsonResponse(
             [
-                'error' => $locked ? 'Account temporarily locked. Please contact your administrator.' : 'Too many requests. Please try again later.',
+                'error'  => $locked ? 'Account temporarily locked. Please contact your administrator.' : 'Too many requests. Please try again later.',
                 'locked' => $locked,
             ],
             429,
@@ -353,7 +367,7 @@ final readonly class LoginController
     private function findBeUserUid(string $username): ?int
     {
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('uid')
             ->from('be_users')
             ->where(
@@ -376,7 +390,7 @@ final readonly class LoginController
 
         $rawUid = $row['uid'] ?? null;
 
-        return \is_numeric($rawUid) ? (int) $rawUid : null;
+        return is_numeric($rawUid) ? (int) $rawUid : null;
     }
 
     /**
@@ -391,7 +405,7 @@ final readonly class LoginController
         }
 
         $confVars = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($confVars) && isset($confVars['SYS']) && \is_array($confVars['SYS']) ? $confVars['SYS'] : [];
+        $sysConf  = is_array($confVars) && isset($confVars['SYS']) && is_array($confVars['SYS']) ? $confVars['SYS'] : [];
 
         return NormalizedParams::createFromServerParams($_SERVER, $sysConf)->getRemoteAddress();
     }

@@ -16,10 +16,10 @@ namespace Netresearch\NrPasskeysBe\Domain\Enum;
  */
 enum EnforcementLevel: string
 {
-    case Off = 'off';
+    case Off       = 'off';
     case Encourage = 'encourage';
-    case Required = 'required';
-    case Enforced = 'enforced';
+    case Required  = 'required';
+    case Enforced  = 'enforced';
 
     /**
      * Numeric severity (0-3) for comparison purposes.
@@ -27,10 +27,10 @@ enum EnforcementLevel: string
     public function severity(): int
     {
         return match ($this) {
-            self::Off => 0,
+            self::Off       => 0,
             self::Encourage => 1,
-            self::Required => 2,
-            self::Enforced => 3,
+            self::Required  => 2,
+            self::Enforced  => 3,
         };
     }
 

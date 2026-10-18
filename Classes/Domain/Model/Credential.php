@@ -14,6 +14,13 @@ use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 use Netresearch\NrPasskeysBe\Utility\TypeCastTrait;
 
+use function array_filter;
+use function array_values;
+use function is_array;
+use function is_string;
+use function json_decode;
+use function json_encode;
+
 /**
  * Domain model representing a WebAuthn credential stored in tx_nrpasskeysbe_credential.
  */
@@ -145,13 +152,13 @@ final class Credential
      */
     public function getTransportsArray(): array
     {
-        $decoded = \json_decode($this->transports, true);
+        $decoded = json_decode($this->transports, true);
 
-        if (!\is_array($decoded)) {
+        if (!is_array($decoded)) {
             return [];
         }
 
-        return \array_values(\array_filter($decoded, \is_string(...)));
+        return array_values(array_filter($decoded, is_string(...)));
     }
 
     /**
@@ -159,7 +166,7 @@ final class Credential
      */
     public function setTransportsArray(array $transports): void
     {
-        $this->transports = \json_encode(\array_values($transports), JSON_THROW_ON_ERROR);
+        $this->transports = json_encode(array_values($transports), JSON_THROW_ON_ERROR);
     }
 
     public function getLabel(): string
@@ -223,21 +230,21 @@ final class Credential
     public function toArray(): array
     {
         return [
-            'uid' => $this->uid,
-            'pid' => $this->pid,
-            'be_user' => $this->beUser,
-            'credential_id' => $this->credentialId,
+            'uid'             => $this->uid,
+            'pid'             => $this->pid,
+            'be_user'         => $this->beUser,
+            'credential_id'   => $this->credentialId,
             'public_key_cose' => $this->publicKeyCose,
-            'sign_count' => $this->signCount,
-            'user_handle' => $this->userHandle,
-            'aaguid' => $this->aaguid,
-            'transports' => $this->transports,
-            'discoverable' => $this->discoverable->toDatabaseValue(),
-            'label' => $this->label,
-            'created_at' => $this->createdAt,
-            'last_used_at' => $this->lastUsedAt,
-            'revoked_at' => $this->revokedAt,
-            'revoked_by' => $this->revokedBy,
+            'sign_count'      => $this->signCount,
+            'user_handle'     => $this->userHandle,
+            'aaguid'          => $this->aaguid,
+            'transports'      => $this->transports,
+            'discoverable'    => $this->discoverable->toDatabaseValue(),
+            'label'           => $this->label,
+            'created_at'      => $this->createdAt,
+            'last_used_at'    => $this->lastUsedAt,
+            'revoked_at'      => $this->revokedAt,
+            'revoked_by'      => $this->revokedBy,
         ];
     }
 

@@ -31,7 +31,7 @@ final class PublicRouteResolverTest extends TestCase
     {
         parent::setUp();
         $this->dispatcher = $this->createMock(RouteDispatcher::class);
-        $this->subject = new PublicRouteResolver($this->dispatcher);
+        $this->subject    = new PublicRouteResolver($this->dispatcher);
     }
 
     /**
@@ -43,10 +43,10 @@ final class PublicRouteResolverTest extends TestCase
         $route
             ->method('getOption')
             ->willReturnCallback(
-                static fn(string $option): mixed => match ($option) {
-                    'access' => $access,
+                static fn (string $option): mixed => match ($option) {
+                    'access'      => $access,
                     '_identifier' => $identifier,
-                    default => null,
+                    default       => null,
                 },
             );
 
@@ -65,7 +65,7 @@ final class PublicRouteResolverTest extends TestCase
             ->with('route')
             ->willReturn($route);
         $expectedResponse = $this->createMock(ResponseInterface::class);
-        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler          = $this->createMock(RequestHandlerInterface::class);
         $handler
             ->expects(self::once())
             ->method('handle')
@@ -81,7 +81,7 @@ final class PublicRouteResolverTest extends TestCase
     #[Test]
     public function dispatchesPublicPasskeyLoginRoute(): void
     {
-        $route = $this->createRoute('public', 'passkeys_login_options');
+        $route   = $this->createRoute('public', 'passkeys_login_options');
         $request = $this->createMock(ServerRequestInterface::class);
         $request
             ->method('getAttribute')

@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Domain\Enum;
 
+use function is_bool;
+
 /**
  * Whether a credential is stored discoverably (a "resident key") on the
  * authenticator.
@@ -21,9 +23,9 @@ namespace Netresearch\NrPasskeysBe\Domain\Enum;
  */
 enum CredentialDiscoverability: string
 {
-    case Discoverable = 'discoverable';
+    case Discoverable    = 'discoverable';
     case NotDiscoverable = 'not_discoverable';
-    case Unknown = 'unknown';
+    case Unknown         = 'unknown';
 
     /**
      * Map the persisted tinyint column: 1 discoverable, 0 not, NULL unknown.
@@ -42,7 +44,7 @@ enum CredentialDiscoverability: string
      */
     public static function fromClientExtensionResult(mixed $rk): self
     {
-        if (!\is_bool($rk)) {
+        if (!is_bool($rk)) {
             return self::Unknown;
         }
 
@@ -55,9 +57,9 @@ enum CredentialDiscoverability: string
     public function toDatabaseValue(): ?int
     {
         return match ($this) {
-            self::Discoverable => 1,
+            self::Discoverable    => 1,
             self::NotDiscoverable => 0,
-            self::Unknown => null,
+            self::Unknown         => null,
         };
     }
 
@@ -71,9 +73,9 @@ enum CredentialDiscoverability: string
     public function toJsonValue(): ?bool
     {
         return match ($this) {
-            self::Discoverable => true,
+            self::Discoverable    => true,
             self::NotDiscoverable => false,
-            self::Unknown => null,
+            self::Unknown         => null,
         };
     }
 }

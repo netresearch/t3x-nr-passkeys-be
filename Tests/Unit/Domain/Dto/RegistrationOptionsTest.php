@@ -22,8 +22,8 @@ final class RegistrationOptionsTest extends TestCase
     public function constructorSetsProperties(): void
     {
         $options = $this->createMock(PublicKeyCredentialCreationOptions::class);
-        $token = 'challenge-token-xyz';
-        $dto = new RegistrationOptions(options: $options, challengeToken: $token);
+        $token   = 'challenge-token-xyz';
+        $dto     = new RegistrationOptions(options: $options, challengeToken: $token);
         self::assertSame($options, $dto->options);
         self::assertSame($token, $dto->challengeToken);
     }

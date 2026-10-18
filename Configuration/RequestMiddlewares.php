@@ -13,12 +13,12 @@ return [
     'backend' => [
         'netresearch/nr-passkeys-be/public-route-resolver' => [
             'target' => PublicRouteResolver::class,
-            'after' => ['typo3/cms-backend/backend-routing'],
+            'after'  => ['typo3/cms-backend/backend-routing'],
             'before' => ['typo3/cms-backend/authentication'],
         ],
         'netresearch/nr-passkeys-be/passkey-setup-interstitial' => [
             'target' => PasskeySetupInterstitial::class,
-            'after' => ['typo3/cms-backend/authentication'],
+            'after'  => ['typo3/cms-backend/authentication'],
             'before' => ['typo3/cms-backend/site-resolver'],
         ],
     ],

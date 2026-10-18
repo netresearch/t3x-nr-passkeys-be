@@ -11,6 +11,10 @@ namespace Netresearch\NrPasskeysBe\Domain\Dto;
 
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 
+use function floor;
+use function max;
+use function time;
+
 /**
  * Read-only snapshot of a user's passkey enforcement status.
  *
@@ -20,10 +24,10 @@ use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 final readonly class EnforcementStatus
 {
     /**
-     * @param EnforcementLevel $level          Effective enforcement level (strictest across groups)
-     * @param int              $gracePeriodDays Total grace-period length in days
+     * @param EnforcementLevel $level            Effective enforcement level (strictest across groups)
+     * @param int              $gracePeriodDays  Total grace-period length in days
      * @param int              $gracePeriodStart Unix timestamp when grace period started (0 = not started)
-     * @param bool             $hasPasskeys     Whether the user has registered passkeys
+     * @param bool             $hasPasskeys      Whether the user has registered passkeys
      */
     public function __construct(
         public EnforcementLevel $level,
@@ -44,12 +48,12 @@ final readonly class EnforcementStatus
             return $this->gracePeriodDays;
         }
 
-        $now = $currentTime > 0 ? $currentTime : \time();
+        $now            = $currentTime > 0 ? $currentTime : time();
         $elapsedSeconds = $now - $this->gracePeriodStart;
-        $elapsedDays = (int) \floor($elapsedSeconds / 86400);
-        $remaining = $this->gracePeriodDays - $elapsedDays;
+        $elapsedDays    = (int) floor($elapsedSeconds / 86400);
+        $remaining      = $this->gracePeriodDays - $elapsedDays;
 
-        return \max(0, $remaining);
+        return max(0, $remaining);
     }
 
     /**

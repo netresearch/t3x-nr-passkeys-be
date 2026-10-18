@@ -23,8 +23,8 @@ final class VerifiedAssertionTest extends TestCase
     public function constructorSetsProperties(): void
     {
         $credential = new Credential(uid: 1, beUser: 42, label: 'Test Key');
-        $source = $this->createMock(CredentialRecord::class);
-        $dto = new VerifiedAssertion(credential: $credential, source: $source);
+        $source     = $this->createMock(CredentialRecord::class);
+        $dto        = new VerifiedAssertion(credential: $credential, source: $source);
         self::assertSame($credential, $dto->credential);
         self::assertSame($source, $dto->source);
     }

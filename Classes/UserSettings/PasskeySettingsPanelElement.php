@@ -16,6 +16,12 @@ use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
+use function htmlspecialchars;
+use function is_array;
+use function is_numeric;
+use function is_string;
+use function strlen;
+
 /**
  * FormEngine render element for the passkey management panel in User Settings.
  *
@@ -43,6 +49,7 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
      * choose between the DI path (setData) and the legacy constructor path.
      *
      * @param array<string, mixed> $data
+     *
      * @see PasskeyInfoElement::setData()
      */
     public function setData(array $data): void
@@ -64,22 +71,22 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
         }
 
         $rawUid = $backendUser->user['uid'] ?? null;
-        $userId = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $userId = is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($userId === 0) {
             return $resultArray;
         }
 
-        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
-        $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null) ? $sysConf['encryptionKey'] : '';
+        $typo3Conf     = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf       = is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
+        $encryptionKey = is_array($sysConf) && is_string($sysConf['encryptionKey'] ?? null) ? $sysConf['encryptionKey'] : '';
 
-        if (\strlen($encryptionKey) < 32) {
+        if (strlen($encryptionKey) < 32) {
             $warning = $this->translate(
                 'manage.warning.encryptionKey',
                 'Passkey management is unavailable. The TYPO3 encryption key is missing or too short (minimum 32 characters). Configure it in Admin Tools > Settings > Configure Installation-Wide Options.',
             );
-            $resultArray['html'] = PasskeySettingsPanel::callout('danger', \htmlspecialchars($warning, ENT_QUOTES, 'UTF-8'));
+            $resultArray['html'] = PasskeySettingsPanel::callout('danger', htmlspecialchars($warning, ENT_QUOTES, 'UTF-8'));
 
             return $resultArray;
         }
@@ -90,12 +97,12 @@ final class PasskeySettingsPanelElement extends AbstractFormElement
             'js.',
         );
         $passkeyCount = $this->credentialRepository->countByBeUser($userId);
-        $urls = [
-            'list' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
+        $urls         = [
+            'list'            => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
             'registerOptions' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_options'),
-            'registerVerify' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_verify'),
-            'rename' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_rename'),
-            'remove' => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_remove'),
+            'registerVerify'  => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_verify'),
+            'rename'          => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_rename'),
+            'remove'          => (string) $this->uriBuilder->buildUriFromRoute('ajax_passkeys_manage_remove'),
         ];
         $resultArray['html'] = $this->panel->buildHtml($passkeyCount, $urls);
 

@@ -17,6 +17,11 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function count;
+use function random_bytes;
+use function random_int;
+use function sprintf;
+
 #[CoversClass(EnforcementLevel::class)]
 #[CoversClass(EnforcementStatus::class)]
 #[CoversClass(AdoptionStats::class)]
@@ -35,13 +40,13 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function tryFromWithRandomStringsNeverThrows(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $length = \random_int(0, 50);
-            $input = $length > 0 ? \random_bytes(\random_int(1, 50)) : '';
+        for ($i = 0; $i < 100; ++$i) {
+            $length = random_int(0, 50);
+            $input  = $length > 0 ? random_bytes(random_int(1, 50)) : '';
             $result = EnforcementLevel::tryFrom($input);
             self::assertTrue(
                 $result instanceof EnforcementLevel || $result === null,
-                \sprintf('tryFrom() returned unexpected type for input of length %d', $length),
+                sprintf('tryFrom() returned unexpected type for input of length %d', $length),
             );
         }
     }
@@ -49,26 +54,26 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function tryFromWithKnownValuesAlwaysSucceeds(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $level = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
+        for ($i = 0; $i < 100; ++$i) {
+            $level  = $this->allLevels[random_int(0, count($this->allLevels) - 1)];
             $result = EnforcementLevel::tryFrom($level->value);
-            self::assertSame($level, $result, \sprintf('tryFrom("%s") did not return expected level', $level->value));
+            self::assertSame($level, $result, sprintf('tryFrom("%s") did not return expected level', $level->value));
         }
     }
 
     #[Test]
     public function gracePeriodRemainingDaysWithEdgeTimestamps(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $gracePeriodStart = \random_int(0, PHP_INT_MAX >> 2);
-            $gracePeriodDays = \random_int(0, 3650);
-            $currentTime = \random_int(0, PHP_INT_MAX >> 2);
-            $level = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
-            $status = new EnforcementStatus(
+        for ($i = 0; $i < 100; ++$i) {
+            $gracePeriodStart = random_int(0, PHP_INT_MAX >> 2);
+            $gracePeriodDays  = random_int(0, 3650);
+            $currentTime      = random_int(0, PHP_INT_MAX >> 2);
+            $level            = $this->allLevels[random_int(0, count($this->allLevels) - 1)];
+            $status           = new EnforcementStatus(
                 level: $level,
                 gracePeriodDays: $gracePeriodDays,
                 gracePeriodStart: $gracePeriodStart,
-                hasPasskeys: (bool) \random_int(0, 1),
+                hasPasskeys: (bool) random_int(0, 1),
             );
             $remaining = $status->gracePeriodRemainingDays($currentTime);
             self::assertGreaterThanOrEqual(0, $remaining, 'gracePeriodRemainingDays() returned a negative value');
@@ -89,23 +94,23 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredConsistencyWithRemainingDays(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $gracePeriodStart = \random_int(1, PHP_INT_MAX >> 2);
-            $gracePeriodDays = \random_int(0, 3650);
-            $currentTime = \random_int(0, PHP_INT_MAX >> 2);
-            $level = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
-            $status = new EnforcementStatus(
+        for ($i = 0; $i < 100; ++$i) {
+            $gracePeriodStart = random_int(1, PHP_INT_MAX >> 2);
+            $gracePeriodDays  = random_int(0, 3650);
+            $currentTime      = random_int(0, PHP_INT_MAX >> 2);
+            $level            = $this->allLevels[random_int(0, count($this->allLevels) - 1)];
+            $status           = new EnforcementStatus(
                 level: $level,
                 gracePeriodDays: $gracePeriodDays,
                 gracePeriodStart: $gracePeriodStart,
-                hasPasskeys: (bool) \random_int(0, 1),
+                hasPasskeys: (bool) random_int(0, 1),
             );
-            $expired = $status->isGracePeriodExpired($currentTime);
+            $expired   = $status->isGracePeriodExpired($currentTime);
             $remaining = $status->gracePeriodRemainingDays($currentTime);
             self::assertSame(
                 $remaining === 0,
                 $expired,
-                \sprintf(
+                sprintf(
                     'Inconsistency: remaining=%d but expired=%s (start=%d, days=%d, now=%d)',
                     $remaining,
                     $expired ? 'true' : 'false',
@@ -120,15 +125,15 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function isGracePeriodExpiredReturnsFalseWhenNotStarted(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $gracePeriodDays = \random_int(0, 3650);
-            $currentTime = \random_int(0, PHP_INT_MAX >> 2);
-            $level = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
-            $status = new EnforcementStatus(
+        for ($i = 0; $i < 100; ++$i) {
+            $gracePeriodDays = random_int(0, 3650);
+            $currentTime     = random_int(0, PHP_INT_MAX >> 2);
+            $level           = $this->allLevels[random_int(0, count($this->allLevels) - 1)];
+            $status          = new EnforcementStatus(
                 level: $level,
                 gracePeriodDays: $gracePeriodDays,
                 gracePeriodStart: 0,
-                hasPasskeys: (bool) \random_int(0, 1),
+                hasPasskeys: (bool) random_int(0, 1),
             );
             self::assertFalse(
                 $status->isGracePeriodExpired($currentTime),
@@ -140,13 +145,13 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function canSkipIsAlwaysBooleanAndConsistent(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $level = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
-            $gracePeriodDays = \random_int(0, 3650);
-            $gracePeriodStart = \random_int(0, PHP_INT_MAX >> 2);
-            $currentTime = \random_int(0, PHP_INT_MAX >> 2);
-            $hasPasskeys = (bool) \random_int(0, 1);
-            $status = new EnforcementStatus(
+        for ($i = 0; $i < 100; ++$i) {
+            $level            = $this->allLevels[random_int(0, count($this->allLevels) - 1)];
+            $gracePeriodDays  = random_int(0, 3650);
+            $gracePeriodStart = random_int(0, PHP_INT_MAX >> 2);
+            $currentTime      = random_int(0, PHP_INT_MAX >> 2);
+            $hasPasskeys      = (bool) random_int(0, 1);
+            $status           = new EnforcementStatus(
                 level: $level,
                 gracePeriodDays: $gracePeriodDays,
                 gracePeriodStart: $gracePeriodStart,
@@ -167,7 +172,7 @@ final class EnforcementFuzzTest extends TestCase
 
             // Off or Encourage should always be skippable
             if ($level === EnforcementLevel::Off || $level === EnforcementLevel::Encourage) {
-                self::assertTrue($canSkip, \sprintf('canSkip() should be true for %s level', $level->value));
+                self::assertTrue($canSkip, sprintf('canSkip() should be true for %s level', $level->value));
             }
         }
     }
@@ -175,9 +180,9 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function severityOrderingIsConsistent(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $a = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
-            $b = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
+        for ($i = 0; $i < 100; ++$i) {
+            $a         = $this->allLevels[random_int(0, count($this->allLevels) - 1)];
+            $b         = $this->allLevels[random_int(0, count($this->allLevels) - 1)];
             $strictest = EnforcementLevel::strictest($a, $b);
             self::assertGreaterThanOrEqual(
                 $a->severity(),
@@ -209,10 +214,10 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function adoptionStatsPercentageWithRandomValues(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $totalUsers = \random_int(0, 1000000);
-            $usersWithPasskeys = \random_int(0, $totalUsers);
-            $stats = new AdoptionStats(
+        for ($i = 0; $i < 100; ++$i) {
+            $totalUsers        = random_int(0, 1000000);
+            $usersWithPasskeys = random_int(0, $totalUsers);
+            $stats             = new AdoptionStats(
                 totalUsers: $totalUsers,
                 usersWithPasskeys: $usersWithPasskeys,
                 groups: [],
@@ -232,15 +237,15 @@ final class EnforcementFuzzTest extends TestCase
     #[Test]
     public function groupEnforcementInfoPercentageWithRandomValues(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $totalUsers = \random_int(0, 1000000);
-            $usersWithPasskeys = \random_int(0, $totalUsers);
-            $level = $this->allLevels[\random_int(0, \count($this->allLevels) - 1)];
-            $info = new GroupEnforcementInfo(
-                uid: \random_int(1, PHP_INT_MAX >> 2),
-                title: 'Group ' . \random_int(1, 999),
+        for ($i = 0; $i < 100; ++$i) {
+            $totalUsers        = random_int(0, 1000000);
+            $usersWithPasskeys = random_int(0, $totalUsers);
+            $level             = $this->allLevels[random_int(0, count($this->allLevels) - 1)];
+            $info              = new GroupEnforcementInfo(
+                uid: random_int(1, PHP_INT_MAX >> 2),
+                title: 'Group ' . random_int(1, 999),
                 enforcement: $level->value,
-                gracePeriodDays: \random_int(0, 3650),
+                gracePeriodDays: random_int(0, 3650),
                 totalUsers: $totalUsers,
                 usersWithPasskeys: $usersWithPasskeys,
             );

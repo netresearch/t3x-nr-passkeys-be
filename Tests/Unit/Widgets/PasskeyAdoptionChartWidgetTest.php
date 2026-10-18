@@ -23,7 +23,7 @@ final class PasskeyAdoptionChartWidgetTest extends TestCase
     #[Test]
     public function legendUsesSmallColourBoxesAndKeepsCoresConfiguration(): void
     {
-        $data = ['labels' => ['Frontend: without passkeys'], 'datasets' => []];
+        $data     = ['labels' => ['Frontend: without passkeys'], 'datasets' => []];
         $provider = $this->createMock(ChartDataProviderInterface::class);
         $provider
             ->method('getChartData')

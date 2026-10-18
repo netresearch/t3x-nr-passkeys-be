@@ -18,6 +18,8 @@ use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
+use function array_map;
+
 /**
  * Functional tests for the adoption statistics service.
  *
@@ -35,7 +37,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         'SYS' => [
             'caching' => [
                 'cacheConfigurations' => [
-                    'nr_passkeys_be_nonce' => ['backend' => NullBackend::class],
+                    'nr_passkeys_be_nonce'     => ['backend' => NullBackend::class],
                     'nr_passkeys_be_ratelimit' => ['backend' => NullBackend::class],
                 ],
             ],
@@ -89,7 +91,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
 
         // be_groups.csv has 3 groups: Editors (required), Content Managers (encourage), No Enforcement (off)
         self::assertCount(3, $stats->groups);
-        $groupTitles = \array_map(static fn(GroupEnforcementInfo $g): string => $g->title, $stats->groups);
+        $groupTitles = array_map(static fn (GroupEnforcementInfo $g): string => $g->title, $stats->groups);
         self::assertContains('Editors', $groupTitles);
         self::assertContains('Content Managers', $groupTitles);
         self::assertContains('No Enforcement', $groupTitles);
@@ -121,7 +123,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
     #[Test]
     public function getStatsGroupUsersWithPasskeysCountsCorrectly(): void
     {
-        $stats = $this->subject->getStats();
+        $stats    = $this->subject->getStats();
         $groupMap = [];
 
         foreach ($stats->groups as $group) {
@@ -141,7 +143,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
     #[Test]
     public function getStatsGroupAdoptionPercentageIsCorrect(): void
     {
-        $stats = $this->subject->getStats();
+        $stats    = $this->subject->getStats();
         $groupMap = [];
 
         foreach ($stats->groups as $group) {
@@ -166,7 +168,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         // Users without active credentials: uid 5 (adminuser), 42 (revokeadmin), 99 (testuser99)
         // (Users 1 and 2 both have active credentials)
         self::assertCount(3, $stats->usersWithoutPasskeys);
-        $usernames = \array_map(static fn(UserPasskeyStatus $u): string => $u->username, $stats->usersWithoutPasskeys);
+        $usernames = array_map(static fn (UserPasskeyStatus $u): string => $u->username, $stats->usersWithoutPasskeys);
         self::assertContains('adminuser', $usernames);
         self::assertContains('revokeadmin', $usernames);
         self::assertContains('testuser99', $usernames);
@@ -175,7 +177,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
     #[Test]
     public function getStatsUsersWithoutPasskeysHaveCorrectGroupTitles(): void
     {
-        $stats = $this->subject->getStats();
+        $stats   = $this->subject->getStats();
         $userMap = [];
 
         foreach ($stats->usersWithoutPasskeys as $user) {
@@ -192,7 +194,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
     #[Test]
     public function getStatsAdminUsersWithoutGroupsHaveOffEnforcementLevel(): void
     {
-        $stats = $this->subject->getStats();
+        $stats   = $this->subject->getStats();
         $userMap = [];
 
         foreach ($stats->usersWithoutPasskeys as $user) {
@@ -214,13 +216,13 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         $connection->insert(
             'be_users',
             [
-                'uid' => 100,
-                'pid' => 0,
-                'username' => 'deleteduser',
-                'password' => 'pass',
-                'admin' => 0,
-                'disable' => 0,
-                'deleted' => 1,
+                'uid'       => 100,
+                'pid'       => 0,
+                'username'  => 'deleteduser',
+                'password'  => 'pass',
+                'admin'     => 0,
+                'disable'   => 0,
+                'deleted'   => 1,
                 'usergroup' => '1',
             ],
         );
@@ -228,7 +230,7 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
 
         // Deleted user should NOT be counted
         self::assertSame(5, $stats->totalUsers);
-        $usernames = \array_map(static fn(UserPasskeyStatus $u): string => $u->username, $stats->usersWithoutPasskeys);
+        $usernames = array_map(static fn (UserPasskeyStatus $u): string => $u->username, $stats->usersWithoutPasskeys);
         self::assertNotContains('deleteduser', $usernames);
     }
 
@@ -242,13 +244,13 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
         $connection->insert(
             'be_users',
             [
-                'uid' => 101,
-                'pid' => 0,
-                'username' => 'disableduser',
-                'password' => 'pass',
-                'admin' => 0,
-                'disable' => 1,
-                'deleted' => 0,
+                'uid'       => 101,
+                'pid'       => 0,
+                'username'  => 'disableduser',
+                'password'  => 'pass',
+                'admin'     => 0,
+                'disable'   => 1,
+                'deleted'   => 0,
                 'usergroup' => '1',
             ],
         );
@@ -272,13 +274,13 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
             ->insert(
                 'be_users',
                 [
-                    'uid' => 102,
-                    'pid' => 0,
-                    'username' => 'disabledwithpasskey',
-                    'password' => 'pass',
-                    'admin' => 0,
-                    'disable' => 1,
-                    'deleted' => 0,
+                    'uid'       => 102,
+                    'pid'       => 0,
+                    'username'  => 'disabledwithpasskey',
+                    'password'  => 'pass',
+                    'admin'     => 0,
+                    'disable'   => 1,
+                    'deleted'   => 0,
                     'usergroup' => '1',
                 ],
             );
@@ -287,21 +289,21 @@ final class AdoptionStatsServiceTest extends FunctionalTestCase
             ->insert(
                 'tx_nrpasskeysbe_credential',
                 [
-                    'uid' => 100,
-                    'pid' => 0,
-                    'be_user' => 102,
-                    'credential_id' => 'credential-id-disabled-user',
+                    'uid'             => 100,
+                    'pid'             => 0,
+                    'be_user'         => 102,
+                    'credential_id'   => 'credential-id-disabled-user',
                     'public_key_cose' => 'public-key-cose-data-disabled',
-                    'sign_count' => 0,
-                    'user_handle' => 'user-handle-disabled',
-                    'aaguid' => '00000000-0000-0000-0000-000000000005',
-                    'transports' => '["usb"]',
-                    'label' => 'Disabled User Credential',
-                    'created_at' => 1700000000,
-                    'last_used_at' => 0,
-                    'revoked_at' => 0,
-                    'revoked_by' => 0,
-                    'deleted' => 0,
+                    'sign_count'      => 0,
+                    'user_handle'     => 'user-handle-disabled',
+                    'aaguid'          => '00000000-0000-0000-0000-000000000005',
+                    'transports'      => '["usb"]',
+                    'label'           => 'Disabled User Credential',
+                    'created_at'      => 1700000000,
+                    'last_used_at'    => 0,
+                    'revoked_at'      => 0,
+                    'revoked_by'      => 0,
+                    'deleted'         => 0,
                 ],
             );
         self::assertSame(3, $this->subject->countActiveCredentials());

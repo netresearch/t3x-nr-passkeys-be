@@ -24,6 +24,11 @@ use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function str_contains;
+use function str_repeat;
+use function strpos;
+use function substr_count;
+
 #[CoversClass(PasskeySettingsPanel::class)]
 final class PasskeySettingsPanelTest extends TestCase
 {
@@ -38,19 +43,19 @@ final class PasskeySettingsPanelTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->pageRenderer = $this->createMock(PageRenderer::class);
+        $this->pageRenderer         = $this->createMock(PageRenderer::class);
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
-        $this->uriBuilder = $this->createMock(UriBuilder::class);
+        $this->uriBuilder           = $this->createMock(UriBuilder::class);
         $this->uriBuilder
             ->method('buildUriFromRoute')
             ->willReturnCallback(
                 static function (string $routeName): Uri {
                     $routeMap = [
-                        'ajax_passkeys_manage_list' => '/typo3/ajax/passkeys/manage/list?token=test-token',
+                        'ajax_passkeys_manage_list'                 => '/typo3/ajax/passkeys/manage/list?token=test-token',
                         'ajax_passkeys_manage_registration_options' => '/typo3/ajax/passkeys/manage/registration/options?token=test-token',
-                        'ajax_passkeys_manage_registration_verify' => '/typo3/ajax/passkeys/manage/registration/verify?token=test-token',
-                        'ajax_passkeys_manage_rename' => '/typo3/ajax/passkeys/manage/rename?token=test-token',
-                        'ajax_passkeys_manage_remove' => '/typo3/ajax/passkeys/manage/remove?token=test-token',
+                        'ajax_passkeys_manage_registration_verify'  => '/typo3/ajax/passkeys/manage/registration/verify?token=test-token',
+                        'ajax_passkeys_manage_rename'               => '/typo3/ajax/passkeys/manage/rename?token=test-token',
+                        'ajax_passkeys_manage_remove'               => '/typo3/ajax/passkeys/manage/remove?token=test-token',
                     ];
 
                     return new Uri($routeMap[$routeName] ?? '/typo3/unknown');
@@ -59,7 +64,7 @@ final class PasskeySettingsPanelTest extends TestCase
         $this->subject = new PasskeySettingsPanel();
 
         // Set up a valid encryptionKey so existing tests reach panel rendering
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 64);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = str_repeat('a', 64);
 
         // Set up language service mock
         $languageService = $this->createMock(LanguageService::class);
@@ -68,16 +73,16 @@ final class PasskeySettingsPanelTest extends TestCase
             ->willReturnCallback(
                 static function (string $key): string {
                     $map = [
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.info.passkeys' => 'Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup.',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.title' => 'Passkeys',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.description' => 'Manage your registered passkeys for passwordless login.',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.add' => 'Add Passkey',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.name' => 'Name',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.created' => 'Created',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.lastUsed' => 'Last Used',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.actions' => 'Actions',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.info.passkeys'     => 'Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup.',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.title'             => 'Passkeys',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.description'       => 'Manage your registered passkeys for passwordless login.',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.add'               => 'Add Passkey',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.name'        => 'Name',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.created'     => 'Created',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.lastUsed'    => 'Last Used',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.label.actions'     => 'Actions',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.warning.singleKey' => 'You only have one passkey registered. Consider adding a backup passkey.',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.noPasskeys' => 'No passkeys registered yet.',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:manage.noPasskeys'        => 'No passkeys registered yet.',
                     ];
 
                     return $map[$key] ?? '';
@@ -105,17 +110,17 @@ final class PasskeySettingsPanelTest extends TestCase
     public function renderReturnsEmptyStringWhenBackendUserIsNotAuthentication(): void
     {
         $GLOBALS['BE_USER'] = new stdClass();
-        $result = $this->subject->render([]);
+        $result             = $this->subject->render([]);
         self::assertSame('', $result);
     }
 
     #[Test]
     public function renderReturnsEmptyStringWhenUserUidIsZero(): void
     {
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = ['uid' => 0];
+        $backendUser        = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user  = ['uid' => 0];
         $GLOBALS['BE_USER'] = $backendUser;
-        $result = $this->subject->render([]);
+        $result             = $this->subject->render([]);
         self::assertSame('', $result);
     }
 
@@ -277,7 +282,7 @@ final class PasskeySettingsPanelTest extends TestCase
             ->method('sL')
             ->willReturn('');
         $GLOBALS['LANG'] = $languageService;
-        $result = $this->subject->render([]);
+        $result          = $this->subject->render([]);
 
         // Fallback labels should be used
         self::assertStringContainsString('Passkeys', $result);
@@ -297,7 +302,7 @@ final class PasskeySettingsPanelTest extends TestCase
             ->method('sL')
             ->willReturnCallback(
                 static function (string $key): string {
-                    if (\str_contains($key, 'manage.title')) {
+                    if (str_contains($key, 'manage.title')) {
                         return '<script>alert("xss")</script>';
                     }
 
@@ -305,7 +310,7 @@ final class PasskeySettingsPanelTest extends TestCase
                 },
             );
         $GLOBALS['LANG'] = $languageService;
-        $result = $this->subject->render([]);
+        $result          = $this->subject->render([]);
         self::assertStringNotContainsString('<script>', $result);
         self::assertStringContainsString('&lt;script&gt;', $result);
     }
@@ -315,7 +320,7 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short';
-        $result = $this->subject->render([]);
+        $result                                             = $this->subject->render([]);
         self::assertStringContainsString('callout callout-danger', $result);
         self::assertStringContainsString('encryption key', $result);
         self::assertStringNotContainsString('passkey-management-container', $result);
@@ -336,7 +341,7 @@ final class PasskeySettingsPanelTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $this->registerDependencies();
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 32);
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = str_repeat('a', 32);
         $this->credentialRepository
             ->method('countByBeUser')
             ->willReturn(0);
@@ -359,8 +364,8 @@ final class PasskeySettingsPanelTest extends TestCase
         self::assertStringContainsString('at least two passkeys', $result);
 
         // Info box must appear BEFORE the management container
-        $infoBoxPos = \strpos($result, 'class="callout callout-info"');
-        $containerPos = \strpos($result, 'id="passkey-management-container"');
+        $infoBoxPos   = strpos($result, 'class="callout callout-info"');
+        $containerPos = strpos($result, 'id="passkey-management-container"');
         self::assertNotFalse($infoBoxPos);
         self::assertNotFalse($containerPos);
         self::assertLessThan($containerPos, $infoBoxPos);
@@ -393,7 +398,7 @@ final class PasskeySettingsPanelTest extends TestCase
             ->method('sL')
             ->willReturnCallback(
                 static function (string $key): string {
-                    if (\str_contains($key, 'manage.info.passkeys')) {
+                    if (str_contains($key, 'manage.info.passkeys')) {
                         return '<img src=x onerror=alert(1)>';
                     }
 
@@ -401,7 +406,7 @@ final class PasskeySettingsPanelTest extends TestCase
                 },
             );
         $GLOBALS['LANG'] = $languageService;
-        $result = $this->subject->render([]);
+        $result          = $this->subject->render([]);
         self::assertStringNotContainsString('<img src=x', $result);
         self::assertStringContainsString('&lt;img src=x', $result);
     }
@@ -419,7 +424,7 @@ final class PasskeySettingsPanelTest extends TestCase
             ->method('sL')
             ->willReturn('');
         $GLOBALS['LANG'] = $languageService;
-        $result = $this->subject->render([]);
+        $result          = $this->subject->render([]);
 
         // Fallback text should be used
         self::assertStringContainsString('Passkeys replace your password', $result);
@@ -443,8 +448,8 @@ final class PasskeySettingsPanelTest extends TestCase
 
     private function setUpBackendUser(int $uid): void
     {
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = ['uid' => $uid];
+        $backendUser        = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user  = ['uid' => $uid];
         $GLOBALS['BE_USER'] = $backendUser;
     }
 
@@ -480,7 +485,7 @@ final class PasskeySettingsPanelTest extends TestCase
         self::assertStringNotContainsString('<h4', $html);
 
         // Column headers name their column for assistive technology.
-        self::assertSame(4, \substr_count($html, '<th scope="col">'));
+        self::assertSame(4, substr_count($html, '<th scope="col">'));
         self::assertStringNotContainsString('<th>', $html);
     }
 

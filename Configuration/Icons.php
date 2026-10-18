@@ -17,13 +17,13 @@ use TYPO3\CMS\Core\Information\Typo3Version;
 $passkeyIcon = (new Typo3Version())->getMajorVersion() >= 14 ? 'EXT:nr_passkeys_be/Resources/Public/Icons/ModuleIcon.svg' : 'EXT:nr_passkeys_be/Resources/Public/Icons/ModuleIcon.legacy.svg';
 
 return [
-    'passkeys-be-login' => ['provider' => SvgIconProvider::class, 'source' => $passkeyIcon],
+    'passkeys-be-login'  => ['provider' => SvgIconProvider::class, 'source' => $passkeyIcon],
     'passkeys-be-module' => ['provider' => SvgIconProvider::class, 'source' => $passkeyIcon],
     // Purpose-specific icons for the unified dashboard widgets, so they no
     // longer borrow the module icon and are distinguishable in the picker.
-    'passkeys-adoption' => ['provider' => SvgIconProvider::class, 'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/widget-adoption.svg'],
+    'passkeys-adoption'    => ['provider' => SvgIconProvider::class, 'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/widget-adoption.svg'],
     'passkeys-credentials' => [
         'provider' => SvgIconProvider::class,
-        'source' => 'EXT:nr_passkeys_be/Resources/Public/Icons/widget-credentials.svg',
+        'source'   => 'EXT:nr_passkeys_be/Resources/Public/Icons/widget-credentials.svg',
     ],
 ];

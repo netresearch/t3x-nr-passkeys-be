@@ -24,6 +24,15 @@ use Webauthn\PublicKeyCredentialDescriptor;
 use Webauthn\PublicKeyCredentialRequestOptions;
 use Webauthn\TrustPath\EmptyTrustPath;
 
+use function array_map;
+use function array_values;
+use function count;
+use function hash_hkdf;
+use function hash_hmac;
+use function ord;
+use function strlen;
+use function substr;
+
 /**
  * WebAuthn assertion (authentication) ceremony: building request options for the
  * username-first, discoverable, and decoy login variants, resolving the backend
@@ -61,13 +70,13 @@ final readonly class AssertionService
      */
     public function createAssertionOptions(string $username, int $beUserUid): AssertionOptions
     {
-        $rpId = $this->configService->getEffectiveRpId();
-        $challenge = $this->challengeService->generateChallenge();
-        $challengeToken = $this->challengeService->createChallengeToken($challenge);
-        $credentials = $this->credentialRepository->findByBeUser($beUserUid);
-        $allowCredentials = \array_values(
-            \array_map(
-                static fn(Credential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
+        $rpId             = $this->configService->getEffectiveRpId();
+        $challenge        = $this->challengeService->generateChallenge();
+        $challengeToken   = $this->challengeService->createChallengeToken($challenge);
+        $credentials      = $this->credentialRepository->findByBeUser($beUserUid);
+        $allowCredentials = array_values(
+            array_map(
+                static fn (Credential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
                     type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
                     id: $cred->getCredentialId(),
                     transports: $cred->getTransportsArray(),
@@ -102,10 +111,10 @@ final readonly class AssertionService
      */
     public function createDiscoverableAssertionOptions(): AssertionOptions
     {
-        $rpId = $this->configService->getEffectiveRpId();
-        $challenge = $this->challengeService->generateChallenge();
+        $rpId           = $this->configService->getEffectiveRpId();
+        $challenge      = $this->challengeService->generateChallenge();
         $challengeToken = $this->challengeService->createChallengeToken($challenge);
-        $options = PublicKeyCredentialRequestOptions::create(
+        $options        = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
             allowCredentials: [],
@@ -131,10 +140,10 @@ final readonly class AssertionService
      */
     public function createDecoyAssertionOptions(string $username): AssertionOptions
     {
-        $rpId = $this->configService->getEffectiveRpId();
-        $challenge = $this->challengeService->generateChallenge();
+        $rpId           = $this->configService->getEffectiveRpId();
+        $challenge      = $this->challengeService->generateChallenge();
         $challengeToken = $this->challengeService->createChallengeToken($challenge);
-        $options = PublicKeyCredentialRequestOptions::create(
+        $options        = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
             allowCredentials: $this->buildDecoyDescriptors($username),
@@ -165,9 +174,9 @@ final readonly class AssertionService
      */
     private function buildDecoyDescriptors(string $username): array
     {
-        $derivedKey = \hash_hkdf('sha256', $this->configService->getEncryptionKey(), 32, 'nr_passkeys_be_decoy');
-        $seed = \hash_hmac('sha256', $username . '|count', $derivedKey, true);
-        $count = 1 + \ord($seed[0]) % 3;
+        $derivedKey  = hash_hkdf('sha256', $this->configService->getEncryptionKey(), 32, 'nr_passkeys_be_decoy');
+        $seed        = hash_hmac('sha256', $username . '|count', $derivedKey, true);
+        $count       = 1 + ord($seed[0]) % 3;
         $descriptors = [];
 
         for ($index = 0; $index < $count; ++$index) {
@@ -180,9 +189,9 @@ final readonly class AssertionService
             // match, which no real credential does except by chance. Any response
             // failing that check was then certainly a real, enrolled account, which is
             // precisely the oracle these decoys exist to close.
-            $selectors = \hash_hmac('sha256', $username . '|' . $index . '|selectors', $derivedKey, true);
-            $length = self::DECOY_ID_LENGTHS[\ord($selectors[0]) % \count(self::DECOY_ID_LENGTHS)];
-            $transports = self::DECOY_TRANSPORT_SETS[\ord($selectors[1]) % \count(self::DECOY_TRANSPORT_SETS)];
+            $selectors     = hash_hmac('sha256', $username . '|' . $index . '|selectors', $derivedKey, true);
+            $length        = self::DECOY_ID_LENGTHS[ord($selectors[0]) % count(self::DECOY_ID_LENGTHS)];
+            $transports    = self::DECOY_TRANSPORT_SETS[ord($selectors[1]) % count(self::DECOY_TRANSPORT_SETS)];
             $descriptors[] = PublicKeyCredentialDescriptor::create(
                 type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
                 id: $this->deriveDecoyId($derivedKey, $username . '|' . $index . '|id', $length),
@@ -205,15 +214,15 @@ final readonly class AssertionService
      */
     private function deriveDecoyId(string $derivedKey, string $label, int $length): string
     {
-        $id = '';
+        $id    = '';
         $block = 0;
 
-        while (\strlen($id) < $length) {
-            $id .= \hash_hmac('sha256', $label . '|' . $block, $derivedKey, true);
+        while (strlen($id) < $length) {
+            $id .= hash_hmac('sha256', $label . '|' . $block, $derivedKey, true);
             ++$block;
         }
 
-        return \substr($id, 0, $length);
+        return substr($id, 0, $length);
     }
 
     /**
@@ -256,7 +265,7 @@ final readonly class AssertionService
         int $beUserUid,
     ): VerifiedAssertion {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
-        $rpId = $this->configService->getEffectiveRpId();
+        $rpId      = $this->configService->getEffectiveRpId();
 
         // Deserialize the browser response
         $publicKeyCredential = $this->ceremonyFactory
@@ -275,7 +284,7 @@ final readonly class AssertionService
 
         // Find the credential by its ID
         $credentialId = $publicKeyCredential->rawId;
-        $credential = $this->credentialRepository->findByCredentialId($credentialId);
+        $credential   = $this->credentialRepository->findByCredentialId($credentialId);
 
         if (!$credential instanceof Credential) {
             $this->logger->warning('Assertion with unknown credential ID', ['be_user_uid' => $beUserUid]);
@@ -296,7 +305,7 @@ final readonly class AssertionService
             throw new RuntimeException('Credential mismatch', 1700000034);
         }
 
-        $storedSource = $this->credentialToSource($credential);
+        $storedSource   = $this->credentialToSource($credential);
         $requestOptions = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
@@ -304,9 +313,9 @@ final readonly class AssertionService
                 ->getConfiguration()
                 ->getUserVerification(),
         );
-        $factory = $this->ceremonyFactory->createCeremonyFactory();
+        $factory         = $this->ceremonyFactory->createCeremonyFactory();
         $ceremonyManager = $factory->requestCeremony();
-        $validator = AuthenticatorAssertionResponseValidator::create($ceremonyManager);
+        $validator       = AuthenticatorAssertionResponseValidator::create($ceremonyManager);
 
         try {
             $updatedSource = $validator->check(
