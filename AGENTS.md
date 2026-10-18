@@ -117,7 +117,7 @@ Golden samples per area live in the scoped AGENTS.md files (Classes, Tests).
 ## Codebase State
 - Passkeys are primary credentials (NOT MFA) -- registered at auth priority 80
 - `web-auth/webauthn-lib` v5.x classes are `final` -- use `dg/bypass-finals` for mocking
-- PHPStan config is inlined in `Build/phpstan.neon` (the shared typo3-ci-workflows config needs phpstan-typo3, which requires TYPO3 ^13.4 -- incompatible with v12 support)
+- `Build/phpstan.neon` includes the shared typo3-ci-workflows PHPStan config through `Build/phpstan-shared.php`; on the TYPO3 12.4 CI cells, where the shared package is removed (its phpstan-typo3 requires TYPO3 ^13.4), that file includes the fallback `Build/phpstan-typo3-12.neon` instead
 - Discoverable login behind `discoverableLoginEnabled` feature flag
 - V14 uses web components (`typo3-backend-module-router`) instead of `.scaffold-content-module`
 - RateLimiterService uses atomic locking (LockFactory) with dual counters (per-IP + per-username)

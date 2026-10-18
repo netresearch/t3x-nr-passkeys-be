@@ -1,0 +1,81 @@
+# Copyright (c) 2025-2026 Netresearch DTT GmbH
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# TYPO3 v12 fallback for the shared PHPStan config, included by
+# phpstan-shared.php only when netresearch/typo3-ci-workflows is not
+# installed: CI removes it on the TYPO3 12.4 cells, because its
+# saschaegerer/phpstan-typo3 needs TYPO3 ^13.4. These are the settings
+# Build/phpstan.neon inlined before it included the shared file, moved
+# here unchanged. phpstan/extension-installer still registers
+# phpstan-strict-rules, phpstan-deprecation-rules, phpstan-phpunit, phpat
+# and ergebnis/phpstan-rules (with all its rules) from the repository's own
+# require-dev. Delete this file with the TYPO3 12.4 support.
+
+parameters:
+    level: 10
+    treatPhpDocTypesAsCertain: false
+    inferPrivatePropertyTypeFromConstructor: true
+    checkMissingCallableSignature: true
+    checkUninitializedProperties: true
+    reportUnmatchedIgnoredErrors: false
+
+    excludePaths:
+        - %currentWorkingDirectory%/.Build/*
+        - %currentWorkingDirectory%/ext_emconf.php
+
+    ignoreErrors:
+        # --- Shared ignoreErrors (from typo3-ci-workflows) ---
+        - identifier: offsetAccess.nonOffsetAccessible
+          path: %currentWorkingDirectory%/Tests/Unit/*
+          reportUnmatched: false
+        - identifier: argument.type
+          path: %currentWorkingDirectory%/Tests/Unit/*
+          message: '#Parameter \#2 \$array of static method PHPUnit\\Framework\\Assert::#'
+          reportUnmatched: false
+        - identifier: cast.int
+          path: %currentWorkingDirectory%/Tests/Functional/*
+          reportUnmatched: false
+        - identifier: argument.type
+          path: %currentWorkingDirectory%/Tests/Functional/*
+          message: '#mixed#'
+          reportUnmatched: false
+        - identifier: assign.propertyType
+          path: %currentWorkingDirectory%/Tests/Functional/*
+          message: '#mixed#'
+          reportUnmatched: false
+        - identifier: method.nonObject
+          path: %currentWorkingDirectory%/Tests/Functional/*
+          message: '#mixed#'
+          reportUnmatched: false
+        - identifier: attribute.deprecated
+          path: %currentWorkingDirectory%/Classes/Updates/*
+          reportUnmatched: false
+        - identifier: class.implementsDeprecatedInterface
+          path: %currentWorkingDirectory%/Classes/Updates/*
+          reportUnmatched: false
+        - identifier: classConstant.deprecatedClass
+          path: %currentWorkingDirectory%/Classes/Updates/*
+          reportUnmatched: false
+        - identifier: classConstant.deprecatedClass
+          path: %currentWorkingDirectory%/Tests/Unit/Updates/*
+          reportUnmatched: false
+        # --- ergebnis rules that are too strict for TYPO3 extensions ---
+        # (the shared config switches ergebnis allRules off instead)
+        -
+            identifier: ergebnis.noNamedArgument
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noConstructorParameterWithDefaultValue
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noNullableReturnTypeDeclaration
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noIsset
+            reportUnmatched: false
+        -
+            identifier: ergebnis.noExtends
+            reportUnmatched: false
+        -
+            identifier: ergebnis.final
+            reportUnmatched: false
