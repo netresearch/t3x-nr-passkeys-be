@@ -54,8 +54,6 @@ $config = $createConfig(
         // php-cs-fixer breaks a line, so a chain written on one line stays on
         // one line however long it grows once code is generated.
         'Netresearch/break_long_method_chain' => ['minimum_links' => 2],
-        // Imports grouped by kind, then sorted; the shared set sorts only.
-        'ordered_imports' => ['imports_order' => ['class', 'function', 'const'], 'sort_algorithm' => 'alpha'],
     ],
     // canonical-formatting.yml checks the printer out into .printer/ inside
     // the working tree before it runs `composer ci:cgl`.

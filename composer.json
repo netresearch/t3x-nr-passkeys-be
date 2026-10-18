@@ -32,7 +32,7 @@
         "web-auth/webauthn-lib": "^5.3"
     },
     "require-dev": {
-        "netresearch/typo3-ci-workflows": "^2.0.1",
+        "netresearch/typo3-ci-workflows": "^2.0.2",
         "ergebnis/phpstan-rules": "^2.6",
         "dg/bypass-finals": "^1.9",
         "phpunit/phpunit": "^11.5 || ^12.1 || ^13.0",
