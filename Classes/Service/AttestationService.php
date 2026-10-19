@@ -28,6 +28,13 @@ use Webauthn\PublicKeyCredentialParameters;
 use Webauthn\PublicKeyCredentialRpEntity;
 use Webauthn\PublicKeyCredentialUserEntity;
 
+use function array_map;
+use function hash_hkdf;
+use function hash_hmac;
+use function json_encode;
+use function strtoupper;
+use function trim;
+
 /**
  * WebAuthn attestation (registration) ceremony: building creation options,
  * verifying the browser's attestation response, and persisting the credential.
@@ -52,18 +59,18 @@ final readonly class AttestationService
         string $username,
         string $displayName,
     ): RegistrationOptions {
-        $rpId = $this->configService->getEffectiveRpId();
+        $rpId   = $this->configService->getEffectiveRpId();
         $rpName = $this->configService
             ->getConfiguration()
             ->getRpName();
-        $rp = PublicKeyCredentialRpEntity::create(name: $rpName, id: $rpId);
-        $userHandle = $this->createUserHandle($beUserUid);
-        $user = PublicKeyCredentialUserEntity::create(name: $username, id: $userHandle, displayName: $displayName);
-        $challenge = $this->challengeService->generateChallenge();
-        $challengeToken = $this->challengeService->createChallengeToken($challenge);
+        $rp                  = PublicKeyCredentialRpEntity::create(name: $rpName, id: $rpId);
+        $userHandle          = $this->createUserHandle($beUserUid);
+        $user                = PublicKeyCredentialUserEntity::create(name: $username, id: $userHandle, displayName: $displayName);
+        $challenge           = $this->challengeService->generateChallenge();
+        $challengeToken      = $this->challengeService->createChallengeToken($challenge);
         $existingCredentials = $this->credentialRepository->findByBeUser($beUserUid);
-        $excludeCredentials = \array_map(
-            static fn(Credential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
+        $excludeCredentials  = array_map(
+            static fn (Credential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
                 type: PublicKeyCredentialDescriptor::CREDENTIAL_TYPE_PUBLIC_KEY,
                 id: $cred->getCredentialId(),
                 transports: $cred->getTransportsArray(),
@@ -84,7 +91,7 @@ final readonly class AttestationService
         // the user is left wondering why one passkey is offered there and another is
         // not. The answer arrives client-side via getClientExtensionResults().
         $extensions = AuthenticationExtensions::create([AuthenticationExtension::create('credProps', true)]);
-        $options = PublicKeyCredentialCreationOptions::create(
+        $options    = PublicKeyCredentialCreationOptions::create(
             rp: $rp,
             user: $user,
             challenge: $challenge,
@@ -115,13 +122,13 @@ final readonly class AttestationService
         string $displayName,
     ): CredentialRecord {
         $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
-        $rpId = $this->configService->getEffectiveRpId();
-        $rpName = $this->configService
+        $rpId      = $this->configService->getEffectiveRpId();
+        $rpName    = $this->configService
             ->getConfiguration()
             ->getRpName();
-        $userHandle = $this->createUserHandle($beUserUid);
-        $rp = PublicKeyCredentialRpEntity::create(name: $rpName, id: $rpId);
-        $user = PublicKeyCredentialUserEntity::create(name: $username, id: $userHandle, displayName: $displayName);
+        $userHandle      = $this->createUserHandle($beUserUid);
+        $rp              = PublicKeyCredentialRpEntity::create(name: $rpName, id: $rpId);
+        $user            = PublicKeyCredentialUserEntity::create(name: $username, id: $userHandle, displayName: $displayName);
         $creationOptions = PublicKeyCredentialCreationOptions::create(
             rp: $rp,
             user: $user,
@@ -145,9 +152,9 @@ final readonly class AttestationService
             throw new RuntimeException('Expected attestation response', 1700000021);
         }
 
-        $factory = $this->ceremonyFactory->createCeremonyFactory();
+        $factory         = $this->ceremonyFactory->createCeremonyFactory();
         $ceremonyManager = $factory->creationCeremony();
-        $validator = AuthenticatorAttestationResponseValidator::create($ceremonyManager);
+        $validator       = AuthenticatorAttestationResponseValidator::create($ceremonyManager);
 
         try {
             $source = $validator->check(
@@ -185,7 +192,7 @@ final readonly class AttestationService
             signCount: $source->counter,
             userHandle: $source->userHandle,
             aaguid: $source->aaguid->toString(),
-            transports: \json_encode($source->transports, JSON_THROW_ON_ERROR),
+            transports: json_encode($source->transports, JSON_THROW_ON_ERROR),
             discoverable: $discoverable,
             label: $label,
         );
@@ -216,7 +223,7 @@ final readonly class AttestationService
         $params = [];
 
         foreach ($algorithms as $algo) {
-            $algoId = self::ALGORITHM_MAP[\strtoupper(\trim($algo))] ?? null;
+            $algoId = self::ALGORITHM_MAP[strtoupper(trim($algo))] ?? null;
 
             if ($algoId !== null) {
                 $params[] = PublicKeyCredentialParameters::createPk($algoId);
@@ -228,9 +235,9 @@ final readonly class AttestationService
 
     private function createUserHandle(int $beUserUid): string
     {
-        $key = $this->configService->getEncryptionKey();
-        $derivedKey = \hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_user_handle');
+        $key        = $this->configService->getEncryptionKey();
+        $derivedKey = hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_user_handle');
 
-        return \hash_hmac('sha256', (string) $beUserUid, $derivedKey, true);
+        return hash_hmac('sha256', (string) $beUserUid, $derivedKey, true);
     }
 }

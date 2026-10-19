@@ -23,6 +23,12 @@ use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 
+use function basename;
+use function define;
+use function defined;
+use function str_repeat;
+use function str_replace;
+
 #[CoversClass(PasskeySettingsPanelElement::class)]
 final class PasskeySettingsPanelElementTest extends TestCase
 {
@@ -39,25 +45,25 @@ final class PasskeySettingsPanelElementTest extends TestCase
         parent::setUp();
 
         // TYPO3 constant used by AbstractFormElement::wrapWithFieldsetAndLegend()
-        if (!\defined('LF')) {
-            \define('LF', "\n");
+        if (!defined('LF')) {
+            define('LF', "\n");
         }
 
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
-        $this->pageRenderer = $this->createMock(PageRenderer::class);
-        $this->uriBuilder = $this->createMock(UriBuilder::class);
+        $this->pageRenderer         = $this->createMock(PageRenderer::class);
+        $this->uriBuilder           = $this->createMock(UriBuilder::class);
         $this->uriBuilder
             ->method('buildUriFromRoute')
             ->willReturnCallback(
-                static fn(string $routeName): Uri => new Uri('/typo3/ajax/passkeys/' . $routeName . '?token=test'),
+                static fn (string $routeName): Uri => new Uri('/typo3/ajax/passkeys/' . $routeName . '?token=test'),
             );
-        $this->panel = new PasskeySettingsPanel();
-        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = \str_repeat('a', 64);
-        $languageService = $this->createMock(LanguageService::class);
+        $this->panel                                        = new PasskeySettingsPanel();
+        $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = str_repeat('a', 64);
+        $languageService                                    = $this->createMock(LanguageService::class);
         $languageService
             ->method('sL')
             ->willReturnCallback(
-                static fn(string $key): string => \basename(\str_replace(':', '/', $key)),
+                static fn (string $key): string => basename(str_replace(':', '/', $key)),
             );
         $GLOBALS['LANG'] = $languageService;
     }
@@ -82,7 +88,7 @@ final class PasskeySettingsPanelElementTest extends TestCase
     public function renderReturnsEmptyHtmlWhenBackendUserIsNotAuthentication(): void
     {
         $GLOBALS['BE_USER'] = new stdClass();
-        $result = $this
+        $result             = $this
             ->createSubject()
             ->render();
         self::assertEmpty($result['html'] ?? '');
@@ -103,7 +109,7 @@ final class PasskeySettingsPanelElementTest extends TestCase
     {
         $this->setUpBackendUser(1);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'short';
-        $result = $this
+        $result                                             = $this
             ->createSubject()
             ->render();
         self::assertStringContainsString('callout callout-danger', $result['html'] ?? '');
@@ -226,8 +232,8 @@ final class PasskeySettingsPanelElementTest extends TestCase
 
     private function setUpBackendUser(int $uid): void
     {
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
-        $backendUser->user = ['uid' => $uid];
+        $backendUser        = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user  = ['uid' => $uid];
         $GLOBALS['BE_USER'] = $backendUser;
     }
 }

@@ -14,6 +14,12 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function json_decode;
+use function json_encode;
+use function time;
+
+use const JSON_THROW_ON_ERROR;
+
 #[CoversClass(UserPasskeyStatus::class)]
 final class UserPasskeyStatusTest extends TestCase
 {
@@ -87,7 +93,7 @@ final class UserPasskeyStatusTest extends TestCase
             groups: '1',
             gracePeriodStart: 0,
             gracePeriodRemainingDays: 0,
-            nudgeUntil: \time() + 86400,
+            nudgeUntil: time() + 86400,
         );
         self::assertTrue($status->hasActiveNudge());
         self::assertTrue($status->jsonSerialize()['hasActiveNudge']);
@@ -104,7 +110,7 @@ final class UserPasskeyStatusTest extends TestCase
             groups: '1',
             gracePeriodStart: 0,
             gracePeriodRemainingDays: 0,
-            nudgeUntil: \time() - 86400,
+            nudgeUntil: time() - 86400,
         );
         self::assertFalse($status->hasActiveNudge());
         self::assertFalse($status->jsonSerialize()['hasActiveNudge']);
@@ -121,8 +127,8 @@ final class UserPasskeyStatusTest extends TestCase
             gracePeriodStart: 1700000000,
             gracePeriodRemainingDays: 14,
         );
-        $json = \json_encode($status, \JSON_THROW_ON_ERROR);
-        $decoded = \json_decode($json, true, 512, \JSON_THROW_ON_ERROR);
+        $json    = json_encode($status, JSON_THROW_ON_ERROR);
+        $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
         self::assertSame(50, $decoded['uid']);
         self::assertSame('testuser', $decoded['username']);
         self::assertSame(14, $decoded['gracePeriodRemainingDays']);

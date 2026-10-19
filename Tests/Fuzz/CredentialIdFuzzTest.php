@@ -14,6 +14,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function random_bytes;
+use function str_repeat;
+use function time;
+
 final class CredentialIdFuzzTest extends TestCase
 {
     /**
@@ -33,17 +37,17 @@ final class CredentialIdFuzzTest extends TestCase
 
         yield 'float uid' => [['uid' => 3.14]];
 
-        yield 'binary credential_id' => [['credential_id' => \random_bytes(255)]];
+        yield 'binary credential_id' => [['credential_id' => random_bytes(255)]];
 
         yield 'empty credential_id' => [['credential_id' => '']];
 
-        yield 'huge credential_id' => [['credential_id' => \str_repeat('X', 10000)]];
+        yield 'huge credential_id' => [['credential_id' => str_repeat('X', 10000)]];
 
         yield 'null byte credential_id' => [['credential_id' => "\x00\x00\x00"]];
 
         yield 'unicode label' => [['label' => '🔑 Mëîn Schlüssel 日本語']];
 
-        yield 'long label' => [['label' => \str_repeat('A', 500)]];
+        yield 'long label' => [['label' => str_repeat('A', 500)]];
 
         yield 'html label' => [['label' => '<b>Bold</b><script>alert(1)</script>']];
 
@@ -65,7 +69,7 @@ final class CredentialIdFuzzTest extends TestCase
 
         yield 'empty aaguid' => [['aaguid' => '']];
 
-        yield 'oversized public_key_cose' => [['public_key_cose' => \random_bytes(65536)]];
+        yield 'oversized public_key_cose' => [['public_key_cose' => random_bytes(65536)]];
 
         yield 'all zeros' => [['uid' => 0, 'be_user' => 0, 'sign_count' => 0, 'created_at' => 0]];
     }
@@ -88,7 +92,7 @@ final class CredentialIdFuzzTest extends TestCase
     public function toArrayAndBackRoundTrips(array $data): void
     {
         $credential = Credential::fromArray($data);
-        $array = $credential->toArray();
+        $array      = $credential->toArray();
         self::assertIsArray($array);
         self::assertArrayHasKey('uid', $array);
         self::assertArrayHasKey('be_user', $array);
@@ -107,7 +111,7 @@ final class CredentialIdFuzzTest extends TestCase
 
         foreach ($testCases as $transport) {
             $credential = new Credential(transports: $transport);
-            $result = $credential->getTransportsArray();
+            $result     = $credential->getTransportsArray();
 
             // Should return an array (possibly empty) without throwing
             self::assertIsArray($result);
@@ -120,16 +124,16 @@ final class CredentialIdFuzzTest extends TestCase
         $credential = new Credential(
             uid: 1,
             beUser: 42,
-            credentialId: \random_bytes(32),
-            publicKeyCose: \random_bytes(256),
-            userHandle: \random_bytes(32),
+            credentialId: random_bytes(32),
+            publicKeyCose: random_bytes(256),
+            userHandle: random_bytes(32),
             aaguid: 'test-aaguid',
             transports: '["usb"]',
             label: 'Test Key',
-            createdAt: \time(),
-            lastUsedAt: \time(),
+            createdAt: time(),
+            lastUsedAt: time(),
         );
-        $info = $credential->toCredentialInfo();
+        $info       = $credential->toCredentialInfo();
         $serialized = $info->jsonSerialize();
 
         // Must NOT contain sensitive fields

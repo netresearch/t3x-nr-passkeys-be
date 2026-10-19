@@ -3,26 +3,23 @@
 
 # PHPStan Configuration
 #
-# Note: typo3-ci-workflows shared config is NOT included directly because
-# it requires phpstan-typo3 which needs TYPO3 ^13.4+. For v12 compat,
-# all settings are inlined. phpstan/extension-installer auto-registers
-# phpstan-strict-rules, phpstan-deprecation-rules, phpstan-phpunit, phpat.
+# phpstan-shared.php includes the shared config of typo3-ci-workflows (level
+# 10, treatPhpDocTypesAsCertain, the strictness flags, the curated ergebnis
+# rules and the shared ignoreErrors), or on TYPO3 v12, where CI removes that
+# package, the fallback phpstan-typo3-12.neon. phpstan/extension-installer
+# registers phpstan-strict-rules, phpstan-deprecation-rules, phpstan-phpunit,
+# phpstan-typo3, phpat and ergebnis/phpstan-rules.
+
+includes:
+    - phpstan-shared.php
 
 parameters:
-    level: 10
     paths:
         - %currentWorkingDirectory%/Classes
         - %currentWorkingDirectory%/Tests/Architecture
     tmpDir: %currentWorkingDirectory%/.Build/var/phpstan
-    treatPhpDocTypesAsCertain: false
-    inferPrivatePropertyTypeFromConstructor: true
-    checkMissingCallableSignature: true
-    checkUninitializedProperties: true
-    reportUnmatchedIgnoredErrors: false
 
     excludePaths:
-        - %currentWorkingDirectory%/.Build/*
-        - %currentWorkingDirectory%/ext_emconf.php
         # AdminOnlyWidgetInterface exists on TYPO3 v14.3+ only. On the
         # v12/v13 matrix legs the missing interface makes PHPStan fail with
         # an unignorable internal reflection error, so these two thin marker
@@ -34,61 +31,7 @@ parameters:
         - %currentWorkingDirectory%/Classes/Widgets/AdminOnlyNumberWithIconWidget.php
 
     ignoreErrors:
-        # --- Shared ignoreErrors (from typo3-ci-workflows) ---
-        - identifier: offsetAccess.nonOffsetAccessible
-          path: %currentWorkingDirectory%/Tests/Unit/*
-          reportUnmatched: false
-        - identifier: argument.type
-          path: %currentWorkingDirectory%/Tests/Unit/*
-          message: '#Parameter \#2 \$array of static method PHPUnit\\Framework\\Assert::#'
-          reportUnmatched: false
-        - identifier: cast.int
-          path: %currentWorkingDirectory%/Tests/Functional/*
-          reportUnmatched: false
-        - identifier: argument.type
-          path: %currentWorkingDirectory%/Tests/Functional/*
-          message: '#mixed#'
-          reportUnmatched: false
-        - identifier: assign.propertyType
-          path: %currentWorkingDirectory%/Tests/Functional/*
-          message: '#mixed#'
-          reportUnmatched: false
-        - identifier: method.nonObject
-          path: %currentWorkingDirectory%/Tests/Functional/*
-          message: '#mixed#'
-          reportUnmatched: false
-        - identifier: attribute.deprecated
-          path: %currentWorkingDirectory%/Classes/Updates/*
-          reportUnmatched: false
-        - identifier: class.implementsDeprecatedInterface
-          path: %currentWorkingDirectory%/Classes/Updates/*
-          reportUnmatched: false
-        - identifier: classConstant.deprecatedClass
-          path: %currentWorkingDirectory%/Classes/Updates/*
-          reportUnmatched: false
-        - identifier: classConstant.deprecatedClass
-          path: %currentWorkingDirectory%/Tests/Unit/Updates/*
-          reportUnmatched: false
         # --- Extension-specific ignoreErrors ---
-        # ergebnis rules that are too strict for TYPO3 extensions
-        -
-            identifier: ergebnis.noNamedArgument
-            reportUnmatched: false
-        -
-            identifier: ergebnis.noConstructorParameterWithDefaultValue
-            reportUnmatched: false
-        -
-            identifier: ergebnis.noNullableReturnTypeDeclaration
-            reportUnmatched: false
-        -
-            identifier: ergebnis.noIsset
-            reportUnmatched: false
-        -
-            identifier: ergebnis.noExtends
-            reportUnmatched: false
-        -
-            identifier: ergebnis.final
-            reportUnmatched: false
         # Write-only properties used for lazy DI pattern
         -
             identifier: property.onlyWritten

@@ -22,8 +22,8 @@ final class AssertionOptionsTest extends TestCase
     public function constructorSetsProperties(): void
     {
         $options = $this->createMock(PublicKeyCredentialRequestOptions::class);
-        $token = 'challenge-token-abc';
-        $dto = new AssertionOptions(options: $options, challengeToken: $token);
+        $token   = 'challenge-token-abc';
+        $dto     = new AssertionOptions(options: $options, challengeToken: $token);
         self::assertSame($options, $dto->options);
         self::assertSame($token, $dto->challengeToken);
     }

@@ -35,6 +35,14 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webauthn\Exception\InvalidDataException;
 use Webauthn\PublicKeyCredentialRequestOptions;
 
+use function assert;
+use function hrtime;
+use function is_array;
+use function json_decode;
+use function json_encode;
+use function random_bytes;
+use function time;
+
 #[CoversClass(LoginController::class)]
 final class LoginControllerTest extends TestCase
 {
@@ -57,16 +65,16 @@ final class LoginControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->webAuthnService = $this->createMock(WebAuthnService::class);
-        $this->configService = $this->createMock(ExtensionConfigurationService::class);
+        $this->webAuthnService    = $this->createMock(WebAuthnService::class);
+        $this->configService      = $this->createMock(ExtensionConfigurationService::class);
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
-        $this->connectionPool = $this->createMock(ConnectionPool::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->connectionPool     = $this->createMock(ConnectionPool::class);
+        $this->logger             = $this->createMock(LoggerInterface::class);
 
         // verifyAction issues a login token into the nonce cache via
         // GeneralUtility::makeInstance(CacheManager::class); stub it out.
         $this->loginTokenCache = $this->createMock(FrontendInterface::class);
-        $cacheManagerStub = $this->createStub(CacheManager::class);
+        $cacheManagerStub      = $this->createStub(CacheManager::class);
         $cacheManagerStub
             ->method('getCache')
             ->willReturn($this->loginTokenCache);
@@ -91,7 +99,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => 'admin']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-        $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
+        $options = PublicKeyCredentialRequestOptions::create(challenge: random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
             ->expects(self::once())
             ->method('createAssertionOptions')
@@ -160,7 +168,7 @@ final class LoginControllerTest extends TestCase
      */
     private function stubAssertionOptionGeneration(): void
     {
-        $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
+        $options = PublicKeyCredentialRequestOptions::create(challenge: random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
             ->method('createAssertionOptions')
             ->willReturn(
@@ -183,9 +191,9 @@ final class LoginControllerTest extends TestCase
      */
     private function timeOptionsAction(string $username): float
     {
-        $startedAt = \hrtime(true);
-        $response = $this->subject->optionsAction($this->createJsonRequest(['username' => $username]));
-        $elapsed = (float) (\hrtime(true) - $startedAt);
+        $startedAt = hrtime(true);
+        $response  = $this->subject->optionsAction($this->createJsonRequest(['username' => $username]));
+        $elapsed   = (float) (hrtime(true) - $startedAt);
         self::assertSame(200, $response->getStatusCode());
 
         return $elapsed;
@@ -216,7 +224,7 @@ final class LoginControllerTest extends TestCase
                 new ExtensionConfiguration(discoverableLoginEnabled: true),
             );
         $options = PublicKeyCredentialRequestOptions::create(
-            challenge: \random_bytes(32),
+            challenge: random_bytes(32),
             rpId: 'example.com',
             allowCredentials: [],
         );
@@ -246,7 +254,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => 'unknown']);
         $this->setUpFindBeUser('unknown', null);
-        $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
+        $options = PublicKeyCredentialRequestOptions::create(challenge: random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
             ->expects(self::once())
             ->method('createDecoyAssertionOptions')
@@ -292,8 +300,8 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(
             [
-                'username' => 'admin',
-                'assertion' => ['id' => 'cred123', 'response' => []],
+                'username'       => 'admin',
+                'assertion'      => ['id' => 'cred123', 'response' => []],
                 'challengeToken' => 'ct_abc123',
             ],
         );
@@ -315,7 +323,7 @@ final class LoginControllerTest extends TestCase
         // the nonce cache, that the JS submits through the login form. The stored
         // value carries its own expiry so redemption does not rely on the cache
         // backend honouring the lifetime.
-        $issuedAt = \time();
+        $issuedAt = time();
         $this->loginTokenCache
             ->expects(self::once())
             ->method('set')
@@ -324,7 +332,7 @@ final class LoginControllerTest extends TestCase
                 self::callback(
                     static function (mixed $value) use ($issuedAt): bool {
                         self::assertIsString($value);
-                        $payload = \json_decode($value, true, 8, JSON_THROW_ON_ERROR);
+                        $payload = json_decode($value, true, 8, JSON_THROW_ON_ERROR);
                         self::assertIsArray($payload);
                         self::assertSame(42, $payload['uid'] ?? null);
                         self::assertIsInt($payload['expiresAt'] ?? null);
@@ -380,8 +388,8 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(
             [
-                'username' => 'admin',
-                'assertion' => ['id' => 'AQID', 'rawId' => 'AQID', 'type' => 'public-key', 'response' => []],
+                'username'       => 'admin',
+                'assertion'      => ['id' => 'AQID', 'rawId' => 'AQID', 'type' => 'public-key', 'response' => []],
                 'challengeToken' => 'ct_abc123',
             ],
         );
@@ -424,7 +432,7 @@ final class LoginControllerTest extends TestCase
     public function verifyActionWithMissingFields(): void
     {
         // Missing assertion and challengeToken
-        $request = $this->createJsonRequest(['username' => 'admin']);
+        $request  = $this->createJsonRequest(['username' => 'admin']);
         $response = $this->subject->verifyAction($request);
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -528,8 +536,8 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(
             [
-                'username' => 'nonexistent',
-                'assertion' => ['id' => 'cred123', 'response' => []],
+                'username'       => 'nonexistent',
+                'assertion'      => ['id' => 'cred123', 'response' => []],
                 'challengeToken' => 'ct_abc123',
             ],
         );
@@ -717,7 +725,7 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithEmptyUsername(): void
     {
-        $request = $this->createJsonRequest(['username' => '', 'assertion' => '{"id":"cred123"}', 'challengeToken' => 'ct_abc123']);
+        $request  = $this->createJsonRequest(['username' => '', 'assertion' => '{"id":"cred123"}', 'challengeToken' => 'ct_abc123']);
         $response = $this->subject->verifyAction($request);
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -727,7 +735,7 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithEmptyAssertion(): void
     {
-        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => '', 'challengeToken' => 'ct_abc123']);
+        $request  = $this->createJsonRequest(['username' => 'admin', 'assertion' => '', 'challengeToken' => 'ct_abc123']);
         $response = $this->subject->verifyAction($request);
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -737,7 +745,7 @@ final class LoginControllerTest extends TestCase
     #[Test]
     public function verifyActionWithEmptyChallengeToken(): void
     {
-        $request = $this->createJsonRequest(['username' => 'admin', 'assertion' => '{"id":"cred123"}', 'challengeToken' => '']);
+        $request  = $this->createJsonRequest(['username' => 'admin', 'assertion' => '{"id":"cred123"}', 'challengeToken' => '']);
         $response = $this->subject->verifyAction($request);
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -772,7 +780,7 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(['username' => 'admin']);
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-        $options = PublicKeyCredentialRequestOptions::create(challenge: \random_bytes(32), rpId: 'example.com');
+        $options = PublicKeyCredentialRequestOptions::create(challenge: random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
             ->method('createAssertionOptions')
             ->willReturn(
@@ -796,8 +804,8 @@ final class LoginControllerTest extends TestCase
     {
         $request = $this->createJsonRequest(
             [
-                'username' => 'admin',
-                'assertion' => ['id' => 'cred123', 'response' => []],
+                'username'       => 'admin',
+                'assertion'      => ['id' => 'cred123', 'response' => []],
                 'challengeToken' => 'ct_abc123',
             ],
         );
@@ -827,7 +835,7 @@ final class LoginControllerTest extends TestCase
         $stream = $this->createMock(StreamInterface::class);
         $stream
             ->method('__toString')
-            ->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
+            ->willReturn(json_encode($data, JSON_THROW_ON_ERROR));
         $request
             ->method('getBody')
             ->willReturn($stream);
@@ -882,9 +890,9 @@ final class LoginControllerTest extends TestCase
      */
     private function decodeResponse(ResponseInterface $response): array
     {
-        $body = (string) $response->getBody();
-        $decoded = \json_decode($body, true, 512, JSON_THROW_ON_ERROR);
-        \assert(\is_array($decoded));
+        $body    = (string) $response->getBody();
+        $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        assert(is_array($decoded));
 
         return $decoded;
     }

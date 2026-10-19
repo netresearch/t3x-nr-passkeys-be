@@ -14,6 +14,18 @@ use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function array_filter;
+use function array_keys;
+use function basename;
+use function file_get_contents;
+use function glob;
+use function ksort;
+use function preg_match;
+use function preg_match_all;
+use function str_contains;
+use function strpos;
+use function substr;
+
 /**
  * Pins the admin module markup to classes and tokens TYPO3's backend.css
  * defines at 12.4, 13.4 and 14.3, so the module follows the backend's light
@@ -26,7 +38,7 @@ final class BackendThemeMarkupTest extends TestCase
 
     private function read(string $path): string
     {
-        $content = \file_get_contents(self::ROOT . $path);
+        $content = file_get_contents(self::ROOT . $path);
         self::assertIsString($content, $path);
 
         return $content;
@@ -51,7 +63,7 @@ final class BackendThemeMarkupTest extends TestCase
         // The name's label key has to exist, or the bar would be named by the bare key.
         self::assertSame(
             1,
-            \preg_match(
+            preg_match(
                 '#<progress [^>]*aria-label="\{f:translate\(key: \'([^\']+)\', extensionName: \'NrPasskeysBe\'\)\}: \{group\.title\}"#',
                 $html,
                 $key,
@@ -69,22 +81,22 @@ final class BackendThemeMarkupTest extends TestCase
     #[Test]
     public function adoptionBarIsStyledWithCoreTokensInEveryEngine(): void
     {
-        $css = $this->read('Resources/Public/Css/backend.css');
-        $start = \strpos($css, '.passkey-adoption-meter');
+        $css   = $this->read('Resources/Public/Css/backend.css');
+        $start = strpos($css, '.passkey-adoption-meter');
         self::assertNotFalse($start);
-        $rules = \substr($css, $start);
+        $rules = substr($css, $start);
         $track = 'background-color: var(--typo3-surface-container-high, var(--bs-secondary-bg));';
-        $fill = 'background-color: var(--typo3-component-primary-color);';
+        $fill  = 'background-color: var(--typo3-component-primary-color);';
 
         foreach ([
-            '.passkey-adoption-meter-bar {' => $track,
-            '.passkey-adoption-meter-bar::-webkit-progress-bar {' => $track,
+            '.passkey-adoption-meter-bar {'                         => $track,
+            '.passkey-adoption-meter-bar::-webkit-progress-bar {'   => $track,
             '.passkey-adoption-meter-bar::-webkit-progress-value {' => $fill,
-            '.passkey-adoption-meter-bar::-moz-progress-bar {' => $fill,
+            '.passkey-adoption-meter-bar::-moz-progress-bar {'      => $fill,
         ] as $selector => $declaration) {
-            $at = \strpos($rules, $selector);
+            $at = strpos($rules, $selector);
             self::assertNotFalse($at, $selector);
-            $body = \substr($rules, $at, (int) \strpos($rules, '}', $at) - $at);
+            $body = substr($rules, $at, (int) strpos($rules, '}', $at) - $at);
             self::assertStringContainsString($declaration, $body, $selector);
         }
 
@@ -106,7 +118,7 @@ final class BackendThemeMarkupTest extends TestCase
     {
         $html = $this->read('Resources/Private/Templates/AdminModule/Dashboard.html');
 
-        \preg_match_all('#<a href="\{helpUrl\}"[^>]*>#', $html, $links);
+        preg_match_all('#<a href="\{helpUrl\}"[^>]*>#', $html, $links);
         self::assertCount(2, $links[0]);
 
         foreach ($links[0] as $link) {
@@ -119,7 +131,7 @@ final class BackendThemeMarkupTest extends TestCase
     {
         // Help.html renders these XLIFF sources raw, with the dashboard URL as argument.
         $help = $this->read('Resources/Private/Templates/AdminModule/Help.html');
-        \preg_match_all(
+        preg_match_all(
             '#<f:translate key="([^"]+)" extensionName="NrPasskeysBe" arguments="\{0: dashboardUrl\}" />#',
             $help,
             $keys,
@@ -128,17 +140,17 @@ final class BackendThemeMarkupTest extends TestCase
 
         $sources = [];
 
-        foreach (\glob(self::ROOT . 'Resources/Private/Language/*.xlf') ?: [] as $file) {
-            $sources += $this->xliffSources('Resources/Private/Language/' . \basename($file));
+        foreach (glob(self::ROOT . 'Resources/Private/Language/*.xlf') ?: [] as $file) {
+            $sources += $this->xliffSources('Resources/Private/Language/' . basename($file));
         }
 
-        \ksort($sources);
-        $withLinks = \array_filter($sources, static fn(string $source): bool => \str_contains($source, '<a '));
+        ksort($sources);
+        $withLinks = array_filter($sources, static fn (string $source): bool => str_contains($source, '<a '));
 
         // These three are the only inline links in the extension's texts (sorted by id).
         self::assertSame(
             ['help.faq.answer4', 'help.rollout.step3Body', 'help.rollout.step6Body'],
-            \array_keys($withLinks),
+            array_keys($withLinks),
         );
 
         foreach ($withLinks as $id => $source) {
@@ -162,7 +174,7 @@ final class BackendThemeMarkupTest extends TestCase
             $sources[$unit->getAttribute('id')] = $source?->textContent ?? '';
         }
 
-        \ksort($sources);
+        ksort($sources);
 
         return $sources;
     }
@@ -186,7 +198,7 @@ final class BackendThemeMarkupTest extends TestCase
 
         self::assertStringNotContainsString('table-sm', $html);
         self::assertStringContainsString('<table class="table table-bordered">', $html);
-        self::assertSame(0, \preg_match('#<th>#', $html));
+        self::assertSame(0, preg_match('#<th>#', $html));
     }
 
     #[Test]

@@ -276,21 +276,21 @@ final class CredentialTest extends TestCase
             revokedBy: 0,
         );
         $expected = [
-            'uid' => 1,
-            'pid' => 2,
-            'be_user' => 3,
-            'credential_id' => 'cred-123',
+            'uid'             => 1,
+            'pid'             => 2,
+            'be_user'         => 3,
+            'credential_id'   => 'cred-123',
             'public_key_cose' => 'cose-data',
-            'sign_count' => 7,
-            'user_handle' => 'handle-abc',
-            'aaguid' => '00000000-0000-0000-0000-000000000001',
-            'transports' => '["usb"]',
-            'discoverable' => null,
-            'label' => 'Test Key',
-            'created_at' => 1700000000,
-            'last_used_at' => 1700001000,
-            'revoked_at' => 0,
-            'revoked_by' => 0,
+            'sign_count'      => 7,
+            'user_handle'     => 'handle-abc',
+            'aaguid'          => '00000000-0000-0000-0000-000000000001',
+            'transports'      => '["usb"]',
+            'discoverable'    => null,
+            'label'           => 'Test Key',
+            'created_at'      => 1700000000,
+            'last_used_at'    => 1700001000,
+            'revoked_at'      => 0,
+            'revoked_by'      => 0,
         ];
         self::assertSame($expected, $credential->toArray());
     }
@@ -299,20 +299,20 @@ final class CredentialTest extends TestCase
     public function fromArrayCreatesCredentialFromDatabaseRow(): void
     {
         $data = [
-            'uid' => 10,
-            'pid' => 1,
-            'be_user' => 5,
-            'credential_id' => 'cred-from-db',
+            'uid'             => 10,
+            'pid'             => 1,
+            'be_user'         => 5,
+            'credential_id'   => 'cred-from-db',
             'public_key_cose' => 'cose-from-db',
-            'sign_count' => 3,
-            'user_handle' => 'handle-from-db',
-            'aaguid' => '22222222-2222-2222-2222-222222222222',
-            'transports' => '["nfc"]',
-            'label' => 'DB Key',
-            'created_at' => 1700010000,
-            'last_used_at' => 1700020000,
-            'revoked_at' => 0,
-            'revoked_by' => 0,
+            'sign_count'      => 3,
+            'user_handle'     => 'handle-from-db',
+            'aaguid'          => '22222222-2222-2222-2222-222222222222',
+            'transports'      => '["nfc"]',
+            'label'           => 'DB Key',
+            'created_at'      => 1700010000,
+            'last_used_at'    => 1700020000,
+            'revoked_at'      => 0,
+            'revoked_by'      => 0,
         ];
         $credential = Credential::fromArray($data);
         self::assertSame(10, $credential->getUid());
@@ -431,7 +431,7 @@ final class CredentialTest extends TestCase
     public function toCredentialInfoHasExactlySixProperties(): void
     {
         $credential = new Credential(uid: 1, label: 'Test');
-        $info = $credential->toCredentialInfo();
+        $info       = $credential->toCredentialInfo();
         self::assertInstanceOf(CredentialInfo::class, $info);
         $serialized = $info->jsonSerialize();
         self::assertCount(6, $serialized);
@@ -522,7 +522,7 @@ final class CredentialTest extends TestCase
     public function toAdminCredentialInfoHasExactlySevenProperties(): void
     {
         $credential = new Credential(uid: 1, label: 'Test');
-        $info = $credential->toAdminCredentialInfo();
+        $info       = $credential->toAdminCredentialInfo();
         self::assertInstanceOf(AdminCredentialInfo::class, $info);
         $serialized = $info->jsonSerialize();
         self::assertCount(7, $serialized);

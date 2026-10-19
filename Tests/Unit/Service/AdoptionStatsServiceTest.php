@@ -24,6 +24,8 @@ use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\QueryRestrictionContainerInterface;
 
+use function array_fill;
+
 #[CoversClass(AdoptionStatsService::class)]
 final class AdoptionStatsServiceTest extends TestCase
 {
@@ -36,9 +38,9 @@ final class AdoptionStatsServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->connectionPool = $this->createMock(ConnectionPool::class);
+        $this->connectionPool     = $this->createMock(ConnectionPool::class);
         $this->enforcementService = $this->createMock(EnforcementService::class);
-        $this->subject = new AdoptionStatsService($this->connectionPool, $this->enforcementService);
+        $this->subject            = new AdoptionStatsService($this->connectionPool, $this->enforcementService);
     }
 
     #[Test]
@@ -53,7 +55,7 @@ final class AdoptionStatsServiceTest extends TestCase
             ->method('getQueryBuilderForTable')
             ->willReturnCallback(
                 function (string $table) use (&$callIndex): QueryBuilder {
-                    $callIndex++;
+                    ++$callIndex;
 
                     return match (true) {
                         // 1st: countTotalActiveUsers (be_users)
@@ -66,28 +68,28 @@ final class AdoptionStatsServiceTest extends TestCase
                         $callIndex === 3 => $this->createFetchAllQueryBuilder(
                             [
                                 [
-                                    'uid' => 1,
-                                    'title' => 'Editors',
-                                    'passkey_enforcement' => 'required',
+                                    'uid'                       => 1,
+                                    'title'                     => 'Editors',
+                                    'passkey_enforcement'       => 'required',
                                     'passkey_grace_period_days' => 14,
                                 ],
                             ],
                         ),
 
                         // 4th: countUsersPerGroup — batch fetch usergroup (be_users)
-                        $callIndex === 4 => $this->createFetchAllQueryBuilder(\array_fill(0, 8, ['usergroup' => '1'])),
+                        $callIndex === 4 => $this->createFetchAllQueryBuilder(array_fill(0, 8, ['usergroup' => '1'])),
 
                         // 5th: countUsersWithPasskeysPerGroup — batch fetch with JOIN (be_users)
-                        $callIndex === 5 => $this->createFetchAllQueryBuilder(\array_fill(0, 5, ['usergroup' => '1'])),
+                        $callIndex === 5 => $this->createFetchAllQueryBuilder(array_fill(0, 5, ['usergroup' => '1'])),
 
                         // 6th: getUsersWithoutPasskeys — LEFT JOIN (be_users)
                         $callIndex === 6 => $this->createFetchAllQueryBuilder(
                             [
                                 [
-                                    'uid' => 42,
-                                    'username' => 'jdoe',
-                                    'realName' => 'John Doe',
-                                    'usergroup' => '1',
+                                    'uid'                        => 42,
+                                    'username'                   => 'jdoe',
+                                    'realName'                   => 'John Doe',
+                                    'usergroup'                  => '1',
                                     'passkey_grace_period_start' => 1700000000,
                                 ],
                             ],
@@ -126,7 +128,7 @@ final class AdoptionStatsServiceTest extends TestCase
             ->method('getQueryBuilderForTable')
             ->willReturnCallback(
                 function () use (&$callIndex): QueryBuilder {
-                    $callIndex++;
+                    ++$callIndex;
 
                     return match (true) {
                         // countTotalActiveUsers
@@ -140,7 +142,7 @@ final class AdoptionStatsServiceTest extends TestCase
 
                         // getUsersWithoutPasskeys — no users
                         $callIndex === 4 => $this->createFetchAllQueryBuilder([]),
-                        default => $this->createCountQueryBuilder(0),
+                        default          => $this->createCountQueryBuilder(0),
                     };
                 },
             );
@@ -160,7 +162,7 @@ final class AdoptionStatsServiceTest extends TestCase
             ->method('getQueryBuilderForTable')
             ->willReturnCallback(
                 function () use (&$callIndex): QueryBuilder {
-                    $callIndex++;
+                    ++$callIndex;
 
                     return match (true) {
                         // countTotalActiveUsers
@@ -173,15 +175,15 @@ final class AdoptionStatsServiceTest extends TestCase
                         $callIndex === 3 => $this->createFetchAllQueryBuilder(
                             [
                                 [
-                                    'uid' => 1,
-                                    'title' => 'Editors',
-                                    'passkey_enforcement' => 'required',
+                                    'uid'                       => 1,
+                                    'title'                     => 'Editors',
+                                    'passkey_enforcement'       => 'required',
                                     'passkey_grace_period_days' => 14,
                                 ],
                                 [
-                                    'uid' => 2,
-                                    'title' => 'Admins',
-                                    'passkey_enforcement' => 'enforced',
+                                    'uid'                       => 2,
+                                    'title'                     => 'Admins',
+                                    'passkey_enforcement'       => 'enforced',
                                     'passkey_grace_period_days' => 0,
                                 ],
                             ],
@@ -189,17 +191,17 @@ final class AdoptionStatsServiceTest extends TestCase
 
                         // countUsersPerGroup: 10 in group 1 only + 5 in both groups = 15 in g1, 5 in g2
                         $callIndex === 4 => $this->createFetchAllQueryBuilder(
-                            [...\array_fill(0, 10, ['usergroup' => '1']), ...\array_fill(0, 5, ['usergroup' => '1,2'])],
+                            [...array_fill(0, 10, ['usergroup' => '1']), ...array_fill(0, 5, ['usergroup' => '1,2'])],
                         ),
 
                         // countUsersWithPasskeysPerGroup: 4 in group 1 only + 5 in both = 9 in g1, 5 in g2
                         $callIndex === 5 => $this->createFetchAllQueryBuilder(
-                            [...\array_fill(0, 4, ['usergroup' => '1']), ...\array_fill(0, 5, ['usergroup' => '1,2'])],
+                            [...array_fill(0, 4, ['usergroup' => '1']), ...array_fill(0, 5, ['usergroup' => '1,2'])],
                         ),
 
                         // getUsersWithoutPasskeys
                         $callIndex === 6 => $this->createFetchAllQueryBuilder([]),
-                        default => $this->createCountQueryBuilder(0),
+                        default          => $this->createCountQueryBuilder(0),
                     };
                 },
             );
@@ -231,7 +233,7 @@ final class AdoptionStatsServiceTest extends TestCase
             ->method('getQueryBuilderForTable')
             ->willReturnCallback(
                 function () use (&$callIndex): QueryBuilder {
-                    $callIndex++;
+                    ++$callIndex;
 
                     return match (true) {
                         $callIndex === 1 => $this->createCountQueryBuilder(5),
@@ -241,21 +243,21 @@ final class AdoptionStatsServiceTest extends TestCase
                         $callIndex === 3 => $this->createFetchAllQueryBuilder(
                             [
                                 [
-                                    'uid' => 1,
-                                    'title' => 'Editors',
-                                    'passkey_enforcement' => 'off',
+                                    'uid'                       => 1,
+                                    'title'                     => 'Editors',
+                                    'passkey_enforcement'       => 'off',
                                     'passkey_grace_period_days' => 0,
                                 ],
                                 [
-                                    'uid' => 2,
-                                    'title' => 'Admins',
-                                    'passkey_enforcement' => 'off',
+                                    'uid'                       => 2,
+                                    'title'                     => 'Admins',
+                                    'passkey_enforcement'       => 'off',
                                     'passkey_grace_period_days' => 0,
                                 ],
                                 [
-                                    'uid' => 3,
-                                    'title' => 'Authors',
-                                    'passkey_enforcement' => 'off',
+                                    'uid'                       => 3,
+                                    'title'                     => 'Authors',
+                                    'passkey_enforcement'       => 'off',
                                     'passkey_grace_period_days' => 0,
                                 ],
                             ],
@@ -271,17 +273,17 @@ final class AdoptionStatsServiceTest extends TestCase
                         $callIndex === 6 => $this->createFetchAllQueryBuilder(
                             [
                                 [
-                                    'uid' => 10,
-                                    'username' => 'alice',
-                                    'realName' => 'Alice Smith',
-                                    'usergroup' => '1,2',
+                                    'uid'                        => 10,
+                                    'username'                   => 'alice',
+                                    'realName'                   => 'Alice Smith',
+                                    'usergroup'                  => '1,2',
                                     'passkey_grace_period_start' => 1700000000,
                                 ],
                                 [
-                                    'uid' => 20,
-                                    'username' => 'bob',
-                                    'realName' => 'Bob Jones',
-                                    'usergroup' => '3',
+                                    'uid'                        => 20,
+                                    'username'                   => 'bob',
+                                    'realName'                   => 'Bob Jones',
+                                    'usergroup'                  => '3',
                                     'passkey_grace_period_start' => 0,
                                 ],
                             ],
@@ -295,7 +297,7 @@ final class AdoptionStatsServiceTest extends TestCase
             ->method('getStatus')
             ->willReturnCallback(
                 function () use (&$enforcementCallIndex): EnforcementStatus {
-                    $enforcementCallIndex++;
+                    ++$enforcementCallIndex;
 
                     if ($enforcementCallIndex === 1) {
                         return new EnforcementStatus(
@@ -334,7 +336,7 @@ final class AdoptionStatsServiceTest extends TestCase
             ->method('getQueryBuilderForTable')
             ->willReturnCallback(
                 function () use (&$callIndex): QueryBuilder {
-                    $callIndex++;
+                    ++$callIndex;
 
                     return match (true) {
                         // countTotalActiveUsers
@@ -347,9 +349,9 @@ final class AdoptionStatsServiceTest extends TestCase
                         $callIndex === 3 => $this->createFetchAllQueryBuilder(
                             [
                                 [
-                                    'uid' => 1,
-                                    'title' => 'Editors',
-                                    'passkey_enforcement' => 'off',
+                                    'uid'                       => 1,
+                                    'title'                     => 'Editors',
+                                    'passkey_enforcement'       => 'off',
                                     'passkey_grace_period_days' => 0,
                                 ],
                             ],
@@ -367,10 +369,10 @@ final class AdoptionStatsServiceTest extends TestCase
                         $callIndex === 6 => $this->createFetchAllQueryBuilder(
                             [
                                 [
-                                    'uid' => 10,
-                                    'username' => 'nogroup',
-                                    'realName' => 'No Group',
-                                    'usergroup' => '',
+                                    'uid'                        => 10,
+                                    'username'                   => 'nogroup',
+                                    'realName'                   => 'No Group',
+                                    'usergroup'                  => '',
                                     'passkey_grace_period_start' => 0,
                                 ],
                             ],
@@ -578,7 +580,7 @@ final class AdoptionStatsServiceTest extends TestCase
         $queryBuilder
             ->method('quoteIdentifier')
             ->willReturnCallback(
-                static fn(string $identifier): string => '`' . $identifier . '`',
+                static fn (string $identifier): string => '`' . $identifier . '`',
             );
 
         return $queryBuilder;

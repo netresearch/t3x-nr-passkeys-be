@@ -11,6 +11,8 @@ namespace Netresearch\NrPasskeysBe\Domain\Dto;
 
 use JsonSerializable;
 
+use function time;
+
 /**
  * Read-only projection of a backend user's passkey registration status.
  *
@@ -30,7 +32,7 @@ final readonly class UserPasskeyStatus implements JsonSerializable
 
     public function hasActiveNudge(): bool
     {
-        return $this->nudgeUntil > \time();
+        return $this->nudgeUntil > time();
     }
 
     /**
@@ -39,14 +41,14 @@ final readonly class UserPasskeyStatus implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'uid' => $this->uid,
-            'username' => $this->username,
-            'realName' => $this->realName,
-            'groups' => $this->groups,
-            'gracePeriodStart' => $this->gracePeriodStart,
+            'uid'                      => $this->uid,
+            'username'                 => $this->username,
+            'realName'                 => $this->realName,
+            'groups'                   => $this->groups,
+            'gracePeriodStart'         => $this->gracePeriodStart,
             'gracePeriodRemainingDays' => $this->gracePeriodRemainingDays,
-            'nudgeUntil' => $this->nudgeUntil,
-            'hasActiveNudge' => $this->hasActiveNudge(),
+            'nudgeUntil'               => $this->nudgeUntil,
+            'hasActiveNudge'           => $this->hasActiveNudge(),
         ];
     }
 }

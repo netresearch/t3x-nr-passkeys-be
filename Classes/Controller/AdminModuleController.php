@@ -29,6 +29,9 @@ use TYPO3\CMS\Core\Imaging\IconSize;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function class_exists;
+use function enum_exists;
+
 /**
  * Backend module controller for the passkey management admin module.
  *
@@ -67,17 +70,17 @@ final class AdminModuleController
         $moduleTemplate->setTitle($this->translate('module.title', self::MODULE_TITLE_FALLBACK));
         $this->buildDocHeaderMenu($moduleTemplate, 'dashboard');
         $this->addHelpButton($moduleTemplate);
-        $stats = $this->adoptionStatsService->getStats();
+        $stats     = $this->adoptionStatsService->getStats();
         $groupData = [];
 
         foreach ($stats->groups as $group) {
             $groupData[] = [
-                'uid' => $group->uid,
-                'title' => $group->title,
-                'enforcement' => $group->enforcement,
-                'gracePeriodDays' => $group->gracePeriodDays,
-                'totalUsers' => $group->totalUsers,
-                'usersWithPasskeys' => $group->usersWithPasskeys,
+                'uid'                => $group->uid,
+                'title'              => $group->title,
+                'enforcement'        => $group->enforcement,
+                'gracePeriodDays'    => $group->gracePeriodDays,
+                'totalUsers'         => $group->totalUsers,
+                'usersWithPasskeys'  => $group->usersWithPasskeys,
                 'adoptionPercentage' => $group->adoptionPercentage(),
             ];
         }
@@ -85,38 +88,38 @@ final class AdminModuleController
         $userData = [];
 
         foreach ($stats->usersWithoutPasskeys as $user) {
-            $editUrl = (string) $this->uriBuilder->buildUriFromRoute('record_edit', ['edit[be_users][' . $user->uid . ']' => 'edit']);
+            $editUrl    = (string) $this->uriBuilder->buildUriFromRoute('record_edit', ['edit[be_users][' . $user->uid . ']' => 'edit']);
             $userData[] = [
-                'uid' => $user->uid,
-                'username' => $user->username,
-                'realName' => $user->realName,
-                'groups' => $user->groups,
-                'gracePeriodStart' => $user->gracePeriodStart,
+                'uid'                      => $user->uid,
+                'username'                 => $user->username,
+                'realName'                 => $user->realName,
+                'groups'                   => $user->groups,
+                'gracePeriodStart'         => $user->gracePeriodStart,
                 'gracePeriodRemainingDays' => $user->gracePeriodRemainingDays,
-                'nudgeUntil' => $user->nudgeUntil,
-                'hasActiveNudge' => $user->hasActiveNudge(),
-                'editUrl' => $editUrl,
+                'nudgeUntil'               => $user->nudgeUntil,
+                'hasActiveNudge'           => $user->hasActiveNudge(),
+                'editUrl'                  => $editUrl,
             ];
         }
 
-        $config = $this->configService->getConfiguration();
+        $config             = $this->configService->getConfiguration();
         $adoptionPercentage = $stats->adoptionPercentage();
         $moduleTemplate->assignMultiple(
             [
-                'totalUsers' => $stats->totalUsers,
-                'usersWithPasskeys' => $stats->usersWithPasskeys,
-                'adoptionPercentage' => $adoptionPercentage,
-                'adoptionBadge' => $this->adoptionBadge($adoptionPercentage, $stats->totalUsers),
-                'groups' => $groupData,
-                'usersWithoutPasskeys' => $userData,
+                'totalUsers'                    => $stats->totalUsers,
+                'usersWithPasskeys'             => $stats->usersWithPasskeys,
+                'adoptionPercentage'            => $adoptionPercentage,
+                'adoptionBadge'                 => $this->adoptionBadge($adoptionPercentage, $stats->totalUsers),
+                'groups'                        => $groupData,
+                'usersWithoutPasskeys'          => $userData,
                 'usersWithoutPasskeysTruncated' => $stats->usersWithoutPasskeysTruncated,
-                'usersWithoutPasskeysLimit' => AdoptionStatsService::USERS_WITHOUT_PASSKEYS_LIMIT,
-                'enforcementLevels' => $this->getEnforcementLevelOptions(),
-                'helpUrl' => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'),
-                'configRpId' => $this->configService->getEffectiveRpId(),
-                'configRpIdIsAutoDetected' => $config->getRpId() === '',
-                'configOriginIsAutoDetected' => $config->getOrigin() === '',
-                'isNewInstallation' => $stats->usersWithPasskeys === 0,
+                'usersWithoutPasskeysLimit'     => AdoptionStatsService::USERS_WITHOUT_PASSKEYS_LIMIT,
+                'enforcementLevels'             => $this->getEnforcementLevelOptions(),
+                'helpUrl'                       => (string) $this->uriBuilder->buildUriFromRoute('admin_passkeys.help'),
+                'configRpId'                    => $this->configService->getEffectiveRpId(),
+                'configRpIdIsAutoDetected'      => $config->getRpId() === '',
+                'configOriginIsAutoDetected'    => $config->getOrigin() === '',
+                'isNewInstallation'             => $stats->usersWithPasskeys === 0,
             ],
         );
         $this->pageRenderer->loadJavaScriptModule('@netresearch/nr-passkeys-be/PasskeyDashboard.js');
@@ -225,7 +228,7 @@ final class AdminModuleController
     private function componentFactory(): ?ComponentFactory
     {
         if ($this->componentFactory === false) {
-            $this->componentFactory = \class_exists(ComponentFactory::class) ? GeneralUtility::makeInstance(ComponentFactory::class) : null;
+            $this->componentFactory = class_exists(ComponentFactory::class) ? GeneralUtility::makeInstance(ComponentFactory::class) : null;
         }
 
         return $this->componentFactory;
@@ -244,10 +247,10 @@ final class AdminModuleController
 
         foreach (EnforcementLevel::cases() as $level) {
             $fallback = match ($level) {
-                EnforcementLevel::Off => 'Off',
+                EnforcementLevel::Off       => 'Off',
                 EnforcementLevel::Encourage => 'Encourage',
-                EnforcementLevel::Required => 'Required',
-                EnforcementLevel::Enforced => 'Enforced',
+                EnforcementLevel::Required  => 'Required',
+                EnforcementLevel::Enforced  => 'Enforced',
             };
             $options[$level->value] = $this->translate('enforcement.level.' . $level->value, $fallback);
         }
@@ -272,7 +275,7 @@ final class AdminModuleController
             ->setIcon(
                 $this->iconFactory->getIcon(
                     'actions-question-circle',
-                    ...\enum_exists(IconSize::class) ? [IconSize::SMALL] : ['small'],
+                    ...enum_exists(IconSize::class) ? [IconSize::SMALL] : ['small'],
                 ),
             )
             ->setShowLabelText(false);
@@ -305,7 +308,7 @@ final class AdminModuleController
             return [
                 'label' => $this->translate('dashboard.badge.noUsers', 'No users'),
                 'class' => 'badge-secondary',
-                'icon' => 'actions-minus',
+                'icon'  => 'actions-minus',
             ];
         }
 
@@ -313,27 +316,27 @@ final class AdminModuleController
             $percentage >= 100.0 => [
                 'label' => $this->translate('dashboard.badge.platinum', 'Platinum'),
                 'class' => 'badge-success',
-                'icon' => 'actions-bolt',
+                'icon'  => 'actions-bolt',
             ],
             $percentage >= 75.0 => [
                 'label' => $this->translate('dashboard.badge.gold', 'Gold'),
                 'class' => 'badge-info',
-                'icon' => 'actions-star',
+                'icon'  => 'actions-star',
             ],
             $percentage >= 50.0 => [
                 'label' => $this->translate('dashboard.badge.silver', 'Silver'),
                 'class' => 'badge-secondary',
-                'icon' => 'actions-check',
+                'icon'  => 'actions-check',
             ],
             $percentage >= 25.0 => [
                 'label' => $this->translate('dashboard.badge.bronze', 'Bronze'),
                 'class' => 'badge-warning',
-                'icon' => 'actions-arrow-up',
+                'icon'  => 'actions-arrow-up',
             ],
             default => [
                 'label' => $this->translate('dashboard.badge.gettingStarted', 'Getting started'),
                 'class' => 'badge-danger',
-                'icon' => 'actions-rocket',
+                'icon'  => 'actions-rocket',
             ],
         };
     }

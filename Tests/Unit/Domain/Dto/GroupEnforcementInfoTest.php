@@ -14,6 +14,11 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function json_decode;
+use function json_encode;
+
+use const JSON_THROW_ON_ERROR;
+
 #[CoversClass(GroupEnforcementInfo::class)]
 final class GroupEnforcementInfoTest extends TestCase
 {
@@ -90,12 +95,12 @@ final class GroupEnforcementInfoTest extends TestCase
             usersWithPasskeys: 15,
         );
         $expected = [
-            'uid' => 10,
-            'title' => 'Editors',
-            'enforcement' => 'required',
-            'gracePeriodDays' => 14,
-            'totalUsers' => 20,
-            'usersWithPasskeys' => 15,
+            'uid'                => 10,
+            'title'              => 'Editors',
+            'enforcement'        => 'required',
+            'gracePeriodDays'    => 14,
+            'totalUsers'         => 20,
+            'usersWithPasskeys'  => 15,
             'adoptionPercentage' => 75.0,
         ];
         self::assertSame($expected, $info->jsonSerialize());
@@ -127,8 +132,8 @@ final class GroupEnforcementInfoTest extends TestCase
             totalUsers: 10,
             usersWithPasskeys: 5,
         );
-        $json = \json_encode($info, \JSON_THROW_ON_ERROR);
-        $decoded = \json_decode($json, true, 512, \JSON_THROW_ON_ERROR);
+        $json    = json_encode($info, JSON_THROW_ON_ERROR);
+        $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
         self::assertSame(1, $decoded['uid']);
         self::assertSame('Test Group', $decoded['title']);
         self::assertEqualsWithDelta(50.0, $decoded['adoptionPercentage'], 0.01);

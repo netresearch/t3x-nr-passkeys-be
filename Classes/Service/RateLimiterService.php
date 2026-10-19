@@ -15,6 +15,9 @@ use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
+use function hash;
+use function is_numeric;
+
 /**
  * Per-endpoint rate limiting and per-account lockout using TYPO3 caching with atomic locking.
  */
@@ -39,11 +42,11 @@ final readonly class RateLimiterService
      */
     public function consumeRateLimit(string $endpoint, string $identifier): void
     {
-        $config = $this->configService->getConfiguration();
-        $key = $this->buildKey($endpoint, $identifier);
-        $maxAttempts = $config->getRateLimitMaxAttempts();
+        $config        = $this->configService->getConfiguration();
+        $key           = $this->buildKey($endpoint, $identifier);
+        $maxAttempts   = $config->getRateLimitMaxAttempts();
         $windowSeconds = $config->getRateLimitWindowSeconds();
-        $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
+        $locker        = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
             $this->logger->error(
@@ -60,7 +63,7 @@ final readonly class RateLimiterService
             if ($current >= $maxAttempts) {
                 $this->logger->warning(
                     'Rate limit exceeded',
-                    ['endpoint' => $endpoint, 'identifier' => \hash('sha256', $identifier)],
+                    ['endpoint' => $endpoint, 'identifier' => hash('sha256', $identifier)],
                 );
 
                 throw new RuntimeException('Rate limit exceeded', 1700000010);
@@ -82,11 +85,11 @@ final readonly class RateLimiterService
      */
     public function checkLockout(string $username, string $ip): void
     {
-        $config = $this->configService->getConfiguration();
-        $usernameHash = \hash('sha256', $username);
+        $config       = $this->configService->getConfiguration();
+        $usernameHash = hash('sha256', $username);
 
         // Check per-IP+username lockout
-        $ipKey = $this->buildLockoutKey($username, $ip);
+        $ipKey     = $this->buildLockoutKey($username, $ip);
         $threshold = $config->getLockoutThreshold();
 
         try {
@@ -108,7 +111,7 @@ final readonly class RateLimiterService
         }
 
         // Check per-username lockout (catches distributed attacks across IPs)
-        $userKey = $this->buildUserLockoutKey($username);
+        $userKey       = $this->buildUserLockoutKey($username);
         $userThreshold = $config->getLockoutUserThreshold();
 
         try {
@@ -145,9 +148,9 @@ final readonly class RateLimiterService
      */
     public function recordFailure(string $username, string $ip, bool $countUserLockout = true): void
     {
-        $config = $this->configService->getConfiguration();
+        $config   = $this->configService->getConfiguration();
         $duration = $config->getLockoutDurationSeconds();
-        $tag = 'lockout_' . $this->sanitize($username);
+        $tag      = 'lockout_' . $this->sanitize($username);
 
         // Increment per-IP+username counter
         $ipKey = $this->buildLockoutKey($username, $ip);
@@ -186,7 +189,7 @@ final readonly class RateLimiterService
         $this->rateLimitCache->remove($userKey);
         $this->logger->debug(
             'Lockout counters reset after successful authentication',
-            ['usernameHash' => \hash('sha256', $username)],
+            ['usernameHash' => hash('sha256', $username)],
         );
     }
 
@@ -249,26 +252,26 @@ final readonly class RateLimiterService
             return 0;
         }
 
-        return \is_numeric($value) ? (int) $value : 0;
+        return is_numeric($value) ? (int) $value : 0;
     }
 
     private function buildKey(string $endpoint, string $identifier): string
     {
-        return 'rl_' . \hash('sha256', $endpoint . '|' . $identifier);
+        return 'rl_' . hash('sha256', $endpoint . '|' . $identifier);
     }
 
     private function buildLockoutKey(string $username, string $ip): string
     {
-        return 'lo_' . \hash('sha256', $username . '|' . $ip);
+        return 'lo_' . hash('sha256', $username . '|' . $ip);
     }
 
     private function buildUserLockoutKey(string $username): string
     {
-        return 'lou_' . \hash('sha256', $username);
+        return 'lou_' . hash('sha256', $username);
     }
 
     private function sanitize(string $value): string
     {
-        return \hash('sha256', $value);
+        return hash('sha256', $value);
     }
 }

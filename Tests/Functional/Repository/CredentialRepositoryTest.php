@@ -17,6 +17,9 @@ use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
+use function count;
+use function time;
+
 #[CoversClass(CredentialRepository::class)]
 final class CredentialRepositoryTest extends FunctionalTestCase
 {
@@ -28,7 +31,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
         'SYS' => [
             'caching' => [
                 'cacheConfigurations' => [
-                    'nr_passkeys_be_nonce' => ['backend' => NullBackend::class],
+                    'nr_passkeys_be_nonce'     => ['backend' => NullBackend::class],
                     'nr_passkeys_be_ratelimit' => ['backend' => NullBackend::class],
                 ],
             ],
@@ -77,7 +80,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             transports: '["internal","hybrid"]',
             label: 'Complete Credential',
         );
-        $uid = $this->repository->save($credential);
+        $uid   = $this->repository->save($credential);
         $found = $this->repository->findByCredentialId('cred-complete');
         self::assertNotNull($found);
         self::assertSame($uid, $found->getUid());
@@ -254,16 +257,16 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'To Revoke',
         );
-        $uid = $this->repository->save($credential);
-        $adminUid = 42;
-        $beforeRevoke = \time();
+        $uid          = $this->repository->save($credential);
+        $adminUid     = 42;
+        $beforeRevoke = time();
         $this->repository->revoke($uid, $adminUid);
-        $afterRevoke = \time();
-        $connection = $this
+        $afterRevoke = time();
+        $connection  = $this
             ->getConnectionPool()
             ->getConnectionForTable('tx_nrpasskeysbe_credential');
         $result = $connection->select(['*'], 'tx_nrpasskeysbe_credential', ['uid' => $uid]);
-        $row = $result->fetchAssociative();
+        $row    = $result->fetchAssociative();
         self::assertNotFalse($row);
         $revokedAt = (int) $row['revoked_at'];
         self::assertGreaterThanOrEqual($beforeRevoke, $revokedAt);
@@ -281,7 +284,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'Revoke Exclude',
         );
-        $uid = $this->repository->save($credential);
+        $uid         = $this->repository->save($credential);
         $countBefore = $this->repository->countByBeUser(10);
         self::assertSame(1, $countBefore);
         $this->repository->revoke($uid, 1);
@@ -301,11 +304,11 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'Update Last Used',
         );
-        $uid = $this->repository->save($credential);
-        $beforeUpdate = \time();
+        $uid          = $this->repository->save($credential);
+        $beforeUpdate = time();
         $this->repository->updateLastUsed($uid);
-        $afterUpdate = \time();
-        $found = $this->repository->findByCredentialId('cred-update-last-used');
+        $afterUpdate = time();
+        $found       = $this->repository->findByCredentialId('cred-update-last-used');
         self::assertNotNull($found);
         self::assertGreaterThanOrEqual($beforeUpdate, $found->getLastUsedAt());
         self::assertLessThanOrEqual($afterUpdate, $found->getLastUsedAt());
@@ -322,7 +325,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             signCount: 5,
             label: 'Update Sign Count',
         );
-        $uid = $this->repository->save($credential);
+        $uid      = $this->repository->save($credential);
         $newCount = 42;
         $this->repository->updateSignCount($uid, $newCount);
         $found = $this->repository->findByCredentialId('cred-update-sign-count');
@@ -340,7 +343,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             publicKeyCose: 'cose-data',
             label: 'Original Label',
         );
-        $uid = $this->repository->save($credential);
+        $uid      = $this->repository->save($credential);
         $newLabel = 'Updated Label';
         $this->repository->updateLabel($uid, $newLabel);
         $found = $this->repository->findByCredentialId('cred-update-label');
@@ -384,7 +387,7 @@ final class CredentialRepositoryTest extends FunctionalTestCase
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
         $all = $this->repository->findAllByBeUser(1);
 
-        for ($i = 0; $i < \count($all) - 1; $i++) {
+        for ($i = 0; $i < count($all) - 1; ++$i) {
             self::assertGreaterThanOrEqual(
                 $all[$i + 1]->getCreatedAt(),
                 $all[$i]->getCreatedAt(),

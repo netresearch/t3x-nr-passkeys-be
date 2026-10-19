@@ -12,6 +12,11 @@ namespace Netresearch\NrPasskeysBe\Controller;
 use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 
+use function in_array;
+use function is_array;
+use function is_numeric;
+use function is_string;
+
 /**
  * Extracts the authenticated backend user from $GLOBALS['BE_USER'].
  *
@@ -35,13 +40,13 @@ trait BackendUserTrait
 
         $userData = $backendUser->user;
 
-        if (!\is_array($userData)) {
+        if (!is_array($userData)) {
             return null;
         }
 
         $rawUid = $userData['uid'] ?? null;
 
-        if (!\is_numeric($rawUid)) {
+        if (!is_numeric($rawUid)) {
             return null;
         }
 
@@ -50,8 +55,8 @@ trait BackendUserTrait
 
         return new AuthenticatedUser(
             uid: (int) $rawUid,
-            username: \is_string($rawUsername) ? $rawUsername : '',
-            realName: \is_string($rawRealName) ? $rawRealName : '',
+            username: is_string($rawUsername) ? $rawUsername : '',
+            realName: is_string($rawRealName) ? $rawRealName : '',
             isAdmin: $backendUser->isAdmin(),
         );
     }
@@ -108,23 +113,23 @@ trait BackendUserTrait
             return false;
         }
 
-        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
-        $systemMaintainers = \is_array($sysConf) ? $sysConf['systemMaintainers'] ?? [] : [];
+        $typo3Conf         = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf           = is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
+        $systemMaintainers = is_array($sysConf) ? $sysConf['systemMaintainers'] ?? [] : [];
 
-        if (!\is_array($systemMaintainers) || $systemMaintainers === []) {
+        if (!is_array($systemMaintainers) || $systemMaintainers === []) {
             return true;
         }
 
         $systemMaintainerIds = [];
 
         foreach ($systemMaintainers as $maintainer) {
-            if (\is_numeric($maintainer)) {
+            if (is_numeric($maintainer)) {
                 $systemMaintainerIds[] = (int) $maintainer;
             }
         }
 
-        if (!\in_array($targetUid, $systemMaintainerIds, true)) {
+        if (!in_array($targetUid, $systemMaintainerIds, true)) {
             return true;
         }
 

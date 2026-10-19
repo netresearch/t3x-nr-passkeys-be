@@ -35,7 +35,7 @@ final class RecoveryCommandTest extends FunctionalTestCase
         'SYS' => [
             'caching' => [
                 'cacheConfigurations' => [
-                    'nr_passkeys_be_nonce' => ['backend' => NullBackend::class],
+                    'nr_passkeys_be_nonce'     => ['backend' => NullBackend::class],
                     'nr_passkeys_be_ratelimit' => ['backend' => NullBackend::class],
                 ],
             ],

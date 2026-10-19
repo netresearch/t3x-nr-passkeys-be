@@ -14,6 +14,13 @@ use Netresearch\NrPasskeysBe\Widgets\Adoption\PasskeyAdoptionStatsProviderInterf
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Dashboard\Widgets\ChartDataProviderInterface;
 
+use function array_fill;
+use function array_merge;
+use function count;
+use function strcmp;
+use function ucfirst;
+use function usort;
+
 /**
  * Doughnut data for unified passkey adoption. One dataset (ring) per audience
  * segment contributed via the nr_passkeys_be.adoption_stats_provider tag:
@@ -75,37 +82,34 @@ final readonly class PasskeyAdoptionChartDataProvider implements ChartDataProvid
         }
 
         // Deterministic order regardless of DI registration order.
-        \usort(
+        usort(
             $segments,
-            static fn(
-                PasskeyAudienceStats $a,
-                PasskeyAudienceStats $b,
-            ): int => \strcmp($a->audienceKey, $b->audienceKey),
+            static fn (PasskeyAudienceStats $a, PasskeyAudienceStats $b): int => strcmp($a->audienceKey, $b->audienceKey),
         );
-        $withLabel = $this->label('widget.adoption.label.with_passkeys', 'with passkeys');
-        $withoutLabel = $this->label('widget.adoption.label.without_passkeys', 'without passkeys');
-        $labels = [];
-        $colors = [];
+        $withLabel     = $this->label('widget.adoption.label.with_passkeys', 'with passkeys');
+        $withoutLabel  = $this->label('widget.adoption.label.without_passkeys', 'without passkeys');
+        $labels        = [];
+        $colors        = [];
         $segmentLabels = [];
 
         foreach ($segments as $segment) {
-            $segmentLabel = $this->label('widget.adoption.segment.' . $segment->audienceKey, \ucfirst($segment->audienceKey));
+            $segmentLabel    = $this->label('widget.adoption.segment.' . $segment->audienceKey, ucfirst($segment->audienceKey));
             $segmentLabels[] = $segmentLabel;
-            $pair = self::AUDIENCE_COLORS[$segment->audienceKey] ?? self::FALLBACK_COLORS;
-            $labels[] = $segmentLabel . ': ' . $withLabel;
-            $labels[] = $segmentLabel . ': ' . $withoutLabel;
-            $colors[] = $pair[0];
-            $colors[] = $pair[1];
+            $pair            = self::AUDIENCE_COLORS[$segment->audienceKey] ?? self::FALLBACK_COLORS;
+            $labels[]        = $segmentLabel . ': ' . $withLabel;
+            $labels[]        = $segmentLabel . ': ' . $withoutLabel;
+            $colors[]        = $pair[0];
+            $colors[]        = $pair[1];
         }
 
         $datasets = [];
-        $slots = \count($labels);
+        $slots    = count($labels);
 
         foreach ($segments as $index => $segment) {
-            $data = \array_merge(
-                \array_fill(0, 2 * $index, 0),
+            $data = array_merge(
+                array_fill(0, 2 * $index, 0),
                 [$segment->usersWithPasskeys, $segment->usersWithoutPasskeys()],
-                \array_fill(0, $slots - 2 * $index - 2, 0),
+                array_fill(0, $slots - 2 * $index - 2, 0),
             );
             $datasets[] = ['label' => $segmentLabels[$index], 'backgroundColor' => $colors, 'data' => $data];
         }

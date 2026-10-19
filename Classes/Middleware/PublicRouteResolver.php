@@ -16,6 +16,9 @@ use Psr\Http\Server\RequestHandlerInterface;
 use TYPO3\CMS\Backend\Http\RouteDispatcher;
 use TYPO3\CMS\Backend\Routing\Route;
 
+use function is_string;
+use function str_starts_with;
+
 /**
  * Dispatches passkeys public routes before BackendUserAuthenticator.
  *
@@ -34,10 +37,10 @@ final readonly class PublicRouteResolver implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         /** @var Route|null $route */
-        $route = $request->getAttribute('route');
+        $route      = $request->getAttribute('route');
         $identifier = $route?->getOption('_identifier');
 
-        if ($route !== null && $route->getOption('access') === 'public' && \is_string($identifier) && \str_starts_with($identifier, self::PASSKEYS_ROUTE_PREFIX)) {
+        if ($route !== null && $route->getOption('access') === 'public' && is_string($identifier) && str_starts_with($identifier, self::PASSKEYS_ROUTE_PREFIX)) {
             return $this->dispatcher->dispatch($request);
         }
 

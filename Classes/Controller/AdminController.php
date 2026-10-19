@@ -22,6 +22,12 @@ use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\JsonResponse;
 
+use function array_map;
+use function count;
+use function is_numeric;
+use function is_string;
+use function time;
+
 /**
  * Admin API controller for passkey management operations.
  *
@@ -58,8 +64,8 @@ final readonly class AdminController
         }
 
         $queryParams = $request->getQueryParams();
-        $rawUid = $queryParams['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $rawUid      = $queryParams['beUserUid'] ?? null;
+        $beUserUid   = is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($beUserUid === 0) {
             return new JsonResponse(['error' => 'Missing beUserUid parameter'], 400);
@@ -70,9 +76,9 @@ final readonly class AdminController
         }
 
         $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
-        $list = \array_map(static fn(Credential $cred): AdminCredentialInfo => $cred->toAdminCredentialInfo(), $credentials);
+        $list        = array_map(static fn (Credential $cred): AdminCredentialInfo => $cred->toAdminCredentialInfo(), $credentials);
 
-        return new JsonResponse(['beUserUid' => $beUserUid, 'credentials' => $list, 'count' => \count($list)]);
+        return new JsonResponse(['beUserUid' => $beUserUid, 'credentials' => $list, 'count' => count($list)]);
     }
 
     /**
@@ -89,11 +95,11 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-        $rawUid = $body['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
-        $rawCredUid = $body['credentialUid'] ?? null;
-        $credentialUid = \is_numeric($rawCredUid) ? (int) $rawCredUid : 0;
+        $body          = $this->getJsonBody($request);
+        $rawUid        = $body['beUserUid'] ?? null;
+        $beUserUid     = is_numeric($rawUid) ? (int) $rawUid : 0;
+        $rawCredUid    = $body['credentialUid'] ?? null;
+        $credentialUid = is_numeric($rawCredUid) ? (int) $rawCredUid : 0;
 
         if ($beUserUid === 0 || $credentialUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -133,11 +139,11 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-        $rawUid = $body['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $body        = $this->getJsonBody($request);
+        $rawUid      = $body['beUserUid'] ?? null;
+        $beUserUid   = is_numeric($rawUid) ? (int) $rawUid : 0;
         $rawUsername = $body['username'] ?? null;
-        $username = \is_string($rawUsername) ? $rawUsername : '';
+        $username    = is_string($rawUsername) ? $rawUsername : '';
 
         if ($beUserUid === 0 || $username === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -149,7 +155,7 @@ final readonly class AdminController
 
         // Validate that beUserUid matches the given username to ensure audit log integrity
         $queryBuilder = $this->connectionPool->getQueryBuilderForTable('be_users');
-        $row = $queryBuilder
+        $row          = $queryBuilder
             ->select('uid', 'username')
             ->from('be_users')
             ->where(
@@ -193,7 +199,7 @@ final readonly class AdminController
             return $beUserUid;
         }
 
-        $credentials = $this->credentialRepository->findAllByBeUser($beUserUid);
+        $credentials  = $this->credentialRepository->findAllByBeUser($beUserUid);
         $revokedCount = 0;
 
         foreach ($credentials as $credential) {
@@ -225,11 +231,11 @@ final readonly class AdminController
             return new JsonResponse(['error' => 'Unauthorized'], 403);
         }
 
-        $body = $this->getJsonBody($request);
-        $rawGroupUid = $body['groupUid'] ?? null;
-        $groupUid = \is_numeric($rawGroupUid) ? (int) $rawGroupUid : 0;
+        $body           = $this->getJsonBody($request);
+        $rawGroupUid    = $body['groupUid'] ?? null;
+        $groupUid       = is_numeric($rawGroupUid) ? (int) $rawGroupUid : 0;
         $rawEnforcement = $body['enforcement'] ?? null;
-        $enforcement = \is_string($rawEnforcement) ? $rawEnforcement : '';
+        $enforcement    = is_string($rawEnforcement) ? $rawEnforcement : '';
 
         if ($groupUid === 0 || $enforcement === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
@@ -305,18 +311,18 @@ final readonly class AdminController
         }
 
         // Set passkey_nudge_until to a future timestamp so the banner picks up the nudge
-        $nudgeUntil = \time() + self::NUDGE_DURATION_DAYS * 86400;
+        $nudgeUntil = time() + self::NUDGE_DURATION_DAYS * 86400;
         $connection = $this->connectionPool->getConnectionForTable('be_users');
         $connection->update('be_users', ['passkey_nudge_until' => $nudgeUntil], ['uid' => $beUserUid]);
 
         $usernameValue = $row['username'] ?? '';
-        $username = \is_string($usernameValue) ? $usernameValue : '';
+        $username      = is_string($usernameValue) ? $usernameValue : '';
         $this->logger->info(
             'Admin sent passkey reminder',
             [
-                'admin_uid' => $admin->uid,
+                'admin_uid'   => $admin->uid,
                 'be_user_uid' => $beUserUid,
-                'username' => $username,
+                'username'    => $username,
                 'nudge_until' => $nudgeUntil,
             ],
         );
@@ -357,7 +363,7 @@ final readonly class AdminController
         $connection->update('be_users', ['passkey_nudge_until' => 0], ['uid' => $beUserUid]);
 
         $usernameValue = $row['username'] ?? '';
-        $username = \is_string($usernameValue) ? $usernameValue : '';
+        $username      = is_string($usernameValue) ? $usernameValue : '';
         $this->logger->info(
             'Admin cleared passkey nudge',
             ['admin_uid' => $admin->uid, 'be_user_uid' => $beUserUid, 'username' => $username],
@@ -378,8 +384,8 @@ final readonly class AdminController
      */
     private function resolveManagedBeUserUid(array $body): int|ResponseInterface
     {
-        $rawUid = $body['beUserUid'] ?? null;
-        $beUserUid = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $rawUid    = $body['beUserUid'] ?? null;
+        $beUserUid = is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($beUserUid === 0) {
             return new JsonResponse(['error' => 'Missing required fields'], 400);

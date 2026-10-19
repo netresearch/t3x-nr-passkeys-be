@@ -49,14 +49,14 @@ final class TypeCastTraitTest extends TestCase
     public static function intValNumericInputsProvider(): array
     {
         return [
-            'integer zero' => [0, 0, 0],
-            'positive integer' => [42, 0, 42],
-            'negative integer' => [-7, 0, -7],
-            'integer as string' => ['123', 0, 123],
+            'integer zero'               => [0, 0, 0],
+            'positive integer'           => [42, 0, 42],
+            'negative integer'           => [-7, 0, -7],
+            'integer as string'          => ['123', 0, 123],
             'negative integer as string' => ['-5', 0, -5],
-            'float truncates to int' => [3.9, 0, 3],
-            'float as string' => ['2.7', 0, 2],
-            'zero as string' => ['0', 0, 0],
+            'float truncates to int'     => [3.9, 0, 3],
+            'float as string'            => ['2.7', 0, 2],
+            'zero as string'             => ['0', 0, 0],
         ];
     }
 
@@ -74,13 +74,13 @@ final class TypeCastTraitTest extends TestCase
     public static function intValNonNumericInputsProvider(): array
     {
         return [
-            'null uses default' => [null, 0],
-            'boolean true uses default' => [true, 0],
-            'boolean false uses default' => [false, 0],
-            'empty string uses default' => ['', 0],
+            'null uses default'               => [null, 0],
+            'boolean true uses default'       => [true, 0],
+            'boolean false uses default'      => [false, 0],
+            'empty string uses default'       => ['', 0],
             'non-numeric string uses default' => ['hello', 0],
-            'array uses default' => [[], 0],
-            'object uses default' => [new stdClass(), 0],
+            'array uses default'              => [[], 0],
+            'object uses default'             => [new stdClass(), 0],
         ];
     }
 
@@ -89,7 +89,7 @@ final class TypeCastTraitTest extends TestCase
     public function intValReturnsDefaultForNonNumericInputs(mixed $value, int $defaultPlaceholder): void
     {
         $customDefault = 99;
-        $result = self::$subject::callIntVal($value, $customDefault);
+        $result        = self::$subject::callIntVal($value, $customDefault);
         self::assertSame($customDefault, $result);
     }
 
@@ -114,10 +114,10 @@ final class TypeCastTraitTest extends TestCase
     public static function stringValStringInputsProvider(): array
     {
         return [
-            'empty string' => ['', ''],
-            'non-empty string' => ['hello', 'hello'],
-            'string with spaces' => ['  spaced  ', '  spaced  '],
-            'numeric string' => ['42', '42'],
+            'empty string'              => ['', ''],
+            'non-empty string'          => ['hello', 'hello'],
+            'string with spaces'        => ['  spaced  ', '  spaced  '],
+            'numeric string'            => ['42', '42'],
             'string with special chars' => ['foo@bar.com', 'foo@bar.com'],
         ];
     }
@@ -136,13 +136,13 @@ final class TypeCastTraitTest extends TestCase
     public static function stringValNonStringInputsProvider(): array
     {
         return [
-            'null' => [null],
-            'integer' => [42],
-            'float' => [3.14],
-            'boolean true' => [true],
+            'null'          => [null],
+            'integer'       => [42],
+            'float'         => [3.14],
+            'boolean true'  => [true],
             'boolean false' => [false],
-            'array' => [[]],
-            'object' => [new stdClass()],
+            'array'         => [[]],
+            'object'        => [new stdClass()],
         ];
     }
 
@@ -151,7 +151,7 @@ final class TypeCastTraitTest extends TestCase
     public function stringValReturnsDefaultForNonStringInputs(mixed $value): void
     {
         $customDefault = 'my-default';
-        $result = self::$subject::callStringVal($value, $customDefault);
+        $result        = self::$subject::callStringVal($value, $customDefault);
         self::assertSame($customDefault, $result);
     }
 

@@ -16,6 +16,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamInterface;
 
+use function json_encode;
+
 #[CoversTrait(JsonBodyTrait::class)]
 final class JsonBodyTraitTest extends TestCase
 {
@@ -42,7 +44,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function returnsParsedBodyWhenAlreadyArray(): void
     {
-        $data = ['username' => 'admin', 'password' => 'secret'];
+        $data    = ['username' => 'admin', 'password' => 'secret'];
         $request = $this->createMock(ServerRequestInterface::class);
         $request
             ->method('getParsedBody')
@@ -59,7 +61,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function fallsBackToParsingRawJsonBody(): void
     {
-        $data = ['action' => 'register', 'token' => 'abc123'];
+        $data    = ['action' => 'register', 'token' => 'abc123'];
         $request = $this->createMock(ServerRequestInterface::class);
         $request
             ->method('getParsedBody')
@@ -67,7 +69,7 @@ final class JsonBodyTraitTest extends TestCase
         $stream = $this->createMock(StreamInterface::class);
         $stream
             ->method('__toString')
-            ->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
+            ->willReturn(json_encode($data, JSON_THROW_ON_ERROR));
         $request
             ->method('getBody')
             ->willReturn($stream);
@@ -173,7 +175,7 @@ final class JsonBodyTraitTest extends TestCase
     #[Test]
     public function acceptsApplicationJsonContentType(): void
     {
-        $data = ['key' => 'value'];
+        $data    = ['key' => 'value'];
         $request = $this->createMock(ServerRequestInterface::class);
         $request
             ->method('getParsedBody')
@@ -185,7 +187,7 @@ final class JsonBodyTraitTest extends TestCase
         $stream = $this->createMock(StreamInterface::class);
         $stream
             ->method('__toString')
-            ->willReturn(\json_encode($data, JSON_THROW_ON_ERROR));
+            ->willReturn(json_encode($data, JSON_THROW_ON_ERROR));
         $request
             ->method('getBody')
             ->willReturn($stream);
@@ -207,13 +209,13 @@ final class JsonBodyTraitTest extends TestCase
         // Create JSON nested 20 levels deep (exceeds depth limit of 16)
         $nested = '{"a":';
 
-        for ($i = 0; $i < 18; $i++) {
+        for ($i = 0; $i < 18; ++$i) {
             $nested .= '{"a":';
         }
 
         $nested .= '"v"';
 
-        for ($i = 0; $i < 19; $i++) {
+        for ($i = 0; $i < 19; ++$i) {
             $nested .= '}';
         }
 

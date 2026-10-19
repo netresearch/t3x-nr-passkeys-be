@@ -34,13 +34,13 @@ final readonly class AdminCredentialInfo implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'uid' => $this->uid,
-            'label' => $this->label,
-            'createdAt' => $this->createdAt,
+            'uid'        => $this->uid,
+            'label'      => $this->label,
+            'createdAt'  => $this->createdAt,
             'lastUsedAt' => $this->lastUsedAt,
-            'isRevoked' => $this->isRevoked,
-            'revokedAt' => $this->revokedAt,
-            'revokedBy' => $this->revokedBy,
+            'isRevoked'  => $this->isRevoked,
+            'revokedAt'  => $this->revokedAt,
+            'revokedBy'  => $this->revokedBy,
         ];
     }
 }

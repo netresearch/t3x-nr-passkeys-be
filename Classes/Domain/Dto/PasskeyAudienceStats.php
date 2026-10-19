@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Domain\Dto;
 
+use function max;
+
 /**
  * One audience segment (backend users, frontend users, …) of the unified
  * passkey-adoption dashboard widgets. Immutable value object returned by
@@ -18,13 +20,13 @@ final readonly class PasskeyAudienceStats
 {
     /**
      * @param string $audienceKey       Stable machine key ('backend', 'frontend').
-     *                                   Used for ordering and to resolve the
-     *                                   segment label (widget.adoption.segment.<key>)
-     *                                   and color pair. Must be [a-z0-9_]+.
-     * @param int    $totalActiveUsers  Active (non-deleted, non-disabled) users in
-     *                                   this audience.
-     * @param int    $usersWithPasskeys Distinct users owning >=1 active credential.
-     * @param int    $activeCredentials Active (non-revoked) credentials in this audience.
+     *                                  Used for ordering and to resolve the
+     *                                  segment label (widget.adoption.segment.<key>)
+     *                                  and color pair. Must be [a-z0-9_]+.
+     * @param int    $totalActiveUsers  active (non-deleted, non-disabled) users in
+     *                                  this audience
+     * @param int    $usersWithPasskeys distinct users owning >=1 active credential
+     * @param int    $activeCredentials active (non-revoked) credentials in this audience
      */
     public function __construct(
         public string $audienceKey,
@@ -35,6 +37,6 @@ final readonly class PasskeyAudienceStats
 
     public function usersWithoutPasskeys(): int
     {
-        return \max(0, $this->totalActiveUsers - $this->usersWithPasskeys);
+        return max(0, $this->totalActiveUsers - $this->usersWithPasskeys);
     }
 }

@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Utility;
 
+use function is_numeric;
+use function is_string;
+
 /**
  * Safe type coercion helpers for mixed values from configuration and database rows.
  */
@@ -16,11 +19,11 @@ trait TypeCastTrait
 {
     private static function intVal(mixed $value, int $default = 0): int
     {
-        return \is_numeric($value) ? (int) $value : $default;
+        return is_numeric($value) ? (int) $value : $default;
     }
 
     private static function stringVal(mixed $value, string $default = ''): string
     {
-        return \is_string($value) ? $value : $default;
+        return is_string($value) ? $value : $default;
     }
 }

@@ -19,6 +19,14 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Localization\LanguageService;
 
+use function array_map;
+use function array_unique;
+use function hexdec;
+use function ltrim;
+use function max;
+use function min;
+use function str_split;
+
 #[CoversClass(PasskeyAdoptionChartDataProvider::class)]
 final class PasskeyAdoptionChartDataProviderTest extends TestCase
 {
@@ -128,15 +136,15 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
         $languageService
             ->method('sL')
             ->willReturnCallback(
-                static fn(string $key): string => match ($key) {
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.label.with_passkeys' => 'Mit Passkeys',
+                static fn (string $key): string => match ($key) {
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.label.with_passkeys'    => 'Mit Passkeys',
                     'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.label.without_passkeys' => 'Ohne Passkeys',
-                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.segment.backend' => 'Backend-Nutzer',
-                    default => '',
+                    'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:widget.adoption.segment.backend'        => 'Backend-Nutzer',
+                    default                                                                                                            => '',
                 },
             );
         $GLOBALS['LANG'] = $languageService;
-        $chartData = $this
+        $chartData       = $this
             ->subject([$this->statsProvider(new PasskeyAudienceStats('backend', 1, 1, 1))])
             ->getChartData();
         self::assertSame(['Backend-Nutzer: Mit Passkeys', 'Backend-Nutzer: Ohne Passkeys'], $chartData['labels']);
@@ -166,13 +174,13 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
     private function contrast(string $a, string $b): float
     {
         $luminance = static function (string $hex): float {
-            $channels = \array_map(
+            $channels = array_map(
                 static function (string $pair): float {
-                    $v = \hexdec($pair) / 255;
+                    $v = hexdec($pair) / 255;
 
                     return $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4;
                 },
-                \str_split(\ltrim($hex, '#'), 2),
+                str_split(ltrim($hex, '#'), 2),
             );
 
             return (2126 * $channels[0] + 7152 * $channels[1] + 722 * $channels[2]) / 10000;
@@ -180,14 +188,14 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
         $la = $luminance($a);
         $lb = $luminance($b);
 
-        return (\max($la, $lb) + 0.05) / (\min($la, $lb) + 0.05);
+        return (max($la, $lb) + 0.05) / (min($la, $lb) + 0.05);
     }
 
     #[Test]
     public function everyLabelKeyTheProviderRequestsExistsInTheDashboardLanguageFile(): void
     {
-        $prefix = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:';
-        $requested = [];
+        $prefix          = 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_dashboard.xlf:';
+        $requested       = [];
         $languageService = $this->createMock(LanguageService::class);
         $languageService
             ->method('sL')
@@ -221,7 +229,7 @@ final class PasskeyAdoptionChartDataProviderTest extends TestCase
         self::assertContains($prefix . 'widget.adoption.label.without_passkeys', $requested);
         self::assertContains($prefix . 'widget.adoption.segment.frontend', $requested);
 
-        foreach (\array_unique($requested) as $key) {
+        foreach (array_unique($requested) as $key) {
             self::assertContains($key, $ids, $key);
         }
     }

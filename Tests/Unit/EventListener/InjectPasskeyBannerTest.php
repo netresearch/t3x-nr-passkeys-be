@@ -30,8 +30,8 @@ final class InjectPasskeyBannerTest extends TestCase
             ->with(
                 '@netresearch/nr-passkeys-be/PasskeyBanner.js',
             );
-        $view = $this->createMock(ViewInterface::class);
-        $event = new AfterBackendPageRenderEvent('<html></html>', $view);
+        $view    = $this->createMock(ViewInterface::class);
+        $event   = new AfterBackendPageRenderEvent('<html></html>', $view);
         $subject = new InjectPasskeyBanner($pageRenderer);
         $subject($event);
     }
@@ -47,8 +47,8 @@ final class InjectPasskeyBannerTest extends TestCase
                 'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
                 'js.',
             );
-        $view = $this->createMock(ViewInterface::class);
-        $event = new AfterBackendPageRenderEvent('<html></html>', $view);
+        $view    = $this->createMock(ViewInterface::class);
+        $event   = new AfterBackendPageRenderEvent('<html></html>', $view);
         $subject = new InjectPasskeyBanner($pageRenderer);
         $subject($event);
     }
@@ -63,8 +63,8 @@ final class InjectPasskeyBannerTest extends TestCase
             ->with(
                 'EXT:nr_passkeys_be/Resources/Public/Css/backend.css',
             );
-        $view = $this->createMock(ViewInterface::class);
-        $event = new AfterBackendPageRenderEvent('<html></html>', $view);
+        $view    = $this->createMock(ViewInterface::class);
+        $event   = new AfterBackendPageRenderEvent('<html></html>', $view);
         $subject = new InjectPasskeyBanner($pageRenderer);
         $subject($event);
     }

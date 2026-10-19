@@ -19,6 +19,9 @@ use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Localization\LanguageService;
 
+use function define;
+use function defined;
+
 #[CoversClass(PasskeyInfoElement::class)]
 final class PasskeyInfoElementTest extends TestCase
 {
@@ -29,8 +32,8 @@ final class PasskeyInfoElementTest extends TestCase
         parent::setUp();
 
         // TYPO3 constant used by AbstractFormElement::wrapWithFieldsetAndLegend()
-        if (!\defined('LF')) {
-            \define('LF', "\n");
+        if (!defined('LF')) {
+            define('LF', "\n");
         }
 
         $this->credentialRepository = $this->createMock(CredentialRepository::class);
@@ -46,7 +49,7 @@ final class PasskeyInfoElementTest extends TestCase
     public function renderReturnsEmptyForNonBeUsersTable(): void
     {
         $subject = $this->createSubject(['tableName' => 'fe_users', 'databaseRow' => ['uid' => 42]]);
-        $result = $subject->render();
+        $result  = $subject->render();
         self::assertEmpty($result['html'] ?? '');
     }
 
@@ -54,7 +57,7 @@ final class PasskeyInfoElementTest extends TestCase
     public function renderReturnsEmptyForZeroUserId(): void
     {
         $subject = $this->createSubject(['tableName' => 'be_users', 'databaseRow' => ['uid' => 0]]);
-        $result = $subject->render();
+        $result  = $subject->render();
         self::assertEmpty($result['html'] ?? '');
     }
 
@@ -62,7 +65,7 @@ final class PasskeyInfoElementTest extends TestCase
     public function renderReturnsEmptyWhenDatabaseRowIsNull(): void
     {
         $subject = $this->createSubject(['tableName' => 'be_users', 'databaseRow' => null]);
-        $result = $subject->render();
+        $result  = $subject->render();
         self::assertEmpty($result['html'] ?? '');
     }
 
@@ -70,7 +73,7 @@ final class PasskeyInfoElementTest extends TestCase
     public function renderReturnsEmptyWhenDatabaseRowIsMissing(): void
     {
         $subject = $this->createSubject(['tableName' => 'be_users']);
-        $result = $subject->render();
+        $result  = $subject->render();
         self::assertEmpty($result['html'] ?? '');
     }
 
@@ -86,13 +89,13 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
         self::assertStringContainsString('badge-danger', $html);
         self::assertStringContainsString('No passkeys', $html);
         self::assertStringNotContainsString('badge-success', $html);
@@ -111,13 +114,13 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([$cred]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
         self::assertStringContainsString('badge-success', $html);
         self::assertStringContainsString('1 Enabled', $html);
         self::assertStringContainsString('My Key', $html);
@@ -142,13 +145,13 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([$cred]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
         self::assertStringContainsString('Old Key', $html);
         self::assertStringContainsString('Revoked', $html);
 
@@ -167,13 +170,13 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([$cred]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
         self::assertStringContainsString('t3js-passkey-revoke-button', $html);
         self::assertStringContainsString('data-credential-uid="10"', $html);
         self::assertStringContainsString('t3js-passkey-revoke-all-button', $html);
@@ -191,13 +194,13 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([$cred]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
         self::assertStringNotContainsString('t3js-passkey-revoke-button', $html);
         self::assertStringNotContainsString('t3js-passkey-revoke-all-button', $html);
         self::assertStringNotContainsString('t3js-passkey-unlock-button', $html);
@@ -214,8 +217,8 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
@@ -245,13 +248,13 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([$cred1, $cred2, $cred3]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
         self::assertStringContainsString('2 Enabled', $html);
         self::assertStringContainsString('MacBook', $html);
         self::assertStringContainsString('YubiKey', $html);
@@ -281,13 +284,13 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([$cred]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
         self::assertStringContainsString('t3js-passkey-revoke-all-button', $html);
         self::assertStringContainsString('disabled', $html);
     }
@@ -303,13 +306,13 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([$cred]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
         self::assertStringContainsString('Never', $html);
     }
 
@@ -324,13 +327,13 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturn([$cred]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 42, 'username' => 'testuser'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 42, 'username' => 'testuser'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
         self::assertStringContainsString('Passkey #10', $html);
     }
 
@@ -338,7 +341,7 @@ final class PasskeyInfoElementTest extends TestCase
     public function renderHidesManagementButtonsForNonMaintainerAdminEditingMaintainer(): void
     {
         // Current user is admin but NOT a system maintainer
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser       = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 2, 'admin' => 1];
         $backendUser
             ->method('isAdmin')
@@ -354,19 +357,19 @@ final class PasskeyInfoElementTest extends TestCase
 
         // Target user (uid=1) IS a system maintainer
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [1];
-        $cred = new Credential(uid: 10, beUser: 1, label: 'Maintainer Key', createdAt: 1700000000);
+        $cred                                                   = new Credential(uid: 10, beUser: 1, label: 'Maintainer Key', createdAt: 1700000000);
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 1, 'username' => 'maintainer'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 1, 'username' => 'maintainer'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
 
         // Should still show credential info but no management buttons
         self::assertStringContainsString('Maintainer Key', $html);
@@ -385,19 +388,19 @@ final class PasskeyInfoElementTest extends TestCase
 
         // Target user (uid=2) IS also a system maintainer
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['systemMaintainers'] = [1, 2];
-        $cred = new Credential(uid: 10, beUser: 2, label: 'Maintainer Key', createdAt: 1700000000);
+        $cred                                                   = new Credential(uid: 10, beUser: 2, label: 'Maintainer Key', createdAt: 1700000000);
         $this->credentialRepository
             ->method('findAllByBeUser')
             ->willReturn([$cred]);
         $subject = $this->createSubject(
             [
-                'tableName' => 'be_users',
-                'databaseRow' => ['uid' => 2, 'username' => 'maintainer2'],
+                'tableName'      => 'be_users',
+                'databaseRow'    => ['uid' => 2, 'username' => 'maintainer2'],
                 'parameterArray' => ['fieldConf' => ['label' => 'Passkeys']],
             ],
         );
         $result = $subject->render();
-        $html = $result['html'];
+        $html   = $result['html'];
 
         // System maintainer editing another maintainer -> management allowed
         self::assertStringContainsString('t3js-passkey-revoke-button', $html);
@@ -417,7 +420,7 @@ final class PasskeyInfoElementTest extends TestCase
 
     private function setUpAdminUser(int $uid): void
     {
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser       = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'admin' => 1];
         $backendUser
             ->method('isAdmin')
@@ -433,7 +436,7 @@ final class PasskeyInfoElementTest extends TestCase
 
     private function setUpNonAdminUser(int $uid): void
     {
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser       = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'admin' => 0];
         $backendUser
             ->method('isAdmin')
@@ -455,23 +458,23 @@ final class PasskeyInfoElementTest extends TestCase
             ->willReturnCallback(
                 static function (string $key): string {
                     $map = [
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled' => 'Enabled',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.disabled' => 'No passkeys',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke' => 'Revoke',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll' => 'Revoke all passkeys',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled'                 => 'Enabled',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.disabled'                => 'No passkeys',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke'                  => 'Revoke',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll'               => 'Revoke all passkeys',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.title' => 'Revoke all passkeys',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.text' => 'Are you sure?',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke.confirm.title' => 'Revoke passkey',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke.confirm.text' => 'Are you sure you want to revoke this passkey?',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock' => 'Unlock account',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.title' => 'Unlock account',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.text' => 'Reset the rate limiter?',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.active' => 'Active',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.revoked' => 'Revoked',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.created' => 'Created',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.lastUsed' => 'Last used',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.never' => 'Never',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.cancel' => 'Cancel',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll.confirm.text'  => 'Are you sure?',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke.confirm.title'    => 'Revoke passkey',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke.confirm.text'     => 'Are you sure you want to revoke this passkey?',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock'                  => 'Unlock account',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.title'    => 'Unlock account',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.unlock.confirm.text'     => 'Reset the rate limiter?',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.active'           => 'Active',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.status.revoked'          => 'Revoked',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.created'                 => 'Created',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.lastUsed'                => 'Last used',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.never'                   => 'Never',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.cancel'                           => 'Cancel',
                     ];
 
                     return $map[$key] ?? $key;

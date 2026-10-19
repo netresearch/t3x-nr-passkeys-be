@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Domain\Dto;
 
+use function round;
+
 /**
  * Read-only snapshot of passkey adoption statistics for the admin dashboard.
  *
@@ -40,6 +42,6 @@ final readonly class AdoptionStats
             return 0.0;
         }
 
-        return \round($this->usersWithPasskeys / $this->totalUsers * 100, 1);
+        return round($this->usersWithPasskeys / $this->totalUsers * 100, 1);
     }
 }

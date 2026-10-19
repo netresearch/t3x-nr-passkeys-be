@@ -31,9 +31,9 @@ final class RecoveryCommandTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->connectionPool = $this->createMock(ConnectionPool::class);
+        $this->connectionPool     = $this->createMock(ConnectionPool::class);
         $this->rateLimiterService = $this->createMock(RateLimiterService::class);
-        $this->tester = new CommandTester(new RecoveryCommand($this->connectionPool, $this->rateLimiterService));
+        $this->tester             = new CommandTester(new RecoveryCommand($this->connectionPool, $this->rateLimiterService));
     }
 
     #[Test]

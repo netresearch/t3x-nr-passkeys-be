@@ -39,6 +39,10 @@ use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function array_key_exists;
+use function class_exists;
+use function is_array;
+
 #[CoversClass(AdminModuleController::class)]
 final class AdminModuleControllerTest extends TestCase
 {
@@ -65,8 +69,8 @@ final class AdminModuleControllerTest extends TestCase
     {
         parent::setUp();
         $this->moduleTemplateFactory = $this->createMock(ModuleTemplateFactory::class);
-        $this->adoptionStatsService = $this->createMock(AdoptionStatsService::class);
-        $this->configService = $this->createMock(ExtensionConfigurationService::class);
+        $this->adoptionStatsService  = $this->createMock(AdoptionStatsService::class);
+        $this->configService         = $this->createMock(ExtensionConfigurationService::class);
         $this->configService
             ->method('getConfiguration')
             ->willReturn(new ExtensionConfigurationVO());
@@ -78,7 +82,7 @@ final class AdminModuleControllerTest extends TestCase
             ->method('getIcon')
             ->willReturn($this->createMock(Icon::class));
         $this->pageRenderer = $this->createMock(PageRenderer::class);
-        $this->uriBuilder = $this->createMock(UriBuilder::class);
+        $this->uriBuilder   = $this->createMock(UriBuilder::class);
         $this->uriBuilder
             ->method('buildUriFromRoute')
             ->willReturn('/typo3/record/edit?mocked=1');
@@ -168,7 +172,7 @@ final class AdminModuleControllerTest extends TestCase
         // ComponentFactory (GeneralUtility::makeInstance). Queue a mock returning the
         // same component doubles. On v12/v13 the class is absent and the make* mocks
         // above are used instead.
-        if (\class_exists(ComponentFactory::class)) {
+        if (class_exists(ComponentFactory::class)) {
             $componentFactory = $this->createMock(ComponentFactory::class);
             $componentFactory
                 ->method('createMenu')
@@ -222,9 +226,9 @@ final class AdminModuleControllerTest extends TestCase
             ->method('assignMultiple')
             ->with(
                 self::callback(
-                    static fn(
+                    static fn (
                         array $variables,
-                    ): bool => $variables['totalUsers'] === 10 && $variables['usersWithPasskeys'] === 6 && $variables['adoptionPercentage'] === 60.0 && $variables['groups'] === [] && $variables['usersWithoutPasskeys'] === [] && \is_array($variables['enforcementLevels']) && isset($variables['enforcementLevels']['off']) && isset($variables['enforcementLevels']['encourage']) && isset($variables['enforcementLevels']['required']) && isset($variables['enforcementLevels']['enforced']) && \array_key_exists('helpUrl', $variables) && \array_key_exists('configRpId', $variables) && \array_key_exists('isNewInstallation', $variables),
+                    ): bool => $variables['totalUsers'] === 10 && $variables['usersWithPasskeys'] === 6 && $variables['adoptionPercentage'] === 60.0 && $variables['groups'] === [] && $variables['usersWithoutPasskeys'] === [] && is_array($variables['enforcementLevels']) && isset($variables['enforcementLevels']['off']) && isset($variables['enforcementLevels']['encourage']) && isset($variables['enforcementLevels']['required']) && isset($variables['enforcementLevels']['enforced']) && array_key_exists('helpUrl', $variables) && array_key_exists('configRpId', $variables) && array_key_exists('isNewInstallation', $variables),
                 ),
             );
         $expectedResponse = new HtmlResponse('<html></html>');
@@ -252,7 +256,7 @@ final class AdminModuleControllerTest extends TestCase
                 'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
                 'js.',
             );
-        $request = $this->createMock(ServerRequestInterface::class);
+        $request  = $this->createMock(ServerRequestInterface::class);
         $response = $this->subject->dashboardAction($request);
         self::assertSame($expectedResponse, $response);
     }
@@ -281,7 +285,7 @@ final class AdminModuleControllerTest extends TestCase
             ->method('getStats')
             ->willReturn($stats);
         $capturedVariables = [];
-        $moduleTemplate = $this->createModuleTemplateMock();
+        $moduleTemplate    = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
         $moduleTemplate
             ->method('assignMultiple')
@@ -339,7 +343,7 @@ final class AdminModuleControllerTest extends TestCase
             ->expects(self::once())
             ->method('assignMultiple')
             ->with(
-                self::callback(static fn(array $vars): bool => \array_key_exists('dashboardUrl', $vars)),
+                self::callback(static fn (array $vars): bool => array_key_exists('dashboardUrl', $vars)),
             )
             ->willReturnSelf();
         $expectedResponse = new HtmlResponse('<html></html>');
@@ -354,7 +358,7 @@ final class AdminModuleControllerTest extends TestCase
             ->expects(self::once())
             ->method('create')
             ->willReturn($moduleTemplate);
-        $request = $this->createMock(ServerRequestInterface::class);
+        $request  = $this->createMock(ServerRequestInterface::class);
         $response = $this->subject->helpAction($request);
         self::assertSame($expectedResponse, $response);
     }
@@ -383,7 +387,7 @@ final class AdminModuleControllerTest extends TestCase
             ->method('getStats')
             ->willReturn($stats);
         $capturedVariables = [];
-        $moduleTemplate = $this->createModuleTemplateMock();
+        $moduleTemplate    = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
         $moduleTemplate
             ->method('assignMultiple')
@@ -419,22 +423,22 @@ final class AdminModuleControllerTest extends TestCase
             ->willReturnCallback(
                 static function (string $key): string {
                     $map = [
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.off' => 'Aus',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.off'       => 'Aus',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.encourage' => 'Empfehlen',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.required' => 'Erforderlich',
-                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.enforced' => 'Erzwungen',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.required'  => 'Erforderlich',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:enforcement.level.enforced'  => 'Erzwungen',
                     ];
 
                     return $map[$key] ?? '';
                 },
             );
         $GLOBALS['LANG'] = $languageService;
-        $stats = new AdoptionStats(totalUsers: 0, usersWithPasskeys: 0, groups: [], usersWithoutPasskeys: []);
+        $stats           = new AdoptionStats(totalUsers: 0, usersWithPasskeys: 0, groups: [], usersWithoutPasskeys: []);
         $this->adoptionStatsService
             ->method('getStats')
             ->willReturn($stats);
         $capturedVariables = [];
-        $moduleTemplate = $this->createModuleTemplateMock();
+        $moduleTemplate    = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
         $moduleTemplate
             ->method('assignMultiple')
@@ -467,16 +471,16 @@ final class AdminModuleControllerTest extends TestCase
     public static function adoptionBadgeTierProvider(): array
     {
         return [
-            'no users' => [0, 0, 'No users'],
-            'getting started (0%)' => [10, 0, 'Getting started'],
+            'no users'              => [0, 0, 'No users'],
+            'getting started (0%)'  => [10, 0, 'Getting started'],
             'getting started (20%)' => [10, 2, 'Getting started'],
-            'bronze (25%)' => [4, 1, 'Bronze'],
-            'bronze (49%)' => [100, 49, 'Bronze'],
-            'silver (50%)' => [10, 5, 'Silver'],
-            'silver (74%)' => [100, 74, 'Silver'],
-            'gold (75%)' => [4, 3, 'Gold'],
-            'gold (99%)' => [100, 99, 'Gold'],
-            'platinum (100%)' => [5, 5, 'Platinum'],
+            'bronze (25%)'          => [4, 1, 'Bronze'],
+            'bronze (49%)'          => [100, 49, 'Bronze'],
+            'silver (50%)'          => [10, 5, 'Silver'],
+            'silver (74%)'          => [100, 74, 'Silver'],
+            'gold (75%)'            => [4, 3, 'Gold'],
+            'gold (99%)'            => [100, 99, 'Gold'],
+            'platinum (100%)'       => [5, 5, 'Platinum'],
         ];
     }
 
@@ -497,7 +501,7 @@ final class AdminModuleControllerTest extends TestCase
             ->method('getStats')
             ->willReturn($stats);
         $capturedVariables = [];
-        $moduleTemplate = $this->createModuleTemplateMock();
+        $moduleTemplate    = $this->createModuleTemplateMock();
         $moduleTemplate->method('setTitle');
         $moduleTemplate
             ->method('assignMultiple')

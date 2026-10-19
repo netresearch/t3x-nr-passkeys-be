@@ -17,6 +17,12 @@ use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
+use function htmlspecialchars;
+use function is_array;
+use function is_numeric;
+use function is_string;
+use function strlen;
+
 /**
  * Renders the passkey management panel in User Settings (Setup module).
  *
@@ -36,6 +42,7 @@ final class PasskeySettingsPanel
      * Called by TYPO3's GeneralUtility::callUserFunction() from the Setup module.
      *
      * @param array<string, mixed> $params Parameters from the user settings form
+     *
      * @return string HTML output
      */
     public function render(array $params): string
@@ -47,23 +54,23 @@ final class PasskeySettingsPanel
         }
 
         $rawUid = $backendUser->user['uid'] ?? null;
-        $userId = \is_numeric($rawUid) ? (int) $rawUid : 0;
+        $userId = is_numeric($rawUid) ? (int) $rawUid : 0;
 
         if ($userId === 0) {
             return '';
         }
 
-        $typo3Conf = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
-        $sysConf = \is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
-        $encryptionKey = \is_array($sysConf) && \is_string($sysConf['encryptionKey'] ?? null) ? $sysConf['encryptionKey'] : '';
+        $typo3Conf     = $GLOBALS['TYPO3_CONF_VARS'] ?? null;
+        $sysConf       = is_array($typo3Conf) ? $typo3Conf['SYS'] ?? null : null;
+        $encryptionKey = is_array($sysConf) && is_string($sysConf['encryptionKey'] ?? null) ? $sysConf['encryptionKey'] : '';
 
-        if (\strlen($encryptionKey) < 32) {
+        if (strlen($encryptionKey) < 32) {
             $warning = $this->translate(
                 'manage.warning.encryptionKey',
                 'Passkey management is unavailable. The TYPO3 encryption key is missing or too short (minimum 32 characters). Configure it in Admin Tools > Settings > Configure Installation-Wide Options.',
             );
 
-            return self::callout('danger', \htmlspecialchars($warning, ENT_QUOTES, 'UTF-8'));
+            return self::callout('danger', htmlspecialchars($warning, ENT_QUOTES, 'UTF-8'));
         }
 
         $pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
@@ -71,14 +78,14 @@ final class PasskeySettingsPanel
         $pageRenderer->addInlineLanguageLabelFile('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
 
         $credentialRepository = GeneralUtility::makeInstance(CredentialRepository::class);
-        $passkeyCount = $credentialRepository->countByBeUser($userId);
-        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
-        $urls = [
-            'list' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
+        $passkeyCount         = $credentialRepository->countByBeUser($userId);
+        $uriBuilder           = GeneralUtility::makeInstance(UriBuilder::class);
+        $urls                 = [
+            'list'            => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_list'),
             'registerOptions' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_options'),
-            'registerVerify' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_verify'),
-            'rename' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_rename'),
-            'remove' => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_remove'),
+            'registerVerify'  => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_registration_verify'),
+            'rename'          => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_rename'),
+            'remove'          => (string) $uriBuilder->buildUriFromRoute('ajax_passkeys_manage_remove'),
         ];
 
         return $this->buildHtml($passkeyCount, $urls);
@@ -93,78 +100,78 @@ final class PasskeySettingsPanel
             'manage.info.passkeys',
             'Passkeys replace your password with biometric or device-based authentication (fingerprint, face, security key). We recommend registering at least two passkeys for backup — for example, your laptop and your phone.',
         );
-        $title = $this->translate('manage.title', 'Passkeys');
-        $description = $this->translate('manage.description', 'Manage your registered passkeys for passwordless login.');
-        $addLabel = $this->translate('manage.add', 'Add Passkey');
-        $nameLabel = $this->translate('manage.label.name', 'Name');
-        $createdLabel = $this->translate('manage.label.created', 'Created');
-        $lastUsedLabel = $this->translate('manage.label.lastUsed', 'Last Used');
-        $actionsLabel = $this->translate('manage.label.actions', 'Actions');
+        $title            = $this->translate('manage.title', 'Passkeys');
+        $description      = $this->translate('manage.description', 'Manage your registered passkeys for passwordless login.');
+        $addLabel         = $this->translate('manage.add', 'Add Passkey');
+        $nameLabel        = $this->translate('manage.label.name', 'Name');
+        $createdLabel     = $this->translate('manage.label.created', 'Created');
+        $lastUsedLabel    = $this->translate('manage.label.lastUsed', 'Last Used');
+        $actionsLabel     = $this->translate('manage.label.actions', 'Actions');
         $singleKeyWarning = $this->translate(
             'manage.warning.singleKey',
             'You only have one passkey registered. Consider adding a backup passkey.',
         );
         $noPasskeys = $this->translate('manage.noPasskeys', 'No passkeys registered yet.');
-        $nameHelp = $this->translate(
+        $nameHelp   = $this->translate(
             'manage.label.name.help',
             'A descriptive label to identify this passkey (e.g. "MacBook TouchID", "YubiKey").',
         );
         $countBadgeClass = match (true) {
             $passkeyCount === 0 => 'badge-warning',
             $passkeyCount === 1 => 'badge-info',
-            default => 'badge-success',
+            default             => 'badge-success',
         };
-        $listUrl = \htmlspecialchars($urls['list'], ENT_QUOTES, 'UTF-8');
-        $registerOptionsUrl = \htmlspecialchars($urls['registerOptions'], ENT_QUOTES, 'UTF-8');
-        $registerVerifyUrl = \htmlspecialchars($urls['registerVerify'], ENT_QUOTES, 'UTF-8');
-        $renameUrl = \htmlspecialchars($urls['rename'], ENT_QUOTES, 'UTF-8');
-        $removeUrl = \htmlspecialchars($urls['remove'], ENT_QUOTES, 'UTF-8');
-        $title = \htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-        $description = \htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
-        $addLabel = \htmlspecialchars($addLabel, ENT_QUOTES, 'UTF-8');
-        $nameLabel = \htmlspecialchars($nameLabel, ENT_QUOTES, 'UTF-8');
-        $createdLabel = \htmlspecialchars($createdLabel, ENT_QUOTES, 'UTF-8');
-        $lastUsedLabel = \htmlspecialchars($lastUsedLabel, ENT_QUOTES, 'UTF-8');
-        $actionsLabel = \htmlspecialchars($actionsLabel, ENT_QUOTES, 'UTF-8');
-        $singleKeyWarning = \htmlspecialchars($singleKeyWarning, ENT_QUOTES, 'UTF-8');
-        $noPasskeys = \htmlspecialchars($noPasskeys, ENT_QUOTES, 'UTF-8');
-        $nameHelp = \htmlspecialchars($nameHelp, ENT_QUOTES, 'UTF-8');
-        $infoText = \htmlspecialchars($infoText, ENT_QUOTES, 'UTF-8');
-        $heading = self::headingTag();
+        $listUrl            = htmlspecialchars($urls['list'], ENT_QUOTES, 'UTF-8');
+        $registerOptionsUrl = htmlspecialchars($urls['registerOptions'], ENT_QUOTES, 'UTF-8');
+        $registerVerifyUrl  = htmlspecialchars($urls['registerVerify'], ENT_QUOTES, 'UTF-8');
+        $renameUrl          = htmlspecialchars($urls['rename'], ENT_QUOTES, 'UTF-8');
+        $removeUrl          = htmlspecialchars($urls['remove'], ENT_QUOTES, 'UTF-8');
+        $title              = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+        $description        = htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
+        $addLabel           = htmlspecialchars($addLabel, ENT_QUOTES, 'UTF-8');
+        $nameLabel          = htmlspecialchars($nameLabel, ENT_QUOTES, 'UTF-8');
+        $createdLabel       = htmlspecialchars($createdLabel, ENT_QUOTES, 'UTF-8');
+        $lastUsedLabel      = htmlspecialchars($lastUsedLabel, ENT_QUOTES, 'UTF-8');
+        $actionsLabel       = htmlspecialchars($actionsLabel, ENT_QUOTES, 'UTF-8');
+        $singleKeyWarning   = htmlspecialchars($singleKeyWarning, ENT_QUOTES, 'UTF-8');
+        $noPasskeys         = htmlspecialchars($noPasskeys, ENT_QUOTES, 'UTF-8');
+        $nameHelp           = htmlspecialchars($nameHelp, ENT_QUOTES, 'UTF-8');
+        $infoText           = htmlspecialchars($infoText, ENT_QUOTES, 'UTF-8');
+        $heading            = self::headingTag();
 
         return <<<HTML
-        <style>.passkey-name-input{max-width:200px}</style>
-        <div class="callout callout-info"><div class="callout-content"><div class="callout-body">{$infoText}</div></div></div>
-        <div id="passkey-management-container"
-             data-list-url="{$listUrl}"
-             data-register-options-url="{$registerOptionsUrl}"
-             data-register-verify-url="{$registerVerifyUrl}"
-             data-rename-url="{$renameUrl}"
-             data-remove-url="{$removeUrl}">
-            <{$heading}>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></{$heading}>
-            <p class="text-muted">{$description}</p>
-            <div id="passkey-single-warning" class="callout callout-warning d-none" role="status" aria-live="polite"><div class="callout-content"><div class="callout-body">{$singleKeyWarning}</div></div></div>
-            <div class="mb-3">
-                <div class="d-flex align-items-center gap-2">
-                    <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" aria-describedby="passkey-name-help" />
-                    <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
+            <style>.passkey-name-input{max-width:200px}</style>
+            <div class="callout callout-info"><div class="callout-content"><div class="callout-body">{$infoText}</div></div></div>
+            <div id="passkey-management-container"
+                 data-list-url="{$listUrl}"
+                 data-register-options-url="{$registerOptionsUrl}"
+                 data-register-verify-url="{$registerVerifyUrl}"
+                 data-rename-url="{$renameUrl}"
+                 data-remove-url="{$removeUrl}">
+                <{$heading}>{$title} <span class="badge {$countBadgeClass}" id="passkey-count">{$passkeyCount}</span></{$heading}>
+                <p class="text-muted">{$description}</p>
+                <div id="passkey-single-warning" class="callout callout-warning d-none" role="status" aria-live="polite"><div class="callout-content"><div class="callout-body">{$singleKeyWarning}</div></div></div>
+                <div class="mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="text" id="passkey-name-input" class="form-control form-control-sm passkey-name-input" value="Passkey" maxlength="128" placeholder="{$nameLabel}" aria-label="{$nameLabel}" aria-describedby="passkey-name-help" />
+                        <button type="button" id="passkey-add-btn" class="btn btn-primary btn-sm">{$addLabel}</button>
+                    </div>
+                    <small id="passkey-name-help" class="form-text text-muted">{$nameHelp}</small>
                 </div>
-                <small id="passkey-name-help" class="form-text text-muted">{$nameHelp}</small>
+                <div id="passkey-empty" class="callout callout-info d-none" role="status" aria-live="polite"><div class="callout-content"><div class="callout-body">{$noPasskeys}</div></div></div>
+                <table class="table table-hover" id="passkey-list-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">{$nameLabel}</th>
+                            <th scope="col">{$createdLabel}</th>
+                            <th scope="col">{$lastUsedLabel}</th>
+                            <th scope="col">{$actionsLabel}</th>
+                        </tr>
+                    </thead>
+                    <tbody id="passkey-list-body"></tbody>
+                </table>
             </div>
-            <div id="passkey-empty" class="callout callout-info d-none" role="status" aria-live="polite"><div class="callout-content"><div class="callout-body">{$noPasskeys}</div></div></div>
-            <table class="table table-hover" id="passkey-list-table">
-                <thead>
-                    <tr>
-                        <th scope="col">{$nameLabel}</th>
-                        <th scope="col">{$createdLabel}</th>
-                        <th scope="col">{$lastUsedLabel}</th>
-                        <th scope="col">{$actionsLabel}</th>
-                    </tr>
-                </thead>
-                <tbody id="passkey-list-body"></tbody>
-            </table>
-        </div>
-        HTML;
+            HTML;
     }
 
     /**

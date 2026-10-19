@@ -11,6 +11,8 @@ namespace Netresearch\NrPasskeysBe\Widgets;
 
 use TYPO3\CMS\Dashboard\Widgets\DoughnutChartWidget;
 
+use function is_array;
+
 /**
  * Core doughnut chart with a legend that fits the small widget.
  *
@@ -33,15 +35,15 @@ class PasskeyAdoptionChartWidget extends DoughnutChartWidget
      */
     public function getEventData(): array
     {
-        $eventData = parent::getEventData();
-        $graphConfig = \is_array($eventData['graphConfig'] ?? null) ? $eventData['graphConfig'] : [];
-        $options = \is_array($graphConfig['options'] ?? null) ? $graphConfig['options'] : [];
-        $plugins = \is_array($options['plugins'] ?? null) ? $options['plugins'] : [];
-        $legend = \is_array($plugins['legend'] ?? null) ? $plugins['legend'] : [];
-        $legend['labels'] = ['boxWidth' => self::LEGEND_BOX_SIZE, 'boxHeight' => self::LEGEND_BOX_SIZE];
-        $plugins['legend'] = $legend;
-        $options['plugins'] = $plugins;
-        $graphConfig['options'] = $options;
+        $eventData                = parent::getEventData();
+        $graphConfig              = is_array($eventData['graphConfig'] ?? null) ? $eventData['graphConfig'] : [];
+        $options                  = is_array($graphConfig['options'] ?? null) ? $graphConfig['options'] : [];
+        $plugins                  = is_array($options['plugins'] ?? null) ? $options['plugins'] : [];
+        $legend                   = is_array($plugins['legend'] ?? null) ? $plugins['legend'] : [];
+        $legend['labels']         = ['boxWidth' => self::LEGEND_BOX_SIZE, 'boxHeight' => self::LEGEND_BOX_SIZE];
+        $plugins['legend']        = $legend;
+        $options['plugins']       = $plugins;
+        $graphConfig['options']   = $options;
         $eventData['graphConfig'] = $graphConfig;
 
         return $eventData;

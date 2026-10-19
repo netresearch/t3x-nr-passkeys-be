@@ -26,6 +26,16 @@ use Throwable;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Http\JsonResponse;
 
+use function array_map;
+use function count;
+use function is_array;
+use function is_numeric;
+use function is_string;
+use function json_decode;
+use function mb_substr;
+use function time;
+use function trim;
+
 final readonly class ManagementController
 {
     use BackendUserTrait;
@@ -75,7 +85,7 @@ final readonly class ManagementController
 
             return new JsonResponse(
                 [
-                    'options' => \json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
+                    'options'        => json_decode($optionsJson, true, 512, JSON_THROW_ON_ERROR),
                     'challengeToken' => $result->challengeToken,
                 ],
             );
@@ -107,17 +117,17 @@ final readonly class ManagementController
             return $this->denySwitchUserMode('registration_verify', $user->uid);
         }
 
-        $body = $this->getJsonBody($request);
+        $body           = $this->getJsonBody($request);
         $credentialJson = $this->encodeBodySection($body['credential'] ?? null);
 
         if ($credentialJson === null) {
             return new JsonResponse(['error' => 'Invalid request body'], 400);
         }
 
-        $rawToken = $body['challengeToken'] ?? '';
-        $challengeToken = \is_string($rawToken) ? $rawToken : '';
-        $rawLabel = $body['label'] ?? 'Passkey';
-        $label = \is_string($rawLabel) ? $rawLabel : 'Passkey';
+        $rawToken       = $body['challengeToken'] ?? '';
+        $challengeToken = is_string($rawToken) ? $rawToken : '';
+        $rawLabel       = $body['label'] ?? 'Passkey';
+        $label          = is_string($rawLabel) ? $rawLabel : 'Passkey';
 
         // credProps.rk, forwarded by the browser from getClientExtensionResults().
         // Absent whenever the authenticator stayed silent, which stays null rather
@@ -130,7 +140,7 @@ final readonly class ManagementController
         }
 
         // Sanitize label
-        $label = \mb_substr(\trim($label), 0, 128);
+        $label = mb_substr(trim($label), 0, 128);
 
         if ($label === '') {
             $label = 'Passkey';
@@ -180,12 +190,12 @@ final readonly class ManagementController
         }
 
         $credentials = $this->credentialRepository->findByBeUser($user->uid);
-        $list = \array_map(static fn(Credential $cred): CredentialInfo => $cred->toCredentialInfo(), $credentials);
+        $list        = array_map(static fn (Credential $cred): CredentialInfo => $cred->toCredentialInfo(), $credentials);
 
         return new JsonResponse(
             [
-                'credentials' => $list,
-                'count' => \count($list),
+                'credentials'        => $list,
+                'count'              => count($list),
                 'enforcementEnabled' => $this->configService
                     ->getConfiguration()
                     ->isDisablePasswordLogin(),
@@ -208,7 +218,7 @@ final readonly class ManagementController
 
         $userRow = $backendUser->user;
 
-        if (!\is_array($userRow)) {
+        if (!is_array($userRow)) {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
@@ -218,17 +228,17 @@ final readonly class ManagementController
         // Check if an admin-sent nudge is active (passkey_nudge_until in the future).
         // A nudge only triggers the banner if the user has no passkeys yet —
         // once they register a passkey, the nudge becomes irrelevant.
-        $nudgeUntil = $userRow['passkey_nudge_until'] ?? 0;
-        $hasActiveNudge = !$status->hasPasskeys && \is_numeric($nudgeUntil) && (int) $nudgeUntil > \time();
+        $nudgeUntil     = $userRow['passkey_nudge_until'] ?? 0;
+        $hasActiveNudge = !$status->hasPasskeys && is_numeric($nudgeUntil) && (int) $nudgeUntil > time();
         $requiresBanner = $status->level->requiresBanner() && !$status->hasPasskeys || $hasActiveNudge;
 
         return new JsonResponse(
             [
-                'level' => $status->level->value,
-                'hasPasskeys' => $status->hasPasskeys,
-                'requiresBanner' => $requiresBanner,
+                'level'                    => $status->level->value,
+                'hasPasskeys'              => $status->hasPasskeys,
+                'requiresBanner'           => $requiresBanner,
                 'gracePeriodRemainingDays' => $status->gracePeriodRemainingDays(),
-                'nudgeUntil' => $hasActiveNudge ? (int) $nudgeUntil : 0,
+                'nudgeUntil'               => $hasActiveNudge ? (int) $nudgeUntil : 0,
             ],
         );
     }
@@ -251,16 +261,16 @@ final readonly class ManagementController
             return $this->denySwitchUserMode('rename', $user->uid);
         }
 
-        $body = $this->getJsonBody($request);
+        $body          = $this->getJsonBody($request);
         $credentialUid = self::intVal($body['uid'] ?? null);
-        $rawLabel = $body['label'] ?? null;
-        $label = \is_string($rawLabel) ? $rawLabel : '';
+        $rawLabel      = $body['label'] ?? null;
+        $label         = is_string($rawLabel) ? $rawLabel : '';
 
         if ($credentialUid === 0 || $label === '') {
             return new JsonResponse(['error' => 'Missing required fields'], 400);
         }
 
-        $label = \mb_substr(\trim($label), 0, 128);
+        $label = mb_substr(trim($label), 0, 128);
 
         if ($label === '') {
             $label = 'Passkey';
@@ -300,7 +310,7 @@ final readonly class ManagementController
             return $this->denySwitchUserMode('remove', $user->uid);
         }
 
-        $body = $this->getJsonBody($request);
+        $body          = $this->getJsonBody($request);
         $credentialUid = self::intVal($body['uid'] ?? null);
 
         if ($credentialUid === 0) {

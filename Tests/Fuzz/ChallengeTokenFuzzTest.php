@@ -21,6 +21,16 @@ use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
 
+use function base64_encode;
+use function bin2hex;
+use function chr;
+use function min;
+use function ord;
+use function random_bytes;
+use function random_int;
+use function str_repeat;
+use function strlen;
+
 final class ChallengeTokenFuzzTest extends TestCase
 {
     private ChallengeService $challengeService;
@@ -28,9 +38,9 @@ final class ChallengeTokenFuzzTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $encryptionKey = 'fuzz-test-encryption-key-' . \bin2hex(\random_bytes(16));
+        $encryptionKey                                      = 'fuzz-test-encryption-key-' . bin2hex(random_bytes(16));
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = $encryptionKey;
-        $cache = $this->createMock(FrontendInterface::class);
+        $cache                                              = $this->createMock(FrontendInterface::class);
         $cache
             ->method('has')
             ->willReturn(true);
@@ -38,7 +48,7 @@ final class ChallengeTokenFuzzTest extends TestCase
             ->method('get')
             ->willReturn('valid');
         $configService = $this->createMock(ExtensionConfigurationService::class);
-        $config = new ExtensionConfiguration(challengeTtlSeconds: 120);
+        $config        = new ExtensionConfiguration(challengeTtlSeconds: 120);
         $configService
             ->method('getConfiguration')
             ->willReturn($config);
@@ -46,7 +56,7 @@ final class ChallengeTokenFuzzTest extends TestCase
             ->method('getEncryptionKey')
             ->willReturn($encryptionKey);
         $lockFactory = $this->createMock(LockFactory::class);
-        $locker = $this->createMock(LockingStrategyInterface::class);
+        $locker      = $this->createMock(LockingStrategyInterface::class);
         $locker
             ->method('acquire')
             ->willReturn(true);
@@ -76,7 +86,7 @@ final class ChallengeTokenFuzzTest extends TestCase
 
         yield 'single char' => ['a'];
 
-        yield 'long string' => [\str_repeat('A', 10000)];
+        yield 'long string' => [str_repeat('A', 10000)];
 
         yield 'unicode' => ['Ünïcödé_Ström_🔑'];
 
@@ -84,23 +94,23 @@ final class ChallengeTokenFuzzTest extends TestCase
 
         yield 'pipe delimited' => ['foo|bar|baz|qux'];
 
-        yield 'base64 encoded pipes' => [\base64_encode('a|b|c|d')];
+        yield 'base64 encoded pipes' => [base64_encode('a|b|c|d')];
 
-        yield 'valid looking but wrong HMAC' => [\base64_encode('Y2hhbGxlbmdl|9999999999|abc123|fakehash')];
+        yield 'valid looking but wrong HMAC' => [base64_encode('Y2hhbGxlbmdl|9999999999|abc123|fakehash')];
 
-        yield 'partial token' => [\base64_encode('Y2hhbGxlbmdl|')];
+        yield 'partial token' => [base64_encode('Y2hhbGxlbmdl|')];
 
-        yield 'three parts only' => [\base64_encode('a|b|c')];
+        yield 'three parts only' => [base64_encode('a|b|c')];
 
-        yield 'five parts' => [\base64_encode('a|b|c|d|e')];
+        yield 'five parts' => [base64_encode('a|b|c|d|e')];
 
-        yield 'binary data' => [\random_bytes(32)];
+        yield 'binary data' => [random_bytes(32)];
 
-        yield 'negative timestamp' => [\base64_encode('Y2hhbGxlbmdl|-1|nonce123|hash')];
+        yield 'negative timestamp' => [base64_encode('Y2hhbGxlbmdl|-1|nonce123|hash')];
 
-        yield 'zero timestamp' => [\base64_encode('Y2hhbGxlbmdl|0|nonce123|hash')];
+        yield 'zero timestamp' => [base64_encode('Y2hhbGxlbmdl|0|nonce123|hash')];
 
-        yield 'max int timestamp' => [\base64_encode('Y2hhbGxlbmdl|' . PHP_INT_MAX . '|nonce123|hash')];
+        yield 'max int timestamp' => [base64_encode('Y2hhbGxlbmdl|' . PHP_INT_MAX . '|nonce123|hash')];
 
         yield 'newlines' => ["line1\nline2\rline3"];
 
@@ -124,8 +134,8 @@ final class ChallengeTokenFuzzTest extends TestCase
     #[Test]
     public function verifyTokenRejectsRandomBytes(): void
     {
-        for ($i = 0; $i < 100; $i++) {
-            $randomInput = \random_bytes(\random_int(1, 256));
+        for ($i = 0; $i < 100; ++$i) {
+            $randomInput = random_bytes(random_int(1, 256));
 
             try {
                 $this->challengeService->verifyChallengeToken($randomInput);
@@ -141,14 +151,14 @@ final class ChallengeTokenFuzzTest extends TestCase
     public function verifyTokenRejectsModifiedValidTokens(): void
     {
         $challenge = $this->challengeService->generateChallenge();
-        $token = $this->challengeService->createChallengeToken($challenge);
+        $token     = $this->challengeService->createChallengeToken($challenge);
 
         // Try bit-flipping each byte of the token
         $tokenBytes = $token;
 
-        for ($i = 0; $i < \min(\strlen($tokenBytes), 50); $i++) {
-            $modified = $tokenBytes;
-            $modified[$i] = \chr(\ord($modified[$i]) ^ 0xff);
+        for ($i = 0; $i < min(strlen($tokenBytes), 50); ++$i) {
+            $modified     = $tokenBytes;
+            $modified[$i] = chr(ord($modified[$i]) ^ 0xFF);
 
             try {
                 $this->challengeService->verifyChallengeToken($modified);
@@ -166,9 +176,9 @@ final class ChallengeTokenFuzzTest extends TestCase
     {
         $challenges = [];
 
-        for ($i = 0; $i < 1000; $i++) {
+        for ($i = 0; $i < 1000; ++$i) {
             $challenge = $this->challengeService->generateChallenge();
-            $hex = \bin2hex($challenge);
+            $hex       = bin2hex($challenge);
             self::assertArrayNotHasKey($hex, $challenges, 'Duplicate challenge detected');
             $challenges[$hex] = true;
         }
@@ -177,7 +187,7 @@ final class ChallengeTokenFuzzTest extends TestCase
     #[Test]
     public function createTokenHandlesVariousChallenges(): void
     {
-        $testChallenges = [\random_bytes(32), \random_bytes(1), \random_bytes(64), \str_repeat("\x00", 32), \str_repeat("\xff", 32)];
+        $testChallenges = [random_bytes(32), random_bytes(1), random_bytes(64), str_repeat("\x00", 32), str_repeat("\xff", 32)];
 
         foreach ($testChallenges as $challenge) {
             $token = $this->challengeService->createChallengeToken($challenge);

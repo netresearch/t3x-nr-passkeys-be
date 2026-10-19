@@ -10,14 +10,14 @@ use Netresearch\NrPasskeysBe\Controller\AdminModuleController;
 
 return [
     'admin_passkeys' => [
-        'parent' => 'system',
-        'position' => ['after' => 'backend_user_management'],
-        'access' => 'admin',
+        'parent'         => 'system',
+        'position'       => ['after' => 'backend_user_management'],
+        'access'         => 'admin',
         'iconIdentifier' => 'passkeys-be-module',
-        'labels' => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_module.xlf',
-        'routes' => [
+        'labels'         => 'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang_module.xlf',
+        'routes'         => [
             '_default' => ['target' => AdminModuleController::class . '::dashboardAction'],
-            'help' => ['target' => AdminModuleController::class . '::helpAction'],
+            'help'     => ['target' => AdminModuleController::class . '::helpAction'],
         ],
     ],
 ];

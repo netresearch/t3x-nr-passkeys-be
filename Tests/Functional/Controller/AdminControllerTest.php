@@ -19,6 +19,11 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
+use function assert;
+use function is_array;
+use function json_decode;
+use function time;
+
 /**
  * Functional tests for the admin API controller.
  *
@@ -35,7 +40,7 @@ final class AdminControllerTest extends FunctionalTestCase
         'SYS' => [
             'caching' => [
                 'cacheConfigurations' => [
-                    'nr_passkeys_be_nonce' => ['backend' => NullBackend::class],
+                    'nr_passkeys_be_nonce'     => ['backend' => NullBackend::class],
                     'nr_passkeys_be_ratelimit' => ['backend' => NullBackend::class],
                 ],
             ],
@@ -62,7 +67,7 @@ final class AdminControllerTest extends FunctionalTestCase
     // ── Helpers ──────────────────────────────────────────────
     private function setUpAdminUser(int $uid = 5): void
     {
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser       = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'username' => 'adminuser', 'realName' => 'Admin User'];
         $backendUser
             ->method('isAdmin')
@@ -72,7 +77,7 @@ final class AdminControllerTest extends FunctionalTestCase
 
     private function setUpNonAdminUser(): void
     {
-        $backendUser = $this->createMock(BackendUserAuthentication::class);
+        $backendUser       = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'username' => 'testuser1', 'realName' => 'Test User'];
         $backendUser
             ->method('isAdmin')
@@ -96,8 +101,8 @@ final class AdminControllerTest extends FunctionalTestCase
     private function decodeJsonResponse(ResponseInterface $response): array
     {
         $content = (string) $response->getBody();
-        $data = \json_decode($content, true, 16, JSON_THROW_ON_ERROR);
-        \assert(\is_array($data));
+        $data    = json_decode($content, true, 16, JSON_THROW_ON_ERROR);
+        assert(is_array($data));
 
         return $data;
     }
@@ -107,9 +112,9 @@ final class AdminControllerTest extends FunctionalTestCase
     public function listActionReturnsCredentialsForUser(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createGetRequest('/passkeys/admin/list', ['beUserUid' => '1']);
+        $request  = $this->createGetRequest('/passkeys/admin/list', ['beUserUid' => '1']);
         $response = $this->subject->listAction($request);
-        $data = $this->decodeJsonResponse($response);
+        $data     = $this->decodeJsonResponse($response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(1, $data['beUserUid']);
         self::assertIsArray($data['credentials']);
@@ -122,9 +127,9 @@ final class AdminControllerTest extends FunctionalTestCase
     public function listActionReturnsEmptyForUserWithNoCredentials(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createGetRequest('/passkeys/admin/list', ['beUserUid' => '99']);
+        $request  = $this->createGetRequest('/passkeys/admin/list', ['beUserUid' => '99']);
         $response = $this->subject->listAction($request);
-        $data = $this->decodeJsonResponse($response);
+        $data     = $this->decodeJsonResponse($response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame(0, $data['count']);
         self::assertSame([], $data['credentials']);
@@ -134,7 +139,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function listActionRejects400WhenMissingBeUserUid(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createGetRequest('/passkeys/admin/list');
+        $request  = $this->createGetRequest('/passkeys/admin/list');
         $response = $this->subject->listAction($request);
         self::assertSame(400, $response->getStatusCode());
     }
@@ -143,7 +148,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function listActionRejects403WhenNotAdmin(): void
     {
         $this->setUpNonAdminUser();
-        $request = $this->createGetRequest('/passkeys/admin/list', ['beUserUid' => '1']);
+        $request  = $this->createGetRequest('/passkeys/admin/list', ['beUserUid' => '1']);
         $response = $this->subject->listAction($request);
         self::assertSame(403, $response->getStatusCode());
     }
@@ -152,7 +157,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function listActionRejects403WhenNoUser(): void
     {
         // No BE_USER set
-        $request = $this->createGetRequest('/passkeys/admin/list', ['beUserUid' => '1']);
+        $request  = $this->createGetRequest('/passkeys/admin/list', ['beUserUid' => '1']);
         $response = $this->subject->listAction($request);
         self::assertSame(403, $response->getStatusCode());
     }
@@ -162,9 +167,9 @@ final class AdminControllerTest extends FunctionalTestCase
     public function removeActionRevokesCredential(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/remove', ['beUserUid' => 1, 'credentialUid' => 1]);
+        $request  = $this->createPostRequest('/passkeys/admin/remove', ['beUserUid' => 1, 'credentialUid' => 1]);
         $response = $this->subject->removeAction($request);
-        $data = $this->decodeJsonResponse($response);
+        $data     = $this->decodeJsonResponse($response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $data['status']);
 
@@ -196,7 +201,7 @@ final class AdminControllerTest extends FunctionalTestCase
         $this->setUpAdminUser();
 
         // Credential 5 belongs to user 2, not user 1
-        $request = $this->createPostRequest('/passkeys/admin/remove', ['beUserUid' => 1, 'credentialUid' => 5]);
+        $request  = $this->createPostRequest('/passkeys/admin/remove', ['beUserUid' => 1, 'credentialUid' => 5]);
         $response = $this->subject->removeAction($request);
         self::assertSame(404, $response->getStatusCode());
     }
@@ -205,7 +210,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function removeActionRejects400WhenMissingFields(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/remove', ['beUserUid' => 1]);
+        $request  = $this->createPostRequest('/passkeys/admin/remove', ['beUserUid' => 1]);
         $response = $this->subject->removeAction($request);
         self::assertSame(400, $response->getStatusCode());
     }
@@ -214,7 +219,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function removeActionRejects403WhenNotAdmin(): void
     {
         $this->setUpNonAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/remove', ['beUserUid' => 1, 'credentialUid' => 1]);
+        $request  = $this->createPostRequest('/passkeys/admin/remove', ['beUserUid' => 1, 'credentialUid' => 1]);
         $response = $this->subject->removeAction($request);
         self::assertSame(403, $response->getStatusCode());
     }
@@ -224,9 +229,9 @@ final class AdminControllerTest extends FunctionalTestCase
     public function unlockActionResetsLockout(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/unlock', ['beUserUid' => 1, 'username' => 'testuser1']);
+        $request  = $this->createPostRequest('/passkeys/admin/unlock', ['beUserUid' => 1, 'username' => 'testuser1']);
         $response = $this->subject->unlockAction($request);
-        $data = $this->decodeJsonResponse($response);
+        $data     = $this->decodeJsonResponse($response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $data['status']);
     }
@@ -235,7 +240,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function unlockActionRejects404OnUsernameMismatch(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/unlock', ['beUserUid' => 1, 'username' => 'wrong-username']);
+        $request  = $this->createPostRequest('/passkeys/admin/unlock', ['beUserUid' => 1, 'username' => 'wrong-username']);
         $response = $this->subject->unlockAction($request);
         self::assertSame(404, $response->getStatusCode());
     }
@@ -244,7 +249,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function unlockActionRejects400WhenMissingFields(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/unlock', ['beUserUid' => 1]);
+        $request  = $this->createPostRequest('/passkeys/admin/unlock', ['beUserUid' => 1]);
         $response = $this->subject->unlockAction($request);
         self::assertSame(400, $response->getStatusCode());
     }
@@ -254,9 +259,9 @@ final class AdminControllerTest extends FunctionalTestCase
     public function revokeAllActionRevokesActiveCredentials(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/revoke-all', ['beUserUid' => 1]);
+        $request  = $this->createPostRequest('/passkeys/admin/revoke-all', ['beUserUid' => 1]);
         $response = $this->subject->revokeAllAction($request);
-        $data = $this->decodeJsonResponse($response);
+        $data     = $this->decodeJsonResponse($response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $data['status']);
 
@@ -293,7 +298,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function revokeAllActionRejects400WhenMissingFields(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/revoke-all', []);
+        $request  = $this->createPostRequest('/passkeys/admin/revoke-all', []);
         $response = $this->subject->revokeAllAction($request);
         self::assertSame(400, $response->getStatusCode());
     }
@@ -303,9 +308,9 @@ final class AdminControllerTest extends FunctionalTestCase
     public function updateEnforcementActionChangesGroupLevel(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/update-enforcement', ['groupUid' => 3, 'enforcement' => 'enforced']);
+        $request  = $this->createPostRequest('/passkeys/admin/update-enforcement', ['groupUid' => 3, 'enforcement' => 'enforced']);
         $response = $this->subject->updateEnforcementAction($request);
-        $data = $this->decodeJsonResponse($response);
+        $data     = $this->decodeJsonResponse($response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $data['status']);
         self::assertSame('enforced', $data['enforcement']);
@@ -354,7 +359,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function updateEnforcementActionRejects400WhenMissingFields(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/update-enforcement', ['groupUid' => 1]);
+        $request  = $this->createPostRequest('/passkeys/admin/update-enforcement', ['groupUid' => 1]);
         $response = $this->subject->updateEnforcementAction($request);
         self::assertSame(400, $response->getStatusCode());
     }
@@ -364,10 +369,10 @@ final class AdminControllerTest extends FunctionalTestCase
     public function sendReminderActionSetsNudgeTimestamp(): void
     {
         $this->setUpAdminUser();
-        $beforeTime = \time();
-        $request = $this->createPostRequest('/passkeys/admin/send-reminder', ['beUserUid' => 1]);
-        $response = $this->subject->sendReminderAction($request);
-        $data = $this->decodeJsonResponse($response);
+        $beforeTime = time();
+        $request    = $this->createPostRequest('/passkeys/admin/send-reminder', ['beUserUid' => 1]);
+        $response   = $this->subject->sendReminderAction($request);
+        $data       = $this->decodeJsonResponse($response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('ok', $data['status']);
         self::assertArrayHasKey('nudgeUntil', $data);
@@ -396,7 +401,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function sendReminderActionRejects404ForNonexistentUser(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/send-reminder', ['beUserUid' => 9999]);
+        $request  = $this->createPostRequest('/passkeys/admin/send-reminder', ['beUserUid' => 9999]);
         $response = $this->subject->sendReminderAction($request);
         self::assertSame(404, $response->getStatusCode());
     }
@@ -405,7 +410,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function sendReminderActionRejects400WhenMissingFields(): void
     {
         $this->setUpAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/send-reminder', []);
+        $request  = $this->createPostRequest('/passkeys/admin/send-reminder', []);
         $response = $this->subject->sendReminderAction($request);
         self::assertSame(400, $response->getStatusCode());
     }
@@ -414,7 +419,7 @@ final class AdminControllerTest extends FunctionalTestCase
     public function sendReminderActionRejects403WhenNotAdmin(): void
     {
         $this->setUpNonAdminUser();
-        $request = $this->createPostRequest('/passkeys/admin/send-reminder', ['beUserUid' => 1]);
+        $request  = $this->createPostRequest('/passkeys/admin/send-reminder', ['beUserUid' => 1]);
         $response = $this->subject->sendReminderAction($request);
         self::assertSame(403, $response->getStatusCode());
     }

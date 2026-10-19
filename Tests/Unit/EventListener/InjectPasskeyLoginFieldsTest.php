@@ -26,6 +26,10 @@ use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\View\ViewInterface;
 
+use function json_decode;
+use function rtrim;
+use function str_replace;
+
 #[CoversClass(InjectPasskeyLoginFields::class)]
 final class InjectPasskeyLoginFieldsTest extends TestCase
 {
@@ -41,8 +45,8 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     {
         parent::setUp();
         $this->configService = $this->createMock(ExtensionConfigurationService::class);
-        $this->pageRenderer = $this->createMock(PageRenderer::class);
-        $this->uriBuilder = $this->createMock(UriBuilder::class);
+        $this->pageRenderer  = $this->createMock(PageRenderer::class);
+        $this->uriBuilder    = $this->createMock(UriBuilder::class);
         $this->uriBuilder
             ->method('buildUriFromRoute')
             ->willReturnCallback(
@@ -58,7 +62,7 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
     private function createEvent(): ModifyPageLayoutOnLoginProviderSelectionEvent
     {
         $constructor = new ReflectionMethod(ModifyPageLayoutOnLoginProviderSelectionEvent::class, '__construct');
-        $paramCount = $constructor->getNumberOfParameters();
+        $paramCount  = $constructor->getNumberOfParameters();
 
         // TYPO3 v14: (ViewInterface, ServerRequestInterface) — 2 params
         if ($paramCount === 2) {
@@ -113,8 +117,8 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                 self::anything(),
                 self::callback(
                     static function (string $code) use ($key, $expected): bool {
-                        $jsonPart = \rtrim(\str_replace('window.NrPasskeysBeConfig = ', '', $code), ';');
-                        $decoded = \json_decode($jsonPart, true);
+                        $jsonPart = rtrim(str_replace('window.NrPasskeysBeConfig = ', '', $code), ';');
+                        $decoded  = json_decode($jsonPart, true);
                         self::assertIsArray($decoded);
                         self::assertSame($expected, $decoded[$key]);
 
@@ -178,10 +182,10 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                         self::assertStringContainsString('window.NrPasskeysBeConfig', $code);
 
                         // Extract and decode JSON from the JS assignment
-                        $jsonPart = \str_replace('window.NrPasskeysBeConfig = ', '', $code);
-                        $jsonPart = \rtrim($jsonPart, ';');
+                        $jsonPart = str_replace('window.NrPasskeysBeConfig = ', '', $code);
+                        $jsonPart = rtrim($jsonPart, ';');
 
-                        $decoded = \json_decode($jsonPart, true);
+                        $decoded = json_decode($jsonPart, true);
                         self::assertIsArray($decoded);
                         self::assertSame('/typo3/passkeys/login/options', $decoded['loginOptionsUrl']);
                         self::assertSame('test.example.com', $decoded['rpId']);
@@ -207,8 +211,8 @@ final class InjectPasskeyLoginFieldsTest extends TestCase
                 'nr-passkeys-be-config',
                 self::callback(
                     static function (string $code): bool {
-                        $jsonPart = \rtrim(\str_replace('window.NrPasskeysBeConfig = ', '', $code), ';');
-                        $decoded = \json_decode($jsonPart, true);
+                        $jsonPart = rtrim(str_replace('window.NrPasskeysBeConfig = ', '', $code), ';');
+                        $decoded  = json_decode($jsonPart, true);
                         self::assertIsArray($decoded);
 
                         // Login screen is pre-auth, so UI strings are injected as labels
