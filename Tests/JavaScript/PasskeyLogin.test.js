@@ -228,7 +228,6 @@ describe('conditional-UI autocomplete merge logic', () => {
 
 describe('base64urlToBuffer edge cases', () => {
     it('should handle already-padded input', () => {
-        const encoded = 'QQ=='; // With padding
         // Our function adds padding, but if already padded this should still work
         // Actually base64url shouldn't have padding, but let's verify robustness
         const decoded = new Uint8Array(base64urlToBuffer('QQ'));
