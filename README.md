@@ -46,7 +46,7 @@
 |--------------------|------------------------------------------|
 | **Extension key**  | `nr_passkeys_be`                         |
 | **Package**        | `netresearch/nr-passkeys-be`             |
-| **TYPO3**          | 12.4 LTS, 13.4 LTS, 14.x                |
+| **TYPO3**          | 12.4 LTS, 13.4 LTS, 14.3 LTS            |
 | **PHP**            | 8.2, 8.3, 8.4, 8.5                      |
 | **License**        | GPL-2.0-or-later                         |
 
