@@ -388,4 +388,31 @@ describe('conditional UI ceremony', () => {
         expect(get.mock.calls.length).toBeGreaterThanOrEqual(2);
         vi.useRealTimers();
     });
+
+    it.each([
+        ['a body that is not JSON', async () => { throw new SyntaxError('Unexpected token <'); }],
+        ['a body without options', async () => ({ challengeToken: 'challenge-token-1' })],
+    ])('stays quiet and does not retry when a 200 prefetch carries %s', async (_case, json) => {
+        // The prefetch runs on every visit to the login page, and these two
+        // answers used to end in an unhandled rejection, outside the ceremony's
+        // own try block. The explicit button is the way forward from here.
+        vi.useFakeTimers();
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const get = installWebAuthnStub(async () => fakeAssertion());
+        const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json }));
+        vi.stubGlobal('fetch', fetchMock);
+
+        await import('../../Resources/Public/JavaScript/PasskeyLogin.js');
+        await vi.advanceTimersByTimeAsync(30000);
+
+        expect(consoleError).toHaveBeenCalledTimes(1);
+        expect(consoleError.mock.calls[0][0]).toBe('Passkey conditional login error:');
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(get).not.toHaveBeenCalled();
+        expect(document.getElementById('passkey-error').textContent.trim()).toBe('');
+        expect(document.getElementById('passkey-login-btn').disabled).toBe(false);
+
+        consoleError.mockRestore();
+        vi.useRealTimers();
+    });
 });

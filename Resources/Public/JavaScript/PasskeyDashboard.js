@@ -110,7 +110,7 @@ class PasskeyDashboard {
             name: 'confirm',
             trigger: (e, modal) => {
               modal.hideModal();
-              this.performEnforcementChange(select, groupUid, enforcement, originalValue);
+              void this.performEnforcementChange(select, groupUid, enforcement, originalValue);
             },
           },
         ],
@@ -118,9 +118,14 @@ class PasskeyDashboard {
       return;
     }
 
-    this.performEnforcementChange(select, groupUid, enforcement, originalValue);
+    void this.performEnforcementChange(select, groupUid, enforcement, originalValue);
   }
 
+  /**
+   * Save the enforcement level. A failure restores the select and is shown as a
+   * notification, so the returned promise never rejects and callers discard it
+   * with `void`.
+   */
   async performEnforcementChange(select, groupUid, enforcement, originalValue) {
     select.disabled = true;
 
