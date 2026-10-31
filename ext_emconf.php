@@ -15,13 +15,13 @@ $EM_CONF[$_EXTKEY] = [
     'author_email' => '',
     'author_company' => 'Netresearch DTT GmbH',
     'state' => 'stable',
-    'version' => '1.0.1',
+    'version' => '1.0.2',
     'constraints' => [
         'depends' => [
-            'typo3' => '12.4.0-14.99.99',
+            'typo3' => '12.4.0-14.3.99',
             'php' => '8.2.0-8.99.99',
-            'setup' => '12.4.0-14.99.99',
-            'backend' => '12.4.0-14.99.99',
+            'setup' => '12.4.0-14.3.99',
+            'backend' => '12.4.0-14.3.99',
         ],
         'conflicts' => [],
         'suggests' => [],

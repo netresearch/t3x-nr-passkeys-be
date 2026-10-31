@@ -9,6 +9,28 @@
 Changelog
 =========
 
+1.0.2
+=====
+
+Bugfixes
+--------
+
+- The ``composer.json`` description now reads ``<title> - <description>``
+  with the title and description of ``ext_emconf.php``. This removes the
+  "Composer Manifest" warning in the TYPO3 14.3 Reports module and gives
+  TER, Packagist and docs.typo3.org the same extension name.
+- The TYPO3 constraint in ``ext_emconf.php`` ends at 14.3.99, the last
+  TYPO3 v14 release line, as the ``^14.3`` in ``composer.json`` does.
+
+Other
+-----
+
+- Source files carry SPDX licence and copyright notices, and the PHP code
+  follows the shared PHP-CS-Fixer configuration. Neither changes behaviour.
+- The release archive no longer contains ``package-lock.json``,
+  ``renovate.json``, ``.bestpractices.json``, ``.sonarcloud.properties``
+  and ``.php-ast-edit.json``.
+
 1.0.1
 =====
 
