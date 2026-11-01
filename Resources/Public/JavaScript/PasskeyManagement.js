@@ -84,9 +84,13 @@ class PasskeyManagement {
       this.addBtn.addEventListener('click', () => this.handleAddPasskey());
     }
 
-    this.loadPasskeys();
+    void this.loadPasskeys();
   }
 
+  /**
+   * Reload the passkey list. A failure is shown as a notification, so the
+   * returned promise never rejects and callers discard it with `void`.
+   */
   async loadPasskeys() {
     try {
       const response = await new AjaxRequest(this.listUrl).get();
@@ -284,7 +288,7 @@ class PasskeyManagement {
         if (nameInput) {
           nameInput.value = 'Passkey';
         }
-        this.loadPasskeys();
+        void this.loadPasskeys();
       } else {
         Notification.error(
           this.translate('js.manage.register.failed.title', 'Registration failed'),
@@ -399,7 +403,7 @@ class PasskeyManagement {
                   this.translate('js.manage.remove.success.title', 'Passkey removed'),
                   this.translate('js.manage.remove.success.body', 'Passkey removed successfully.'),
                 );
-                this.loadPasskeys();
+                void this.loadPasskeys();
               } else {
                 Notification.error(
                   this.translate('js.manage.remove.failed.title', 'Remove failed'),

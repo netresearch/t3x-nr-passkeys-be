@@ -24,7 +24,7 @@ if (!\defined('LF')) {
     \define('LF', "\n");
 }
 
-require __DIR__ . '/../.Build/vendor/autoload.php';
+require_once __DIR__ . '/../.Build/vendor/autoload.php';
 BypassFinals::enable();
 
 // NormalizedParams::createFromServerParams() reads Environment::getCurrentScript()

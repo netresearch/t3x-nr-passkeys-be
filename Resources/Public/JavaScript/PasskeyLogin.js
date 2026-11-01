@@ -126,7 +126,7 @@ function init() {
   // button otherwise. See passkeys.dev "Conditional UI".
   if (config.discoverableEnabled && usernameInput
       && typeof PublicKeyCredential.isConditionalMediationAvailable === 'function') {
-    startConditionalLogin();
+    void startConditionalLogin();
     // Typing is the user saying they are still here. Give the autofill another
     // run of attempts, in case whatever made the earlier ones fail is gone —
     // a security key that was plugged in since, for instance.
@@ -178,14 +178,18 @@ function init() {
       if (document.activeElement === usernameInput) {
         usernameInput.addEventListener('blur', function onBlur() {
           usernameInput.removeEventListener('blur', onBlur);
-          startConditionalLogin();
+          void startConditionalLogin();
         });
         return;
       }
-      startConditionalLogin();
+      void startConditionalLogin();
     }, conditionalRefreshMs);
   }
 
+  /**
+   * Arm the conditional ceremony. Every failure is handled in here, so the
+   * returned promise never rejects and callers discard it with `void`.
+   */
   async function startConditionalLogin() {
     let available = false;
     try {
@@ -216,10 +220,20 @@ function init() {
 
     // Prefetch discoverable assertion options quietly: a 429/rate-limit or any
     // error here must NOT surface on page load — the explicit button remains.
-    const optionsData = await fetchAssertionOptions('', true);
-    if (!optionsData || generation !== conditionalGeneration) return;
+    // That covers an answer that cannot be used as well: a 200 whose body is not
+    // JSON, or that carries no usable options. Nothing re-arms from here, because
+    // a server answering like this would only be asked again in a loop.
+    let optionsData;
+    let publicKeyOptions;
+    try {
+      optionsData = await fetchAssertionOptions('', true);
+      if (!optionsData || generation !== conditionalGeneration) return;
+      publicKeyOptions = buildPublicKeyOptions(optionsData.options);
+    } catch (err) {
+      console.error('Passkey conditional login error:', err);
+      return;
+    }
 
-    const publicKeyOptions = buildPublicKeyOptions(optionsData.options);
     const abort = new AbortController();
     conditionalAbort = abort;
     scheduleConditionalRefresh();
@@ -383,13 +397,13 @@ function init() {
     conditionalRetries += 1;
 
     if (delay === 0) {
-      startConditionalLogin();
+      void startConditionalLogin();
       return;
     }
     conditionalRetryTimer = setTimeout(function () {
       conditionalRetryTimer = null;
       if (navigatingAway) return;
-      startConditionalLogin();
+      void startConditionalLogin();
     }, delay);
   }
 
