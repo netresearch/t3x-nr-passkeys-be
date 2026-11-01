@@ -9,6 +9,25 @@
 Changelog
 =========
 
+1.0.3
+=====
+
+Bugfixes
+--------
+
+- The backend login page no longer ends in an unhandled promise rejection
+  when the options endpoint answers the conditional-login prefetch with a
+  200 whose body is not JSON or carries no usable options. The error is
+  logged to the browser console, the passkey button stays the way in, and
+  the prefetch is not repeated.
+
+Other
+-----
+
+- ``PasskeyDashboard.js`` and ``PasskeyManagement.js`` discard the promises
+  of calls that handle their own failures with ``void``. Neither changes
+  behaviour.
+
 1.0.2
 =====
 
