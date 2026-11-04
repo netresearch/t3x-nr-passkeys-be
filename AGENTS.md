@@ -123,6 +123,7 @@ Golden samples per area live in the scoped AGENTS.md files (Classes, Tests).
 - RateLimiterService uses atomic locking (LockFactory) with dual counters (per-IP + per-username)
 - Encryption key access centralized in ExtensionConfigurationService::getEncryptionKey()
 - Dashboard widgets (`Classes/Widgets/`) are registered on TYPO3 v14.3+ only via the guarded `Configuration/Services.Dashboard.php`
+- The public API reaches past this repository: [`netresearch/t3x-nr-passkeys-fe`](https://github.com/netresearch/t3x-nr-passkeys-fe) requires this extension and imports `Service\RateLimiterService`, `Service\ChallengeService`, `Service\ExtensionConfigurationService`, `Domain\Dto\PasskeyAudienceStats` and `Widgets\Adoption\PasskeyAdoptionStatsProviderInterface`. Before removing or changing a public method, class or constructor there, search the frontend's `Classes/` for the symbol. For a change both need, the frontend migrates first and this extension's breaking release follows; the reverse order makes the broken pair installable for a release.
 
 ## Index of Scoped AGENTS.md
 - `./Classes/AGENTS.md` -- PHP source code patterns, traits, and TYPO3 conventions
