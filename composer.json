@@ -46,6 +46,9 @@
         "typo3/cms-dashboard": "^12.4 || ^13.4 || ^14.3",
         "phpat/phpat": "^0.12"
     },
+    "conflict": {
+        "symfony/serializer": ">=8.0,<8.1"
+    },
     "suggest": {
         "typo3/cms-dashboard": "Adds passkey adoption and credential-count widgets to the TYPO3 dashboard"
     },
