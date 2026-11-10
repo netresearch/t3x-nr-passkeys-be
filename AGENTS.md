@@ -125,6 +125,11 @@ Golden samples per area live in the scoped AGENTS.md files (Classes, Tests).
 - Dashboard widgets (`Classes/Widgets/`) are registered on TYPO3 v14.3+ only via the guarded `Configuration/Services.Dashboard.php`
 - The public API reaches past this repository: [`netresearch/t3x-nr-passkeys-fe`](https://github.com/netresearch/t3x-nr-passkeys-fe) requires this extension and imports `Service\RateLimiterService`, `Service\ChallengeService`, `Service\ExtensionConfigurationService`, `Domain\Dto\PasskeyAudienceStats` and `Widgets\Adoption\PasskeyAdoptionStatsProviderInterface`. Before removing or changing a public method, class or constructor there, search the frontend's `Classes/` for the symbol. For a change both need, the frontend migrates first and this extension's breaking release follows; the reverse order makes the broken pair installable for a release.
 
+## Changelog
+
+- There is no `CHANGELOG.md`. Changes are recorded in [`Documentation/Changelog/Index.rst`](Documentation/Changelog/Index.rst), newest first: the version as a title underlined with `=`, then `Bugfixes`, `Other` and similar subsections underlined with `-`.
+- The release PR `chore(release): vX.Y.Z` writes the version's section; feature and fix PRs leave the page alone.
+
 ## Index of Scoped AGENTS.md
 - `./Classes/AGENTS.md` -- PHP source code patterns, traits, and TYPO3 conventions
 - `./Tests/AGENTS.md` -- Test structure, commands, and patterns
