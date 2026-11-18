@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
 
+use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
 use Psr\Log\LoggerInterface;
@@ -32,11 +33,15 @@ final readonly class ConsumedTokenStore
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
 
         if (random_int(1, 64) === 1) {
-            $this->pruneExpired();
+            try {
+                $this->pruneExpired();
+            } catch (DbalException $error) {
+                $this->logger->warning('Passkey token cleanup failed.', ['exception' => $error::class]);
+            }
         }
 
         try {
-            return $connection->insert(self::TABLE, ['token_hash' => hash('sha256', $key), 'expires_at' => $expiresAt]) === 1;
+            return $connection->insert(self::TABLE, ['token_hash' => hash('sha256', $key), 'expires_at' => $expiresAt]) === 1 && time() < $expiresAt;
         } catch (UniqueConstraintViolationException) {
             $this->logger->notice('Rejected a previously consumed passkey token.');
 
