@@ -30,38 +30,19 @@ This is the recommended way to install the extension:
 
     composer require netresearch/nr-passkeys-be
 
-Activate the extension
-======================
-
-After installation, activate the extension in the TYPO3 backend:
-
-1. Go to :guilabel:`Admin Tools > Extensions`
-2. Search for "Passkeys Backend Authentication"
-3. Click the activate button
-
-Or use the CLI:
-
-..  code-block:: bash
-    :caption: Activate via CLI
-
-    vendor/bin/typo3 extension:activate nr_passkeys_be
-
 Database schema update
 ======================
 
-The extension adds a ``tx_nrpasskeysbe_credential`` table. After
-activation, run the database schema update:
-
-1. Go to :guilabel:`Admin Tools > Maintenance > Analyze Database
-   Structure`
-2. Apply the suggested changes
-
-Or use the CLI:
+Run the TYPO3 setup command during deployment, before the first request
+reaches the updated extension. It installs the credential, consumed-token
+and rate-limit tables and updates the backend user and group tables.
 
 ..  code-block:: bash
-    :caption: Update database schema via CLI
 
-    vendor/bin/typo3 database:updateschema
+    vendor/bin/typo3 extension:setup
+
+Use the Maintenance module's database structure analyzer to verify the
+result. For a cluster deployment follow :ref:`security-deployment`.
 
 Verify the installation
 =======================
