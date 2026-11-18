@@ -187,6 +187,16 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         if ($ticket !== null && $tokenUid > 0 && $tokenUid === (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
             try {
+                $creditMfa = $this->shouldCreditMfa($ticket['userVerified']);
+            } catch (Throwable $error) {
+                $this
+                    ->getLogger()
+                    ->error('Passkey MFA configuration unavailable', ['exception' => $error::class]);
+
+                return 0;
+            }
+
+            try {
                 if (!GeneralUtility::makeInstance(ConsumedTokenStore::class)->claim(
                     'login:' . $this->extractLoginToken(),
                     $ticket['expiresAt'],
@@ -203,7 +213,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
             $this->consumePasskeyToken();
 
-            if (!$this->markSessionAsPasskeyAuthenticated($user, $ticket['userVerified'])) {
+            if (!$this->markSessionAsPasskeyAuthenticated($user, $creditMfa)) {
                 return 0;
             }
 
@@ -315,7 +325,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                     ],
                 );
 
-            if (!$this->markSessionAsPasskeyAuthenticated($user, $result->userVerified)) {
+            if (!$this->markSessionAsPasskeyAuthenticated($user, $this->shouldCreditMfa($result->userVerified))) {
                 return 0;
             }
 
@@ -401,7 +411,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      *
      * @param array<string, mixed> $user
      */
-    private function markSessionAsPasskeyAuthenticated(array $user, bool $userVerified): bool
+    private function markSessionAsPasskeyAuthenticated(array $user, bool $creditMfa): bool
     {
         $session = $this->pObj->getSession();
         $owner   = $session->getUserId() ?? 0;
@@ -416,10 +426,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $data['passkey_authenticated'] = true;
         $markers                       = ['tx_nrpasskeysbe' => $data];
 
-        if ($userVerified && $this
-            ->getExtensionConfigService()
-            ->getConfiguration()
-            ->isSkipMfaOnPasskeyAuth()) {
+        if ($creditMfa) {
             $markers['mfa'] = true;
         }
 
@@ -434,6 +441,14 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         }
 
         return true;
+    }
+
+    private function shouldCreditMfa(bool $userVerified): bool
+    {
+        return $userVerified && $this
+            ->getExtensionConfigService()
+            ->getConfiguration()
+            ->isSkipMfaOnPasskeyAuth();
     }
 
     /**

@@ -186,6 +186,31 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
+    public function anUnavailableMfaPolicyLeavesTheVerifiedTicketForRetry(): void
+    {
+        GeneralUtility::purgeInstances();
+        $config = $this->createStub(ExtensionConfigurationService::class);
+        $config
+            ->method('getConfiguration')
+            ->willThrowException(new RuntimeException('configuration unavailable'));
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $config);
+        $store = $this->createMock(ConsumedTokenStore::class);
+        $store
+            ->expects(self::never())
+            ->method('claim');
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
+        $cache = $this->stubTokenCache(
+            'retry',
+            json_encode(['uid' => 42, 'expiresAt' => time() + 120, 'userVerified' => true], JSON_THROW_ON_ERROR),
+        );
+        $cache
+            ->expects(self::never())
+            ->method('remove');
+        $this->subject->login = ['uname' => '', 'uident' => $this->buildTokenUident('retry')];
+        self::assertSame(0, $this->subject->authUser(['uid' => 42]));
+    }
+
+    #[Test]
     public function unavailableTicketStorageDeniesLoginAndRecordsTheFailure(): void
     {
         $store = $this->createStub(ConsumedTokenStore::class);
