@@ -57,6 +57,23 @@ final class RecoveryCommandTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function unknownGroupReportsFailureAndLeavesExistingGroupsEnforced(): void
+    {
+        $db = $this
+            ->getConnectionPool()
+            ->getConnectionForTable('be_groups');
+        $before = $db
+            ->select(['passkey_suspended_until'], 'be_groups', ['uid' => 1])
+            ->fetchOne();
+        self::assertNotFalse($before);
+        self::assertSame(1, $this->tester->execute(['--disable-group' => '9999']));
+        self::assertStringContainsString('Group not found', $this->tester->getDisplay());
+        self::assertSame($before, $db
+            ->select(['passkey_suspended_until'], 'be_groups', ['uid' => 1])
+            ->fetchOne());
+    }
+
+    #[Test]
     public function listShowsEveryGroupThatIsNotDeletedWithItsEnforcement(): void
     {
         GeneralUtility::makeInstance(ConnectionPool::class)
