@@ -928,7 +928,7 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
-    public function passesThroughWhenPasskeyAuthenticated(): void
+    public function startsRequiredGracePeriodOnPasskeyLoginWithoutPrompting(): void
     {
         $backendUser       = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
@@ -938,7 +938,21 @@ final class PasskeySetupInterstitialTest extends TestCase
             ->willReturn(['passkey_authenticated' => true]);
         $GLOBALS['BE_USER'] = $backendUser;
 
-        // No enforcement mock needed — exits before checking enforcement
+        $this->enforcementService
+            ->expects(self::once())
+            ->method('getStatus')
+            ->willReturn(
+                new EnforcementStatus(
+                    level: EnforcementLevel::Required,
+                    gracePeriodDays: 14,
+                    gracePeriodStart: 0,
+                    hasPasskeys: true,
+                ),
+            );
+        $this->enforcementService
+            ->expects(self::once())
+            ->method('startGracePeriod')
+            ->with(1);
         $request = $this->createMockRequest('main');
         $handler = $this->createMockHandler();
         $handler

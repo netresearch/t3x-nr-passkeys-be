@@ -130,10 +130,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         $sessionData  = $backendUser->getSessionData(self::SESSION_KEY);
         $sessionArray = is_array($sessionData) ? $sessionData : [];
 
-        // Users who authenticated via passkey should never see the interstitial
-        if (($sessionArray['passkey_authenticated'] ?? false) === true) {
-            return $handler->handle($request);
-        }
+        $passkeyAuthenticated = ($sessionArray['passkey_authenticated'] ?? false) === true;
 
         // Never interstitial a switch-user (impersonation) session: passkey
         // registration is refused in that mode (ManagementController), so the prompt
@@ -149,7 +146,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         }
 
         // Handle skip POST with CSRF nonce validation
-        if ($request->getMethod() === 'POST') {
+        if (!$passkeyAuthenticated && $request->getMethod() === 'POST') {
             $parsedBody = $request->getParsedBody();
 
             if (is_array($parsedBody) && ($parsedBody['passkey_setup_skip'] ?? '') === '1') {
@@ -191,7 +188,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
             $this->enforcementService->startGracePeriod($uid);
         }
 
-        if (!$status->requiresInterstitial()) {
+        if ($passkeyAuthenticated || !$status->requiresInterstitial()) {
             // Cache the clear decision so subsequent requests skip the queries.
             $sessionArray['enforcement_ok_at'] = $now;
             $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);
