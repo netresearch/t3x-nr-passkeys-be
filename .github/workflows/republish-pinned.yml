@@ -1,0 +1,197 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+# Upstream: netresearch/typo3-ci-workflows@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
+# The CI repository check verifies the upstream file and the three publishing pins.
+name: Republish
+
+# Manually re-run publish steps against an existing tag. Meant to be wrapped
+# by a consumer `workflow_dispatch` in each extension so a maintainer can
+# recover a partially-failed release (e.g. TER accepted, Packagist didn't)
+# without cutting a new version. All sub-steps are idempotent — running
+# republish against a fully-published version is a safe no-op.
+#
+# Does not touch the GitHub release, so the "Publication status" section of
+# its body keeps the result of the last orchestrator run. For a release whose
+# targets failed during the release run, re-run the orchestrator
+# `release-typo3-extension.yml` on the tag instead: it leaves a published
+# release as it is, retries the targets and rewrites that section. It also
+# creates the release if the first run never got that far.
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Git tag to republish (e.g. "v0.8.0")
+        required: true
+        type: string
+      target:
+        description: Which publish target(s) to re-run
+        required: true
+        type: string   # 'ter' | 'docs' | 'packagist' | 'all'
+      extension-key:
+        description: |
+          Deprecated, no longer consumed. publish-to-ter.yml now resolves the
+          extension key from composer.json. Kept as an optional input so
+          existing callers don't break — safe to omit.
+        required: false
+        type: string
+        default: ''
+      package-name:
+        description: |
+          Composer package name. Required when target is `packagist`,
+          `docs`, or `all`. Optional (and ignored) when target is `ter`,
+          since publish-to-ter.yml resolves the package from
+          composer.json on the checked-out ref.
+        required: false
+        type: string
+        default: ''
+      vendor:
+        description: |
+          Deprecated, no longer consumed. The docs.typo3.org URL is derived
+          from package-name now. Safe to omit.
+        required: false
+        type: string
+        default: ''
+      exclude-from-packaging:
+        description: |
+          Path, relative to the checkout root, of a PHP file replacing tailor's
+          conf/ExcludeFromPackaging.php for the TER zip. Pass the same value the
+          release used, otherwise a republish repacks the unfiltered set and
+          undoes the filtering of the version it is meant to restore.
+        required: false
+        type: string
+        default: ''
+    secrets:
+      TYPO3_TER_ACCESS_TOKEN:
+        required: false
+
+# CALLER REQUIREMENTS
+# ===================
+# When calling this reusable workflow, the caller's job-level
+# `permissions:` block MUST grant at least this full set, otherwise
+# the run fails with `startup_failure` before any job executes
+# (GitHub rejects the workflow at startup when the reusable declares
+# a permission the caller did not grant). NOTE: setting ANY scope in a
+# `permissions:` block forces every UNLISTED scope to `none`, and a job
+# that omits `permissions:` inherits the repository default
+# (default_workflow_permissions) — so a repo hardened to `read` will
+# startup-fail here unless these scopes are granted explicitly.
+#
+#   jobs:
+#     resolve-version:
+#       uses: netresearch/typo3-ci-workflows/.github/workflows/republish.yml@main
+#       permissions:
+#         contents: read
+permissions: {}
+
+jobs:
+  resolve-version:
+    name: Validate inputs and resolve version
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Validate target
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          # Reject unknown target values explicitly; otherwise every
+          # republish-* job's `if:` evaluates false and the workflow
+          # silently succeeds with no work done — a typo would look
+          # indistinguishable from a real republish.
+          case "$TARGET" in
+            ter|docs|packagist|all) ;;
+            *)
+              echo "::error::Invalid target: '$TARGET' (expected one of: ter, docs, packagist, all)"
+              exit 1
+              ;;
+          esac
+
+      - name: Validate per-target inputs
+        env:
+          TARGET: ${{ inputs.target }}
+          PACKAGE_NAME: ${{ inputs.package-name }}
+          TER_TOKEN: ${{ secrets.TYPO3_TER_ACCESS_TOKEN }}
+        run: |
+          # package-name is needed by Packagist and docs verification;
+          # TER resolves the package from composer.json instead.
+          case "$TARGET" in
+            packagist|docs|all)
+              if [[ -z "$PACKAGE_NAME" ]]; then
+                echo "::error::package-name is required when target is '$TARGET'"
+                exit 1
+              fi
+              ;;
+          esac
+
+          # Preflight the TER token so the failure surfaces here with a
+          # clear message, not deep inside publish-to-ter.yml.
+          case "$TARGET" in
+            ter|all)
+              if [[ -z "$TER_TOKEN" ]]; then
+                echo "::error::TYPO3_TER_ACCESS_TOKEN secret is required when target is '$TARGET'"
+                exit 1
+              fi
+              ;;
+          esac
+
+      - name: Strip v-prefix
+        id: v
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          V="${TAG#v}"
+          if ! echo "$V" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid tag format: $TAG (expected semver, optionally v-prefixed)"
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+
+  republish-ter:
+    name: TER
+    if: inputs.target == 'ter' || inputs.target == 'all'
+    needs: resolve-version
+    permissions:
+      contents: read
+    uses: netresearch/typo3-ci-workflows/.github/workflows/publish-to-ter.yml@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
+    with:
+      ref: ${{ inputs.tag }}
+      exclude-from-packaging: ${{ inputs.exclude-from-packaging }}
+    # Explicit secret pass-through (NOT `secrets: inherit`) so a
+    # compromised action in the called workflow can't reach unrelated
+    # org secrets. Forwards only the TER token actually needed.
+    secrets:
+      TYPO3_TER_ACCESS_TOKEN: ${{ secrets.TYPO3_TER_ACCESS_TOKEN }}
+
+  republish-packagist:
+    name: Packagist
+    if: inputs.target == 'packagist' || inputs.target == 'all'
+    needs: resolve-version
+    # Verify-only: Packagist's GitHub integration auto-updates on push/tag.
+    # This job just polls until the version is visible in the P2 API.
+    permissions:
+      contents: read
+    uses: netresearch/typo3-ci-workflows/.github/workflows/publish-to-packagist.yml@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
+    with:
+      package-name: ${{ inputs.package-name }}
+      version: ${{ needs.resolve-version.outputs.version }}
+
+  republish-docs:
+    name: docs.typo3.org
+    if: inputs.target == 'docs' || inputs.target == 'all'
+    needs: resolve-version
+    # Verify-only: docs.typo3.org renders via Intercept's GitHub push webhook,
+    # independent of TER. Runs in parallel with the TER and Packagist jobs.
+    permissions:
+      contents: read
+    uses: netresearch/typo3-ci-workflows/.github/workflows/publish-to-docs.yml@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
+    with:
+      package-name: ${{ inputs.package-name }}

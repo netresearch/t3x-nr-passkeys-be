@@ -1,0 +1,893 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+# Upstream: netresearch/typo3-ci-workflows@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
+# The CI repository check verifies the upstream file and the three publishing pins.
+name: Release (TYPO3 extension)
+
+# Orchestrator for the full TYPO3-extension release pipeline.
+#
+# A release is the signed tag plus its GitHub release. TER, Packagist and
+# docs.typo3.org are publication targets: a target that fails does not undo
+# or withhold the release, it turns the run red and is shown as failed in the
+# release body.
+#
+# Order of operations:
+#
+#   1. build-and-sign — create archives, SBOMs, checksums, Cosign signatures,
+#      build-provenance attestations. Uploads everything as the `dist` run
+#      artifact. No external publishing yet.
+#   2. create-release — the GitHub release is created with every artifact the
+#      build produced. Under GitHub "Immutable Releases" the tag and the
+#      assets are locked from here on; title and body stay editable. Its body
+#      carries a "Publication status" section between two HTML-comment
+#      markers, pending until step 4.
+#   3. publish-to-ter, verify-packagist, verify-docs — run in parallel after
+#      the release exists. docs.typo3.org renders via Intercept's GitHub-push
+#      webhook (independent of TER). Each sub-workflow is idempotent and polls
+#      its respective service until the new version is visible.
+#   4. publication-status — writes the result of every target into the marked
+#      section of the release body, whether the targets succeeded or not.
+#
+# Recovery: re-run the tag-push run of the caller's release workflow. For a
+# failed target, re-run the failed jobs (`gh run rerun <run-id> --failed`, or
+# "Re-run failed jobs" in the UI). For a release left as a draft, re-run all
+# jobs (`gh run rerun <run-id>`): the dist artifact is kept for one day, so a
+# later failed-jobs re-run has nothing to upload. GitHub allows re-runs for 30
+# days after the run. A caller whose release workflow also declares
+# `workflow_dispatch` can start a fresh run on the tag instead
+# (`gh workflow run release.yml --ref vX.Y.Z`). Either way a published release
+# is left as it is — no asset is uploaded again — the targets run again, and
+# the status section is rewritten. A release left as a draft by a failed asset
+# upload loses its partial assets and gets the full set of the current build,
+# then is published.
+
+on:
+  workflow_call:
+    inputs:
+      archive-prefix:
+        description: 'Prefix for release archive files (e.g., "nr-passkeys-be")'
+        required: true
+        type: string
+      package-name:
+        description: 'Composer package name (e.g., "netresearch/nr-passkeys-be")'
+        required: true
+        type: string
+      extension-key:
+        description: 'TYPO3 extension key (e.g., "nr_passkeys_be")'
+        required: true
+        type: string
+      vendor:
+        description: |
+          Deprecated, no longer consumed. The docs.typo3.org URL is derived
+          from package-name now. Safe to omit.
+        required: false
+        type: string
+        default: ''
+      include-sbom:
+        description: Include SPDX and CycloneDX SBOMs as release assets
+        required: false
+        type: boolean
+        default: true
+      sign-artifacts:
+        description: Sign artifacts with Cosign keyless signing
+        required: false
+        type: boolean
+        default: true
+      skip-ter:
+        description: Skip TER publish + verification (for testing only)
+        required: false
+        type: boolean
+        default: false
+      derive-tags-from-composer:
+        description: >-
+          Derive the TER tags from composer.json keywords, dropping the terms
+          TER already implies. Off by default; see publish-to-ter.yml for why
+          enabling it hands tag curation over to the repository.
+        required: false
+        type: boolean
+        default: false
+      exclude-from-packaging:
+        description: >-
+          Path, relative to the checkout root, of a PHP file replacing tailor's
+          conf/ExcludeFromPackaging.php for the TER zip. See publish-to-ter.yml
+          for the contract; empty leaves tailor's built-in list in force.
+        required: false
+        type: string
+        default: ''
+      skip-packagist:
+        description: Skip Packagist publish + verification
+        required: false
+        type: boolean
+        default: false
+      skip-docs:
+        description: Skip docs.typo3.org verification
+        required: false
+        type: boolean
+        default: false
+      make-latest:
+        description: >-
+          Let this release become the repository's "Latest" release. With
+          true, it becomes Latest only when its version is the highest of all
+          published, non-prerelease releases, so a maintenance release of an
+          older major line leaves the badge — and the /releases/latest
+          redirect — on the newest version. false keeps it off Latest in every
+          case.
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      TYPO3_TER_ACCESS_TOKEN:
+        required: false
+
+# CALLER REQUIREMENTS
+# ===================
+# When calling this reusable workflow, the caller's job-level
+# `permissions:` block MUST grant at least this full set, otherwise
+# the run fails with `startup_failure` before any job executes
+# (GitHub rejects the workflow at startup when the reusable declares
+# a permission the caller did not grant). NOTE: setting ANY scope in a
+# `permissions:` block forces every UNLISTED scope to `none`, and a job
+# that omits `permissions:` inherits the repository default
+# (default_workflow_permissions) — so a repo hardened to `read` will
+# startup-fail here unless these scopes are granted explicitly.
+#
+#   jobs:
+#     build-and-sign:
+#       uses: netresearch/typo3-ci-workflows/.github/workflows/release-typo3-extension.yml@main
+#       permissions:
+#         attestations: write
+#         contents: write
+#         id-token: write
+permissions: {}
+
+jobs:
+  build-and-sign:
+    name: Build & sign artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release-notes: ${{ steps.notes.outputs.notes }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve version from tag
+        id: version
+        env:
+          ARCHIVE_PREFIX: ${{ inputs.archive-prefix }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid version derived from tag: $GITHUB_REF_NAME"
+            exit 1
+          fi
+          if [[ "$ARCHIVE_PREFIX" == *..* ]] || [[ "$ARCHIVE_PREFIX" == /* ]]; then
+            echo "::error::Invalid archive-prefix: $ARCHIVE_PREFIX"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Check composer.json version matches the release
+        # TYPO3 14.3 takes an extension's version from extra.typo3/cms.version,
+        # falling back to the top-level version, on every path (Package.php
+        # line 158 at v14.3.7). ext_emconf.php overrides only the top-level
+        # version (PackageManager.php line 1010), and it is not read at all
+        # once extra.typo3/cms.Package.providesPackages is set together with
+        # version or extra.typo3/cms.version (lines 941 and 966-973). So a
+        # stale extra.typo3/cms.version always wins over ext_emconf.php, and a
+        # stale top-level version wins once providesPackages is set. TYPO3
+        # 13.4 never reads extra.typo3/cms.version, so for 13.4 this check is
+        # stricter than needed. Each field that is set must equal the release
+        # version exactly. That is a policy, not what 14.3 needs: 14.3
+        # normalises "v1.2.3" to "1.2.3". But 13.4, when it does not read
+        # ext_emconf.php, shows the top-level version as written (in classic
+        # mode PackageManager.php line 893 at v13.4.35 overwrites it with the
+        # ext_emconf.php value first), and an exact match keeps both fields
+        # unambiguous. When neither field is set, nothing is compared. The
+        # same block runs in release-typo3-extension.yml and
+        # publish-to-ter.yml; Build/Scripts/check-composer-version-guard.sh
+        # executes both and fails if they drift apart.
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [[ ! -f composer.json ]]; then
+            echo "No composer.json -- nothing to compare"
+            exit 0
+          fi
+          # Exactly one JSON document. `jq empty` also accepts an empty file
+          # and several concatenated documents, and the checks below would
+          # then read only some of them.
+          if ! jq -e -s 'length == 1' composer.json >/dev/null 2>&1; then
+            echo "::error file=composer.json::composer.json is not a single valid JSON document, so its version fields cannot be compared with the release version."
+            exit 1
+          fi
+          # A container that is present but not an object would read as "field
+          # not set" below and let a stale version through. null counts as
+          # absent, as it does for TYPO3. Both values printed below are
+          # constants or jq type names and need no escaping.
+          BAD_PATH=$(jq -r '
+            def bad: . != null and type != "object";
+            if type != "object" then "the document root\t\(type)"
+            elif (.extra | bad) then "extra\t\(.extra | type)"
+            elif (.extra["typo3/cms"] | bad) then "extra.typo3/cms\t\(.extra["typo3/cms"] | type)"
+            else empty end' composer.json)
+          if [[ -n "$BAD_PATH" ]]; then
+            printf '::error file=composer.json::In composer.json, %s must be a JSON object, found %s, so extra.typo3/cms.version cannot be read and compared with the release version.\n' "${BAD_PATH%%$'\t'*}" "${BAD_PATH#*$'\t'}"
+            exit 1
+          fi
+          STATUS=0
+          CHECKED=0
+          for FIELD in extra.typo3/cms.version version; do
+            if [[ "$FIELD" == version ]]; then
+              FILTER='.version'
+            else
+              FILTER='.extra["typo3/cms"].version'
+            fi
+            HAS_FIELD=$(jq -r "$FILTER != null" composer.json)
+            if [[ "$HAS_FIELD" != "true" ]]; then
+              continue
+            fi
+            CHECKED=1
+            # Compared inside jq so the value is taken exactly as stored: a
+            # command substitution would drop trailing newlines.
+            MATCHES=$(jq -r --arg v "$VERSION" "$FILTER | tostring == \$v" composer.json)
+            # The trailing "x" keeps a newline at the end of the value, which
+            # the substitution would otherwise strip and the message would hide.
+            VALUE=$(jq -j "$FILTER | tostring" composer.json; printf x)
+            VALUE=${VALUE%x}
+            if [[ "$MATCHES" != "true" ]]; then
+              # Workflow-command data escaping, as actions/runner unescapes it
+              # (_escapeDataMappings in ActionCommand.cs): "%" first, then CR
+              # and LF. VERSION and FIELD need none: the previous step allows
+              # only digits and dots, and FIELD is one of two constants.
+              SHOWN=${VALUE//%/%25}
+              SHOWN=${SHOWN//$'\r'/%0D}
+              SHOWN=${SHOWN//$'\n'/%0A}
+              printf '::error file=composer.json::%s is "%s" but the version being released is "%s". Each version field must equal the tag exactly: TYPO3 14.3 takes the version from extra.typo3/cms.version, then from version, 13.4 shows the top-level version as written when it does not read ext_emconf.php, and an exact match keeps both fields unambiguous. For a new release, set %s to "%s" or remove it, then tag. A tag that is already pushed cannot be corrected: republishing it is refused, and the fix is a new release.\n' "$FIELD" "$SHOWN" "$VERSION" "$FIELD" "$VERSION"
+              STATUS=1
+            else
+              echo "composer.json $FIELD: $VALUE (matches)"
+            fi
+          done
+          if [[ "$CHECKED" -eq 0 ]]; then
+            echo "composer.json sets neither extra.typo3/cms.version nor version -- nothing to compare"
+          fi
+          exit "$STATUS"
+
+      - name: Generate release notes
+        id: notes
+        # Phase 1: one line per merge commit on main (PR title with #N). Avoids
+        # the duplicate "feature-branch commit + merge commit" noise the naive
+        # `git log` produced. Phase 3 swaps this for git-cliff + contributor
+        # and issue-reporter attribution.
+        run: |
+          DELIMITER="ghadelim_$(openssl rand -hex 8)"
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          {
+            echo "notes<<$DELIMITER"
+            if [[ -z "$PREVIOUS_TAG" ]]; then
+              echo "Initial release"
+            else
+              # --first-parent gives one line per commit on the trunk's
+              # first-parent line: merge commits (PR title with "#N")
+              # *and* any direct hotfix commits that landed straight on
+              # main without a PR. The earlier `--first-parent --merges`
+              # variant dropped direct commits whenever the range
+              # contained at least one merge — a release that mixed both
+              # would silently lose the direct ones.
+              # Falls back to --no-merges if --first-parent returns
+              # empty (rebase-merge strategy with squash + linear history
+              # rooted on a non-trunk branch — uncommon, but harmless).
+              LOG=$(git log --first-parent --pretty=format:"- %s" "${PREVIOUS_TAG}..HEAD")
+              if [[ -z "${LOG// }" ]]; then
+                LOG=$(git log --no-merges --pretty=format:"- %s" "${PREVIOUS_TAG}..HEAD")
+              fi
+              # Commit subjects are pasted into the release body verbatim, so a
+              # literal "@name" in a subject (e.g. "use @main for reusable
+              # workflows") becomes a GitHub user mention: it links a wholly
+              # unrelated account, lists it under the release's contributors and
+              # sends that person a notification. Wrap bare mentions in backticks
+              # so they render as text. Skips occurrences already preceded by a
+              # backtick or a word character (code spans, e-mail addresses).
+              # BT holds a literal backtick: writing one inside the sed script
+              # would trip shellcheck SC2016.
+              BT=$(printf '\140')
+              LOG=$(printf '%s\n' "$LOG" | sed -E "s/(^|[^${BT}[:alnum:]_])@([[:alnum:]][[:alnum:]-]*)/\\1${BT}@\\2${BT}/g")
+              echo "$LOG"
+              echo ""
+            fi
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create release archives
+        env:
+          ARCHIVE_PREFIX: ${{ inputs.archive-prefix }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p dist
+          git archive --format=zip --prefix="${ARCHIVE_PREFIX}/" HEAD -o "dist/${ARCHIVE_PREFIX}-${VERSION}.zip"
+          git archive --format=tar.gz --prefix="${ARCHIVE_PREFIX}/" HEAD -o "dist/${ARCHIVE_PREFIX}-${VERSION}.tar.gz"
+
+      - name: Generate SBOM (SPDX)
+        if: inputs.include-sbom
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: .
+          format: spdx-json
+          output-file: dist/${{ inputs.archive-prefix }}-${{ steps.version.outputs.version }}.sbom.spdx.json
+          # This job is least-privilege (contents: read). The dedicated
+          # "Create GitHub Release" job (contents: write) attaches all assets.
+          # sbom-action defaults to upload-release-assets: true, which fails
+          # here with "Resource not accessible by integration".
+          upload-release-assets: false
+
+      - name: Generate SBOM (CycloneDX)
+        if: inputs.include-sbom
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: dist/${{ inputs.archive-prefix }}-${{ steps.version.outputs.version }}.sbom.cdx.json
+          # See SPDX step above: contents: read job must not attach release assets.
+          upload-release-assets: false
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum ./* > checksums.txt
+          cat checksums.txt
+
+      - name: Install Cosign
+        if: inputs.sign-artifacts
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+
+      - name: Sign artifacts with Cosign (keyless)
+        if: inputs.sign-artifacts
+        run: |
+          cd dist
+          for file in *; do
+            [ -f "$file" ] || continue
+            case "$file" in
+              *.sigstore.json) continue ;;  # don't sign already-generated signature bundles
+            esac
+            # Use .sigstore.json (Sigstore bundle format) so OSSF Scorecard
+            # recognizes the artifact as signed. The bytes are identical to
+            # cosign's --bundle output; only the extension differs.
+            cosign sign-blob --yes "$file" --bundle "${file}.sigstore.json"
+          done
+
+      - name: Generate build-provenance attestation
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/${{ inputs.archive-prefix }}-${{ steps.version.outputs.version }}.zip
+            dist/${{ inputs.archive-prefix }}-${{ steps.version.outputs.version }}.tar.gz
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-dist
+          path: dist/
+          retention-days: 1
+          if-no-files-found: error
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-and-sign
+    # The release is the tag plus this GitHub release; TER, Packagist and
+    # docs.typo3.org run after it as publication targets and cannot withhold
+    # it. The publication-status job at the end writes their results into the
+    # marked section of the body.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # A manual retry started while the tag-push run is still going must not
+    # read "absent" at the same time and create the release twice.
+    concurrency:
+      group: release-create-${{ github.repository }}-${{ github.ref_name }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      # A re-run on the tag is the recovery path for a failed target, so this
+      # job must cope with a release that already exists. Under Immutable
+      # Releases the assets of a published release cannot be changed, and
+      # both the action and the completion step below would try to upload
+      # them. Three states:
+      #   absent    - create the release (the normal first run)
+      #   draft     - an earlier run died during the asset upload; the
+      #               completion step finishes it
+      #   published - leave it alone; only the targets and the status run
+      - name: Read the release state
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft' > draft.txt 2> view.err; then
+            if [[ "$(cat draft.txt)" == "true" ]]; then
+              STATE=draft
+            else
+              STATE=published
+            fi
+          elif grep -qi 'release not found' view.err; then
+            STATE=absent
+          else
+            # Any other failure (rate limit, network, permissions) must not
+            # read as "absent": that would try to create a second release.
+            echo "::error::Could not read the release for ${TAG}: $(cat view.err)"
+            exit 1
+          fi
+          echo "Release ${TAG}: ${STATE}"
+          echo "state=$STATE" >> "$GITHUB_OUTPUT"
+
+      # GitHub makes a new release Latest unless told otherwise, so a
+      # maintenance release of an older major line (v3.0.6 after v4.1.0) took
+      # the badge and the /releases/latest redirect from the newest version.
+      # Only the highest version becomes Latest. Versions are compared without
+      # a leading "v", because repositories changed their tag style over time
+      # and 4.0.0 must still outrank v3.0.6. The same step runs in release.yml;
+      # Build/Scripts/check-release-latest.sh runs both and fails if they
+      # drift apart.
+      - name: Decide whether this release becomes Latest
+        id: latest
+        if: steps.state.outputs.state != 'published'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          MAKE_LATEST: ${{ inputs.make-latest }}
+        run: |
+          set -euo pipefail
+          decide() { # true|false, message
+            echo "latest=$1" >> "$GITHUB_OUTPUT"
+            echo "$2"
+            exit 0
+          }
+          if [[ "$MAKE_LATEST" != "true" ]]; then
+            decide false "make-latest is false: ${TAG} does not become Latest."
+          fi
+          VERSION_RE='^[0-9]+\.[0-9]+\.[0-9]+$'
+          VERSION="${TAG#v}"
+          if ! [[ "$VERSION" =~ $VERSION_RE ]]; then
+            echo "::warning::${TAG} is not a vX.Y.Z or X.Y.Z tag and cannot be compared with the other releases, so it does not become Latest."
+            decide false "Latest stays where it is."
+          fi
+          LIST_DIR="$(mktemp -d)"
+          # A failed listing must not read as "no other releases": that would
+          # make every release Latest, the defect this step exists to prevent.
+          # It does not fail the release either; the badge stays where it is.
+          if ! gh api --paginate "repos/${REPO}/releases?per_page=100" \
+              --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name' \
+              > "${LIST_DIR}/tags" 2> "${LIST_DIR}/err"; then
+            echo "::warning::Could not list the releases of ${REPO}, so ${TAG} does not become Latest: $(tr '\n' ' ' < "${LIST_DIR}/err")"
+            decide false "Latest stays where it is."
+          fi
+          # This tag is added explicitly: on the first run its release does
+          # not exist yet, and on a re-run it may still be a draft.
+          HIGHEST="$({ sed 's/^v//' "${LIST_DIR}/tags"; echo "$VERSION"; } | grep -E "$VERSION_RE" | sort -u -V | tail -n 1)"
+          if [[ "$HIGHEST" == "$VERSION" ]]; then
+            decide true "${TAG} is the highest released version: it becomes Latest."
+          fi
+          echo "::notice::${TAG} is lower than the released ${HIGHEST}, so it does not become Latest."
+          decide false "Latest stays on ${HIGHEST}."
+
+      # build-and-sign checked out github.sha, the commit the tag pointed at
+      # when this run started, and a caller's release gate verified that same
+      # commit. A tag moved since then would attach this release, and every
+      # target that follows it, to a commit nobody built or checked.
+      - name: Check the tag still points at the built commit
+        if: steps.state.outputs.state != 'published'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          BUILT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          OBJECT="$(gh api "repos/${REPO}/git/ref/tags/${TAG}" --jq '.object.type + " " + .object.sha')"
+          TYPE="${OBJECT%% *}"
+          SHA="${OBJECT#* }"
+          if [[ "$TYPE" == "tag" ]]; then
+            SHA="$(gh api "repos/${REPO}/git/tags/${SHA}" --jq '.object.sha')"
+          fi
+          if [[ "$SHA" != "$BUILT" ]]; then
+            echo "::error::Tag ${TAG} now points at ${SHA}, but this run built ${BUILT}. Move the tag back or push a new one; nothing was published."
+            exit 1
+          fi
+          echo "Tag ${TAG} points at the built commit ${BUILT}."
+
+      - name: Download dist artifact
+        if: steps.state.outputs.state != 'published'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-dist
+          path: dist/
+
+      - name: Create GitHub Release (atomic, all assets)
+        id: gh-release
+        # Failure here is not the end of the release: the action creates the
+        # release as a draft, uploads every asset, and only then finalizes it,
+        # so an upload that dies leaves an unpublished draft with a partial
+        # asset set. The completion step below finishes the job or fails
+        # loudly, and `continue-on-error` is what lets it run at all.
+        continue-on-error: true
+        if: steps.state.outputs.state == 'absent'
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
+        with:
+          make_latest: ${{ steps.latest.outputs.latest }}
+          files: |
+            dist/*
+          fail_on_unmatched_files: true
+          # Sequentially, not in parallel. The default uploads every asset at
+          # once (`Promise.all` in the action's run.ts), and concurrent uploads
+          # against one release make GitHub's asset endpoint answer
+          # `Error creating asset temp dir` — a server-side failure with no
+          # retry behind it, which then aborts the whole step. Seen twice on
+          # one release, at a different asset each time.
+          preserve_order: true
+          body: |
+            ## Changes
+            ${{ needs.build-and-sign.outputs.release-notes }}
+
+            ## Installation
+
+            ```bash
+            composer require ${{ inputs.package-name }}
+            ```
+
+            <!-- publication-status:start -->
+            ## Publication status
+
+            Pending: TER, Packagist and docs.typo3.org run after this release is created.
+            <!-- publication-status:end -->
+
+            ## Security
+
+            All release artifacts are signed with [Sigstore](https://www.sigstore.dev/) keyless signing.
+
+            ### Verify signatures
+
+            ```bash
+            cosign verify-blob \
+              --bundle ${{ inputs.archive-prefix }}-${{ needs.build-and-sign.outputs.version }}.zip.sigstore.json \
+              --certificate-identity-regexp "https://github.com/${{ github.repository_owner }}/.*" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              ${{ inputs.archive-prefix }}-${{ needs.build-and-sign.outputs.version }}.zip
+            ```
+
+            ### Verify checksums
+
+            ```bash
+            sha256sum -c checksums.txt
+            ```
+
+            ## Software Bill of Materials (SBOM)
+
+            SBOMs are provided in both SPDX and CycloneDX formats for supply chain transparency.
+
+      # The guarantee this job is built on is that a published release is
+      # complete: every artifact the build produced, present, on a page nobody
+      # edited afterwards. GitHub's asset endpoint does not cooperate — it
+      # answers `Error creating asset temp dir` often enough that a release of
+      # ten assets hits it regularly, and neither the endpoint nor the action
+      # retries. `preserve_order` above removes the concurrency that provokes
+      # it; this step covers the rest, per asset rather than per run, so one
+      # bad upload costs one retry instead of the whole release.
+      #
+      # It is deliberately not a second author of the release. It uploads only
+      # files the build produced and the release is missing, and it publishes
+      # only once the set is complete: a release that cannot be completed stays
+      # an unpublished draft and the job fails, which is the same outcome as
+      # today minus the manual repair.
+      - name: Complete and publish the release
+        if: steps.state.outputs.state != 'published'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # This job never checks the repository out -- it only downloads
+          # `dist/` -- so `gh` has no git remote to infer the repository from
+          # and answers `fatal: not a git repository`. Every call below names
+          # it explicitly.
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          ATTEMPTS: '4'
+          STATE: ${{ steps.state.outputs.state }}
+          MAKE_LATEST: ${{ steps.latest.outputs.latest }}
+        run: |
+          set -euo pipefail
+
+          # Read the two sides into files rather than through a pipeline or a
+          # process substitution. `set -e` does not see a failure inside
+          # `<(...)`, so a `gh` call that dies there would hand the loop an
+          # empty "nothing is missing" answer and publish an incomplete
+          # release -- the exact fail-open this step exists to prevent.
+          [[ -d dist ]] || { echo "::error::dist/ is missing; nothing to upload."; exit 1; }
+          find dist -maxdepth 1 -type f -printf '%f\n' | sort > expected.txt
+          [[ -s expected.txt ]] || { echo "::error::dist/ holds no files."; exit 1; }
+
+          # A draft found at the start of this job was left by an earlier run
+          # whose build may differ from this one: the SBOMs carry a creation
+          # time and a namespace UUID, and every Cosign bundle is new. Keeping
+          # its assets and adding only the missing names would publish a
+          # checksums.txt and signatures that do not match the files next to
+          # them, on a release that cannot be changed afterwards. A draft can
+          # still be changed, so remove its assets and upload this build's set.
+          # This runs after the dist/ checks, so a missing build never empties
+          # the draft.
+          if [[ "$STATE" == "draft" ]]; then
+            gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name' > stale.txt
+            while IFS= read -r name; do
+              [[ -n "$name" ]] || continue
+              gh release delete-asset "$TAG" "$name" --repo "$REPO" --yes
+              echo "  removed ${name} from the draft"
+            done < stale.txt
+          fi
+
+          # Only assets the API reports as `uploaded` count as present. A
+          # failed upload can leave the name behind in `starter` state -- an
+          # empty asset that a name-only listing cannot tell from a real one,
+          # and that would let this step publish a release carrying a file
+          # nobody can use. `--clobber` replaces such a leftover.
+          read_present() {
+            if ! gh release view "$TAG" --repo "$REPO" --json assets \
+                --jq '.assets[] | select(.state == "uploaded") | .name' > present.raw 2> present.err; then
+              echo "::error::No release for ${TAG} to complete: $(cat present.err)"
+              exit 1
+            fi
+            sort present.raw > present.txt
+          }
+
+          for attempt in $(seq 1 "$ATTEMPTS"); do
+            read_present
+            comm -23 expected.txt present.txt > missing.txt
+            [[ -s missing.txt ]] || break
+
+            echo "Attempt ${attempt}/${ATTEMPTS}: $(wc -l < missing.txt) asset(s) missing:"
+            cat missing.txt
+
+            while IFS= read -r name; do
+              # --clobber so a half-written asset from a failed attempt is
+              # replaced rather than colliding with the retry.
+              if gh release upload "$TAG" "dist/${name}" --repo "$REPO" --clobber; then
+                echo "  uploaded ${name}"
+              else
+                echo "::warning::upload of ${name} failed on attempt ${attempt}; retrying"
+              fi
+            done < missing.txt
+
+            # An `if`, not `[[ … ]] && sleep`: as the last command of the loop
+            # body the latter returns 1 on the final round, and whether that
+            # trips `set -e` is a bash subtlety nobody should have to recall
+            # while reading a release path.
+            if [[ "$attempt" -lt "$ATTEMPTS" ]]; then
+              sleep $(( attempt * 5 ))
+            fi
+          done
+
+          # Verified after the last round, not before it: deciding inside the
+          # loop would spend one iteration on the verdict instead of on an
+          # upload, so ATTEMPTS would buy ATTEMPTS-1 tries.
+          read_present
+          comm -23 expected.txt present.txt > missing.txt
+          if [[ -s missing.txt ]]; then
+            echo "::error::Still missing after ${ATTEMPTS} attempts: $(paste -sd' ' missing.txt). The release stays an unpublished draft."
+            exit 1
+          fi
+          echo "All $(wc -l < expected.txt) assets are on the release."
+
+          if [[ "$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft')" == "true" ]]; then
+            echo "Publishing the completed release."
+            # --latest carries the decision of "Decide whether this release
+            # becomes Latest": without it this path would not pass it on, and a
+            # backport release could take the Latest badge from the top major
+            # line.
+            gh release edit "$TAG" --repo "$REPO" --draft=false --latest="$MAKE_LATEST"
+          fi
+
+  publish-to-ter:
+    name: Publish to TER
+    needs: [build-and-sign, create-release]
+    if: ${{ !inputs.skip-ter }}
+    # Declare permissions at the calling-job level so GitHub's startup-time
+    # validator sees that we can cover publish-to-ter.yml's inner
+    # `contents: read`. The workflow-level `permissions: {}` is empty and
+    # is inherited by `uses:` jobs just like by regular jobs — but an
+    # inherited empty set cannot satisfy the called workflow's required
+    # `contents: read`, so without this per-job grant the workflow fails
+    # with `startup_failure` and zero materialised jobs.
+    permissions:
+      contents: read
+    uses: netresearch/typo3-ci-workflows/.github/workflows/publish-to-ter.yml@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
+    with:
+      # The built commit, not the tag name: a tag moved after the build would
+      # otherwise put a different revision on TER than on GitHub.
+      ref: ${{ github.sha }}
+      # The release exists by now, but its body opens with the installation
+      # and verification boilerplate. Hand TER the change list itself.
+      release-notes: ${{ needs.build-and-sign.outputs.release-notes }}
+      derive-tags-from-composer: ${{ inputs.derive-tags-from-composer }}
+      exclude-from-packaging: ${{ inputs.exclude-from-packaging }}
+    # Explicit secret pass-through (NOT `secrets: inherit`) so a
+    # compromised action in the called workflow can't reach unrelated
+    # org secrets. Forwards only the TER token actually needed.
+    secrets:
+      TYPO3_TER_ACCESS_TOKEN: ${{ secrets.TYPO3_TER_ACCESS_TOKEN }}
+
+  verify-packagist:
+    name: Verify Packagist
+    needs: [build-and-sign, create-release]
+    if: ${{ !inputs.skip-packagist }}
+    # Packagist's GitHub integration auto-subscribes to push/tag events and
+    # rescans without our workflow having to do anything. This job only
+    # polls the Packagist API until the new version is visible.
+    permissions:
+      contents: read
+    uses: netresearch/typo3-ci-workflows/.github/workflows/publish-to-packagist.yml@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
+    with:
+      package-name: ${{ inputs.package-name }}
+      version: ${{ needs.build-and-sign.outputs.version }}
+
+  verify-docs:
+    name: Verify docs.typo3.org
+    needs: [build-and-sign, create-release]
+    # docs.typo3.org renders via the Intercept webhook subscribed to GitHub
+    # push events — independent of TER. Runs in parallel with the TER and
+    # Packagist jobs, no `needs:` coupling between the three.
+    if: ${{ !inputs.skip-docs }}
+    permissions:
+      contents: read
+    uses: netresearch/typo3-ci-workflows/.github/workflows/publish-to-docs.yml@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
+    with:
+      package-name: ${{ inputs.package-name }}
+
+  publication-status:
+    name: Record publication status
+    needs: [build-and-sign, create-release, publish-to-ter, verify-packagist, verify-docs]
+    # Runs whatever the targets did, as long as the release exists: a failed
+    # target is recorded as failed, not left as "pending". verify-docs is in
+    # `needs` for its `dispatched` output; docs.typo3.org renders through an
+    # external webhook and is reported, never waited for.
+    if: ${{ always() && needs.create-release.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Two runs on one tag must not read and rewrite the body at the same time.
+    concurrency:
+      group: release-status-${{ github.repository }}-${{ github.ref_name }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Compose verification-evidence block
+        id: evidence
+        env:
+          PACKAGE: ${{ inputs.package-name }}
+          KEY: ${{ inputs.extension-key }}
+          VERSION: ${{ needs.build-and-sign.outputs.version }}
+          TER_RESULT: ${{ needs.publish-to-ter.result }}
+          TER_COMMENT_REFUSED: ${{ needs.publish-to-ter.outputs.comment-refused }}
+          PKGST_RESULT: ${{ needs.verify-packagist.result }}
+          DOCS_RESULT: ${{ needs.verify-docs.result }}
+          DOCS_DISPATCHED: ${{ needs.verify-docs.outputs.dispatched }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          DELIMITER="ghadelim_$(openssl rand -hex 8)"
+          # Intercept maps the tag to a major.minor docs branch (v0.8.1 → 0.8),
+          # so the published URL uses major.minor, not the full semver.
+          DOCS_BRANCH=$(echo "$VERSION" | awk -F. '{printf "%s.%s", $1, $2}')
+          {
+            echo "block<<$DELIMITER"
+            echo "<!-- publication-status:start -->"
+            echo "## Publication status"
+            echo ""
+            if [[ "$TER_RESULT" == "success" ]]; then
+              echo "- TER: [extensions.typo3.org/extension/${KEY}](https://extensions.typo3.org/extension/${KEY}) — ${VERSION} verified"
+            elif [[ "$TER_RESULT" == "skipped" ]]; then
+              echo "- TER: skipped"
+            elif [[ "$TER_COMMENT_REFUSED" == "true" ]]; then
+              # A re-run sends the same comment from the same tag (#273).
+              echo "- TER: ${TER_RESULT} — TER refused the upload comment; a re-run of this workflow sends the same comment. The error in [the release run](${RUN_URL}) says how to correct it"
+            else
+              echo "- TER: ${TER_RESULT} — see [the release run](${RUN_URL}); re-run the release workflow on the tag to retry"
+            fi
+            if [[ "$PKGST_RESULT" == "success" ]]; then
+              echo "- Packagist: [packagist.org/packages/${PACKAGE}](https://packagist.org/packages/${PACKAGE}) — ${VERSION} verified"
+            elif [[ "$PKGST_RESULT" == "skipped" ]]; then
+              echo "- Packagist: skipped"
+            else
+              echo "- Packagist: ${PKGST_RESULT} — see [the release run](${RUN_URL}); re-run the release workflow on the tag to retry"
+            fi
+            # docs.typo3.org path uses the composer package name verbatim
+            # (`{vendor}/{repo-name}` with dashes), NOT the TYPO3 extension key
+            # (which uses underscores).
+            #
+            # "accepted by Intercept" is the strongest claim available here:
+            # the verify job no longer waits for the render to finish, so it
+            # knows the job was dispatched and nothing about its outcome.
+            # Saying "render verified" would overclaim.
+            if [[ "$DOCS_DISPATCHED" == "true" ]]; then
+              echo "- Documentation: [docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/](https://docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/) — render accepted by Intercept"
+            elif [[ "$DOCS_RESULT" == "skipped" ]]; then
+              echo "- Documentation: skipped"
+            else
+              # Render not yet confirmed (Intercept webhook down/slow at tag
+              # time). The release is published regardless; the render catches
+              # up on the next Intercept delivery.
+              echo "- Documentation: render pending — will appear at [docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/](https://docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/)"
+            fi
+            echo "<!-- publication-status:end -->"
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
+
+      # Replaces only the text between the two markers, so a body that was
+      # rewritten by hand after the first run keeps everything else. If both
+      # markers were removed, the section is appended. If only one of them is
+      # left, or either appears twice, the step fails: matching from an
+      # orphaned marker to a new one would delete the text between them.
+      - name: Write the publication status into the release body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          BLOCK: ${{ steps.evidence.outputs.block }}
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" --repo "$REPO" --json body --jq '.body' > body.md
+          python3 - body.md new-body.md <<'PY'
+          import os, sys
+          src, dst = sys.argv[1], sys.argv[2]
+          body = open(src, encoding="utf-8").read()
+          block = os.environ["BLOCK"].strip("\n")
+          start, end = "<!-- publication-status:start -->", "<!-- publication-status:end -->"
+          n_start, n_end = body.count(start), body.count(end)
+          if n_start == 1 and n_end == 1 and body.index(start) < body.index(end):
+              i, j = body.index(start), body.index(end) + len(end)
+              new = body[:i] + block + body[j:]
+          elif n_start == 0 and n_end == 0:
+              new = body.rstrip("\n") + "\n\n" + block + "\n"
+          else:
+              print(
+                  f"::error::The release body holds {n_start} start and {n_end} end "
+                  "marker(s) of the publication status section, not one ordered pair "
+                  "or none. Restore one pair, or remove both, and re-run this job."
+              )
+              sys.exit(1)
+          open(dst, "w", encoding="utf-8").write(new)
+          PY
+          gh release edit "$TAG" --repo "$REPO" --notes-file new-body.md
+          # Read back and compare with what was sent: this step is the one
+          # place the status reaches the reader. Trailing newlines are
+          # ignored: `--jq` adds one, and text mode already folds CRLF.
+          gh release view "$TAG" --repo "$REPO" --json body --jq '.body' > stored.md
+          python3 - new-body.md stored.md <<'PY'
+          import sys
+          def norm(path):
+              return open(path, encoding="utf-8").read().rstrip("\n")
+          if norm(sys.argv[1]) != norm(sys.argv[2]):
+              print("::error::The stored release body differs from the body this job sent.")
+              sys.exit(1)
+          PY
+          echo "Publication status written to ${TAG}."
