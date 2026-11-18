@@ -13,6 +13,7 @@ use Doctrine\DBAL\Exception as DatabaseException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Contracts\Service\Attribute\Required;
+use Throwable;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
@@ -233,11 +234,20 @@ final class RateLimiterService
         $ipKey   = $this->buildLockoutKey($username, $ip);
         $userKey = $this->buildUserLockoutKey($username);
 
-        if ($this->store instanceof DatabaseRateLimitStore) {
-            $this->store->forgetPair($this->databaseKey($ipKey), $this->databaseKey($userKey));
-        } else {
-            $this->rateLimitCache->remove($ipKey);
-            $this->rateLimitCache->remove($userKey);
+        try {
+            if ($this->store instanceof DatabaseRateLimitStore) {
+                $this->store->forgetPair($this->databaseKey($ipKey), $this->databaseKey($userKey));
+            } else {
+                $this->rateLimitCache->remove($ipKey);
+                $this->rateLimitCache->remove($userKey);
+            }
+        } catch (Throwable $error) {
+            $this->logger->error(
+                'Could not reset lockout counters after successful authentication',
+                ['exception' => $error::class],
+            );
+
+            return;
         }
 
         $this->logger->debug(
