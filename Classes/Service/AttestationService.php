@@ -134,6 +134,12 @@ final readonly class AttestationService
             user: $user,
             challenge: $challenge,
             pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
+            authenticatorSelection: AuthenticatorSelectionCriteria::create(
+                userVerification: $this->configService
+                    ->getConfiguration()
+                    ->getUserVerification(),
+                residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
+            ),
             attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
         );
 

@@ -77,10 +77,7 @@ final readonly class ExtensionConfiguration
     }
 
     /**
-     * Whether the TYPO3 MFA challenge should be skipped after a successful
-     * passkey authentication. A passkey already satisfies multi-factor
-     * (possession + biometric/PIN), so an additional TOTP step is redundant.
-     * Password-based logins remain unaffected and still go through MFA.
+     * Whether a user-verified passkey assertion satisfies the TYPO3 MFA step.
      */
     public function isSkipMfaOnPasskeyAuth(): bool
     {

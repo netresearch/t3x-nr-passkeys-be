@@ -291,7 +291,7 @@ final readonly class LoginController
         string $ip,
     ): ResponseInterface {
         try {
-            $this->webAuthnService->verifyAssertionResponse(
+            $verified = $this->webAuthnService->verifyAssertionResponse(
                 responseJson: $assertion,
                 challengeToken: $challengeToken,
                 beUserUid: $beUserUid,
@@ -321,7 +321,7 @@ final readonly class LoginController
 
         $this->rateLimiterService->recordSuccess($username, $ip);
 
-        return $this->issueLoginToken($beUserUid);
+        return $this->issueLoginToken($beUserUid, $verified->userVerified);
     }
 
     /**
@@ -335,10 +335,10 @@ final readonly class LoginController
      * lifetimes would otherwise turn it into a permanent credential. The TTL is
      * still passed so a compliant backend also drops the entry.
      */
-    private function issueLoginToken(int $beUserUid): ResponseInterface
+    private function issueLoginToken(int $beUserUid, bool $userVerified): ResponseInterface
     {
         $token   = bin2hex(random_bytes(32));
-        $payload = json_encode(['uid' => $beUserUid, 'expiresAt' => time() + self::LOGIN_TOKEN_TTL], JSON_THROW_ON_ERROR);
+        $payload = json_encode(['uid' => $beUserUid, 'expiresAt' => time() + self::LOGIN_TOKEN_TTL, 'userVerified' => $userVerified], JSON_THROW_ON_ERROR);
         $cache   = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce');
         $cache->set('passkey_login_' . $token, $payload, [], self::LOGIN_TOKEN_TTL);
 

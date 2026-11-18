@@ -250,7 +250,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
                 challengeToken: 'challenge-token-123',
                 beUserUid: 42,
             )
-            ->willReturn(new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class)));
+            ->willReturn(new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class), userVerified: true));
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess')
@@ -343,7 +343,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
-    public function authUserFailsOpenWhenEnforcementCheckThrows(): void
+    public function authUserRejectsPasswordWhenEnforcementCheckThrows(): void
     {
         // OPS-2: a database/enforcement failure must NOT lock every backend user out
         // of password login. On error the service logs and falls through (returns 100).
@@ -362,11 +362,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $this->injectLogger($subject, $this->logger);
         $subject->pObj = $this->pObj;
 
-        // No passkey payload -> password path -> enforcement check throws -> fail open.
+        // No passkey payload -> password path -> enforcement check fails.
         $subject->login = ['uname' => 'admin', 'uident' => 'regularPassword123'];
 
         $result = $subject->authUser(['uid' => 42, 'username' => 'admin']);
-        self::assertSame(100, $result, 'Enforcement-check failure must fail open (allow password auth)');
+        self::assertSame(0, $result, 'Password login requires a known enforcement policy');
     }
 
     #[Test]

@@ -342,7 +342,7 @@ final readonly class AssertionService
             ['be_user_uid' => $beUserUid, 'credential_uid' => $credential->getUid()],
         );
 
-        return new VerifiedAssertion(credential: $credential, source: $updatedSource);
+        return new VerifiedAssertion(credential: $credential, source: $updatedSource, userVerified: $response->authenticatorData->isUserVerified());
     }
 
     /**

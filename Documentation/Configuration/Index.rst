@@ -124,14 +124,10 @@ Password login control
       applies to every authentication path, so requiring MFA for password
       users forced passkey users through a redundant TOTP step as well.
 
-   When enabled, the TYPO3 MFA challenge is skipped after a successful
-   passkey authentication. A passkey is already multi-factor -- possession
-   of the authenticator plus biometric or PIN user verification -- so an
-   additional TOTP prompt adds friction without increasing assurance.
-
-   Password-based logins are **not** affected: they continue to go through
-   the MFA challenge exactly as TYPO3 configures it. This setting only
-   short-circuits the MFA step on the passkey branch.
+   When enabled, TYPO3 credits a successful passkey assertion towards MFA
+   only when its signed authenticator data confirms user verification
+   (PIN or biometric). For presence-only assertions and for password
+   logins, TYPO3 continues to apply its configured MFA policy.
 
    Recommended production combination (see :ref:`enforcement` for details):
 
@@ -235,3 +231,12 @@ User verification
      only if you want the fastest possible authentication.
 
    Invalid values fall back to ``required``.
+
+Authentication policy failures
+------------------------------
+
+If an error prevents loading the password policy or credential data, backend
+password authentication stops. Check the TYPO3 authentication log, verify the
+extension database schema and restore database access before retrying. Changing
+a group's enforcement level cannot restore a missing table. Test the recovery
+procedure with operator console access before enabling enforcement.

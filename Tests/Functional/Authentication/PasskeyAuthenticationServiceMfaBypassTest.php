@@ -104,6 +104,21 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function assertionWithoutUserVerificationLeavesCoreMfaPending(): void
+    {
+        $backendUser = $this->setUpBackendUser(5);
+        $this->stubExtensionConfigServiceWithSkipMfaFlag(true);
+        $this->stubWebAuthnServiceWithVerifiedAssertion(false);
+        $this->stubRateLimiterService();
+        $service        = new PasskeyAuthenticationService();
+        $service->pObj  = $backendUser;
+        $service->login = ['uname' => 'adminuser', 'uident' => $this->buildPasskeyPayload()];
+
+        self::assertSame(200, $service->authUser($backendUser->user ?? []));
+        self::assertNull($backendUser->getSessionData('mfa'));
+    }
+
+    #[Test]
     public function passwordLoginDoesNotSetMfaSessionKeyEvenWhenSkipMfaOnPasskeyAuthEnabled(): void
     {
         $backendUser = $this->setUpBackendUser(5);
@@ -139,10 +154,10 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         GeneralUtility::addInstance(ExtensionConfigurationService::class, $configService);
     }
 
-    private function stubWebAuthnServiceWithVerifiedAssertion(): void
+    private function stubWebAuthnServiceWithVerifiedAssertion(bool $userVerified = true): void
     {
         $credential      = new Credential(uid: 10, beUser: 5, label: 'Functional Test Key');
-        $verified        = new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class));
+        $verified        = new VerifiedAssertion(credential: $credential, source: $this->createStub(CredentialRecord::class), userVerified: $userVerified);
         $webAuthnService = $this->createMock(WebAuthnService::class);
         $webAuthnService
             ->method('verifyAssertionResponse')
