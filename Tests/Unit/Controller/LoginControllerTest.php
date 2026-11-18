@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
+use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Result;
 use Error;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
@@ -20,6 +21,7 @@ use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -481,6 +483,49 @@ final class LoginControllerTest extends TestCase
         $body = $this->decodeResponse($response);
         self::assertSame('Too many requests', $body['error']);
         self::assertSame('60', $response->getHeaderLine('Retry-After'));
+    }
+
+    /** @return array<string, array{bool, string, bool}> */
+    public static function unavailableCounterCases(): array
+    {
+        return [
+            'discoverable options without a database connection' => [false, '', false],
+            'discoverable options with a busy lock'              => [false, '', true],
+            'named options without a database connection'        => [false, 'editor', false],
+            'verification without a database connection'         => [true, 'editor', false],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('unavailableCounterCases')]
+    public function anUnavailableCounterStopsTheCeremonyAndOffersARetry(
+        bool $verify,
+        string $username,
+        bool $busy,
+    ): void {
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: true),
+            );
+        $error = $busy ? new RuntimeException('busy', 1700000012) : $this->createStub(ConnectionException::class);
+        $this->rateLimiterService
+            ->expects(self::once())
+            ->method('consumeRateLimit')
+            ->willThrowException($error);
+        $this->webAuthnService
+            ->expects(self::never())
+            ->method('verifyAssertionResponse');
+        $this->webAuthnService
+            ->expects(self::never())
+            ->method('createDiscoverableAssertionOptions');
+        $request = $this->createJsonRequest(
+            ['username' => $username, 'assertion' => ['id' => 'fixture'], 'challengeToken' => 'fixture'],
+        );
+        $response = $verify ? $this->subject->verifyAction($request) : $this->subject->optionsAction($request);
+        self::assertSame(503, $response->getStatusCode());
+        self::assertSame('60', $response->getHeaderLine('Retry-After'));
+        self::assertSame('Login temporarily unavailable', $this->decodeResponse($response)['error']);
     }
 
     #[Test]
