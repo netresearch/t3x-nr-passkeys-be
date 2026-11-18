@@ -168,6 +168,15 @@
             <trans-unit id="admin.passkeys.unlock.confirm.text" resname="admin.passkeys.unlock.confirm.text">
                 <source>Reset the failed login attempt counter for this user? This clears any rate-limiting or temporary lockout.</source>
             </trans-unit>
+            <trans-unit id="admin.passkeys.backup.eligible" resname="admin.passkeys.backup.eligible">
+                <source>Backup eligible</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.backup.deviceBound" resname="admin.passkeys.backup.deviceBound">
+                <source>Device-bound</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.backup.unknown" resname="admin.passkeys.backup.unknown">
+                <source>Backup eligibility unknown</source>
+            </trans-unit>
             <trans-unit id="admin.passkeys.status.active" resname="admin.passkeys.status.active">
                 <source>Active</source>
             </trans-unit>
@@ -857,15 +866,6 @@
             </trans-unit>
             <trans-unit id="help.faq.answer5" resname="help.faq.answer5">
                 <source>Yes. During the grace period, password login remains fully functional. After each password login, users see the setup interstitial but can skip it. Once the grace period expires, the interstitial becomes blocking and they must register a passkey before continuing to the backend.</source>
-            </trans-unit>
-            <trans-unit id="admin.passkeys.backup.eligible" resname="admin.passkeys.backup.eligible">
-                <source>Backup eligible</source>
-            </trans-unit>
-            <trans-unit id="admin.passkeys.backup.deviceBound" resname="admin.passkeys.backup.deviceBound">
-                <source>Device-bound</source>
-            </trans-unit>
-            <trans-unit id="admin.passkeys.backup.unknown" resname="admin.passkeys.backup.unknown">
-                <source>Backup eligibility unknown</source>
             </trans-unit>
         </body>
     </file>
