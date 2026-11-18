@@ -156,11 +156,6 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      */
     private function stubTokenCache(string $token, string|false $value): FrontendInterface&MockObject
     {
-        $store = $this->createStub(ConsumedTokenStore::class);
-        $store
-            ->method('claim')
-            ->willReturn(true);
-        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
         $cache = $this->createMock(FrontendInterface::class);
         $cache
             ->method('get')
@@ -179,10 +174,54 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAcceptsValidLoginToken(): void
     {
+        $store = $this->createStub(ConsumedTokenStore::class);
+        $store
+            ->method('claim')
+            ->willReturn(true);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
         $this->stubTokenCache('tok123', $this->buildTokenValue(42));
         $this->subject->login = ['uname' => '', 'uident' => $this->buildTokenUident('tok123')];
         $result               = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
         self::assertSame(200, $result);
+    }
+
+    #[Test]
+    public function unavailableTicketStorageDeniesLoginAndRecordsTheFailure(): void
+    {
+        $store = $this->createStub(ConsumedTokenStore::class);
+        $store
+            ->method('claim')
+            ->willThrowException(new RuntimeException('storage unavailable'));
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
+        $this->logger
+            ->expects(self::once())
+            ->method('error')
+            ->with(
+                'Passkey token consumption unavailable',
+                ['exception' => RuntimeException::class],
+            );
+        $this->assertTicketIsDenied();
+    }
+
+    #[Test]
+    public function anAlreadyClaimedTicketCannotCompleteLogin(): void
+    {
+        $store = $this->createStub(ConsumedTokenStore::class);
+        $store
+            ->method('claim')
+            ->willReturn(false);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
+        $this->assertTicketIsDenied();
+    }
+
+    private function assertTicketIsDenied(): void
+    {
+        $cache = $this->stubTokenCache('already-issued', $this->buildTokenValue(42));
+        $cache
+            ->expects(self::never())
+            ->method('remove');
+        $this->subject->login = ['uname' => '', 'uident' => $this->buildTokenUident('already-issued')];
+        self::assertSame(0, $this->subject->authUser(['uid' => 42]));
     }
 
     /**
