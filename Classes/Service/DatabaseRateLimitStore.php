@@ -12,7 +12,6 @@ namespace Netresearch\NrPasskeysBe\Service;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
-use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
 final readonly class DatabaseRateLimitStore
@@ -29,9 +28,8 @@ final readonly class DatabaseRateLimitStore
         for ($attempt = 0;; ++$attempt) {
             try {
                 return $db->transactional(
-                    function (Connection $db) use ($key, $group, $ttl, $limit): bool {
-                        $now = time();
-                        $q   = $db->createQueryBuilder();
+                    function () use ($db, $key, $group, $ttl, $limit): bool {
+                        $q = $db->createQueryBuilder();
                         $q
                             ->update(self::TABLE)
                             ->set('attempts', $db->quoteIdentifier('attempts'), false)
@@ -45,6 +43,7 @@ final readonly class DatabaseRateLimitStore
                         $row      = $db
                             ->select(['attempts', 'expires_at'], self::TABLE, $criteria)
                             ->fetchAssociative();
+                        $now   = time();
                         $count = is_array($row) && is_numeric($row['expires_at'] ?? null) && (int) $row['expires_at'] > $now && is_numeric($row['attempts'] ?? null) ? (int) $row['attempts'] : 0;
 
                         if ($count >= $limit) {

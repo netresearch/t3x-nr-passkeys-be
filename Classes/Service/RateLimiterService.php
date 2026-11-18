@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Service;
 
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Symfony\Contracts\Service\Attribute\Required;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
@@ -21,15 +22,24 @@ use function is_numeric;
 /**
  * Per-endpoint rate limiting and per-account lockout using TYPO3 caching with atomic locking.
  */
-final readonly class RateLimiterService
+final class RateLimiterService
 {
+    private FrontendInterface|DatabaseRateLimitStore $store;
+
     public function __construct(
-        private FrontendInterface $rateLimitCache,
-        private ExtensionConfigurationService $configService,
-        private LockFactory $lockFactory,
-        private LoggerInterface $logger,
-        private ?DatabaseRateLimitStore $databaseStore = null,
-    ) {}
+        private readonly FrontendInterface $rateLimitCache,
+        private readonly ExtensionConfigurationService $configService,
+        private readonly LockFactory $lockFactory,
+        private readonly LoggerInterface $logger,
+    ) {
+        $this->store = $rateLimitCache;
+    }
+
+    #[Required]
+    public function injectDatabaseStore(DatabaseRateLimitStore $databaseStore): void
+    {
+        $this->store = $databaseStore;
+    }
 
     /**
      * Atomically check the rate limit AND record the attempt under a single lock.
@@ -48,12 +58,17 @@ final readonly class RateLimiterService
         $maxAttempts   = $config->getRateLimitMaxAttempts();
         $windowSeconds = $config->getRateLimitWindowSeconds();
 
-        if ($this->databaseStore !== null) {
+        if ($this->store instanceof DatabaseRateLimitStore) {
             if (random_int(1, 128) === 1) {
-                $this->databaseStore->prune();
+                $this->store->prune();
             }
 
-            if (!$this->databaseStore->increment($this->databaseKey($key), '', $windowSeconds, $maxAttempts)) {
+            if (!$this->store->increment($this->databaseKey($key), '', $windowSeconds, $maxAttempts)) {
+                $this->logger->warning(
+                    'Rate limit exceeded',
+                    ['endpoint' => $endpoint, 'identifier' => hash('sha256', $identifier)],
+                );
+
                 throw new RuntimeException('Rate limit exceeded', 1700000010);
             }
 
@@ -182,11 +197,11 @@ final readonly class RateLimiterService
      */
     public function resetLockout(string $username, string $ip = ''): void
     {
-        if ($this->databaseStore !== null) {
+        if ($this->store instanceof DatabaseRateLimitStore) {
             if ($ip === '') {
-                $this->databaseStore->forgetGroup($this->databaseKey('lockout_' . $this->sanitize($username)));
+                $this->store->forgetGroup($this->databaseKey('lockout_' . $this->sanitize($username)));
             } else {
-                $this->databaseStore->forget($this->databaseKey($this->buildLockoutKey($username, $ip)));
+                $this->store->forget($this->databaseKey($this->buildLockoutKey($username, $ip)));
             }
 
             return;
@@ -207,9 +222,9 @@ final readonly class RateLimiterService
      */
     public function recordSuccess(string $username, string $ip): void
     {
-        if ($this->databaseStore !== null) {
-            $this->databaseStore->forget($this->databaseKey($this->buildLockoutKey($username, $ip)));
-            $this->databaseStore->forget($this->databaseKey($this->buildUserLockoutKey($username)));
+        if ($this->store instanceof DatabaseRateLimitStore) {
+            $this->store->forget($this->databaseKey($this->buildLockoutKey($username, $ip)));
+            $this->store->forget($this->databaseKey($this->buildUserLockoutKey($username)));
 
             return;
         }
@@ -231,8 +246,8 @@ final readonly class RateLimiterService
      */
     private function atomicCheck(string $key, int $threshold, string $message, int $code): void
     {
-        if ($this->databaseStore !== null) {
-            if ($this->databaseStore->count($this->databaseKey($key)) >= $threshold) {
+        if ($this->store instanceof DatabaseRateLimitStore) {
+            if ($this->store->count($this->databaseKey($key)) >= $threshold) {
                 throw new RuntimeException($message, $code);
             }
 
@@ -267,8 +282,8 @@ final readonly class RateLimiterService
      */
     private function atomicIncrement(string $key, array $tags, int $ttlSeconds): void
     {
-        if ($this->databaseStore !== null) {
-            $this->databaseStore->increment(
+        if ($this->store instanceof DatabaseRateLimitStore) {
+            $this->store->increment(
                 $this->databaseKey($key),
                 $this->databaseKey($tags[0] ?? ''),
                 $ttlSeconds,

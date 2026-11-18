@@ -49,7 +49,6 @@ services:
     public: true
     arguments:
       $rateLimitCache: '@cache.nr_passkeys_be_ratelimit'
-      $databaseStore: '@Netresearch\NrPasskeysBe\Service\DatabaseRateLimitStore'
 
   Netresearch\NrPasskeysBe\Service\WebAuthnService:
     public: true
