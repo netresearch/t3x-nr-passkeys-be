@@ -418,4 +418,25 @@ final class ChallengeServiceTest extends TestCase
         // Tokens should differ because nonces are random
         self::assertNotSame($token1, $token2);
     }
+
+    #[Test]
+    public function verifyChallengeTokenRejectsARefusedDatabaseClaim(): void
+    {
+        GeneralUtility::purgeInstances();
+        $store = $this->createMock(ConsumedTokenStore::class);
+        $store
+            ->expects(self::once())
+            ->method('claim')
+            ->willReturn(false);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
+        $this->nonceCacheMock
+            ->method('get')
+            ->willReturn('valid');
+        $token = $this->subject->createChallengeToken($this->subject->generateChallenge());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000005);
+        $this->expectExceptionMessage('Challenge already consumed or expired');
+        $this->subject->verifyChallengeToken($token);
+    }
 }

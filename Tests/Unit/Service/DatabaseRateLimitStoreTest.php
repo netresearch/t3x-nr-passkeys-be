@@ -66,4 +66,23 @@ final class DatabaseRateLimitStoreTest extends TestCase
         $this->expectExceptionObject($error);
         (new DatabaseRateLimitStore($pool))->increment('test-key', 'test-group', 30, 1);
     }
+
+    #[Test]
+    public function clearingTheTwoLoginCountersPropagatesTheThirdFailure(): void
+    {
+        $error      = new class extends RuntimeException implements RetryableException {};
+        $connection = $this->createMock(Connection::class);
+        $connection
+            ->expects(self::exactly(3))
+            ->method('executeStatement')
+            ->with('DELETE FROM tx_nrpasskeysbe_rate_limit WHERE key_hash IN (?, ?)', ['address-key', 'account-key'])
+            ->willThrowException($error);
+        $pool = $this->createStub(ConnectionPool::class);
+        $pool
+            ->method('getConnectionForTable')
+            ->willReturn($connection);
+
+        $this->expectExceptionObject($error);
+        (new DatabaseRateLimitStore($pool))->forgetPair('address-key', 'account-key');
+    }
 }
