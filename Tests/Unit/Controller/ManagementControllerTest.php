@@ -9,10 +9,13 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
+use Doctrine\DBAL\Exception\ConnectionException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Controller\ManagementController;
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialRemovalResult;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
@@ -21,6 +24,7 @@ use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -246,6 +250,56 @@ final class ManagementControllerTest extends TestCase
     }
 
     #[Test]
+    #[TestWith([EnforcementLevel::Required, true, 409])]
+    #[TestWith([EnforcementLevel::Enforced, true, 409])]
+    #[TestWith([EnforcementLevel::Encourage, false, 200])]
+    public function removeActionUsesThePermanentGroupPolicy(
+        EnforcementLevel $level,
+        bool $protect,
+        int $status,
+    ): void {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User', groups: '1');
+        $this->enforcementService
+            ->expects(self::once())
+            ->method('getStatus')
+            ->with(self::isArray(), false)
+            ->willReturn(
+                new EnforcementStatus($level, 14, 0, true),
+            );
+        $this->credentialRepository
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturn(
+                new Credential(uid: 10, beUser: 42, label: 'Only Key'),
+            );
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('removeOwnedWithResult')
+            ->with(10, 42, $protect)
+            ->willReturn(
+                $protect ? CredentialRemovalResult::LastKey : CredentialRemovalResult::Removed,
+            );
+
+        $response = $this->subject->removeAction($this->createJsonRequest(['uid' => 10]));
+        self::assertSame($status, $response->getStatusCode());
+    }
+
+    #[Test]
+    public function removalReturnsNotFoundWhenTheCredentialDisappearsAfterTheOwnershipCheck(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+        $this->credentialRepository
+            ->method('findByUidAndBeUser')
+            ->willReturn(new Credential(uid: 10, beUser: 42));
+        $this->credentialRepository
+            ->method('removeOwnedWithResult')
+            ->willReturn(CredentialRemovalResult::NotFound);
+        $response = $this->subject->removeAction($this->createJsonRequest(['uid' => 10]));
+        self::assertSame(404, $response->getStatusCode());
+        self::assertSame('Credential not found', $this->decodeResponse($response)['error']);
+    }
+
+    #[Test]
     public function removeActionSuccess(): void
     {
         $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
@@ -260,17 +314,37 @@ final class ManagementControllerTest extends TestCase
             );
         $this->credentialRepository
             ->expects(self::once())
-            ->method('countByBeUser')
-            ->with(42)
-            ->willReturn(2);
-        $this->credentialRepository
-            ->expects(self::once())
-            ->method('delete')
-            ->with(10);
+            ->method('removeOwnedWithResult')
+            ->with(10, 42, false)
+            ->willReturn(
+                CredentialRemovalResult::Removed,
+            );
         $response = $this->subject->removeAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('ok', $body['status']);
+    }
+
+    #[Test]
+    public function removalStopsIfTheBackendLoginDisappearsBeforeThePolicyCheck(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'editor', 'Editor');
+        $this->credentialRepository
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturnCallback(
+                static function (): Credential {
+                    unset($GLOBALS['BE_USER']);
+
+                    return new Credential(uid: 10, beUser: 42, label: 'Existing key');
+                },
+            );
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('removeOwnedWithResult');
+        $response = $this->subject->removeAction($this->createJsonRequest(['uid' => 10]));
+        self::assertSame(401, $response->getStatusCode());
+        self::assertSame('Not authenticated', $this->decodeResponse($response)['error']);
     }
 
     #[Test]
@@ -297,12 +371,12 @@ final class ManagementControllerTest extends TestCase
             ->with(10, 42)
             ->willReturn($cred);
         $this->credentialRepository
-            ->method('countByBeUser')
-            ->with(42)
-            ->willReturn(1);
-        $this->credentialRepository
-            ->expects(self::never())
-            ->method('delete');
+            ->expects(self::once())
+            ->method('removeOwnedWithResult')
+            ->with(10, 42, true)
+            ->willReturn(
+                CredentialRemovalResult::LastKey,
+            );
         $response = $this->subject->removeAction($request);
         self::assertSame(409, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -361,6 +435,25 @@ final class ManagementControllerTest extends TestCase
         self::assertSame(400, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Missing required fields', $body['error']);
+    }
+
+    #[Test]
+    #[TestWith([ConnectionException::class, 503])]
+    #[TestWith([UniqueConstraintViolationException::class, 409])]
+    public function registrationReportsStorageFailures(string $errorClass, int $expectedStatus): void
+    {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User');
+        $this->webAuthnService
+            ->method('verifyRegistrationResponse')
+            ->willThrowException($this->createStub($errorClass));
+        $response = $this->subject->registrationVerifyAction(
+            $this->createJsonRequest(['credential' => ['id' => 'cred'], 'challengeToken' => 'ticket']),
+        );
+        self::assertSame($expectedStatus, $response->getStatusCode());
+
+        if ($expectedStatus === 503) {
+            self::assertSame('60', $response->getHeaderLine('Retry-After'));
+        }
     }
 
     #[Test]
@@ -491,13 +584,12 @@ final class ManagementControllerTest extends TestCase
             ->with(10, 42)
             ->willReturn($cred);
         $this->credentialRepository
-            ->method('countByBeUser')
-            ->with(42)
-            ->willReturn(1);
-        $this->credentialRepository
             ->expects(self::once())
-            ->method('delete')
-            ->with(10);
+            ->method('removeOwnedWithResult')
+            ->with(10, 42, false)
+            ->willReturn(
+                CredentialRemovalResult::Removed,
+            );
         $response = $this->subject->removeAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -728,13 +820,12 @@ final class ManagementControllerTest extends TestCase
             ->with(10, 42)
             ->willReturn($cred);
         $this->credentialRepository
-            ->method('countByBeUser')
-            ->with(42)
-            ->willReturn(2);
-        $this->credentialRepository
             ->expects(self::once())
-            ->method('delete')
-            ->with(10);
+            ->method('removeOwnedWithResult')
+            ->with(10, 42, true)
+            ->willReturn(
+                CredentialRemovalResult::Removed,
+            );
         $response = $this->subject->removeAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -1024,9 +1115,15 @@ final class ManagementControllerTest extends TestCase
         string $username,
         string $realName,
         ?int $switchUserOriginalUid = null,
+        string $groups = '',
     ): void {
         $backendUser       = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'username' => $username, 'realName' => $realName];
+
+        if ($groups !== '') {
+            $backendUser->user['usergroup'] = $groups;
+        }
+
         $backendUser
             ->method('isAdmin')
             ->willReturn(false);

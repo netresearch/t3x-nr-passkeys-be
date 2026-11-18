@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Service;
 
 use Doctrine\DBAL\ParameterType;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialRemovalResult;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -137,6 +138,42 @@ final readonly class CredentialRepository
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);
         $connection->update(self::TABLE, ['label' => $label, 'tstamp' => time()], ['uid' => $uid]);
+    }
+
+    public function removeOwned(int $uid, int $ownerUid, bool $protectLast): bool
+    {
+        return $this->removeOwnedWithResult($uid, $ownerUid, $protectLast) === CredentialRemovalResult::Removed;
+    }
+
+    public function removeOwnedWithResult(int $uid, int $ownerUid, bool $protectLast): CredentialRemovalResult
+    {
+        $db = $this->connectionPool->getConnectionForTable(self::TABLE);
+
+        return $db->transactional(
+            function () use ($db, $uid, $ownerUid, $protectLast): CredentialRemovalResult {
+                // Serialize removals before counting the remaining active credentials.
+                $lock = $db->createQueryBuilder();
+                $lock
+                    ->update(self::TABLE)
+                    ->set('revoked_at', $db->quoteIdentifier('revoked_at'), false)
+                    ->where(
+                        $lock
+                            ->expr()
+                            ->eq('be_user', $lock->createNamedParameter($ownerUid, ParameterType::INTEGER)),
+                    )
+                    ->executeStatement();
+
+                $target = ['uid' => $uid, 'be_user' => $ownerUid, 'revoked_at' => 0, 'deleted' => 0];
+
+                if ($protectLast && $this->countByBeUser($ownerUid) <= 1) {
+                    return $db
+                        ->select(['uid'], self::TABLE, $target)
+                        ->fetchOne() === false ? CredentialRemovalResult::NotFound : CredentialRemovalResult::LastKey;
+                }
+
+                return $db->update(self::TABLE, ['deleted' => 1, 'tstamp' => time()], $target) === 1 ? CredentialRemovalResult::Removed : CredentialRemovalResult::NotFound;
+            },
+        );
     }
 
     public function delete(int $uid): void

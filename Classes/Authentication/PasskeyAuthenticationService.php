@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Authentication;
 use Doctrine\DBAL\ParameterType;
 use JsonException;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
+use Netresearch\NrPasskeysBe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
@@ -78,7 +79,8 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         // flag) and issued a single-use token bound to this user. getUser() and
         // authUser() run on DIFFERENT service instances, so each resolves the
         // token independently; it is consumed only in authUser().
-        $tokenUid = $this->resolvePasskeyToken();
+        $ticket   = $this->resolvePasskeyToken();
+        $tokenUid = $ticket['uid'] ?? 0;
 
         if ($tokenUid > 0) {
             $user = $this->fetchUserByUid($tokenUid);
@@ -180,11 +182,41 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         // Token-based passkey login (pre-verified by /passkeys/login/verify).
         // Runs before getPasskeyPayload() because a passkey_token payload is not
         // a raw-assertion payload and must not fall through to the password path.
-        $tokenUid = $this->resolvePasskeyToken();
+        $ticket   = $this->resolvePasskeyToken();
+        $tokenUid = $ticket['uid'] ?? 0;
 
-        if ($tokenUid > 0 && $tokenUid === (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
+        if ($ticket !== null && $tokenUid > 0 && $tokenUid === (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
+            try {
+                $creditMfa = $this->shouldCreditMfa($ticket['userVerified']);
+            } catch (Throwable $error) {
+                $this
+                    ->getLogger()
+                    ->error('Passkey MFA configuration unavailable', ['exception' => $error::class]);
+
+                return 0;
+            }
+
+            try {
+                if (!GeneralUtility::makeInstance(ConsumedTokenStore::class)->claim(
+                    'login:' . $this->extractLoginToken(),
+                    $ticket['expiresAt'],
+                )) {
+                    return 0;
+                }
+            } catch (Throwable $error) {
+                $this
+                    ->getLogger()
+                    ->error('Passkey token consumption unavailable', ['exception' => $error::class]);
+
+                return 0;
+            }
+
             $this->consumePasskeyToken();
-            $this->markSessionAsPasskeyAuthenticated($user);
+
+            if (!$this->markSessionAsPasskeyAuthenticated($user, $creditMfa)) {
+                return 0;
+            }
+
             $this
                 ->getLogger()
                 ->info('Passkey token authentication successful', ['be_user_uid' => $tokenUid]);
@@ -197,11 +229,6 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         if ($payload === null) {
             // Not a passkey login attempt - check per-user/per-group enforcement.
             //
-            // Fail-open: any failure of the enforcement checks (e.g. a database
-            // outage while querying credentials or be_groups) MUST NOT lock every
-            // backend user out of password login. On error we log and fall through
-            // to the password service (return 100). Legitimate blocks are explicit
-            // `return 0` statements that are not affected by the catch.
             try {
                 if ($this
                     ->getExtensionConfigService()
@@ -254,9 +281,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 $this
                     ->getLogger()
                     ->error(
-                        'Passkey enforcement check failed; allowing password login (fail-open)',
+                        'Password login refused because passkey enforcement could not be evaluated',
                         ['be_user_uid' => $user['uid'] ?? null, 'error' => $e->getMessage()],
                     );
+
+                return 0;
             }
 
             return 100;
@@ -295,7 +324,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                         'credential_uid' => $result->credential->getUid(),
                     ],
                 );
-            $this->markSessionAsPasskeyAuthenticated($user);
+
+            if (!$this->markSessionAsPasskeyAuthenticated($user, $this->shouldCreditMfa($result->userVerified))) {
+                return 0;
+            }
 
             // Return 200 = authenticated, stop further auth processing
             return 200;
@@ -379,29 +411,44 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      *
      * @param array<string, mixed> $user
      */
-    private function markSessionAsPasskeyAuthenticated(array $user): void
+    private function markSessionAsPasskeyAuthenticated(array $user, bool $creditMfa): bool
     {
-        // Interstitial middleware checks this to skip users who used a passkey.
-        $sessionData                     = $this->pObj->getSessionData('tx_nrpasskeysbe');
-        $merged                          = is_array($sessionData) ? $sessionData : [];
-        $merged['passkey_authenticated'] = true;
-        $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', $merged);
+        $session = $this->pObj->getSession();
+        $owner   = $session->getUserId() ?? 0;
+        $uid     = is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
 
-        // Setting the 'mfa' session key satisfies the check in
-        // AbstractUserAuthentication::evaluateMfaRequirements() and skips the
-        // MfaRequiredException path. Password logins are unaffected.
-        if ($this
+        if ($uid <= 0 || $owner > 0 && $owner !== $uid) {
+            return false;
+        }
+
+        $stored                        = $this->pObj->getSessionData('tx_nrpasskeysbe');
+        $data                          = is_array($stored) ? $stored : [];
+        $data['passkey_authenticated'] = true;
+        $markers                       = ['tx_nrpasskeysbe' => $data];
+
+        if ($creditMfa) {
+            $markers['mfa'] = true;
+        }
+
+        foreach ($markers as $key => $value) {
+            if ($owner === 0) {
+                // Core carries the in-memory data of an existing anonymous session
+                // into the new login. A fresh session uses Core's normal MFA path.
+                $session->set($key, $value);
+            } else {
+                $this->pObj->setAndSaveSessionData($key, $value);
+            }
+        }
+
+        return true;
+    }
+
+    private function shouldCreditMfa(bool $userVerified): bool
+    {
+        return $userVerified && $this
             ->getExtensionConfigService()
             ->getConfiguration()
-            ->isSkipMfaOnPasskeyAuth()) {
-            $this->pObj->setAndSaveSessionData('mfa', true);
-            $this
-                ->getLogger()
-                ->info(
-                    'Passkey auth satisfied MFA requirement (skipping TYPO3 MFA challenge)',
-                    ['be_user_uid' => $user['uid'] ?? null],
-                );
-        }
+            ->isSkipMfaOnPasskeyAuth();
     }
 
     /**
@@ -417,18 +464,20 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      * cache TTL: a backend that ignores lifetimes (SimpleFileBackend) would
      * otherwise make an unredeemed token a permanent login credential. An expired
      * or malformed entry is removed on the spot.
+     *
+     * @return array{uid: int, expiresAt: int, userVerified: bool}|null
      */
-    private function resolvePasskeyToken(): int
+    private function resolvePasskeyToken(): ?array
     {
         $value = $this->fetchLoginTokenValue();
 
         if ($value === null) {
-            return 0;
+            return null;
         }
 
         $payload = $this->decodeLoginTokenPayload($value);
 
-        if ($payload === null || time() > $payload['expiresAt']) {
+        if ($payload === null || time() >= $payload['expiresAt']) {
             $this
                 ->getLogger()
                 ->warning(
@@ -440,10 +489,10 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                 );
             $this->consumePasskeyToken();
 
-            return 0;
+            return null;
         }
 
-        return $payload['uid'];
+        return $payload;
     }
 
     /**
@@ -480,7 +529,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      * Decode a cached login-token value, or null when it is not the expected
      * {"uid":…,"expiresAt":…} shape written by LoginController::issueLoginToken().
      *
-     * @return array{uid: int, expiresAt: int}|null
+     * @return array{uid: int, expiresAt: int, userVerified: bool}|null
      */
     private function decodeLoginTokenPayload(string $value): ?array
     {
@@ -497,7 +546,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $uid       = is_numeric($payload['uid'] ?? null) ? (int) $payload['uid'] : 0;
         $expiresAt = is_numeric($payload['expiresAt'] ?? null) ? (int) $payload['expiresAt'] : 0;
 
-        return $uid > 0 && $expiresAt > 0 ? ['uid' => $uid, 'expiresAt' => $expiresAt] : null;
+        return $uid > 0 && $expiresAt > 0 ? ['uid' => $uid, 'expiresAt' => $expiresAt, 'userVerified' => ($payload['userVerified'] ?? false) === true] : null;
     }
 
     /**

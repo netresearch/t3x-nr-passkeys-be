@@ -276,7 +276,7 @@ still possible from the server shell, without a backend login, using the
     vendor/bin/typo3 passkeys:recovery --disable-group=5
 
     # Disable passkey enforcement for ALL groups
-    vendor/bin/typo3 passkeys:recovery --disable-all
+    vendor/bin/typo3 passkeys:recovery --disable-all --confirm-all
 
     # Reset the login lockout for a specific account
     vendor/bin/typo3 passkeys:recovery --unlock=johndoe
@@ -306,12 +306,18 @@ passkey enforcement feature works alongside MFA:
 - If MFA is required and passkey enforcement is active, both are evaluated.
   The MFA redirect takes precedence during login, and the passkey interstitial
   appears on subsequent requests.
-- Passkeys already provide strong authentication (possession + biometric). In
-  most scenarios, requiring both MFA and passkeys is unnecessary. Consider
-  accepting passkeys as a sufficient authentication factor and disabling MFA
-  requirements for groups that are at the **Enforced** level.
+- Keep Core MFA enabled where the policy requires it. A passkey assertion
+  satisfies that step only if the authenticator confirmed user verification
+  and the passkey MFA setting permits it. Touch alone confirms presence.
 
 ..  note::
 
     The interstitial middleware exempts MFA-related routes, so users are never
     blocked from completing their MFA challenge by the passkey setup page.
+
+An all-group suspension expires automatically after 15 minutes. Group settings
+remain in place and the global password login setting still applies. Record
+the incident owner and verify the user's identity through an independent
+channel. Prefer recovery of the affected group, enroll a replacement device,
+and verify enforcement again after expiry. Apply the extension database
+schema before deploying the new code.

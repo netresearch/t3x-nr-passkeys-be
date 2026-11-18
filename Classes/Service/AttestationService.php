@@ -15,6 +15,7 @@ use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use Webauthn\AuthenticationExtensions\AuthenticationExtension;
 use Webauthn\AuthenticationExtensions\AuthenticationExtensions;
 use Webauthn\AuthenticatorAttestationResponse;
@@ -67,7 +68,7 @@ final readonly class AttestationService
         $userHandle          = $this->createUserHandle($beUserUid);
         $user                = PublicKeyCredentialUserEntity::create(name: $username, id: $userHandle, displayName: $displayName);
         $challenge           = $this->challengeService->generateChallenge();
-        $challengeToken      = $this->challengeService->createChallengeToken($challenge);
+        $challengeToken      = $this->challengeService->createChallengeToken($challenge, $this->registrationContext($beUserUid));
         $existingCredentials = $this->credentialRepository->findByBeUser($beUserUid);
         $excludeCredentials  = array_map(
             static fn (Credential $cred): PublicKeyCredentialDescriptor => PublicKeyCredentialDescriptor::create(
@@ -121,7 +122,7 @@ final readonly class AttestationService
         string $username,
         string $displayName,
     ): CredentialRecord {
-        $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
+        $challenge = $this->challengeService->verifyChallengeToken($challengeToken, $this->registrationContext($beUserUid));
         $rpId      = $this->configService->getEffectiveRpId();
         $rpName    = $this->configService
             ->getConfiguration()
@@ -134,6 +135,12 @@ final readonly class AttestationService
             user: $user,
             challenge: $challenge,
             pubKeyCredParams: $this->getPublicKeyCredentialParameters(),
+            authenticatorSelection: AuthenticatorSelectionCriteria::create(
+                userVerification: $this->configService
+                    ->getConfiguration()
+                    ->getUserVerification(),
+                residentKey: AuthenticatorSelectionCriteria::RESIDENT_KEY_REQUIREMENT_PREFERRED,
+            ),
             attestation: PublicKeyCredentialCreationOptions::ATTESTATION_CONVEYANCE_PREFERENCE_NONE,
         );
 
@@ -205,6 +212,31 @@ final readonly class AttestationService
     /**
      * Serialize PublicKeyCredentialCreationOptions to JSON for the browser.
      */
+    private function registrationContext(int $uid): string
+    {
+        $user    = $GLOBALS['BE_USER'] ?? null;
+        $session = $user instanceof BackendUserAuthentication ? $user
+            ->getSession()
+            ->getIdentifier() : '';
+        $config = $this->configService->getConfiguration();
+
+        return hash(
+            'sha256',
+            json_encode(
+                [
+                    'be-register',
+                    $uid,
+                    $session,
+                    $this->configService->getEffectiveRpId(),
+                    $this->configService->getEffectiveOrigin(),
+                    $config->getUserVerification(),
+                    $config->getAllowedAlgorithmsList(),
+                ],
+                JSON_THROW_ON_ERROR,
+            ),
+        );
+    }
+
     public function serializeCreationOptions(PublicKeyCredentialCreationOptions $options): string
     {
         return $this->ceremonyFactory

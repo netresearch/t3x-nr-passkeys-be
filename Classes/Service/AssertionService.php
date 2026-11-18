@@ -72,7 +72,7 @@ final readonly class AssertionService
     {
         $rpId             = $this->configService->getEffectiveRpId();
         $challenge        = $this->challengeService->generateChallenge();
-        $challengeToken   = $this->challengeService->createChallengeToken($challenge);
+        $challengeToken   = $this->challengeService->createChallengeToken($challenge, $this->loginContext());
         $credentials      = $this->credentialRepository->findByBeUser($beUserUid);
         $allowCredentials = array_values(
             array_map(
@@ -113,7 +113,7 @@ final readonly class AssertionService
     {
         $rpId           = $this->configService->getEffectiveRpId();
         $challenge      = $this->challengeService->generateChallenge();
-        $challengeToken = $this->challengeService->createChallengeToken($challenge);
+        $challengeToken = $this->challengeService->createChallengeToken($challenge, $this->loginContext());
         $options        = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
@@ -142,7 +142,7 @@ final readonly class AssertionService
     {
         $rpId           = $this->configService->getEffectiveRpId();
         $challenge      = $this->challengeService->generateChallenge();
-        $challengeToken = $this->challengeService->createChallengeToken($challenge);
+        $challengeToken = $this->challengeService->createChallengeToken($challenge, $this->loginContext());
         $options        = PublicKeyCredentialRequestOptions::create(
             challenge: $challenge,
             rpId: $rpId,
@@ -264,7 +264,7 @@ final readonly class AssertionService
         string $challengeToken,
         int $beUserUid,
     ): VerifiedAssertion {
-        $challenge = $this->challengeService->verifyChallengeToken($challengeToken);
+        $challenge = $this->challengeService->verifyChallengeToken($challengeToken, $this->loginContext());
         $rpId      = $this->configService->getEffectiveRpId();
 
         // Deserialize the browser response
@@ -342,12 +342,34 @@ final readonly class AssertionService
             ['be_user_uid' => $beUserUid, 'credential_uid' => $credential->getUid()],
         );
 
-        return new VerifiedAssertion(credential: $credential, source: $updatedSource);
+        return new VerifiedAssertion(
+            credential: $credential,
+            source: $updatedSource,
+            userVerified: $response->authenticatorData->isUserVerified(),
+        );
     }
 
     /**
      * Serialize PublicKeyCredentialRequestOptions to JSON for the browser.
      */
+    private function loginContext(): string
+    {
+        return hash(
+            'sha256',
+            json_encode(
+                [
+                    'be-login',
+                    $this->configService->getEffectiveRpId(),
+                    $this->configService->getEffectiveOrigin(),
+                    $this->configService
+                    ->getConfiguration()
+                    ->getUserVerification(),
+                ],
+                JSON_THROW_ON_ERROR,
+            ),
+        );
+    }
+
     public function serializeRequestOptions(PublicKeyCredentialRequestOptions $options): string
     {
         return $this->ceremonyFactory

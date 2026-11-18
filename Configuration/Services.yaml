@@ -98,3 +98,6 @@ services:
   Netresearch\NrPasskeysBe\UserSettings\PasskeySettingsPanelElement:
     public: true
 
+
+  Netresearch\NrPasskeysBe\Service\ConsumedTokenStore:
+    public: true

@@ -30,8 +30,13 @@ final readonly class ExtensionConfigurationService
         $settings = $this->extensionConfiguration->get('nr_passkeys_be');
 
         if (!is_array($settings)) {
-            $settings = [];
+            throw new RuntimeException('Backend passkey configuration is unavailable');
         }
+
+        $maxAttempts   = self::intVal($settings['rateLimitMaxAttempts'] ?? null, 10);
+        $windowSeconds = self::intVal($settings['rateLimitWindowSeconds'] ?? null, 300);
+
+        $lockoutDuration = self::intVal($settings['lockoutDurationSeconds'] ?? null, 900);
 
         $this->config = new \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration(
             rpId: self::stringVal($settings['rpId'] ?? null),
@@ -42,11 +47,11 @@ final readonly class ExtensionConfigurationService
             discoverableLoginEnabled: !empty($settings['discoverableLoginEnabled'] ?? true),
             disablePasswordLogin: !empty($settings['disablePasswordLogin'] ?? false),
             skipMfaOnPasskeyAuth: !empty($settings['skipMfaOnPasskeyAuth'] ?? false),
-            rateLimitMaxAttempts: self::intVal($settings['rateLimitMaxAttempts'] ?? null, 10),
-            rateLimitWindowSeconds: self::intVal($settings['rateLimitWindowSeconds'] ?? null, 300),
+            rateLimitMaxAttempts: $maxAttempts > 0 ? $maxAttempts : 10,
+            rateLimitWindowSeconds: $windowSeconds > 0 ? $windowSeconds : 300,
             lockoutThreshold: self::intVal($settings['lockoutThreshold'] ?? null, 5),
             lockoutUserThreshold: self::intVal($settings['lockoutUserThreshold'] ?? null, 15),
-            lockoutDurationSeconds: self::intVal($settings['lockoutDurationSeconds'] ?? null, 900),
+            lockoutDurationSeconds: $lockoutDuration > 0 ? $lockoutDuration : 900,
             allowedAlgorithms: self::stringVal($settings['allowedAlgorithms'] ?? null, 'ES256'),
         );
     }

@@ -17,5 +17,9 @@ use Webauthn\CredentialRecord;
  */
 final readonly class VerifiedAssertion
 {
-    public function __construct(public Credential $credential, public CredentialRecord $source) {}
+    public function __construct(
+        public Credential $credential,
+        public CredentialRecord $source,
+        public bool $userVerified = false,
+    ) {}
 }

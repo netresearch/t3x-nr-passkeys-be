@@ -9,15 +9,19 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Controller;
 
+use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Result;
 use Error;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Controller\LoginController;
 use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
+use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
+use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -32,6 +36,7 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use Webauthn\CredentialRecord;
 use Webauthn\Exception\InvalidDataException;
 use Webauthn\PublicKeyCredentialRequestOptions;
 
@@ -313,7 +318,8 @@ final class LoginControllerTest extends TestCase
                 responseJson: self::isString(),
                 challengeToken: 'ct_abc123',
                 beUserUid: 42,
-            );
+            )
+            ->willReturn(new VerifiedAssertion(new Credential(beUser: 42), $this->createStub(CredentialRecord::class), true));
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess')
@@ -335,6 +341,7 @@ final class LoginControllerTest extends TestCase
                         $payload = json_decode($value, true, 8, JSON_THROW_ON_ERROR);
                         self::assertIsArray($payload);
                         self::assertSame(42, $payload['uid'] ?? null);
+                        self::assertTrue($payload['userVerified'] ?? false);
                         self::assertIsInt($payload['expiresAt'] ?? null);
                         self::assertGreaterThan($issuedAt, $payload['expiresAt']);
                         self::assertLessThanOrEqual($issuedAt + 120 + 2, $payload['expiresAt']);
@@ -478,6 +485,62 @@ final class LoginControllerTest extends TestCase
         self::assertSame('60', $response->getHeaderLine('Retry-After'));
     }
 
+    /** @return array<string, array{bool, string, bool}> */
+    public static function unavailableCounterCases(): array
+    {
+        return [
+            'discoverable options without a database connection' => [false, '', false],
+            'discoverable options with a busy lock'              => [false, '', true],
+            'named options without a database connection'        => [false, 'editor', false],
+            'verification without a database connection'         => [true, 'editor', false],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('unavailableCounterCases')]
+    public function anUnavailableCounterStopsTheCeremonyAndOffersARetry(
+        bool $verify,
+        string $username,
+        bool $busy,
+    ): void {
+        $this->configService
+            ->method('getConfiguration')
+            ->willReturn(
+                new ExtensionConfiguration(discoverableLoginEnabled: true),
+            );
+        $error = $busy ? new RuntimeException('busy', 1700000012) : $this->createStub(ConnectionException::class);
+        $this->rateLimiterService
+            ->expects(self::once())
+            ->method('consumeRateLimit')
+            ->willThrowException($error);
+        $this->webAuthnService
+            ->expects(self::never())
+            ->method('verifyAssertionResponse');
+        $this->webAuthnService
+            ->expects(self::never())
+            ->method('createDiscoverableAssertionOptions');
+        $request = $this->createJsonRequest(
+            ['username' => $username, 'assertion' => ['id' => 'fixture'], 'challengeToken' => 'fixture'],
+        );
+        $response = $verify ? $this->subject->verifyAction($request) : $this->subject->optionsAction($request);
+        self::assertSame(503, $response->getStatusCode());
+        self::assertSame('60', $response->getHeaderLine('Retry-After'));
+        self::assertSame('Login temporarily unavailable', $this->decodeResponse($response)['error']);
+    }
+
+    #[Test]
+    public function optionsActionRequestsRetryWhenTheRateLimitStoreIsBusy(): void
+    {
+        $this->rateLimiterService
+            ->method('consumeRateLimit')
+            ->willThrowException(
+                new RuntimeException('busy', 1700000012),
+            );
+        $response = $this->subject->optionsAction($this->createJsonRequest(['username' => 'existing']));
+        self::assertSame(503, $response->getStatusCode());
+        self::assertSame('60', $response->getHeaderLine('Retry-After'));
+    }
+
     #[Test]
     public function optionsActionDiscoverableLoginInternalError(): void
     {
@@ -600,7 +663,8 @@ final class LoginControllerTest extends TestCase
                 responseJson: self::isString(),
                 challengeToken: 'ct_abc123',
                 beUserUid: 7,
-            );
+            )
+            ->willReturn(new VerifiedAssertion(new Credential(beUser: 7), $this->createStub(CredentialRecord::class), true));
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess');
@@ -810,7 +874,11 @@ final class LoginControllerTest extends TestCase
             ],
         );
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
-        $this->webAuthnService->method('verifyAssertionResponse');
+        $this->webAuthnService
+            ->method('verifyAssertionResponse')
+            ->willReturn(
+                new VerifiedAssertion(new Credential(beUser: 42), $this->createStub(CredentialRecord::class)),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('consumeRateLimit')
@@ -895,5 +963,45 @@ final class LoginControllerTest extends TestCase
         assert(is_array($decoded));
 
         return $decoded;
+    }
+
+    #[Test]
+    #[DataProvider('failureCounterErrors')]
+    public function verifyActionHandlesAnUnavailableFailureCounter(string $kind): void
+    {
+        $this->setUpFindBeUser('member', ['uid' => 42, 'username' => 'member']);
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('verifyAssertionResponse')
+            ->willThrowException(
+                new RuntimeException('verification failed'),
+            );
+        $error = match ($kind) {
+            'database' => $this->createStub(ConnectionException::class),
+            'busy'     => new RuntimeException('counter busy', 1700000012),
+            default    => new RuntimeException('unexpected error'),
+        };
+        $this->rateLimiterService
+            ->expects(self::once())
+            ->method('recordFailure')
+            ->willThrowException($error);
+
+        if ($kind === 'unexpected') {
+            $this->expectExceptionObject($error);
+        }
+
+        $request = $this->createJsonRequest(
+            ['username' => 'member', 'assertion' => ['id' => 'fixture'], 'challengeToken' => 'fixture'],
+        );
+        $response = $this->subject->verifyAction($request);
+        self::assertSame(503, $response->getStatusCode());
+        self::assertSame('60', $response->getHeaderLine('Retry-After'));
+        self::assertSame('Login temporarily unavailable', $this->decodeResponse($response)['error']);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function failureCounterErrors(): array
+    {
+        return ['database' => ['database'], 'lock' => ['busy'], 'unrelated exception' => ['unexpected']];
     }
 }

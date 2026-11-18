@@ -79,10 +79,10 @@
 composer require netresearch/nr-passkeys-be
 ```
 
-Activate the extension in the TYPO3 Extension Manager or via CLI:
+Apply the extension schema before sending traffic to updated workers. In a Composer installation run:
 
 ```bash
-vendor/bin/typo3 extension:activate nr_passkeys_be
+vendor/bin/typo3 extension:setup
 ```
 
 ## Quick Start
