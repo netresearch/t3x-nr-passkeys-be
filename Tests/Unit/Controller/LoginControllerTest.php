@@ -964,4 +964,44 @@ final class LoginControllerTest extends TestCase
 
         return $decoded;
     }
+
+    #[Test]
+    #[DataProvider('failureCounterErrors')]
+    public function verifyActionHandlesAnUnavailableFailureCounter(string $kind): void
+    {
+        $this->setUpFindBeUser('member', ['uid' => 42, 'username' => 'member']);
+        $this->webAuthnService
+            ->expects(self::once())
+            ->method('verifyAssertionResponse')
+            ->willThrowException(
+                new RuntimeException('verification failed'),
+            );
+        $error = match ($kind) {
+            'database' => $this->createStub(ConnectionException::class),
+            'busy'     => new RuntimeException('counter busy', 1700000012),
+            default    => new RuntimeException('unexpected error'),
+        };
+        $this->rateLimiterService
+            ->expects(self::once())
+            ->method('recordFailure')
+            ->willThrowException($error);
+
+        if ($kind === 'unexpected') {
+            $this->expectExceptionObject($error);
+        }
+
+        $request = $this->createJsonRequest(
+            ['username' => 'member', 'assertion' => ['id' => 'fixture'], 'challengeToken' => 'fixture'],
+        );
+        $response = $this->subject->verifyAction($request);
+        self::assertSame(503, $response->getStatusCode());
+        self::assertSame('60', $response->getHeaderLine('Retry-After'));
+        self::assertSame('Login temporarily unavailable', $this->decodeResponse($response)['error']);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function failureCounterErrors(): array
+    {
+        return ['database' => ['database'], 'lock' => ['busy'], 'unrelated exception' => ['unexpected']];
+    }
 }

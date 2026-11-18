@@ -316,7 +316,16 @@ final readonly class LoginController
             //
             // Do not feed the cross-IP per-username lockout (passkey assertions are
             // unforgeable; counting them only enables an account-lockout DoS).
-            $this->rateLimiterService->recordFailure($username, $ip, countUserLockout: false);
+            try {
+                $this->rateLimiterService->recordFailure($username, $ip, countUserLockout: false);
+            } catch (DatabaseException|RuntimeException $storageError) {
+                if (!$storageError instanceof DatabaseException && $storageError->getCode() !== 1700000012) {
+                    throw $storageError;
+                }
+
+                return $this->unavailableRateLimitResponse($storageError);
+            }
+
             $this->logger->warning(
                 'Passkey assertion verification failed',
                 [
