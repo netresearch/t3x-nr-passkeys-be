@@ -60,10 +60,13 @@ final class ExtensionConfigurationServiceTest extends TestCase
     public function nonPositiveRateLimitSettingsUseTheDocumentedDefaults(): void
     {
         $config = $this
-            ->createService(['rateLimitMaxAttempts' => -1, 'rateLimitWindowSeconds' => '0'])
+            ->createService(
+                ['rateLimitMaxAttempts' => -1, 'rateLimitWindowSeconds' => '0', 'lockoutDurationSeconds' => 0],
+            )
             ->getConfiguration();
         self::assertSame(10, $config->getRateLimitMaxAttempts());
         self::assertSame(300, $config->getRateLimitWindowSeconds());
+        self::assertSame(900, $config->getLockoutDurationSeconds());
     }
 
     #[Test]
