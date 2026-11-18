@@ -48,6 +48,27 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function removingOwnedCredentialsPreservesTheFinalActiveKeyUnderEnforcement(): void
+    {
+        $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
+        self::assertFalse($this->repository->removeOwned(5, 1, true));
+        self::assertFalse($this->repository->removeOwned(3, 1, true));
+        self::assertSame(2, $this->repository->countByBeUser(1));
+
+        self::assertTrue($this->repository->removeOwned(1, 1, true));
+        self::assertFalse($this->repository->removeOwned(1, 1, false));
+        self::assertFalse($this->repository->removeOwned(2, 1, true));
+        self::assertSame(
+            [2],
+            array_map(static fn (Credential $key): int => $key->getUid(), $this->repository->findByBeUser(1)),
+        );
+
+        self::assertTrue($this->repository->removeOwned(2, 1, false));
+        self::assertSame(0, $this->repository->countByBeUser(1));
+        self::assertSame(1, $this->repository->countByBeUser(2));
+    }
+
+    #[Test]
     public function saveReturnsAutoIncrementedUid(): void
     {
         $credential = new Credential(

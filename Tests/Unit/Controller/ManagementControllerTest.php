@@ -21,6 +21,7 @@ use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -243,6 +244,41 @@ final class ManagementControllerTest extends TestCase
         self::assertSame(404, $response->getStatusCode());
         $body = $this->decodeResponse($response);
         self::assertSame('Credential not found', $body['error']);
+    }
+
+    #[Test]
+    #[TestWith([EnforcementLevel::Required, true, 409])]
+    #[TestWith([EnforcementLevel::Enforced, true, 409])]
+    #[TestWith([EnforcementLevel::Encourage, false, 200])]
+    public function removeActionUsesThePermanentGroupPolicy(
+        EnforcementLevel $level,
+        bool $protect,
+        int $status,
+    ): void {
+        $this->setUpAuthenticatedUser(42, 'admin', 'Admin User', groups: '1');
+        $this->enforcementService
+            ->expects(self::once())
+            ->method('getStatus')
+            ->with(self::isArray(), false)
+            ->willReturn(
+                new EnforcementStatus($level, 14, 0, true),
+            );
+        $this->credentialRepository
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturn(
+                new Credential(uid: 10, beUser: 42, label: 'Only Key'),
+            );
+        $this->credentialRepository
+            ->expects(self::once())
+            ->method('removeOwned')
+            ->with(10, 42, $protect)
+            ->willReturn(
+                !$protect,
+            );
+
+        $response = $this->subject->removeAction($this->createJsonRequest(['uid' => 10]));
+        self::assertSame($status, $response->getStatusCode());
     }
 
     #[Test]
@@ -1012,9 +1048,15 @@ final class ManagementControllerTest extends TestCase
         string $username,
         string $realName,
         ?int $switchUserOriginalUid = null,
+        string $groups = '',
     ): void {
         $backendUser       = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => $uid, 'username' => $username, 'realName' => $realName];
+
+        if ($groups !== '') {
+            $backendUser->user['usergroup'] = $groups;
+        }
+
         $backendUser
             ->method('isAdmin')
             ->willReturn(false);
