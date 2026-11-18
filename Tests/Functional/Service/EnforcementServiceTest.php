@@ -10,11 +10,18 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Service;
 
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
+use Netresearch\NrPasskeysBe\Middleware\PasskeySetupInterstitial;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\NullLogger;
+use RuntimeException;
+use TYPO3\CMS\Backend\Routing\Route;
+use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Http\ServerRequest;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 use function time;
@@ -27,6 +34,7 @@ use function time;
  * real database queries.
  */
 #[CoversClass(EnforcementService::class)]
+#[CoversClass(PasskeySetupInterstitial::class)]
 final class EnforcementServiceTest extends FunctionalTestCase
 {
     protected array $coreExtensionsToLoad = ['setup'];
@@ -53,6 +61,35 @@ final class EnforcementServiceTest extends FunctionalTestCase
         $this->importCSVDataSet(__DIR__ . '/../../Fixtures/be_groups.csv');
         $this->importCSVDataSet(__DIR__ . '/Fixtures/tx_nrpasskeysbe_credential.csv');
         $this->subject = $this->get(EnforcementService::class);
+    }
+
+    #[Test]
+    public function endingRecoverySuspensionRestoresPolicyChecksForPasswordSessions(): void
+    {
+        $backendUser = $this->setUpBackendUser(1);
+        $groups      = $this
+            ->get(ConnectionPool::class)
+            ->getConnectionForTable('be_groups');
+        $groups->update(
+            'be_groups',
+            ['passkey_enforcement' => 'invalid', 'passkey_suspended_until' => time() + 900],
+            ['uid' => 1],
+        );
+        self::assertSame(EnforcementLevel::Off, $this->subject->getStatus($backendUser->user ?? [])->level);
+
+        $groups->update('be_groups', ['passkey_suspended_until' => 0], ['uid' => 1]);
+        $request = (new ServerRequest('/typo3/module/web/layout', 'GET'))->withAttribute(
+            'route',
+            new Route('/module/web/layout', ['_identifier' => 'web_layout']),
+        );
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler
+            ->expects(self::never())
+            ->method('handle');
+        $middleware = new PasskeySetupInterstitial($this->subject, $this->createStub(UriBuilder::class), new NullLogger());
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Invalid passkey group enforcement policy');
+        $middleware->process($request, $handler);
     }
 
     // --- getStatus() with real DB ---
