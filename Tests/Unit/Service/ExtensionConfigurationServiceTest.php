@@ -57,6 +57,16 @@ final class ExtensionConfigurationServiceTest extends TestCase
 
     // --- getConfiguration() tests ---
     #[Test]
+    public function nonPositiveRateLimitSettingsUseTheDocumentedDefaults(): void
+    {
+        $config = $this
+            ->createService(['rateLimitMaxAttempts' => -1, 'rateLimitWindowSeconds' => '0'])
+            ->getConfiguration();
+        self::assertSame(10, $config->getRateLimitMaxAttempts());
+        self::assertSame(300, $config->getRateLimitWindowSeconds());
+    }
+
+    #[Test]
     public function getConfigurationReturnsDefaultValuesWithEmptySettings(): void
     {
         $service = $this->createService([]);
