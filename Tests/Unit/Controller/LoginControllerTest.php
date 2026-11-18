@@ -484,6 +484,19 @@ final class LoginControllerTest extends TestCase
     }
 
     #[Test]
+    public function optionsActionRequestsRetryWhenTheRateLimitStoreIsBusy(): void
+    {
+        $this->rateLimiterService
+            ->method('consumeRateLimit')
+            ->willThrowException(
+                new RuntimeException('busy', 1700000012),
+            );
+        $response = $this->subject->optionsAction($this->createJsonRequest(['username' => 'existing']));
+        self::assertSame(503, $response->getStatusCode());
+        self::assertSame('60', $response->getHeaderLine('Retry-After'));
+    }
+
+    #[Test]
     public function optionsActionDiscoverableLoginInternalError(): void
     {
         $request = $this->createJsonRequest(['username' => '']);

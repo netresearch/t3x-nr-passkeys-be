@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
+use Doctrine\DBAL\Exception as DatabaseException;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
@@ -98,7 +99,13 @@ final readonly class LoginController
 
             try {
                 $this->rateLimiterService->consumeRateLimit('login_options', $ip);
-            } catch (RuntimeException) {
+            } catch (DatabaseException $error) {
+                return $this->unavailableRateLimitResponse($error);
+            } catch (RuntimeException $error) {
+                if ($error->getCode() === 1700000012) {
+                    return $this->unavailableRateLimitResponse($error);
+                }
+
                 return new JsonResponse(['error' => 'Too many requests'], 429, ['Retry-After' => '60']);
             }
 
@@ -125,6 +132,8 @@ final readonly class LoginController
             // per-IP rate-limit budget. This is intentional: it is still an attempt.
             $this->rateLimiterService->consumeRateLimit('login_options', $ip);
             $this->rateLimiterService->checkLockout($username, $ip);
+        } catch (DatabaseException $error) {
+            return $this->unavailableRateLimitResponse($error);
         } catch (RuntimeException $e) {
             return $this->throttledResponse($e);
         }
@@ -199,6 +208,8 @@ final readonly class LoginController
             if ($username !== '') {
                 $this->rateLimiterService->checkLockout($username, $ip);
             }
+        } catch (DatabaseException $error) {
+            return $this->unavailableRateLimitResponse($error);
         } catch (RuntimeException $e) {
             return $this->throttledResponse($e);
         }
@@ -355,6 +366,10 @@ final readonly class LoginController
      */
     private function throttledResponse(RuntimeException $e): ResponseInterface
     {
+        if ($e->getCode() === 1700000012) {
+            return $this->unavailableRateLimitResponse($e);
+        }
+
         $locked = $e->getCode() === 1700000011;
 
         return new JsonResponse(
@@ -394,6 +409,13 @@ final readonly class LoginController
         $rawUid = $row['uid'] ?? null;
 
         return is_numeric($rawUid) ? (int) $rawUid : null;
+    }
+
+    private function unavailableRateLimitResponse(Throwable $error): ResponseInterface
+    {
+        $this->logger->error('Login throttling unavailable', ['exception' => $error::class]);
+
+        return new JsonResponse(['error' => 'Login temporarily unavailable'], 503, ['Retry-After' => '60']);
     }
 
     /**
