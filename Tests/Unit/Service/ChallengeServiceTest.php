@@ -79,6 +79,7 @@ final class ChallengeServiceTest extends TestCase
 
     protected function tearDown(): void
     {
+        \TYPO3\CMS\Core\Utility\GeneralUtility::purgeInstances();
         unset($GLOBALS['TYPO3_CONF_VARS']);
         parent::tearDown();
     }
@@ -399,6 +400,7 @@ final class ChallengeServiceTest extends TestCase
     #[Test]
     public function createChallengeTokenThrowsWhenGlobalsNotArray(): void
     {
+        \TYPO3\CMS\Core\Utility\GeneralUtility::purgeInstances();
         unset($GLOBALS['TYPO3_CONF_VARS']);
         $challenge = random_bytes(32);
         $this->expectException(RuntimeException::class);
