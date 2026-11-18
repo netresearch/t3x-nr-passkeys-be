@@ -128,3 +128,8 @@ and replay handling apply only after all old workers have left the pool.
 The move from cached counters to database counters starts a new throttling
 window. A recovery suspension limits when a password session may start.
 Review and terminate sessions created during the exception after recovery.
+
+On a fresh browser session, TYPO3 may request its configured second factor
+after the passkey login. The extension credits user verification only when
+the Core session lifecycle can preserve the verified result for the same
+account. Log out before switching backend accounts.

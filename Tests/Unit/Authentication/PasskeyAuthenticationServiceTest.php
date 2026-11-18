@@ -96,6 +96,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         // Set pObj (parent auth object) for session data access in passkey auth success path
         $this->pObj = $this->createMock(BackendUserAuthentication::class);
+        $this->pObj->method('getSession')->willReturn(\TYPO3\CMS\Core\Session\UserSession::createFromRecord('test-session', ['ses_userid' => 42]));
         $this->pObj
             ->method('getSessionData')
             ->willReturn(null);
@@ -286,6 +287,21 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
+    public function aDifferentSessionOwnerCannotReceiveTheMfaCredit(): void
+    {
+        $session = \TYPO3\CMS\Core\Session\UserSession::createFromRecord('other', ['ses_userid' => 99]);
+        $parent = $this->createMock(BackendUserAuthentication::class);
+        $parent->method('getSession')->willReturn($session);
+        $parent->expects(self::never())->method('setAndSaveSessionData');
+        $this->subject->pObj = $parent;
+        $this->subject->login = ['uname' => 'admin', 'uident' => $this->buildPasskeyUident(['valid' => 'assertion'])];
+        $this->webAuthnService->method('verifyAssertionResponse')->willReturn(
+            new VerifiedAssertion(new Credential(uid: 10, beUser: 42), $this->createMock(CredentialRecord::class), true),
+        );
+        self::assertSame(0, $this->subject->authUser(['uid' => 42, 'username' => 'admin']));
+    }
+
+    #[Test]
     public function authUserSkipsMfaSessionFlagWhenSkipMfaOnPasskeyAuthIsDisabled(): void
     {
         GeneralUtility::purgeInstances();
@@ -306,6 +322,7 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
         $pObj = $this->createMock(BackendUserAuthentication::class);
+        $pObj->method('getSession')->willReturn(\TYPO3\CMS\Core\Session\UserSession::createFromRecord('test-session', ['ses_userid' => 42]));
 
         // Only the tx_nrpasskeysbe marker — never the 'mfa' key.
         $pObj

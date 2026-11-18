@@ -201,7 +201,9 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             }
 
             $this->consumePasskeyToken();
-            $this->markSessionAsPasskeyAuthenticated($user, $ticket['userVerified']);
+            if (!$this->markSessionAsPasskeyAuthenticated($user, $ticket['userVerified'])) {
+                return 0;
+            }
             $this
                 ->getLogger()
                 ->info('Passkey token authentication successful', ['be_user_uid' => $tokenUid]);
@@ -309,7 +311,9 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                         'credential_uid' => $result->credential->getUid(),
                     ],
                 );
-            $this->markSessionAsPasskeyAuthenticated($user, $result->userVerified);
+            if (!$this->markSessionAsPasskeyAuthenticated($user, $result->userVerified)) {
+                return 0;
+            }
 
             // Return 200 = authenticated, stop further auth processing
             return 200;
@@ -393,29 +397,36 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
      *
      * @param array<string, mixed> $user
      */
-    private function markSessionAsPasskeyAuthenticated(array $user, bool $userVerified): void
+    private function markSessionAsPasskeyAuthenticated(array $user, bool $userVerified): bool
     {
-        // Interstitial middleware checks this to skip users who used a passkey.
-        $sessionData                     = $this->pObj->getSessionData('tx_nrpasskeysbe');
-        $merged                          = is_array($sessionData) ? $sessionData : [];
-        $merged['passkey_authenticated'] = true;
-        $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', $merged);
+        $session = $this->pObj->getSession();
+        $owner = $session->getUserId() ?? 0;
+        $uid = is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
 
-        // Setting the 'mfa' session key satisfies the check in
-        // AbstractUserAuthentication::evaluateMfaRequirements() and skips the
-        // MfaRequiredException path. Password logins are unaffected.
-        if ($userVerified && $this
-            ->getExtensionConfigService()
-            ->getConfiguration()
-            ->isSkipMfaOnPasskeyAuth()) {
-            $this->pObj->setAndSaveSessionData('mfa', true);
-            $this
-                ->getLogger()
-                ->info(
-                    'Passkey auth satisfied MFA requirement (skipping TYPO3 MFA challenge)',
-                    ['be_user_uid' => $user['uid'] ?? null],
-                );
+        if ($uid <= 0 || ($owner > 0 && $owner !== $uid)) {
+            return false;
         }
+
+        $stored = $this->pObj->getSessionData('tx_nrpasskeysbe');
+        $data = is_array($stored) ? $stored : [];
+        $data['passkey_authenticated'] = true;
+        $markers = ['tx_nrpasskeysbe' => $data];
+
+        if ($userVerified && $this->getExtensionConfigService()->getConfiguration()->isSkipMfaOnPasskeyAuth()) {
+            $markers['mfa'] = true;
+        }
+
+        foreach ($markers as $key => $value) {
+            if ($owner === 0) {
+                // Core carries the in-memory data of an existing anonymous session
+                // into the new login. A fresh session uses Core's normal MFA path.
+                $session->set($key, $value);
+            } else {
+                $this->pObj->setAndSaveSessionData($key, $value);
+            }
+        }
+
+        return true;
     }
 
     /**

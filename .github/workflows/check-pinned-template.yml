@@ -16,7 +16,7 @@ jobs:
         run: |
           set -euo pipefail
           path=.github/workflows/auto-merge-deps.yml
-          curl --fail --silent --show-error --location \
+          curl --fail --silent --show-error --proto '=https' --proto-redir '=https' \
             "https://raw.githubusercontent.com/netresearch/.github/main/templates/typo3-extension/$path" -o "$RUNNER_TEMP/upstream.yml"
           python3 - "$path" "$RUNNER_TEMP/upstream.yml" <<'PY'
           import pathlib
