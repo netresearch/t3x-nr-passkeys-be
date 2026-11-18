@@ -189,3 +189,12 @@ not verified).
     :ref:`Database and monitoring
     <administration-database>` for credential lifecycle,
     table schema, and logging configuration.
+
+Enrollment notification
+-----------------------
+
+After a passkey is saved, the extension sends a security notice to the email
+address on the account using the site's configured TYPO3 mail transport.
+The notice uses the backend user's language preference.
+An absent or invalid account address or a mail failure leaves the
+registered credential intact and is recorded in the TYPO3 log.
