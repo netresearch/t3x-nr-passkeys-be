@@ -22,6 +22,35 @@ use TYPO3\CMS\Core\Database\ConnectionPool;
 final class DatabaseRateLimitStoreTest extends TestCase
 {
     #[Test]
+    public function clearingTheTwoLoginCountersRetriesThemAsASingleStatement(): void
+    {
+        $error      = new class extends RuntimeException implements RetryableException {};
+        $connection = $this->createMock(Connection::class);
+        $calls      = 0;
+        $connection
+            ->expects(self::exactly(2))
+            ->method('executeStatement')
+            ->with(
+                'DELETE FROM tx_nrpasskeysbe_rate_limit WHERE key_hash IN (?, ?)',
+                ['address-key', 'account-key'],
+            )
+            ->willReturnCallback(
+                static function () use (&$calls, $error): int {
+                    if (++$calls === 1) {
+                        throw $error;
+                    }
+
+                    return 2;
+                },
+            );
+        $pool = $this->createStub(ConnectionPool::class);
+        $pool
+            ->method('getConnectionForTable')
+            ->willReturn($connection);
+        (new DatabaseRateLimitStore($pool))->forgetPair('address-key', 'account-key');
+    }
+
+    #[Test]
     public function persistentContentionPropagatesAfterThreeTransactions(): void
     {
         $error      = new class extends RuntimeException implements RetryableException {};

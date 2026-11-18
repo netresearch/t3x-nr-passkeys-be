@@ -111,6 +111,23 @@ final readonly class DatabaseRateLimitStore
             ->delete(self::TABLE, ['key_hash' => $key]);
     }
 
+    public function forgetPair(string $ipKey, string $userKey): void
+    {
+        $db = $this->pool->getConnectionForTable(self::TABLE);
+
+        for ($attempt = 0;; ++$attempt) {
+            try {
+                $db->executeStatement('DELETE FROM ' . self::TABLE . ' WHERE key_hash IN (?, ?)', [$ipKey, $userKey]);
+
+                return;
+            } catch (RetryableException $error) {
+                if ($attempt >= 2) {
+                    throw $error;
+                }
+            }
+        }
+    }
+
     public function forgetGroup(string $group): void
     {
         $this->pool

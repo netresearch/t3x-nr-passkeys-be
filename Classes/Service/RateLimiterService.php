@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
 
+use Doctrine\DBAL\Exception as DatabaseException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Symfony\Contracts\Service\Attribute\Required;
@@ -60,7 +61,14 @@ final class RateLimiterService
 
         if ($this->store instanceof DatabaseRateLimitStore) {
             if (random_int(1, 128) === 1) {
-                $this->store->prune();
+                try {
+                    $this->store->prune();
+                } catch (DatabaseException $error) {
+                    $this->logger->warning(
+                        'Expired rate-limit counters could not be removed',
+                        ['exception' => $error::class],
+                    );
+                }
             }
 
             if (!$this->store->increment($this->databaseKey($key), '', $windowSeconds, $maxAttempts)) {
@@ -222,17 +230,16 @@ final class RateLimiterService
      */
     public function recordSuccess(string $username, string $ip): void
     {
-        if ($this->store instanceof DatabaseRateLimitStore) {
-            $this->store->forget($this->databaseKey($this->buildLockoutKey($username, $ip)));
-            $this->store->forget($this->databaseKey($this->buildUserLockoutKey($username)));
+        $ipKey   = $this->buildLockoutKey($username, $ip);
+        $userKey = $this->buildUserLockoutKey($username);
 
-            return;
+        if ($this->store instanceof DatabaseRateLimitStore) {
+            $this->store->forgetPair($this->databaseKey($ipKey), $this->databaseKey($userKey));
+        } else {
+            $this->rateLimitCache->remove($ipKey);
+            $this->rateLimitCache->remove($userKey);
         }
 
-        $ipKey = $this->buildLockoutKey($username, $ip);
-        $this->rateLimitCache->remove($ipKey);
-        $userKey = $this->buildUserLockoutKey($username);
-        $this->rateLimitCache->remove($userKey);
         $this->logger->debug(
             'Lockout counters reset after successful authentication',
             ['usernameHash' => hash('sha256', $username)],
