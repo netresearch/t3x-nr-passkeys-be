@@ -1,213 +1,73 @@
-import { Page } from '@playwright/test';
-import { test, expect } from './fixtures';
-
-/**
- * E2E tests for the admin Passkey Dashboard module.
- *
- * Tests enforcement table, "Reset Login Lock" button label,
- * "Clear Nudge" button, and "Send Reminder" button.
- *
- * Prerequisites:
- *   - TYPO3 instance running (via `./Build/Scripts/runTests.sh -s e2e` or TYPO3_BASE_URL)
- *   - Admin user: admin / Joh316!!
- *
+/*
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+import { test, expect, loginAsAdmin, ADMIN_PASS } from './fixtures';
 
-const ADMIN_USER = process.env.TYPO3_ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.TYPO3_ADMIN_PASS || 'Joh316!!';
-
-async function loginAsAdmin(page: Page): Promise<boolean> {
-    await page.goto('/typo3/login');
-    await page.waitForLoadState('networkidle');
-
-    const usernameInput = page.locator('input[name="username"]');
-    const passwordInput = page.locator('input[name="p_field"]');
-
-    if (!await usernameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-        return false;
-    }
-
-    await usernameInput.fill(ADMIN_USER);
-    await passwordInput.fill(ADMIN_PASS);
-
-    await page.locator('#t3-login-submit').click();
-    await page.waitForLoadState('networkidle');
-
-    return !page.url().includes('/login');
-}
-
-/**
- * Navigate to the admin passkey dashboard module.
- * Returns the frame (or page) where the module content lives.
- */
-async function navigateToDashboard(page: Page): Promise<Page | ReturnType<Page['frame']>> {
-    // TYPO3 derives a module's route from its identifier, not from its parent:
-    // ModuleFactory turns `admin_passkeys` into `/module/admin/passkeys`
-    // (underscores become slashes) unless the registration sets an explicit
-    // `path`. Configuration/Backend/Modules.php sets none. The old URL
-    // `/module/system/admin_passkeys` does not resolve, and TYPO3 answers by
-    // redirecting to the user's start module — so every assertion here ran
-    // against TYPO3's own Dashboard instead of the passkey module.
-    await page.goto('/typo3/module/admin/passkeys');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
-
-    // TYPO3 renders module content in an iframe (list_frame)
-    const contentFrame = page.frame('list_frame');
-    if (contentFrame) {
-        return contentFrame;
-    }
-    return page;
-}
-
-test.describe('Admin Passkey Dashboard - Module Access', () => {
-    let isLoggedIn = false;
-
+test.describe('Admin passkey dashboard', () => {
     test.beforeEach(async ({ page }) => {
-        isLoggedIn = await loginAsAdmin(page);
+        await loginAsAdmin(page);
     });
 
-    test('admin dashboard module loads successfully', async ({ page }) => {
-        test.skip(!isLoggedIn, 'Login failed');
+    test('opens the passkey dashboard and loads its module', async ({ page }) => {
+        const errors: string[] = [];
+        page.on('pageerror', error => errors.push(error.message));
 
-        const frame = await navigateToDashboard(page);
-        // The page should contain some passkey-related content
-        const body = frame!.locator('body');
-        await expect(body).toBeAttached();
-
-        // Should not be an error page
-        const pageText = await body.textContent();
-        expect(pageText).not.toContain('Page not found');
+        await page.goto('/typo3/module/admin/passkeys');
+        const dashboard = page.frameLocator('#typo3-contentIframe').locator('#passkey-dashboard');
+        await expect(dashboard).toBeVisible();
+        await expect(dashboard.locator('#passkey-groups-table')).toBeVisible();
+        expect(errors).toEqual([]);
     });
 
-    test('admin dashboard loads JS without console errors', async ({ page }) => {
-        test.skip(!isLoggedIn, 'Login failed');
+    test('persists the enforcement change on the test group', async ({ page }) => {
+        await page.goto('/typo3/module/admin/passkeys');
+        const dashboard = page.frameLocator('#typo3-contentIframe').locator('#passkey-dashboard');
+        const row = dashboard.getByRole('row').filter({ hasText: 'E2E passkey enforcement' });
+        const select = row.getByRole('combobox');
+        await expect(select).toBeEnabled();
+        await expect(select.locator('option')).toHaveCount(4);
+        const initial = await select.inputValue();
+        const next = initial === 'off' ? 'encourage' : 'off';
 
-        const consoleErrors: string[] = [];
-        page.on('console', (msg) => {
-            if (msg.type() === 'error') {
-                consoleErrors.push(msg.text());
+        async function setEnforcement(value: string) {
+            const responseForUpdate = () => page.waitForResponse(response =>
+                new URL(response.url()).pathname.endsWith('/passkeys/admin/update-enforcement')
+                && response.request().method() === 'POST',
+            );
+            const pending = responseForUpdate();
+            await select.selectOption(value);
+            let response = await pending;
+            if (response.status() === 422) {
+                const password = page.locator('#verify-sudo-mode input[name="password"]');
+                await password.fill(ADMIN_PASS);
+                const retry = responseForUpdate();
+                await password.press('Enter');
+                response = await retry;
             }
-        });
-
-        await navigateToDashboard(page);
-
-        // Filter out known benign errors
-        const realErrors = consoleErrors.filter(
-            (e) => !e.includes('favicon') && !e.includes('404') && !e.includes('net::')
-                && !e.includes('is not valid JSON'),
-        );
-        expect(realErrors).toHaveLength(0);
-    });
-});
-
-test.describe('Admin Passkey Dashboard - Enforcement Table', () => {
-    let isLoggedIn = false;
-
-    test.beforeEach(async ({ page }) => {
-        isLoggedIn = await loginAsAdmin(page);
-    });
-
-    test('dashboard has groups enforcement section', async ({ page }) => {
-        test.skip(!isLoggedIn, 'Login failed');
-
-        const frame = await navigateToDashboard(page);
-        const content = await frame!.locator('body').textContent();
-
-        // Should contain enforcement-related content or a groups section
-        // (exact text depends on whether groups exist)
-        const hasEnforcementSection = content!.toLowerCase().includes('enforcement')
-            || content!.toLowerCase().includes('group')
-            || content!.toLowerCase().includes('passkey');
-        expect(hasEnforcementSection).toBe(true);
-    });
-
-    test('enforcement select dropdowns exist when groups are present', async ({ page }) => {
-        test.skip(!isLoggedIn, 'Login failed');
-
-        const frame = await navigateToDashboard(page);
-        const selects = frame!.locator('.passkey-enforcement-select');
-        const count = await selects.count();
-
-        // If there are groups, there should be enforcement selects
-        if (count > 0) {
-            // Each select should have enforcement options
-            const firstSelect = selects.first();
-            await expect(firstSelect).toBeEnabled();
-            const options = firstSelect.locator('option');
-            expect(await options.count()).toBeGreaterThanOrEqual(2);
+            expect(response.status()).toBe(200);
+            expect(await response.json()).toMatchObject({ status: 'ok', enforcement: value });
         }
-    });
-});
 
-test.describe('Admin Passkey Dashboard - Reset Login Lock', () => {
-    let isLoggedIn = false;
-
-    test.beforeEach(async ({ page }) => {
-        isLoggedIn = await loginAsAdmin(page);
-    });
-
-    test('unlock buttons use "Reset Login Lock" or "Reset Lock" label', async ({ page }) => {
-        test.skip(!isLoggedIn, 'Login failed');
-
-        const frame = await navigateToDashboard(page);
-
-        // Check for unlock/reset buttons
-        const unlockButtons = frame!.locator('.passkey-unlock-user');
-        const count = await unlockButtons.count();
-
-        if (count > 0) {
-            for (let i = 0; i < count; i++) {
-                const text = await unlockButtons.nth(i).textContent();
-                // Should say "Reset Lock" or "Reset Login Lock", NOT "Unlock"
-                expect(text!.toLowerCase()).toMatch(/reset/i);
-                expect(text!.toLowerCase()).not.toBe('unlock');
+        try {
+            await setEnforcement(next);
+            await page.reload();
+            await expect(select).toHaveValue(next);
+        } finally {
+            if (await select.inputValue() !== initial) {
+                await setEnforcement(initial);
             }
         }
     });
-});
 
-test.describe('Admin Passkey Dashboard - Clear Nudge', () => {
-    let isLoggedIn = false;
-
-    test.beforeEach(async ({ page }) => {
-        isLoggedIn = await loginAsAdmin(page);
-    });
-
-    test('clear nudge buttons are present for nudged users', async ({ page }) => {
-        test.skip(!isLoggedIn, 'Login failed');
-
-        const frame = await navigateToDashboard(page);
-        const clearNudgeButtons = frame!.locator('.passkey-clear-nudge');
-        const count = await clearNudgeButtons.count();
-
-        // Clear nudge buttons may or may not be present depending on data
-        // Just verify no JS errors (tested in module access tests above)
-        if (count > 0) {
-            // First clear nudge button should be clickable
-            await expect(clearNudgeButtons.first()).toBeEnabled();
-        }
-    });
-});
-
-test.describe('Admin Passkey Dashboard - Send Reminder', () => {
-    let isLoggedIn = false;
-
-    test.beforeEach(async ({ page }) => {
-        isLoggedIn = await loginAsAdmin(page);
-    });
-
-    test('send reminder buttons are present for users without passkeys', async ({ page }) => {
-        test.skip(!isLoggedIn, 'Login failed');
-
-        const frame = await navigateToDashboard(page);
-        const reminderButtons = frame!.locator('.passkey-send-reminder');
-        const count = await reminderButtons.count();
-
-        if (count > 0) {
-            await expect(reminderButtons.first()).toBeEnabled();
-        }
+    test('offers reminder, clear reminder and reset login lock for the nudged test user', async ({ page }) => {
+        await page.goto('/typo3/module/admin/passkeys');
+        const dashboard = page.frameLocator('#typo3-contentIframe').locator('#passkey-dashboard');
+        const row = dashboard.getByRole('row').filter({ hasText: 'e2e_passkey_reminder' });
+        await expect(row.locator('.passkey-send-reminder')).toBeEnabled();
+        await expect(row.locator('.passkey-clear-nudge')).toBeEnabled();
+        const reset = row.locator('.passkey-unlock-user');
+        await expect(reset).toBeEnabled();
+        await expect(reset).toHaveAccessibleName(/reset.*lock/i);
     });
 });

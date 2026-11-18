@@ -1,5 +1,5 @@
 import { Page, CDPSession } from '@playwright/test';
-import { test, expect } from './fixtures';
+import { test, expect, loginAsAdmin, ADMIN_PASS, ADMIN_USER } from './fixtures';
 
 /**
  * E2E tests for the full passkey login flow using a CDP Virtual Authenticator.
@@ -20,29 +20,6 @@ import { test, expect } from './fixtures';
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
-const ADMIN_USER = process.env.TYPO3_ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.TYPO3_ADMIN_PASS || 'Joh316!!';
-
-async function loginAsAdmin(page: Page): Promise<boolean> {
-    await page.goto('/typo3/login');
-    await page.waitForLoadState('networkidle');
-
-    const usernameInput = page.locator('input[name="username"]');
-    const passwordInput = page.locator('input[name="p_field"]');
-
-    if (!await usernameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-        return false;
-    }
-
-    await usernameInput.fill(ADMIN_USER);
-    await passwordInput.fill(ADMIN_PASS);
-
-    await page.locator('#t3-login-submit').click();
-    await page.waitForLoadState('networkidle');
-
-    return !page.url().includes('/login');
-}
 
 async function logOut(page: Page): Promise<void> {
     // TYPO3's /typo3/logout route may require a CSRF token and fails silently
@@ -298,8 +275,7 @@ async function cleanupTestCredentials(page: Page): Promise<void> {
 // gives the instance a host the browser accepts as a secure context.
 test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
     test('complete passkey login flow (username-first)', async ({ page }) => {
-        const loggedIn = await loginAsAdmin(page);
-        test.skip(!loggedIn, 'Password login failed');
+        await loginAsAdmin(page);
 
         const { cdp, authenticatorId } = await setupVirtualAuthenticator(page);
 
@@ -343,8 +319,7 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
     });
 
     test('complete passkey login flow (discoverable/usernameless)', async ({ page }) => {
-        const loggedIn = await loginAsAdmin(page);
-        test.skip(!loggedIn, 'Password login failed');
+        await loginAsAdmin(page);
 
         const { cdp, authenticatorId } = await setupVirtualAuthenticator(page, {
             hasResidentKey: true,
@@ -374,7 +349,7 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
         if (!config?.discoverableEnabled) {
             await cleanupTestCredentials(page);
             await removeVirtualAuthenticator(cdp, authenticatorId);
-            // Login to clean up, then fail
+            // Clean up before skipping this optional configuration.
             await loginAsAdmin(page);
             await cleanupTestCredentials(page);
             test.skip(true, 'Discoverable login is disabled in extension config');
@@ -401,8 +376,7 @@ test.describe('Passkey Login Flow - Full WebAuthn Ceremony', () => {
 
 test.describe('Passkey Login - Form Integration', () => {
     test('the login form carries the verified login token before submit', async ({ page }) => {
-        const loggedIn = await loginAsAdmin(page);
-        test.skip(!loggedIn, 'Password login failed');
+        await loginAsAdmin(page);
 
         const { cdp, authenticatorId } = await setupVirtualAuthenticator(page);
 
@@ -471,10 +445,8 @@ test.describe('Passkey Login - Form Integration', () => {
         expect(submitData.assertion).toBe('');
 
         await removeVirtualAuthenticator(cdp, authenticatorId);
-        const loggedIn2 = await loginAsAdmin(page);
-        if (loggedIn2) {
-            await cleanupTestCredentials(page);
-        }
+        await loginAsAdmin(page);
+        await cleanupTestCredentials(page);
     });
 
     test('passkey elements are inside the standard TYPO3 login form', async ({ page }) => {
@@ -626,12 +598,9 @@ test.describe('Passkey Login - Error Handling', () => {
 
         const error = page.locator('#passkey-error');
 
-        await Promise.race([
-            expect(error).toBeVisible({ timeout: 10000 }).catch(() => {}),
-            page.waitForTimeout(10000),
-        ]);
-
-        expect(page.url()).toContain('/login');
+        await expect(error).toBeVisible({ timeout: 10000 });
+        await expect(error).toHaveText(/\S/);
+        await expect(page).toHaveURL(/\/login(?:[?#]|$)/);
 
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });

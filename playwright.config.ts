@@ -48,7 +48,6 @@ const useSecureAlias = !!SECURE_ALIAS_HOST && !isTrustedOrigin;
 
 export default defineConfig({
     testDir: './Tests/E2E',
-    globalSetup: './Tests/E2E/global-setup.ts',
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
