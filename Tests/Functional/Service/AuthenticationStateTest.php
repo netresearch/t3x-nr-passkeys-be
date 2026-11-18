@@ -14,6 +14,8 @@ use Netresearch\NrPasskeysBe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysBe\Service\DatabaseRateLimitStore;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use PHPUnit\Framework\Attributes\Test;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -86,7 +88,7 @@ final class AuthenticationStateTest extends FunctionalTestCase
             $connection->insert($table, ['token_hash' => hash('sha256', $key), 'expires_at' => $now + $offset]);
         }
 
-        $store = new ConsumedTokenStore($pool);
+        $store = new ConsumedTokenStore($pool, new NullLogger());
         $store->pruneExpired();
         self::assertSame(0, (int) $connection->count('*', $table, ['token_hash' => hash('sha256', 'old')]));
         self::assertSame(1, (int) $connection->count('*', $table, ['token_hash' => hash('sha256', 'recent')]));
@@ -168,8 +170,13 @@ final class AuthenticationStateTest extends FunctionalTestCase
     public function aTicketHasOneClaimAcrossIndependentInstances(): void
     {
         $db     = $this->get(ConnectionPool::class);
-        $first  = new ConsumedTokenStore($db);
-        $second = new ConsumedTokenStore($db);
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger
+            ->expects(self::once())
+            ->method('notice')
+            ->with('Rejected a previously consumed passkey token.', []);
+        $first  = new ConsumedTokenStore($db, $logger);
+        $second = new ConsumedTokenStore($db, $logger);
         self::assertTrue($first->claim('login:example', time() + 120));
         self::assertFalse($second->claim('login:example', time() + 120));
         self::assertFalse($second->claim('login:expired', time() - 1));

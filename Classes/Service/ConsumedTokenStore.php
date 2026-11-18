@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Service;
 
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
 /** The primary key arbitrates single-use claims across application nodes. */
@@ -18,7 +19,7 @@ final readonly class ConsumedTokenStore
 {
     private const TABLE = 'tx_nrpasskeysbe_consumed_token';
 
-    public function __construct(private ConnectionPool $connectionPool) {}
+    public function __construct(private ConnectionPool $connectionPool, private LoggerInterface $logger) {}
 
     public function claim(string $key, int $expiresAt): bool
     {
@@ -37,6 +38,8 @@ final readonly class ConsumedTokenStore
         try {
             return $connection->insert(self::TABLE, ['token_hash' => hash('sha256', $key), 'expires_at' => $expiresAt]) === 1;
         } catch (UniqueConstraintViolationException) {
+            $this->logger->notice('Rejected a previously consumed passkey token.');
+
             return false;
         }
     }
