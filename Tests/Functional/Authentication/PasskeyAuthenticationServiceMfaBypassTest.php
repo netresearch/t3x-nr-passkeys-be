@@ -17,8 +17,16 @@ use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Authentication\Mfa\MfaRequiredException;
 use TYPO3\CMS\Core\Cache\Backend\NullBackend;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration as Typo3ExtensionConfiguration;
+use TYPO3\CMS\Core\Context\Context;
+use TYPO3\CMS\Core\Context\SecurityAspect;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Http\NormalizedParams;
+use TYPO3\CMS\Core\Http\ServerRequest;
+use TYPO3\CMS\Core\Security\RequestToken;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 use Webauthn\CredentialRecord;
@@ -63,6 +71,47 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         GeneralUtility::purgeInstances();
         unset($GLOBALS['BE_USER']);
         parent::tearDown();
+    }
+
+    #[Test]
+    public function freshLoginThroughCoreChallengesTheConfiguredMfaProvider(): void
+    {
+        $this->stubExtensionConfigServiceWithSkipMfaFlag(true);
+        $this->stubWebAuthnServiceWithVerifiedAssertion();
+        $this->stubRateLimiterService();
+        $this
+            ->get(ConnectionPool::class)
+            ->getConnectionForTable('be_users')
+            ->update(
+                'be_users',
+                ['mfa' => json_encode(['totp' => ['active' => true, 'secret' => 'test-fixture-only']], JSON_THROW_ON_ERROR)],
+                ['uid' => 5],
+            );
+        $request = (new ServerRequest('https://example.test/typo3/login', 'POST'))->withParsedBody(
+            ['login_status' => 'login', 'username' => 'adminuser', 'userident' => $this->buildPasskeyPayload()],
+        );
+        $request = $request->withAttribute('normalizedParams', NormalizedParams::createFromRequest($request));
+
+        // The request-token middleware normally supplies this login-scoped token.
+        SecurityAspect::provideIn($this->get(Context::class))->setReceivedRequestToken(
+            RequestToken::create('core/user-auth/be'),
+        );
+        $backendUser        = GeneralUtility::makeInstance(BackendUserAuthentication::class);
+        $GLOBALS['BE_USER'] = $backendUser;
+
+        try {
+            $backendUser->start($request);
+            self::fail('Expected the configured MFA provider to challenge the fresh session.');
+        } catch (MfaRequiredException $required) {
+            self::assertSame('totp', $required
+                ->getProvider()
+                ->getIdentifier());
+        }
+
+        self::assertSame(5, $backendUser
+            ->getSession()
+            ->getUserId());
+        self::assertNull($backendUser->getSessionData('mfa'));
     }
 
     #[Test]
