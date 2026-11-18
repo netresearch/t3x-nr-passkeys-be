@@ -18,6 +18,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 use TYPO3\CMS\Backend\Routing\Route;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -182,10 +183,24 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
             return $handler->handle($request);
         }
 
-        $status = $this->enforcementService->getStatus($userRow);
+        try {
+            // A temporary recovery suspension does not extend the underlying grace deadline.
+            $status = $this->enforcementService->getStatus($userRow, applySuspensions: !$passkeyAuthenticated);
 
-        if ($status->hasPasskeys && $status->level === EnforcementLevel::Required && $status->gracePeriodStart === 0) {
-            $this->enforcementService->startGracePeriod($uid);
+            if ($status->hasPasskeys && $status->level === EnforcementLevel::Required && $status->gracePeriodStart === 0) {
+                $this->enforcementService->startGracePeriod($uid);
+            }
+        } catch (Throwable $error) {
+            if (!$passkeyAuthenticated) {
+                throw $error;
+            }
+
+            $this->logger->error(
+                'Could not record enrollment policy for a passkey session.',
+                ['exception' => $error::class],
+            );
+
+            return $handler->handle($request);
         }
 
         if ($passkeyAuthenticated || !$status->requiresInterstitial()) {

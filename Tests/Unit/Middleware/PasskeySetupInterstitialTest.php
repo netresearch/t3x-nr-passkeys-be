@@ -21,6 +21,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use TYPO3\CMS\Backend\Routing\Route;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -928,6 +929,28 @@ final class PasskeySetupInterstitialTest extends TestCase
     }
 
     #[Test]
+    public function aVerifiedSessionKeepsAccessWhenGraceCannotBeRead(): void
+    {
+        $backendUser       = $this->createMock(BackendUserAuthentication::class);
+        $backendUser->user = ['uid' => 1, 'usergroup' => '1'];
+        $backendUser
+            ->method('getSessionData')
+            ->willReturn(['passkey_authenticated' => true]);
+        $backendUser
+            ->expects(self::never())
+            ->method('setAndSaveSessionData');
+        $GLOBALS['BE_USER'] = $backendUser;
+        $this->enforcementService
+            ->method('getStatus')
+            ->willThrowException(new RuntimeException('invalid policy'));
+        $handler = $this->createMockHandler();
+        $handler
+            ->expects(self::once())
+            ->method('handle');
+        $this->subject->process($this->createMockRequest('main'), $handler);
+    }
+
+    #[Test]
     public function startsRequiredGracePeriodOnPasskeyLoginWithoutPrompting(): void
     {
         $backendUser       = $this->createMock(BackendUserAuthentication::class);
@@ -941,6 +964,7 @@ final class PasskeySetupInterstitialTest extends TestCase
         $this->enforcementService
             ->expects(self::once())
             ->method('getStatus')
+            ->with($backendUser->user, false)
             ->willReturn(
                 new EnforcementStatus(
                     level: EnforcementLevel::Required,
