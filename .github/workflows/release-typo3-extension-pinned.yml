@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
 # Upstream: netresearch/typo3-ci-workflows@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
-# The CI repository check verifies the upstream file and the three publishing pins.
+# CI verifies the upstream workflow, the three publishing pins and native draft creation.
 name: Release (TYPO3 extension)
 
 # Orchestrator for the full TYPO3-extension release pipeline.
@@ -408,9 +408,8 @@ jobs:
 
       # A re-run on the tag is the recovery path for a failed target, so this
       # job must cope with a release that already exists. Under Immutable
-      # Releases the assets of a published release cannot be changed, and
-      # both the action and the completion step below would try to upload
-      # them. Three states:
+      # Releases the assets of a published release cannot be changed. Read the
+      # state before creating a draft or attempting an upload:
       #   absent    - create the release (the normal first run)
       #   draft     - an earlier run died during the asset upload; the
       #               completion step finishes it
@@ -523,29 +522,13 @@ jobs:
           name: release-dist
           path: dist/
 
-      - name: Create GitHub Release (atomic, all assets)
-        id: gh-release
-        # Failure here is not the end of the release: the action creates the
-        # release as a draft, uploads every asset, and only then finalizes it,
-        # so an upload that dies leaves an unpublished draft with a partial
-        # asset set. The completion step below finishes the job or fails
-        # loudly, and `continue-on-error` is what lets it run at all.
-        continue-on-error: true
+      - name: Create the release draft
         if: steps.state.outputs.state == 'absent'
-        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
-        with:
-          make_latest: ${{ steps.latest.outputs.latest }}
-          files: |
-            dist/*
-          fail_on_unmatched_files: true
-          # Sequentially, not in parallel. The default uploads every asset at
-          # once (`Promise.all` in the action's run.ts), and concurrent uploads
-          # against one release make GitHub's asset endpoint answer
-          # `Error creating asset temp dir` — a server-side failure with no
-          # retry behind it, which then aborts the whole step. Seen twice on
-          # one release, at a different asset each time.
-          preserve_order: true
-          body: |
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          RELEASE_BODY: |
             ## Changes
             ${{ needs.build-and-sign.outputs.release-notes }}
 
@@ -585,20 +568,14 @@ jobs:
 
             SBOMs are provided in both SPDX and CycloneDX formats for supply chain transparency.
 
-      # The guarantee this job is built on is that a published release is
-      # complete: every artifact the build produced, present, on a page nobody
-      # edited afterwards. GitHub's asset endpoint does not cooperate — it
-      # answers `Error creating asset temp dir` often enough that a release of
-      # ten assets hits it regularly, and neither the endpoint nor the action
-      # retries. `preserve_order` above removes the concurrency that provokes
-      # it; this step covers the rest, per asset rather than per run, so one
-      # bad upload costs one retry instead of the whole release.
-      #
-      # It is deliberately not a second author of the release. It uploads only
-      # files the build produced and the release is missing, and it publishes
-      # only once the set is complete: a release that cannot be completed stays
-      # an unpublished draft and the job fails, which is the same outcome as
-      # today minus the manual repair.
+        run: |
+          set -euo pipefail
+          notes="$RUNNER_TEMP/release-notes.md"
+          printf '%s' "$RELEASE_BODY" > "$notes"
+          gh release create "$TAG" --repo "$REPO" --verify-tag --draft --title "$TAG" --notes-file "$notes"
+
+      # Upload assets one at a time and retry missing files. Publish only after
+      # GitHub confirms that every asset from this build has been uploaded.
       - name: Complete and publish the release
         if: steps.state.outputs.state != 'published'
         env:
@@ -694,13 +671,17 @@ jobs:
           fi
           echo "All $(wc -l < expected.txt) assets are on the release."
 
-          if [[ "$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft')" == "true" ]]; then
+          DRAFT="$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft')"
+          if [[ "$DRAFT" == "true" ]]; then
             echo "Publishing the completed release."
             # --latest carries the decision of "Decide whether this release
             # becomes Latest": without it this path would not pass it on, and a
             # backport release could take the Latest badge from the top major
             # line.
             gh release edit "$TAG" --repo "$REPO" --draft=false --latest="$MAKE_LATEST"
+          elif [[ "$DRAFT" != "false" ]]; then
+            echo "::error::GitHub returned an unexpected draft state for ${TAG}."
+            exit 1
           fi
 
   publish-to-ter:
