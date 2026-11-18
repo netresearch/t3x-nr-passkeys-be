@@ -75,7 +75,10 @@ final class DatabaseRateLimitStoreTest extends TestCase
         $connection
             ->expects(self::exactly(3))
             ->method('executeStatement')
-            ->with('DELETE FROM tx_nrpasskeysbe_rate_limit WHERE key_hash IN (?, ?)', ['address-key', 'account-key'])
+            ->with(
+                'DELETE FROM tx_nrpasskeysbe_rate_limit WHERE key_hash IN (?, ?)',
+                ['address-key', 'account-key'],
+            )
             ->willThrowException($error);
         $pool = $this->createStub(ConnectionPool::class);
         $pool
