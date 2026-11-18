@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Controller;
 use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
+use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
@@ -338,14 +339,7 @@ final readonly class ManagementController
             /** @var array<string, mixed> $record */
             $record  = $backend->user;
             $level   = $this->enforcementService->getStatus($record, false)->level;
-            $protect = in_array(
-                $level,
-                [
-                    \Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel::Required,
-                    \Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel::Enforced,
-                ],
-                true,
-            );
+            $protect = in_array($level, [EnforcementLevel::Required, EnforcementLevel::Enforced], true);
         }
 
         if (!$this->credentialRepository->removeOwned($credentialUid, $user->uid, $protect)) {

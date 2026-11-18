@@ -141,7 +141,7 @@ final class EnforcementServiceTest extends TestCase
             ->method('countByBeUser')
             ->with(8)
             ->willReturn(0);
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
         $this->subject->getStatus($userRow);
     }
 

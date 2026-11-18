@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Authentication;
 use Doctrine\DBAL\ParameterType;
 use JsonException;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
+use Netresearch\NrPasskeysBe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
@@ -186,7 +187,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         if ($ticket !== null && $tokenUid > 0 && $tokenUid === (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
             try {
-                if (!GeneralUtility::makeInstance(\Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class)->claim(
+                if (!GeneralUtility::makeInstance(ConsumedTokenStore::class)->claim(
                     'login:' . $this->extractLoginToken(),
                     $ticket['expiresAt'],
                 )) {
@@ -201,9 +202,11 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
             }
 
             $this->consumePasskeyToken();
+
             if (!$this->markSessionAsPasskeyAuthenticated($user, $ticket['userVerified'])) {
                 return 0;
             }
+
             $this
                 ->getLogger()
                 ->info('Passkey token authentication successful', ['be_user_uid' => $tokenUid]);
@@ -311,6 +314,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
                         'credential_uid' => $result->credential->getUid(),
                     ],
                 );
+
             if (!$this->markSessionAsPasskeyAuthenticated($user, $result->userVerified)) {
                 return 0;
             }
@@ -400,19 +404,22 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
     private function markSessionAsPasskeyAuthenticated(array $user, bool $userVerified): bool
     {
         $session = $this->pObj->getSession();
-        $owner = $session->getUserId() ?? 0;
-        $uid = is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
+        $owner   = $session->getUserId() ?? 0;
+        $uid     = is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0;
 
-        if ($uid <= 0 || ($owner > 0 && $owner !== $uid)) {
+        if ($uid <= 0 || $owner > 0 && $owner !== $uid) {
             return false;
         }
 
-        $stored = $this->pObj->getSessionData('tx_nrpasskeysbe');
-        $data = is_array($stored) ? $stored : [];
+        $stored                        = $this->pObj->getSessionData('tx_nrpasskeysbe');
+        $data                          = is_array($stored) ? $stored : [];
         $data['passkey_authenticated'] = true;
-        $markers = ['tx_nrpasskeysbe' => $data];
+        $markers                       = ['tx_nrpasskeysbe' => $data];
 
-        if ($userVerified && $this->getExtensionConfigService()->getConfiguration()->isSkipMfaOnPasskeyAuth()) {
+        if ($userVerified && $this
+            ->getExtensionConfigService()
+            ->getConfiguration()
+            ->isSkipMfaOnPasskeyAuth()) {
             $markers['mfa'] = true;
         }
 

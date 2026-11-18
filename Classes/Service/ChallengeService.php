@@ -14,6 +14,7 @@ use RuntimeException;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function base64_decode;
 use function base64_encode;
@@ -143,10 +144,7 @@ final readonly class ChallengeService
             throw new RuntimeException('Invalid challenge data in token', 1700000006);
         }
 
-        if (!\TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(ConsumedTokenStore::class)->claim(
-            'nonce:' . $nonce,
-            $expiresAt,
-        )) {
+        if (!GeneralUtility::makeInstance(ConsumedTokenStore::class)->claim('nonce:' . $nonce, $expiresAt)) {
             throw new RuntimeException('Challenge already consumed or expired', 1700000005);
         }
 

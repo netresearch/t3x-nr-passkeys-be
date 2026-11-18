@@ -15,6 +15,7 @@ use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use Webauthn\AuthenticationExtensions\AuthenticationExtension;
 use Webauthn\AuthenticationExtensions\AuthenticationExtensions;
 use Webauthn\AuthenticatorAttestationResponse;
@@ -214,7 +215,7 @@ final readonly class AttestationService
     private function registrationContext(int $uid): string
     {
         $user    = $GLOBALS['BE_USER'] ?? null;
-        $session = $user instanceof \TYPO3\CMS\Core\Authentication\BackendUserAuthentication ? $user
+        $session = $user instanceof BackendUserAuthentication ? $user
             ->getSession()
             ->getIdentifier() : '';
         $config = $this->configService->getConfiguration();

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Middleware;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
+use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use Psr\Http\Message\ResponseInterface;
@@ -186,7 +187,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
 
         $status = $this->enforcementService->getStatus($userRow);
 
-        if ($status->hasPasskeys && $status->level === \Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel::Required && $status->gracePeriodStart === 0) {
+        if ($status->hasPasskeys && $status->level === EnforcementLevel::Required && $status->gracePeriodStart === 0) {
             $this->enforcementService->startGracePeriod($uid);
         }
 

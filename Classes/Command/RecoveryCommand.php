@@ -18,6 +18,8 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Log\LogManager;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function is_string;
 use function sprintf;
@@ -99,11 +101,12 @@ final class RecoveryCommand extends Command
                 return Command::FAILURE;
             }
 
-            \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Log\LogManager::class)
-                ->getLogger(
-                    self::class,
-                )
-                ->warning('Emergency passkey group suspension', ['group' => $uid, 'expiresAt' => $until]);
+            GeneralUtility::makeInstance(LogManager::class)
+                ->getLogger(self::class)
+                ->warning(
+                    'Emergency passkey group suspension',
+                    ['group' => $uid, 'expiresAt' => $until],
+                );
             $io->success(
                 sprintf('Passkey enforcement suspended for group %d (%d row(s) updated) for 15 minutes.', $uid, $count),
             );
@@ -113,10 +116,8 @@ final class RecoveryCommand extends Command
         if ($input->getOption('disable-all') === true) {
             $until = time() + 900;
             $count = $this->disableEnforcementForAllGroups($until);
-            \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Log\LogManager::class)
-                ->getLogger(
-                    self::class,
-                )
+            GeneralUtility::makeInstance(LogManager::class)
+                ->getLogger(self::class)
                 ->warning(
                     'Emergency passkey enforcement suspension for all active groups',
                     ['expiresAt' => $until, 'groups' => $count],

@@ -16,6 +16,7 @@ use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
+use Netresearch\NrPasskeysBe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
@@ -34,6 +35,7 @@ use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Session\UserSession;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webauthn\CredentialRecord;
 
@@ -96,7 +98,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         // Set pObj (parent auth object) for session data access in passkey auth success path
         $this->pObj = $this->createMock(BackendUserAuthentication::class);
-        $this->pObj->method('getSession')->willReturn(\TYPO3\CMS\Core\Session\UserSession::createFromRecord('test-session', ['ses_userid' => 42]));
+        $this->pObj
+            ->method('getSession')
+            ->willReturn(
+                UserSession::createFromRecord('test-session', ['ses_userid' => 42]),
+            );
         $this->pObj
             ->method('getSessionData')
             ->willReturn(null);
@@ -150,11 +156,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      */
     private function stubTokenCache(string $token, string|false $value): FrontendInterface&MockObject
     {
-        $store = $this->createStub(\Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class);
+        $store = $this->createStub(ConsumedTokenStore::class);
         $store
             ->method('claim')
             ->willReturn(true);
-        GeneralUtility::addInstance(\Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class, $store);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
         $cache = $this->createMock(FrontendInterface::class);
         $cache
             ->method('get')
@@ -289,15 +295,21 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function aDifferentSessionOwnerCannotReceiveTheMfaCredit(): void
     {
-        $session = \TYPO3\CMS\Core\Session\UserSession::createFromRecord('other', ['ses_userid' => 99]);
-        $parent = $this->createMock(BackendUserAuthentication::class);
-        $parent->method('getSession')->willReturn($session);
-        $parent->expects(self::never())->method('setAndSaveSessionData');
-        $this->subject->pObj = $parent;
+        $session = UserSession::createFromRecord('other', ['ses_userid' => 99]);
+        $parent  = $this->createMock(BackendUserAuthentication::class);
+        $parent
+            ->method('getSession')
+            ->willReturn($session);
+        $parent
+            ->expects(self::never())
+            ->method('setAndSaveSessionData');
+        $this->subject->pObj  = $parent;
         $this->subject->login = ['uname' => 'admin', 'uident' => $this->buildPasskeyUident(['valid' => 'assertion'])];
-        $this->webAuthnService->method('verifyAssertionResponse')->willReturn(
-            new VerifiedAssertion(new Credential(uid: 10, beUser: 42), $this->createMock(CredentialRecord::class), true),
-        );
+        $this->webAuthnService
+            ->method('verifyAssertionResponse')
+            ->willReturn(
+                new VerifiedAssertion(new Credential(uid: 10, beUser: 42), $this->createMock(CredentialRecord::class), true),
+            );
         self::assertSame(0, $this->subject->authUser(['uid' => 42, 'username' => 'admin']));
     }
 
@@ -322,7 +334,9 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
         $pObj = $this->createMock(BackendUserAuthentication::class);
-        $pObj->method('getSession')->willReturn(\TYPO3\CMS\Core\Session\UserSession::createFromRecord('test-session', ['ses_userid' => 42]));
+        $pObj
+            ->method('getSession')
+            ->willReturn(UserSession::createFromRecord('test-session', ['ses_userid' => 42]));
 
         // Only the tx_nrpasskeysbe marker — never the 'mfa' key.
         $pObj

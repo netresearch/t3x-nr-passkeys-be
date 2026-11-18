@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
 
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
+use Netresearch\NrPasskeysBe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -21,6 +22,7 @@ use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function base64_decode;
 use function base64_encode;
@@ -49,14 +51,11 @@ final class ChallengeServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $store = $this->createStub(\Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class);
+        $store = $this->createStub(ConsumedTokenStore::class);
         $store
             ->method('claim')
             ->willReturn(true);
-        \TYPO3\CMS\Core\Utility\GeneralUtility::addInstance(
-            \Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class,
-            $store,
-        );
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'test-encryption-key-that-is-long-enough-for-hmac';
         $this->nonceCacheMock                               = $this->createMock(FrontendInterface::class);
         $this->lockFactoryMock                              = $this->createMock(LockFactory::class);
@@ -79,7 +78,7 @@ final class ChallengeServiceTest extends TestCase
 
     protected function tearDown(): void
     {
-        \TYPO3\CMS\Core\Utility\GeneralUtility::purgeInstances();
+        GeneralUtility::purgeInstances();
         unset($GLOBALS['TYPO3_CONF_VARS']);
         parent::tearDown();
     }
@@ -400,7 +399,7 @@ final class ChallengeServiceTest extends TestCase
     #[Test]
     public function createChallengeTokenThrowsWhenGlobalsNotArray(): void
     {
-        \TYPO3\CMS\Core\Utility\GeneralUtility::purgeInstances();
+        GeneralUtility::purgeInstances();
         unset($GLOBALS['TYPO3_CONF_VARS']);
         $challenge = random_bytes(32);
         $this->expectException(RuntimeException::class);
