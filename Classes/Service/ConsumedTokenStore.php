@@ -37,7 +37,7 @@ final readonly class ConsumedTokenStore
                 ->where(
                     $query
                         ->expr()
-                        ->lte('expires_at', $query->createNamedParameter($now, ParameterType::INTEGER)),
+                        ->lte('expires_at', $query->createNamedParameter($now - 3600, ParameterType::INTEGER)),
                 )
                 ->executeStatement();
         }

@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+name: Pinned workflow template
+on: [pull_request, merge_group, push]
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Compare template while permitting an immutable workflow reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          path=.github/workflows/auto-merge-deps.yml
+          curl --fail --silent --show-error --location \
+            "https://raw.githubusercontent.com/netresearch/.github/main/templates/typo3-extension/$path" -o "$RUNNER_TEMP/upstream.yml"
+          python3 - "$path" "$RUNNER_TEMP/upstream.yml" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          local, upstream = (pathlib.Path(p).read_bytes() for p in sys.argv[1:])
+          prefix = b'uses: netresearch/.github/.github/workflows/auto-merge-deps.yml@'
+          normalized, count = re.subn(re.escape(prefix) + rb'[a-f0-9]{40}(?=\r?$)', prefix + b'main', local, flags=re.M)
+          if count != 1 or normalized != upstream:
+              sys.exit('Review the immutable reference and the upstream auto-merge workflow template.')
+          PY

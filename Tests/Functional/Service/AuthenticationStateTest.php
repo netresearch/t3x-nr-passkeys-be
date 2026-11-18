@@ -17,6 +17,8 @@ use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 final class AuthenticationStateTest extends FunctionalTestCase
 {
+    protected array $coreExtensionsToLoad = ['setup'];
+
     protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
 
     #[Test]

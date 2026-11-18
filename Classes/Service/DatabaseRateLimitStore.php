@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
 
+use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
 use TYPO3\CMS\Core\Database\Connection;
@@ -61,8 +62,8 @@ final readonly class DatabaseRateLimitStore
                         return true;
                     },
                 );
-            } catch (UniqueConstraintViolationException $error) {
-                if ($attempt > 0) {
+            } catch (UniqueConstraintViolationException|RetryableException $error) {
+                if ($attempt >= 2) {
                     throw $error;
                 }
             }

@@ -127,7 +127,7 @@ final class EnforcementServiceTest extends TestCase
     }
 
     #[Test]
-    public function getStatusHandlesInvalidEnforcementValuesGracefully(): void
+    public function getStatusRejectsInvalidEnforcementValues(): void
     {
         $userRow = ['uid' => 8, 'usergroup' => '1,2', 'passkey_grace_period_start' => 0];
         $this->setUpGroupQuery(
@@ -141,11 +141,8 @@ final class EnforcementServiceTest extends TestCase
             ->method('countByBeUser')
             ->with(8)
             ->willReturn(0);
-        $status = $this->subject->getStatus($userRow);
-
-        // 'bogus_value' is treated as Off (severity 0), so 'encourage' (severity 1) wins
-        self::assertSame(EnforcementLevel::Encourage, $status->level);
-        self::assertSame(5, $status->gracePeriodDays);
+        $this->expectException(\RuntimeException::class);
+        $this->subject->getStatus($userRow);
     }
 
     #[Test]
