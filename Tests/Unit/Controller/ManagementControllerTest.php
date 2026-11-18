@@ -306,6 +306,28 @@ final class ManagementControllerTest extends TestCase
     }
 
     #[Test]
+    public function removalStopsIfTheBackendLoginDisappearsBeforeThePolicyCheck(): void
+    {
+        $this->setUpAuthenticatedUser(42, 'editor', 'Editor');
+        $this->credentialRepository
+            ->method('findByUidAndBeUser')
+            ->with(10, 42)
+            ->willReturnCallback(
+                static function (): Credential {
+                    unset($GLOBALS['BE_USER']);
+
+                    return new Credential(uid: 10, beUser: 42, label: 'Existing key');
+                },
+            );
+        $this->credentialRepository
+            ->expects(self::never())
+            ->method('removeOwned');
+        $response = $this->subject->removeAction($this->createJsonRequest(['uid' => 10]));
+        self::assertSame(401, $response->getStatusCode());
+        self::assertSame('Not authenticated', $this->decodeResponse($response)['error']);
+    }
+
+    #[Test]
     public function removeActionLastPasskeyBlocked(): void
     {
         // Configure password login as disabled (enforcement enabled)
