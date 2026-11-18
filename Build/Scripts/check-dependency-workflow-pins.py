@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Compare the pinned dependency workflow with the organization template."""
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -19,6 +20,16 @@ def upstream(path):
     )
 
 
+def has_workflow_call(workflow):
+    # yq on the Ubuntu runner parses "on" as a YAML 1.2 string key.
+    events = json.loads(subprocess.check_output(
+        ["yq", "-o=json", "-I=0", ".on", "-"], input=workflow
+    ))
+    if isinstance(events, (dict, list)):
+        return "workflow_call" in events
+    return events == "workflow_call"
+
+
 def check_auto_merge():
     name = "auto-merge-deps.yml"
     local = (WORKFLOWS / name).read_bytes()
@@ -32,7 +43,7 @@ def check_auto_merge():
     if normalized != expected:
         raise SystemExit(f"{name}: compare the pinned caller with the organization template.")
     workflow = upstream(f".github/{pin[1].decode()}/{WORKFLOWS}/{name}")
-    if not re.search(rb"^  workflow_call:[ \t]*\r?$", workflow, re.M):
+    if not has_workflow_call(workflow):
         raise SystemExit(f"{name}: the pinned workflow must support workflow_call.")
 
 
