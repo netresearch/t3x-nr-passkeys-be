@@ -338,8 +338,11 @@ final readonly class LoginController
     private function issueLoginToken(int $beUserUid, bool $userVerified): ResponseInterface
     {
         $token   = bin2hex(random_bytes(32));
-        $payload = json_encode(['uid' => $beUserUid, 'expiresAt' => time() + self::LOGIN_TOKEN_TTL, 'userVerified' => $userVerified], JSON_THROW_ON_ERROR);
-        $cache   = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce');
+        $payload = json_encode(
+            ['uid' => $beUserUid, 'expiresAt' => time() + self::LOGIN_TOKEN_TTL, 'userVerified' => $userVerified],
+            JSON_THROW_ON_ERROR,
+        );
+        $cache = GeneralUtility::makeInstance(CacheManager::class)->getCache('nr_passkeys_be_nonce');
         $cache->set('passkey_login_' . $token, $payload, [], self::LOGIN_TOKEN_TTL);
 
         return new JsonResponse(['status' => 'ok', 'loginToken' => $token]);

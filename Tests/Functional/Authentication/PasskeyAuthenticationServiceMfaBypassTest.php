@@ -156,8 +156,12 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
 
     private function stubWebAuthnServiceWithVerifiedAssertion(bool $userVerified = true): void
     {
-        $credential      = new Credential(uid: 10, beUser: 5, label: 'Functional Test Key');
-        $verified        = new VerifiedAssertion(credential: $credential, source: $this->createStub(CredentialRecord::class), userVerified: $userVerified);
+        $credential = new Credential(uid: 10, beUser: 5, label: 'Functional Test Key');
+        $verified   = new VerifiedAssertion(
+            credential: $credential,
+            source: $this->createStub(CredentialRecord::class),
+            userVerified: $userVerified,
+        );
         $webAuthnService = $this->createMock(WebAuthnService::class);
         $webAuthnService
             ->method('verifyAssertionResponse')

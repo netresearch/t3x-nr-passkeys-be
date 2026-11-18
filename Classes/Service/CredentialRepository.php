@@ -139,6 +139,37 @@ final readonly class CredentialRepository
         $connection->update(self::TABLE, ['label' => $label, 'tstamp' => time()], ['uid' => $uid]);
     }
 
+    public function removeOwned(int $uid, int $ownerUid, bool $protectLast): bool
+    {
+        $db = $this->connectionPool->getConnectionForTable(self::TABLE);
+
+        return $db->transactional(
+            function () use ($db, $uid, $ownerUid, $protectLast): bool {
+                // Serialize removals before counting the remaining active credentials.
+                $lock = $db->createQueryBuilder();
+                $lock
+                    ->update(self::TABLE)
+                    ->set('revoked_at', $db->quoteIdentifier('revoked_at'), false)
+                    ->where(
+                        $lock
+                            ->expr()
+                            ->eq('be_user', $lock->createNamedParameter($ownerUid, ParameterType::INTEGER)),
+                    )
+                    ->executeStatement();
+
+                if ($protectLast && $this->countByBeUser($ownerUid) <= 1) {
+                    return false;
+                }
+
+                return $db->update(
+                    self::TABLE,
+                    ['deleted' => 1, 'tstamp' => time()],
+                    ['uid' => $uid, 'be_user' => $ownerUid, 'revoked_at' => 0, 'deleted' => 0],
+                ) === 1;
+            },
+        );
+    }
+
     public function delete(int $uid): void
     {
         $connection = $this->connectionPool->getConnectionForTable(self::TABLE);

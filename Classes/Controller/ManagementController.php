@@ -324,16 +324,37 @@ final readonly class ManagementController
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
-        // Block removal of last passkey when enforcement is enabled
-        $count = $this->credentialRepository->countByBeUser($user->uid);
+        $backend = $GLOBALS['BE_USER'] ?? null;
 
-        if ($count <= 1 && $this->configService
-            ->getConfiguration()
-            ->isDisablePasswordLogin()) {
-            return new JsonResponse(['error' => 'Cannot remove your last passkey when password login is disabled'], 409);
+        if (!$backend instanceof BackendUserAuthentication || !is_array($backend->user)) {
+            return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
-        $this->credentialRepository->delete($credentialUid);
+        $protect = $this->configService
+            ->getConfiguration()
+            ->isDisablePasswordLogin();
+
+        if (!$protect && !empty($backend->user['usergroup'])) {
+            /** @var array<string, mixed> $record */
+            $record  = $backend->user;
+            $level   = $this->enforcementService->getStatus($record, false)->level;
+            $protect = in_array(
+                $level,
+                [
+                    \Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel::Required,
+                    \Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel::Enforced,
+                ],
+                true,
+            );
+        }
+
+        if (!$this->credentialRepository->removeOwned($credentialUid, $user->uid, $protect)) {
+            return new JsonResponse(
+                ['error' => 'Cannot remove your last passkey under the current policy. Add a replacement first.'],
+                409,
+            );
+        }
+
         $this->logger->info('Passkey removed', ['be_user_uid' => $user->uid, 'credential_uid' => $credentialUid]);
 
         return new JsonResponse(['status' => 'ok']);

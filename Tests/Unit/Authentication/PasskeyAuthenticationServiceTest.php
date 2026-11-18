@@ -149,6 +149,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
      */
     private function stubTokenCache(string $token, string|false $value): FrontendInterface&MockObject
     {
+        $store = $this->createStub(\Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class);
+        $store
+            ->method('claim')
+            ->willReturn(true);
+        GeneralUtility::addInstance(\Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class, $store);
         $cache = $this->createMock(FrontendInterface::class);
         $cache
             ->method('get')
@@ -250,7 +255,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
                 challengeToken: 'challenge-token-123',
                 beUserUid: 42,
             )
-            ->willReturn(new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class), userVerified: true));
+            ->willReturn(
+                new VerifiedAssertion(
+                    credential: $credential,
+                    source: $this->createMock(CredentialRecord::class),
+                    userVerified: true,
+                ),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess')

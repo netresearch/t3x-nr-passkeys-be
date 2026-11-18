@@ -121,12 +121,8 @@ final class ExtensionConfigurationServiceTest extends TestCase
     #[Test]
     public function getConfigurationHandlesNonArrayReturnFromExtensionConfig(): void
     {
-        $service = $this->createService(null);
-        $config  = $service->getConfiguration();
-
-        // Should fall back to all defaults
-        self::assertSame('', $config->getRpId());
-        self::assertSame('TYPO3 Backend', $config->getRpName());
+        $this->expectException(RuntimeException::class);
+        $this->createService(null);
     }
 
     // --- getEffectiveRpId() tests ---

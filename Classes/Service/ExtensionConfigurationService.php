@@ -30,7 +30,7 @@ final readonly class ExtensionConfigurationService
         $settings = $this->extensionConfiguration->get('nr_passkeys_be');
 
         if (!is_array($settings)) {
-            $settings = [];
+            throw new RuntimeException('Backend passkey configuration is unavailable');
         }
 
         $this->config = new \Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration(

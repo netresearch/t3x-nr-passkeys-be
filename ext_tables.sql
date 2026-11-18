@@ -24,6 +24,7 @@ CREATE TABLE tx_nrpasskeysbe_credential (
 );
 
 CREATE TABLE be_groups (
+    passkey_suspended_until int(11) unsigned DEFAULT '0' NOT NULL,
     passkey_enforcement varchar(10) NOT NULL DEFAULT 'off',
     passkey_grace_period_days int(11) NOT NULL DEFAULT 14
 );
@@ -31,4 +32,21 @@ CREATE TABLE be_groups (
 CREATE TABLE be_users (
     passkey_grace_period_start int(11) unsigned NOT NULL DEFAULT 0,
     passkey_nudge_until int(11) unsigned NOT NULL DEFAULT 0
+);
+
+CREATE TABLE tx_nrpasskeysbe_consumed_token (
+    token_hash varchar(64) DEFAULT '' NOT NULL,
+    expires_at int(11) unsigned DEFAULT '0' NOT NULL,
+    PRIMARY KEY (token_hash),
+    KEY expires_at (expires_at)
+);
+
+CREATE TABLE tx_nrpasskeysbe_rate_limit (
+    key_hash varchar(64) DEFAULT '' NOT NULL,
+    group_hash varchar(64) DEFAULT '' NOT NULL,
+    attempts int(11) unsigned DEFAULT '0' NOT NULL,
+    expires_at int(11) unsigned DEFAULT '0' NOT NULL,
+    PRIMARY KEY (key_hash),
+    KEY group_hash (group_hash),
+    KEY expires_at (expires_at)
 );

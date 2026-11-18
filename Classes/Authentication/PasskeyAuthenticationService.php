@@ -184,9 +184,24 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $ticket   = $this->resolvePasskeyToken();
         $tokenUid = $ticket['uid'] ?? 0;
 
-        if ($tokenUid > 0 && $tokenUid === (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
+        if ($ticket !== null && $tokenUid > 0 && $tokenUid === (is_numeric($user['uid'] ?? null) ? (int) $user['uid'] : 0)) {
+            try {
+                if (!GeneralUtility::makeInstance(\Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class)->claim(
+                    'login:' . $this->extractLoginToken(),
+                    $ticket['expiresAt'],
+                )) {
+                    return 0;
+                }
+            } catch (Throwable $error) {
+                $this
+                    ->getLogger()
+                    ->error('Passkey token consumption unavailable', ['exception' => $error::class]);
+
+                return 0;
+            }
+
             $this->consumePasskeyToken();
-            $this->markSessionAsPasskeyAuthenticated($user, $ticket['userVerified'] ?? false);
+            $this->markSessionAsPasskeyAuthenticated($user, $ticket['userVerified']);
             $this
                 ->getLogger()
                 ->info('Passkey token authentication successful', ['be_user_uid' => $tokenUid]);
@@ -429,7 +444,7 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
         $payload = $this->decodeLoginTokenPayload($value);
 
-        if ($payload === null || time() > $payload['expiresAt']) {
+        if ($payload === null || time() >= $payload['expiresAt']) {
             $this
                 ->getLogger()
                 ->warning(

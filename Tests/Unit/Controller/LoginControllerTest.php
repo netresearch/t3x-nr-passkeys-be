@@ -818,7 +818,9 @@ final class LoginControllerTest extends TestCase
         $this->setUpFindBeUser('admin', ['uid' => 42, 'username' => 'admin']);
         $this->webAuthnService
             ->method('verifyAssertionResponse')
-            ->willReturn(new VerifiedAssertion(new Credential(beUser: 42), $this->createStub(CredentialRecord::class)));
+            ->willReturn(
+                new VerifiedAssertion(new Credential(beUser: 42), $this->createStub(CredentialRecord::class)),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('consumeRateLimit')

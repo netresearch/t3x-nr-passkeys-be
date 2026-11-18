@@ -28,6 +28,7 @@ final readonly class RateLimiterService
         private ExtensionConfigurationService $configService,
         private LockFactory $lockFactory,
         private LoggerInterface $logger,
+        private ?DatabaseRateLimitStore $databaseStore = null,
     ) {}
 
     /**
@@ -46,7 +47,20 @@ final readonly class RateLimiterService
         $key           = $this->buildKey($endpoint, $identifier);
         $maxAttempts   = $config->getRateLimitMaxAttempts();
         $windowSeconds = $config->getRateLimitWindowSeconds();
-        $locker        = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
+
+        if ($this->databaseStore !== null) {
+            if (random_int(1, 128) === 1) {
+                $this->databaseStore->prune();
+            }
+
+            if (!$this->databaseStore->increment($this->databaseKey($key), '', $windowSeconds, $maxAttempts)) {
+                throw new RuntimeException('Rate limit exceeded', 1700000010);
+            }
+
+            return;
+        }
+
+        $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
             $this->logger->error(
@@ -168,6 +182,16 @@ final readonly class RateLimiterService
      */
     public function resetLockout(string $username, string $ip = ''): void
     {
+        if ($this->databaseStore !== null) {
+            if ($ip === '') {
+                $this->databaseStore->forgetGroup($this->databaseKey('lockout_' . $this->sanitize($username)));
+            } else {
+                $this->databaseStore->forget($this->databaseKey($this->buildLockoutKey($username, $ip)));
+            }
+
+            return;
+        }
+
         if ($ip !== '') {
             $key = $this->buildLockoutKey($username, $ip);
             $this->rateLimitCache->remove($key);
@@ -183,6 +207,13 @@ final readonly class RateLimiterService
      */
     public function recordSuccess(string $username, string $ip): void
     {
+        if ($this->databaseStore !== null) {
+            $this->databaseStore->forget($this->databaseKey($this->buildLockoutKey($username, $ip)));
+            $this->databaseStore->forget($this->databaseKey($this->buildUserLockoutKey($username)));
+
+            return;
+        }
+
         $ipKey = $this->buildLockoutKey($username, $ip);
         $this->rateLimitCache->remove($ipKey);
         $userKey = $this->buildUserLockoutKey($username);
@@ -200,6 +231,14 @@ final readonly class RateLimiterService
      */
     private function atomicCheck(string $key, int $threshold, string $message, int $code): void
     {
+        if ($this->databaseStore !== null) {
+            if ($this->databaseStore->count($this->databaseKey($key)) >= $threshold) {
+                throw new RuntimeException($message, $code);
+            }
+
+            return;
+        }
+
         $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
@@ -228,6 +267,17 @@ final readonly class RateLimiterService
      */
     private function atomicIncrement(string $key, array $tags, int $ttlSeconds): void
     {
+        if ($this->databaseStore !== null) {
+            $this->databaseStore->increment(
+                $this->databaseKey($key),
+                $this->databaseKey($tags[0] ?? ''),
+                $ttlSeconds,
+                PHP_INT_MAX,
+            );
+
+            return;
+        }
+
         $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
@@ -253,6 +303,11 @@ final readonly class RateLimiterService
         }
 
         return is_numeric($value) ? (int) $value : 0;
+    }
+
+    private function databaseKey(string $key): string
+    {
+        return hash('sha256', $this->rateLimitCache->getIdentifier() . ':' . $key);
     }
 
     private function buildKey(string $endpoint, string $identifier): string

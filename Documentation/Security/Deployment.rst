@@ -153,3 +153,17 @@ backend:
     small-to-medium installations) work correctly with the
     default file-based backends. This only applies when
     multiple application servers share the same domain.
+
+Cluster deployment and upgrades
+------------------------------
+
+Apply the database schema before sending requests to the new workers. Route
+consumed-token and rate-limit tables to one writable database primary across
+all nodes. Use the same encryption key, a shared nonce cache and synchronized
+clocks on all workers. Local caches make a challenge issued by one node
+unavailable on the next. The database arbitrates claims and request budgets.
+
+Drain every old worker before opening traffic on the new version. Finish
+or invalidate pending short-lived challenges and login tickets, then verify
+a fresh registration and login across different nodes. The changes to MFA
+and replay handling apply only after all old workers have left the pool.

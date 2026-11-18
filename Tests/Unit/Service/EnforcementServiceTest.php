@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
@@ -175,7 +176,7 @@ final class EnforcementServiceTest extends TestCase
                         array $data,
                     ): bool => isset($data['passkey_grace_period_start']) && is_int($data['passkey_grace_period_start']) && $data['passkey_grace_period_start'] > 0,
                 ),
-                ['uid' => 42],
+                ['uid' => 42, 'passkey_grace_period_start' => 0],
             );
         $this->connectionPool
             ->expects(self::once())
@@ -202,8 +203,8 @@ final class EnforcementServiceTest extends TestCase
             ->method('countByBeUser')
             ->with(11)
             ->willReturn(0);
-        $status = $this->subject->getStatus($userRow);
-        self::assertSame(EnforcementLevel::Off, $status->level);
+        $this->expectException(RuntimeException::class);
+        $this->subject->getStatus($userRow);
     }
 
     #[Test]

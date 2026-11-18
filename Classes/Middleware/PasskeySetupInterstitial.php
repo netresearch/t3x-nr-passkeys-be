@@ -186,6 +186,10 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
 
         $status = $this->enforcementService->getStatus($userRow);
 
+        if ($status->hasPasskeys && $status->level === \Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel::Required && $status->gracePeriodStart === 0) {
+            $this->enforcementService->startGracePeriod($uid);
+        }
+
         if (!$status->requiresInterstitial()) {
             // Cache the clear decision so subsequent requests skip the queries.
             $sessionArray['enforcement_ok_at'] = $now;

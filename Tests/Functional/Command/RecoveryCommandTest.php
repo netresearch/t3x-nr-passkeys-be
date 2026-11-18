@@ -81,19 +81,30 @@ final class RecoveryCommandTest extends FunctionalTestCase
     {
         $exitCode = $this->tester->execute(['--disable-group' => '1']);
 
+        $db = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable('be_groups');
+        self::assertGreaterThan(
+            time(),
+            (int) $db
+                ->select(['passkey_suspended_until'], 'be_groups', ['uid' => 1])
+                ->fetchOne(),
+        );
+        self::assertSame(0, (int) $db
+            ->select(['passkey_suspended_until'], 'be_groups', ['uid' => 2])
+            ->fetchOne());
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertStringContainsString('for group 1 (1 row(s) updated)', $this->tester->getDisplay());
-        self::assertSame([1 => 'off', 2 => 'encourage', 3 => 'off'], $this->enforcementByGroup());
+        self::assertSame([1 => 'required', 2 => 'encourage', 3 => 'off'], $this->enforcementByGroup());
     }
 
     #[Test]
-    public function disableAllSwitchesOffEveryGroup(): void
+    public function disableAllRequiresConfirmationAndPreservesOriginalGroupLevels(): void
     {
-        $exitCode = $this->tester->execute(['--disable-all' => true]);
+        self::assertSame(Command::INVALID, $this->tester->execute(['--disable-all' => true]));
+        $exitCode = $this->tester->execute(['--disable-all' => true, '--confirm-all' => true]);
 
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertStringContainsString('for all groups', $this->tester->getDisplay());
-        self::assertSame([1 => 'off', 2 => 'off', 3 => 'off'], $this->enforcementByGroup());
+        self::assertSame([1 => 'required', 2 => 'encourage', 3 => 'off'], $this->enforcementByGroup());
     }
 
     /**

@@ -260,13 +260,9 @@ final class ManagementControllerTest extends TestCase
             );
         $this->credentialRepository
             ->expects(self::once())
-            ->method('countByBeUser')
-            ->with(42)
-            ->willReturn(2);
-        $this->credentialRepository
-            ->expects(self::once())
-            ->method('delete')
-            ->with(10);
+            ->method('removeOwned')
+            ->with(10, 42, false)
+            ->willReturn(true);
         $response = $this->subject->removeAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -297,12 +293,10 @@ final class ManagementControllerTest extends TestCase
             ->with(10, 42)
             ->willReturn($cred);
         $this->credentialRepository
-            ->method('countByBeUser')
-            ->with(42)
-            ->willReturn(1);
-        $this->credentialRepository
-            ->expects(self::never())
-            ->method('delete');
+            ->expects(self::once())
+            ->method('removeOwned')
+            ->with(10, 42, true)
+            ->willReturn(false);
         $response = $this->subject->removeAction($request);
         self::assertSame(409, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -491,13 +485,10 @@ final class ManagementControllerTest extends TestCase
             ->with(10, 42)
             ->willReturn($cred);
         $this->credentialRepository
-            ->method('countByBeUser')
-            ->with(42)
-            ->willReturn(1);
-        $this->credentialRepository
             ->expects(self::once())
-            ->method('delete')
-            ->with(10);
+            ->method('removeOwned')
+            ->with(10, 42, false)
+            ->willReturn(true);
         $response = $this->subject->removeAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);
@@ -728,13 +719,10 @@ final class ManagementControllerTest extends TestCase
             ->with(10, 42)
             ->willReturn($cred);
         $this->credentialRepository
-            ->method('countByBeUser')
-            ->with(42)
-            ->willReturn(2);
-        $this->credentialRepository
             ->expects(self::once())
-            ->method('delete')
-            ->with(10);
+            ->method('removeOwned')
+            ->with(10, 42, true)
+            ->willReturn(true);
         $response = $this->subject->removeAction($request);
         self::assertSame(200, $response->getStatusCode());
         $body = $this->decodeResponse($response);

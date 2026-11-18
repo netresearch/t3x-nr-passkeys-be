@@ -49,6 +49,14 @@ final class ChallengeServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $store = $this->createStub(\Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class);
+        $store
+            ->method('claim')
+            ->willReturn(true);
+        \TYPO3\CMS\Core\Utility\GeneralUtility::addInstance(
+            \Netresearch\NrPasskeysBe\Service\ConsumedTokenStore::class,
+            $store,
+        );
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'test-encryption-key-that-is-long-enough-for-hmac';
         $this->nonceCacheMock                               = $this->createMock(FrontendInterface::class);
         $this->lockFactoryMock                              = $this->createMock(LockFactory::class);

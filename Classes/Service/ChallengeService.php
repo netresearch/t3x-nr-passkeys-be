@@ -47,7 +47,7 @@ final readonly class ChallengeService
         return random_bytes(32);
     }
 
-    public function createChallengeToken(string $challenge): string
+    public function createChallengeToken(string $challenge, string $context = ''): string
     {
         $ttl = $this->configService
             ->getConfiguration()
@@ -55,7 +55,7 @@ final readonly class ChallengeService
         $expiresAt = time() + $ttl;
         $nonce     = bin2hex(random_bytes(16));
         $payload   = base64_encode($challenge) . '|' . $expiresAt . '|' . $nonce;
-        $hmac      = hash_hmac(self::HMAC_ALGO, $payload, $this->getSigningKey());
+        $hmac      = hash_hmac(self::HMAC_ALGO, $payload, $this->getSigningKey($context));
 
         // Store nonce in cache to ensure single-use
         $this->nonceCache->set($this->getNonceCacheKey($nonce), 'valid', [], $ttl + 60);
@@ -66,7 +66,7 @@ final readonly class ChallengeService
     /**
      * @throws RuntimeException if token is invalid, expired, or replayed
      */
-    public function verifyChallengeToken(string $token): string
+    public function verifyChallengeToken(string $token, string $context = ''): string
     {
         $decoded = base64_decode($token, true);
 
@@ -84,7 +84,7 @@ final readonly class ChallengeService
 
         // Verify HMAC (constant-time comparison)
         $payload      = $challengeB64 . '|' . $expiresAtStr . '|' . $nonce;
-        $expectedHmac = hash_hmac(self::HMAC_ALGO, $payload, $this->getSigningKey());
+        $expectedHmac = hash_hmac(self::HMAC_ALGO, $payload, $this->getSigningKey($context));
 
         if (!hash_equals($expectedHmac, $hmac)) {
             $this->logger->warning(
@@ -143,14 +143,21 @@ final readonly class ChallengeService
             throw new RuntimeException('Invalid challenge data in token', 1700000006);
         }
 
+        if (!\TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(ConsumedTokenStore::class)->claim(
+            'nonce:' . $nonce,
+            $expiresAt,
+        )) {
+            throw new RuntimeException('Challenge already consumed or expired', 1700000005);
+        }
+
         return $challenge;
     }
 
-    private function getSigningKey(): string
+    private function getSigningKey(string $context): string
     {
         $key = $this->configService->getEncryptionKey();
 
-        return hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_challenge');
+        return hash_hkdf('sha256', $key, 32, 'nr_passkeys_be_challenge' . ($context === '' ? '' : ':' . $context));
     }
 
     private function getNonceCacheKey(string $nonce): string

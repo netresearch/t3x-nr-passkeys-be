@@ -13,6 +13,7 @@ use Doctrine\DBAL\ArrayParameterType;
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -41,7 +42,7 @@ final readonly class EnforcementService
      *
      * @param array<string, mixed> $userRow Backend user record (must contain 'uid' and 'usergroup')
      */
-    public function getStatus(array $userRow): EnforcementStatus
+    public function getStatus(array $userRow, bool $applySuspensions = true): EnforcementStatus
     {
         $uidValue         = $userRow['uid'] ?? 0;
         $beUserUid        = is_numeric($uidValue) ? (int) $uidValue : 0;
@@ -65,9 +66,13 @@ final readonly class EnforcementService
         $effectiveGraceDays = 0;
 
         foreach ($groups as $group) {
+            if ($applySuspensions && is_numeric($group['passkey_suspended_until'] ?? null) && (int) $group['passkey_suspended_until'] > time()) {
+                continue;
+            }
+
             $enforcementValue = $group['passkey_enforcement'] ?? '';
             $level            = EnforcementLevel::tryFrom(is_string($enforcementValue) ? $enforcementValue : '');
-            $level ??= EnforcementLevel::Off;
+            $level ??= throw new RuntimeException('Invalid passkey group enforcement policy');
 
             $graceDaysValue = $group['passkey_grace_period_days'] ?? 0;
             $graceDays      = is_numeric($graceDaysValue) ? (int) $graceDaysValue : 0;
@@ -99,7 +104,11 @@ final readonly class EnforcementService
     public function startGracePeriod(int $beUserUid): void
     {
         $connection = $this->connectionPool->getConnectionForTable('be_users');
-        $connection->update('be_users', ['passkey_grace_period_start' => time()], ['uid' => $beUserUid]);
+        $connection->update(
+            'be_users',
+            ['passkey_grace_period_start' => time()],
+            ['uid' => $beUserUid, 'passkey_grace_period_start' => 0],
+        );
 
         $this->logger->info('Grace period started', ['beUserUid' => $beUserUid]);
     }
@@ -119,7 +128,7 @@ final readonly class EnforcementService
         // are applied automatically by TYPO3's QueryBuilder, which is exactly what we need
         // for be_groups (respects deleted, hidden, starttime, endtime).
         return $queryBuilder
-            ->select('uid', 'passkey_enforcement', 'passkey_grace_period_days')
+            ->select('uid', 'passkey_enforcement', 'passkey_grace_period_days', 'passkey_suspended_until')
             ->from('be_groups')
             ->where(
                 $queryBuilder
