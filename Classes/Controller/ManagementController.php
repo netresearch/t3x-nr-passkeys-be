@@ -9,9 +9,12 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
+use Doctrine\DBAL\Exception as DatabaseException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialRemovalResult;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
@@ -167,6 +170,16 @@ final readonly class ManagementController
             );
 
             return new JsonResponse(['status' => 'ok', 'credential' => $credential->toCredentialInfo()]);
+        } catch (UniqueConstraintViolationException) {
+            return new JsonResponse(['error' => 'Credential already registered'], 409);
+        } catch (DatabaseException $e) {
+            $this->logger->error('Passkey registration storage unavailable', ['exception' => $e::class]);
+
+            return new JsonResponse(
+                ['error' => 'Registration temporarily unavailable. Start registration again.'],
+                503,
+                ['Retry-After' => '60'],
+            );
         } catch (RuntimeException $e) {
             $this->logger->error(
                 'Passkey registration failed',
@@ -342,7 +355,13 @@ final readonly class ManagementController
             $protect = in_array($level, [EnforcementLevel::Required, EnforcementLevel::Enforced], true);
         }
 
-        if (!$this->credentialRepository->removeOwned($credentialUid, $user->uid, $protect)) {
+        $removal = $this->credentialRepository->removeOwnedWithResult($credentialUid, $user->uid, $protect);
+
+        if ($removal === CredentialRemovalResult::NotFound) {
+            return new JsonResponse(['error' => 'Credential not found'], 404);
+        }
+
+        if ($removal === CredentialRemovalResult::LastKey) {
             return new JsonResponse(
                 ['error' => 'Cannot remove your last passkey under the current policy. Add a replacement first.'],
                 409,

@@ -116,10 +116,27 @@ final class RecoveryCommandTest extends FunctionalTestCase
     #[Test]
     public function disableAllRequiresConfirmationAndPreservesOriginalGroupLevels(): void
     {
+        $db              = GeneralUtility::makeInstance(ConnectionPool::class)->getConnectionForTable('be_groups');
+        $readSuspensions = static fn (): array => $db
+            ->select(['uid', 'passkey_suspended_until'], 'be_groups', ['deleted' => 0], [], ['uid' => 'ASC'])
+            ->fetchAllKeyValue();
+        $before = $readSuspensions();
+        self::assertCount(3, $before);
         self::assertSame(Command::INVALID, $this->tester->execute(['--disable-all' => true]));
-        $exitCode = $this->tester->execute(['--disable-all' => true, '--confirm-all' => true]);
+        self::assertSame($before, $readSuspensions());
 
+        $earliest = time() + 900;
+        $exitCode = $this->tester->execute(['--disable-all' => true, '--confirm-all' => true]);
+        $latest   = time() + 900;
         self::assertSame(Command::SUCCESS, $exitCode);
+        $after = $readSuspensions();
+        self::assertSame(array_keys($before), array_keys($after));
+
+        foreach ($after as $timestamp) {
+            self::assertGreaterThanOrEqual($earliest, (int) $timestamp);
+            self::assertLessThanOrEqual($latest, (int) $timestamp);
+        }
+
         self::assertStringContainsString('for all groups', $this->tester->getDisplay());
         self::assertSame([1 => 'required', 2 => 'encourage', 3 => 'off'], $this->enforcementByGroup());
     }

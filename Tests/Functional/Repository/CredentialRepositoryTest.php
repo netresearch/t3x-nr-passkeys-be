@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Repository;
 
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialRemovalResult;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -58,6 +59,15 @@ final class CredentialRepositoryTest extends FunctionalTestCase
         self::assertTrue($this->repository->removeOwned(1, 1, true));
         self::assertFalse($this->repository->removeOwned(1, 1, false));
         self::assertFalse($this->repository->removeOwned(2, 1, true));
+        self::assertSame(CredentialRemovalResult::LastKey, $this->repository->removeOwnedWithResult(2, 1, true));
+
+        foreach ([1, 3, 4, 5] as $unavailable) {
+            self::assertSame(
+                CredentialRemovalResult::NotFound,
+                $this->repository->removeOwnedWithResult($unavailable, 1, true),
+            );
+        }
+
         self::assertSame(
             [2],
             array_map(static fn (Credential $key): int => $key->getUid(), $this->repository->findByBeUser(1)),

@@ -451,8 +451,6 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserRejectsPasswordWhenEnforcementCheckThrows(): void
     {
-        // OPS-2: a database/enforcement failure must NOT lock every backend user out
-        // of password login. On error the service logs and falls through (returns 100).
         GeneralUtility::purgeInstances();
         $configService = $this->createMock(ExtensionConfigurationService::class);
         $configService
