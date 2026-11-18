@@ -28,6 +28,25 @@ final class AuthenticationStateTest extends FunctionalTestCase
     ];
 
     #[Test]
+    public function pruningRetainsLiveAndRecentlyExpiredClaims(): void
+    {
+        $pool       = $this->get(ConnectionPool::class);
+        $table      = 'tx_nrpasskeysbe_consumed_token';
+        $connection = $pool->getConnectionForTable($table);
+        $now        = time();
+
+        foreach (['old' => -7200, 'recent' => -60, 'active' => 120] as $key => $offset) {
+            $connection->insert($table, ['token_hash' => hash('sha256', $key), 'expires_at' => $now + $offset]);
+        }
+
+        $store = new ConsumedTokenStore($pool);
+        $store->pruneExpired();
+        self::assertSame(0, (int) $connection->count('*', $table, ['token_hash' => hash('sha256', 'old')]));
+        self::assertSame(1, (int) $connection->count('*', $table, ['token_hash' => hash('sha256', 'recent')]));
+        self::assertFalse($store->claim('active', $now + 120));
+    }
+
+    #[Test]
     public function configuredBudgetRejectsTheNextAttemptButAllowsAnotherIdentifier(): void
     {
         $limiter = $this->get(RateLimiterService::class);
