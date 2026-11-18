@@ -129,12 +129,17 @@ Password login control
    (PIN or biometric). For presence-only assertions and for password
    logins, TYPO3 continues to apply its configured MFA policy.
 
+   On a fresh browser session, TYPO3 creates the account session after
+   passkey verification. It can still prompt for the configured second
+   factor. Include a signed-out browser in recovery drills and keep the
+   configured MFA method available to administrators.
+
    Recommended production combination (see :ref:`enforcement` for details):
 
    1. Keep TYPO3's ``$GLOBALS['TYPO3_CONF_VARS']['BE']['requireMfa']``
       enabled so password-based logins still require a second factor.
-   2. Leave ``skipMfaOnPasskeyAuth`` enabled so passkey users are not
-      double-prompted.
+   2. Enable ``skipMfaOnPasskeyAuth`` to credit user verification when
+      TYPO3 preserves the session data during login.
    3. Use per-group enforcement to move users onto passkeys.
    4. Once adoption is high enough, enable :confval:`disablePasswordLogin`
       to close the password fallback.
