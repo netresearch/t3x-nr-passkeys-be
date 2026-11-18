@@ -36,7 +36,7 @@ jobs:
       php-extensions: 'intl, mbstring, xml, openssl, pdo_mysql'
       run-rector: true
       run-repo-checks: true
-      repo-checks-command: python3 Build/Scripts/check-release-workflow-pins.py
+      repo-checks-command: for script in Build/Scripts/check-*-workflow-pins.py; do python3 "$script" || exit 1; done
       run-functional-tests: true
       functional-test-db: 'mysql'
       upload-coverage: true
