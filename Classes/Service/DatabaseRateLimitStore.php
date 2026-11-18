@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Service;
 use Doctrine\DBAL\Exception\RetryableException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\ParameterType;
+use RuntimeException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 
 final readonly class DatabaseRateLimitStore
@@ -27,8 +28,8 @@ final readonly class DatabaseRateLimitStore
 
         for ($attempt = 0;; ++$attempt) {
             try {
-                return $db->transactional(
-                    function () use ($db, $key, $group, $ttl, $limit): bool {
+                $charged = $db->transactional(
+                    function () use ($db, $key, $group, $ttl, $limit): ?bool {
                         $q = $db->createQueryBuilder();
                         $q
                             ->update(self::TABLE)
@@ -55,12 +56,26 @@ final readonly class DatabaseRateLimitStore
                         if ($row === false) {
                             $db->insert(self::TABLE, $criteria + $values);
                         } else {
-                            $db->update(self::TABLE, $values, $criteria);
+                            // A concurrent insert can become visible after the initial UPDATE.
+                            // Charge only the exact row state that supplied this decision.
+                            $expected = $criteria + ['attempts' => $row['attempts'], 'expires_at' => $row['expires_at']];
+
+                            if ($db->update(self::TABLE, $values, $expected) !== 1) {
+                                return null;
+                            }
                         }
 
                         return true;
                     },
                 );
+
+                if ($charged !== null) {
+                    return $charged;
+                }
+
+                if ($attempt >= 2) {
+                    throw new RuntimeException('Rate-limit counter changed during three consecutive attempts.', 1700000012);
+                }
             } catch (UniqueConstraintViolationException|RetryableException $error) {
                 if ($attempt >= 2) {
                     throw $error;

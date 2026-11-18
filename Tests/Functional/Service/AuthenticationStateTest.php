@@ -9,11 +9,13 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Service;
 
+use Closure;
 use Netresearch\NrPasskeysBe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysBe\Service\DatabaseRateLimitStore;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
@@ -26,6 +28,51 @@ final class AuthenticationStateTest extends FunctionalTestCase
     protected array $configurationToUseInTestInstance = [
         'EXTENSIONS' => ['nr_passkeys_be' => ['rateLimitMaxAttempts' => 2, 'lockoutThreshold' => 2, 'lockoutUserThreshold' => 3]],
     ];
+
+    #[Test]
+    public function aChangedSnapshotIsRecheckedBeforeAnotherChargeIsAccepted(): void
+    {
+        $pool  = $this->get(ConnectionPool::class);
+        $table = 'tx_nrpasskeysbe_rate_limit';
+        $db    = $pool->getConnectionForTable($table);
+        $key   = hash('sha256', 'contended-key');
+        $group = hash('sha256', 'contended-group');
+        $store = new DatabaseRateLimitStore($pool);
+        self::assertTrue($store->increment($key, $group, 60, 2));
+
+        $connection = $this->createMock(Connection::class);
+        $connection
+            ->method('transactional')
+            ->willReturnCallback(
+                static fn (Closure $work): mixed => $db->transactional($work),
+            );
+        $connection
+            ->method('createQueryBuilder')
+            ->willReturnCallback($db->createQueryBuilder(...));
+        $connection
+            ->method('quoteIdentifier')
+            ->willReturnCallback($db->quoteIdentifier(...));
+        $connection
+            ->method('select')
+            ->willReturnCallback($db->select(...));
+        $connection
+            ->expects(self::once())
+            ->method('update')
+            ->willReturnCallback(
+                static function (string $tableName, array $values, array $criteria) use ($db, $key): int {
+                    // Model the other worker's charge between the read and the guarded write.
+                    $db->update($tableName, ['attempts' => 2], ['key_hash' => $key]);
+
+                    return (int) $db->update($tableName, $values, $criteria);
+                },
+            );
+        $worker = $this->createStub(ConnectionPool::class);
+        $worker
+            ->method('getConnectionForTable')
+            ->willReturn($connection);
+        self::assertFalse((new DatabaseRateLimitStore($worker))->increment($key, $group, 60, 2));
+        self::assertSame(2, $store->count($key));
+    }
 
     #[Test]
     public function pruningRetainsLiveAndRecentlyExpiredClaims(): void
