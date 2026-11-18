@@ -282,6 +282,7 @@ final class CredentialTest extends TestCase
             'credential_id'   => 'cred-123',
             'public_key_cose' => 'cose-data',
             'sign_count'      => 7,
+            'backup_eligible' => null,
             'user_handle'     => 'handle-abc',
             'aaguid'          => '00000000-0000-0000-0000-000000000001',
             'transports'      => '["usb"]',
@@ -519,13 +520,13 @@ final class CredentialTest extends TestCase
     }
 
     #[Test]
-    public function toAdminCredentialInfoHasExactlySevenProperties(): void
+    public function toAdminCredentialInfoExposesOnlyTheExpectedMetadata(): void
     {
         $credential = new Credential(uid: 1, label: 'Test');
         $info       = $credential->toAdminCredentialInfo();
         self::assertInstanceOf(AdminCredentialInfo::class, $info);
         $serialized = $info->jsonSerialize();
-        self::assertCount(7, $serialized);
+        self::assertCount(8, $serialized);
         self::assertArrayHasKey('uid', $serialized);
         self::assertArrayHasKey('label', $serialized);
         self::assertArrayHasKey('createdAt', $serialized);
@@ -533,5 +534,7 @@ final class CredentialTest extends TestCase
         self::assertArrayHasKey('isRevoked', $serialized);
         self::assertArrayHasKey('revokedAt', $serialized);
         self::assertArrayHasKey('revokedBy', $serialized);
+        self::assertArrayHasKey('backupEligible', $serialized);
+        self::assertNull($serialized['backupEligible']);
     }
 }

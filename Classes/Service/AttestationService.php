@@ -202,6 +202,7 @@ final readonly class AttestationService
             transports: json_encode($source->transports, JSON_THROW_ON_ERROR),
             discoverable: $discoverable,
             label: $label,
+            backupEligible: $source->backupEligible,
         );
         $uid = $this->credentialRepository->save($credential);
         $credential->setUid($uid);

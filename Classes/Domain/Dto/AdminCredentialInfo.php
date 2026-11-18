@@ -26,21 +26,21 @@ final readonly class AdminCredentialInfo implements JsonSerializable
         public bool $isRevoked,
         public int $revokedAt,
         public int $revokedBy,
+        public ?bool $backupEligible = null,
     ) {}
 
-    /**
-     * @return array{uid: int, label: string, createdAt: int, lastUsedAt: int, isRevoked: bool, revokedAt: int, revokedBy: int}
-     */
+    /** @return array{uid: int, label: string, createdAt: int, lastUsedAt: int, isRevoked: bool, revokedAt: int, revokedBy: int, backupEligible: ?bool} */
     public function jsonSerialize(): array
     {
         return [
-            'uid'        => $this->uid,
-            'label'      => $this->label,
-            'createdAt'  => $this->createdAt,
-            'lastUsedAt' => $this->lastUsedAt,
-            'isRevoked'  => $this->isRevoked,
-            'revokedAt'  => $this->revokedAt,
-            'revokedBy'  => $this->revokedBy,
+            'uid'            => $this->uid,
+            'label'          => $this->label,
+            'createdAt'      => $this->createdAt,
+            'lastUsedAt'     => $this->lastUsedAt,
+            'isRevoked'      => $this->isRevoked,
+            'revokedAt'      => $this->revokedAt,
+            'revokedBy'      => $this->revokedBy,
+            'backupEligible' => $this->backupEligible,
         ];
     }
 }

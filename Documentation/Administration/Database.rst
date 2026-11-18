@@ -63,6 +63,13 @@ The extension uses a single table
         - int
         - Signature counter (replay detection)
 
+    *   - ``backup_eligible``
+        - tinyint(1), nullable
+        - The authenticator reported the credential as backup eligible (1) or
+          device-bound (0) at registration. A NULL value means that eligibility
+          is unknown. Eligibility does not establish that a backup exists.
+          Apply the database schema update when upgrading the extension.
+
     *   - ``user_handle``
         - varbinary
         - WebAuthn user handle (SHA-256 hash)

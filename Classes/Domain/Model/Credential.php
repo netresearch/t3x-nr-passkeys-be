@@ -44,6 +44,7 @@ final class Credential
         private int $lastUsedAt = 0,
         private int $revokedAt = 0,
         private int $revokedBy = 0,
+        private readonly ?bool $backupEligible = null,
     ) {}
 
     public function getUid(): int
@@ -236,6 +237,7 @@ final class Credential
             'credential_id'   => $this->credentialId,
             'public_key_cose' => $this->publicKeyCose,
             'sign_count'      => $this->signCount,
+            'backup_eligible' => $this->backupEligible === null ? null : (int) $this->backupEligible,
             'user_handle'     => $this->userHandle,
             'aaguid'          => $this->aaguid,
             'transports'      => $this->transports,
@@ -269,6 +271,11 @@ final class Credential
             lastUsedAt: self::intVal($data['last_used_at'] ?? null),
             revokedAt: self::intVal($data['revoked_at'] ?? null),
             revokedBy: self::intVal($data['revoked_by'] ?? null),
+            backupEligible: match ($data['backup_eligible'] ?? null) {
+                1, '1', true  => true,
+                0, '0', false => false,
+                default       => null,
+            },
         );
     }
 
@@ -294,6 +301,12 @@ final class Credential
             isRevoked: $this->isRevoked(),
             revokedAt: $this->revokedAt,
             revokedBy: $this->revokedBy,
+            backupEligible: $this->backupEligible,
         );
+    }
+
+    public function getBackupEligibility(): ?bool
+    {
+        return $this->backupEligible;
     }
 }

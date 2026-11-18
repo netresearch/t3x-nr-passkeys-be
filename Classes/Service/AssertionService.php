@@ -391,6 +391,7 @@ final readonly class AssertionService
             credentialPublicKey: $credential->getPublicKeyCose(),
             userHandle: $credential->getUserHandle(),
             counter: $credential->getSignCount(),
+            backupEligible: $credential->getBackupEligibility(),
         );
     }
 }

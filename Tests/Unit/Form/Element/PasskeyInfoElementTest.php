@@ -106,7 +106,7 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-        $cred = new Credential(uid: 10, beUser: 42, label: 'My Key', createdAt: 1700000000);
+        $cred = new Credential(uid: 10, beUser: 42, label: 'My Key', createdAt: 1700000000, backupEligible: true);
         $this->credentialRepository
             ->expects(self::once())
             ->method('findAllByBeUser')
@@ -124,6 +124,7 @@ final class PasskeyInfoElementTest extends TestCase
         self::assertStringContainsString('badge-success', $html);
         self::assertStringContainsString('1 Enabled', $html);
         self::assertStringContainsString('My Key', $html);
+        self::assertStringContainsString('Backup eligible', $html);
         self::assertStringContainsString('Active', $html);
     }
 
@@ -459,6 +460,7 @@ final class PasskeyInfoElementTest extends TestCase
                 static function (string $key): string {
                     $map = [
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled'                 => 'Enabled',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.backup.eligible'         => 'Backup eligible',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.disabled'                => 'No passkeys',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke'                  => 'Revoke',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll'               => 'Revoke all passkeys',

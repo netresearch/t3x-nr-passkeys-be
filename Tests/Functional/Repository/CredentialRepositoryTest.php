@@ -426,4 +426,19 @@ final class CredentialRepositoryTest extends FunctionalTestCase
             );
         }
     }
+
+    #[Test]
+    public function backupEligibilitySurvivesStorageIncludingUnknownLegacyValues(): void
+    {
+        foreach ([true, false, null] as $i => $eligible) {
+            $id         = 'eligibility-' . $i;
+            $credential = new Credential(beUser: 1, credentialId: $id, publicKeyCose: 'test-key', backupEligible: $eligible);
+            $this->repository->save($credential);
+            $stored = $this->repository->findByCredentialId($id);
+            self::assertInstanceOf(Credential::class, $stored);
+            self::assertSame($eligible, $stored->getBackupEligibility());
+        }
+
+        self::assertNull(Credential::fromArray([])->getBackupEligibility());
+    }
 }
