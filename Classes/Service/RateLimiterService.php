@@ -51,7 +51,8 @@ final class RateLimiterService
      * increments — the overshoot a separate check/record pair allows. This is the
      * rate-limit gate the request path should call.
      *
-     * @throws RuntimeException if the rate limit is exceeded or the lock cannot be acquired
+     * @throws DatabaseException if the shared counter store cannot be read or updated
+     * @throws RuntimeException  if the rate limit is exceeded or the lock cannot be acquired
      */
     public function consumeRateLimit(string $endpoint, string $identifier): void
     {
@@ -119,7 +120,8 @@ final class RateLimiterService
      * Checks both the per-IP+username counter and the per-username counter.
      * Either exceeding its threshold will block the attempt.
      *
-     * @throws RuntimeException if user is locked out or lock cannot be acquired
+     * @throws DatabaseException if the shared counter store cannot be read or updated
+     * @throws RuntimeException  if user is locked out or lock cannot be acquired
      */
     public function checkLockout(string $username, string $ip): void
     {
