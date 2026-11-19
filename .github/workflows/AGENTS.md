@@ -13,8 +13,10 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 | `ci.yml` | Test matrix (PHP 8.2-8.5 x TYPO3 ^12.4/^13.4/^14.3). Thin caller of `typo3-ci-workflows/ci.yml@main`: lint, cgl, phpstan (+ unpinned advisory), rector, unit, functional (MySQL), docs render, gate `ci / All CI checks` |
 | `checks.yml` | Security/quality gate. Calls security (composer-audit + opengrep), betterleaks, zizmor, fuzz (fuzz tests; `run-mutation-tests` is not set, so no mutation testing), license-check, codeql, scorecard, dependency-review, pr-quality; gate `All security checks` |
 | `harness-verify.yml` | Agent-harness consistency check via `Build/Scripts/verify-harness.sh` (thin caller of `netresearch/.github` script-check) |
-| `release.yml` | Release orchestrator -- tag push triggers build + TER publish + Packagist verify + docs verify + atomic GitHub release. Thin caller of `typo3-ci-workflows/release-typo3-extension.yml@main` |
-| `republish.yml` | `workflow_dispatch` manual re-run of TER / docs / Packagist verification for an existing tag. Never mutates the GitHub release. Thin caller of `typo3-ci-workflows/republish.yml@main` |
+| `release.yml` | Calls the local pinned release workflow on tag push |
+| `release-typo3-extension-pinned.yml` | Builds and signs archives, publishes the GitHub release, then runs the pinned TER, Packagist and documentation workflows |
+| `republish.yml` | Manually retries publishing for an existing tag through the local pinned workflow |
+| `republish-pinned.yml` | Dispatches the selected TER, Packagist and documentation workflows at their reviewed revision |
 | `docs.yml` | Documentation render check (`typo3-ci-workflows/docs.yml@main`) |
 | `js-tests.yml` | Vitest suite (`npm run test:js:coverage`) via the shared `netresearch/.github` `node-test.yml`; coverage to Codecov flag `js` (informational project status; the default project status covers the PHP flags) |
 | `check-template-drift.yml` | Enforces that `checks.yml` stays byte-identical to the org template |
@@ -56,7 +58,7 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 - Always bump `ext_emconf.php` version BEFORE creating the tag; the orchestrator rejects mismatches. `guides.xml` version should match too.
 - Tag must be `v`-prefixed (e.g. `v0.8.0`); the extension version in `ext_emconf.php` is without the `v`.
 - If the orchestrator aborts mid-run (e.g. TER times out), re-run the Release workflow against the same tag -- every step is idempotent. Republish is only for a completed release whose publishes later regressed.
-- The GitHub release is created LAST, atomically, with all assets. Never edit a published release; cut a new version instead. Compatible with GitHub Immutable Releases.
+- GitHub publishes the draft after its assets have uploaded and the tag has been verified. TER, Packagist and documentation run afterwards. The status job records their results in the release body.
 
 ## When stuck
 - Reusable inputs/behavior: read the workflow source in `netresearch/typo3-ci-workflows` (`gh api` or local checkout) -- it is the authority, not this file

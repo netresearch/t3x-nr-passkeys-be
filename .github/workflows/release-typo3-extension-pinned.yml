@@ -175,7 +175,8 @@ jobs:
             echo "::error::Invalid version derived from tag: $GITHUB_REF_NAME"
             exit 1
           fi
-          if [[ "$ARCHIVE_PREFIX" == *..* || "$ARCHIVE_PREFIX" == /* || "$ARCHIVE_PREFIX" == *'#'* ]]; then
+          # GitHub normalizes special characters in uploaded asset names.
+          if [[ ! "$ARCHIVE_PREFIX" =~ ^[a-zA-Z0-9_-][a-zA-Z0-9._-]*$ || "$ARCHIVE_PREFIX" == *..* ]]; then
             echo "::error::Invalid archive-prefix: $ARCHIVE_PREFIX"
             exit 1
           fi
@@ -307,7 +308,9 @@ jobs:
               # would trip shellcheck SC2016.
               BT=$(printf '\140')
               LOG=$(printf '%s\n' "$LOG" | sed -E "s/(^|[^${BT}[:alnum:]_])@([[:alnum:]][[:alnum:]-]*)/\\1${BT}@\\2${BT}/g")
-              echo "$LOG"
+              # Leave exactly one pair of publication-status markers in the body.
+              printf '%s\n' "$LOG" | sed -e 's/<!-- publication-status:start -->/\&lt;!-- publication-status:start --\&gt;/g' \
+                -e 's/<!-- publication-status:end -->/\&lt;!-- publication-status:end --\&gt;/g'
               echo ""
             fi
             echo "$DELIMITER"
@@ -495,8 +498,8 @@ jobs:
       # commit. A tag moved since then would attach this release, and every
       # target that follows it, to a commit nobody built or checked.
       - name: Check the tag still points at the built commit
+        # TER also runs on a rerun of an already-published release.
         id: tag
-        if: steps.state.outputs.state != 'published'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -631,11 +634,16 @@ jobs:
           # its assets and adding only the missing names would publish a
           # checksums.txt and signatures that do not match the files next to
           # them, on a release that cannot be changed afterwards. A draft can
-          # still be changed, so remove its assets and upload this build's set.
+          # still be changed. Check for extra attachments before replacing any files.
           # This runs after the dist/ checks, so a missing build never empties
           # the draft.
           if [[ "$STATE" == "draft" ]]; then
-            gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name' > stale.txt
+            gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name' | sort -u > stale.txt
+            comm -23 stale.txt expected.txt > unexpected.txt
+            if [[ -s unexpected.txt ]]; then
+              echo "::error::The draft contains assets outside this build. Inspect the draft before retrying."
+              exit 1
+            fi
             while IFS= read -r name; do
               [[ -n "$name" ]] || continue
               gh release delete-asset "$TAG" "$name" --repo "$REPO" --yes
