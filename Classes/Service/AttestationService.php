@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Service;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
+use Netresearch\NrPasskeysBe\Domain\Enum\BackupEligibility;
 use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Psr\Log\LoggerInterface;
@@ -202,6 +203,7 @@ final readonly class AttestationService
             transports: json_encode($source->transports, JSON_THROW_ON_ERROR),
             discoverable: $discoverable,
             label: $label,
+            backupEligibility: BackupEligibility::fromValue($source->backupEligible),
         );
         $uid = $this->credentialRepository->save($credential);
         $credential->setUid($uid);

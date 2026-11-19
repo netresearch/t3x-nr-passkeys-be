@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\Domain\Model;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\AdminCredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Enum\BackupEligibility;
 use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -19,6 +20,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(CredentialInfo::class)]
 #[CoversClass(AdminCredentialInfo::class)]
+#[CoversClass(BackupEligibility::class)]
 final class CredentialTest extends TestCase
 {
     #[Test]
@@ -282,6 +284,7 @@ final class CredentialTest extends TestCase
             'credential_id'   => 'cred-123',
             'public_key_cose' => 'cose-data',
             'sign_count'      => 7,
+            'backup_eligible' => null,
             'user_handle'     => 'handle-abc',
             'aaguid'          => '00000000-0000-0000-0000-000000000001',
             'transports'      => '["usb"]',
@@ -519,13 +522,13 @@ final class CredentialTest extends TestCase
     }
 
     #[Test]
-    public function toAdminCredentialInfoHasExactlySevenProperties(): void
+    public function toAdminCredentialInfoExposesOnlyTheExpectedMetadata(): void
     {
         $credential = new Credential(uid: 1, label: 'Test');
         $info       = $credential->toAdminCredentialInfo();
         self::assertInstanceOf(AdminCredentialInfo::class, $info);
         $serialized = $info->jsonSerialize();
-        self::assertCount(7, $serialized);
+        self::assertCount(8, $serialized);
         self::assertArrayHasKey('uid', $serialized);
         self::assertArrayHasKey('label', $serialized);
         self::assertArrayHasKey('createdAt', $serialized);
@@ -533,5 +536,29 @@ final class CredentialTest extends TestCase
         self::assertArrayHasKey('isRevoked', $serialized);
         self::assertArrayHasKey('revokedAt', $serialized);
         self::assertArrayHasKey('revokedBy', $serialized);
+        self::assertArrayHasKey('backupEligible', $serialized);
+        self::assertNull($serialized['backupEligible']);
+    }
+
+    #[Test]
+    public function backupEligibilityRoundTripsRegistrationFlagsAndLegacyDatabaseValues(): void
+    {
+        foreach ([
+            [true, 1, true],
+            [1, 1, true],
+            ['1', 1, true],
+            [false, 0, false],
+            [0, 0, false],
+            ['0', 0, false],
+            [null, null, null],
+            ['invalid', null, null],
+        ] as [$raw, $stored, $flag]) {
+            $credential = Credential::fromArray(['backup_eligible' => $raw]);
+            self::assertSame($stored, $credential->toArray()['backup_eligible']);
+            self::assertSame($flag, $credential->getBackupEligibility());
+            self::assertSame($flag, $credential
+                ->toAdminCredentialInfo()
+                ->jsonSerialize()['backupEligible']);
+        }
     }
 }

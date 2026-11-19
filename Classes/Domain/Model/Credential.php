@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Domain\Model;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\AdminCredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
+use Netresearch\NrPasskeysBe\Domain\Enum\BackupEligibility;
 use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
 use Netresearch\NrPasskeysBe\Utility\TypeCastTrait;
 
@@ -44,6 +45,7 @@ final class Credential
         private int $lastUsedAt = 0,
         private int $revokedAt = 0,
         private int $revokedBy = 0,
+        private readonly BackupEligibility $backupEligibility = BackupEligibility::Unknown,
     ) {}
 
     public function getUid(): int
@@ -236,6 +238,7 @@ final class Credential
             'credential_id'   => $this->credentialId,
             'public_key_cose' => $this->publicKeyCose,
             'sign_count'      => $this->signCount,
+            'backup_eligible' => $this->backupEligibility->toDatabaseValue(),
             'user_handle'     => $this->userHandle,
             'aaguid'          => $this->aaguid,
             'transports'      => $this->transports,
@@ -269,6 +272,7 @@ final class Credential
             lastUsedAt: self::intVal($data['last_used_at'] ?? null),
             revokedAt: self::intVal($data['revoked_at'] ?? null),
             revokedBy: self::intVal($data['revoked_by'] ?? null),
+            backupEligibility: BackupEligibility::fromValue($data['backup_eligible'] ?? null),
         );
     }
 
@@ -294,6 +298,12 @@ final class Credential
             isRevoked: $this->isRevoked(),
             revokedAt: $this->revokedAt,
             revokedBy: $this->revokedBy,
+            backupEligibility: $this->backupEligibility,
         );
+    }
+
+    public function getBackupEligibility(): ?bool
+    {
+        return $this->backupEligibility->toFlag();
     }
 }

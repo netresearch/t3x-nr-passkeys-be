@@ -168,6 +168,15 @@
             <trans-unit id="admin.passkeys.unlock.confirm.text" resname="admin.passkeys.unlock.confirm.text">
                 <source>Reset the failed login attempt counter for this user? This clears any rate-limiting or temporary lockout.</source>
             </trans-unit>
+            <trans-unit id="admin.passkeys.backup.eligible" resname="admin.passkeys.backup.eligible">
+                <source>Backup eligible</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.backup.deviceBound" resname="admin.passkeys.backup.deviceBound">
+                <source>Device-bound</source>
+            </trans-unit>
+            <trans-unit id="admin.passkeys.backup.unknown" resname="admin.passkeys.backup.unknown">
+                <source>Backup eligibility unknown</source>
+            </trans-unit>
             <trans-unit id="admin.passkeys.status.active" resname="admin.passkeys.status.active">
                 <source>Active</source>
             </trans-unit>

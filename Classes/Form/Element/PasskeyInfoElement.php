@@ -157,6 +157,18 @@ class PasskeyInfoElement extends AbstractFormElement
                 $childHtml[] = '<br><small class="text-muted">';
                 $childHtml[] = $createdLabel . ': ' . ($createdAt > 0 ? htmlspecialchars($this->formatTimestamp($createdAt)) : $neverLabel);
                 $childHtml[] = ' &middot; ' . $lastUsedLabel . ': ' . ($lastUsedAt > 0 ? htmlspecialchars($this->formatTimestamp($lastUsedAt)) : $neverLabel);
+                $backupLabel = match ($credential->getBackupEligibility()) {
+                    true => $lang->sL(
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.backup.eligible',
+                    ),
+                    false => $lang->sL(
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.backup.deviceBound',
+                    ),
+                    null => $lang->sL(
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.backup.unknown',
+                    ),
+                };
+                $childHtml[] = ' &middot; ' . htmlspecialchars($backupLabel);
                 $childHtml[] = '</small>';
 
                 // Revoke button for active credentials (admin only)

@@ -19,6 +19,7 @@ use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
 use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
 use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
+use Netresearch\NrPasskeysBe\Domain\Enum\BackupEligibility;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\AssertionService;
 use Netresearch\NrPasskeysBe\Service\AttestationService;
@@ -299,6 +300,7 @@ final class WebAuthnServiceTest extends TestCase
             credentialPublicKey: 'cose-public-key-data',
             userHandle: 'user-handle-hash',
             counter: 0,
+            backupEligible: true,
         );
         $this->credentialRepositoryMock
             ->expects(self::once())
@@ -317,6 +319,7 @@ final class WebAuthnServiceTest extends TestCase
         self::assertSame($beUserUid, $result->getBeUser());
         self::assertSame($label, $result->getLabel());
         self::assertSame('credential-id-xyz', $result->getCredentialId());
+        self::assertTrue($result->getBackupEligibility());
     }
 
     #[Test]
@@ -1698,12 +1701,14 @@ final class WebAuthnServiceTest extends TestCase
             aaguid: $fixedAaguid,
             transports: '[]',
             label: 'Known Authenticator',
+            backupEligibility: BackupEligibility::DeviceBound,
         );
         $reflection = new ReflectionMethod($this->assertionService, 'credentialToSource');
 
         /** @var CredentialRecord $source */
         $source = $reflection->invoke($this->assertionService, $credential);
         self::assertSame($fixedAaguid, $source->aaguid->toString());
+        self::assertFalse($source->backupEligible);
     }
 
     #[Test]
