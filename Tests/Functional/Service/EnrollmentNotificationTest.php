@@ -14,7 +14,6 @@ use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use Symfony\Component\Uid\Uuid;
-use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 use Webauthn\CredentialRecord;
 use Webauthn\TrustPath\EmptyTrustPath;
@@ -26,15 +25,17 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
 
     protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
 
-    private string $mailbox;
+    /** @var resource|null */
+    private mixed $mailbox = null;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->importCSVDataSet(__DIR__ . '/../../Fixtures/be_users.csv');
-        $this->mailbox                                                = Environment::getVarPath() . '/enrollment-' . bin2hex(random_bytes(10)) . '.mbox';
+        $this->mailbox = tmpfile();
+        self::assertIsResource($this->mailbox);
         $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport']              = 'mbox';
-        $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_mbox_file']    = $this->mailbox;
+        $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_mbox_file']    = stream_get_meta_data($this->mailbox)['uri'];
         $GLOBALS['TYPO3_CONF_VARS']['MAIL']['defaultMailFromAddress'] = 'no-reply@example.test';
         $db                                                           = $this
             ->getConnectionPool()
@@ -48,8 +49,8 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
     public function notifiesOnlyTheOwnerThroughTheConfiguredTransport(): void
     {
         $this->enroll();
-        self::assertFileExists($this->mailbox);
-        $message = file_get_contents($this->mailbox);
+
+        $message = stream_get_contents($this->mailbox);
         self::assertIsString($message);
         self::assertStringContainsString('To: owner@example.test', $message);
         self::assertStringContainsString('From:', $message);
@@ -68,7 +69,7 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
             ->getConnectionForTable('be_users')
             ->update('be_users', ['email' => ''], ['uid' => 1]);
         $this->enroll();
-        self::assertFileDoesNotExist($this->mailbox);
+        self::assertSame('', stream_get_contents($this->mailbox));
     }
 
     #[Test]
@@ -76,7 +77,7 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
     {
         $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport'] = 'no-such-transport';
         $this->enroll();
-        self::assertFileDoesNotExist($this->mailbox);
+        self::assertSame('', stream_get_contents($this->mailbox));
         self::assertSame(
             1,
             $this
@@ -110,8 +111,8 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
 
     protected function tearDown(): void
     {
-        if (isset($this->mailbox) && is_file($this->mailbox)) {
-            unlink($this->mailbox);
+        if (is_resource($this->mailbox)) {
+            fclose($this->mailbox);
         }
 
         parent::tearDown();
@@ -129,7 +130,7 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
                 ['uid' => 1],
             );
         $this->enroll();
-        $message = file_get_contents($this->mailbox);
+        $message = stream_get_contents($this->mailbox);
         self::assertIsString($message);
         self::assertStringContainsString('Backend-Konto auf Example backend', quoted_printable_decode($message));
     }
