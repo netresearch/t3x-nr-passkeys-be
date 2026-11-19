@@ -96,6 +96,26 @@ final class AuthenticationStateTest extends FunctionalTestCase
     }
 
     #[Test]
+    public function claimingTokensEventuallyPrunesClaimsExpiredForMoreThanAnHour(): void
+    {
+        $pool       = $this->get(ConnectionPool::class);
+        $table      = 'tx_nrpasskeysbe_consumed_token';
+        $connection = $pool->getConnectionForTable($table);
+        $old        = hash('sha256', 'old');
+        $connection->insert($table, ['token_hash' => $old, 'expires_at' => time() - 7200]);
+        $store = new ConsumedTokenStore($pool, new NullLogger());
+
+        // claim() prunes on one call in 64 at random. 1500 claims leave a
+        // chance below 1e-10 that none of them prunes, so the cleanup branch
+        // is covered on every run instead of on some.
+        for ($i = 0; $i < 1500 && (int) $connection->count('*', $table, ['token_hash' => $old]) === 1; ++$i) {
+            self::assertTrue($store->claim('cleanup:' . $i, time() + 120));
+        }
+
+        self::assertSame(0, (int) $connection->count('*', $table, ['token_hash' => $old]));
+    }
+
+    #[Test]
     public function configuredBudgetRejectsTheNextAttemptButAllowsAnotherIdentifier(): void
     {
         $limiter = $this->get(RateLimiterService::class);
