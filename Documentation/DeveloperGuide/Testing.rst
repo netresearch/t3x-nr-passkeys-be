@@ -96,8 +96,20 @@ renew the one-day reminder before running the dashboard tests.
 
 Export ``TYPO3_ADMIN_USER`` and ``TYPO3_ADMIN_PASS`` in the shell with the test
 administrator's credentials. The browser and TYPO3 must agree on the
-WebAuthn origin and relying party ID. The provisioned suite allows 500
-attempts per rate-limit window to accommodate its shared client address.
+WebAuthn origin and relying party ID.
+
+The login endpoints count requests per client address, and the suite sends
+all of them from one address. A full run sends more than ten requests to
+``/typo3/passkeys/login/options``, so the default of
+:confval:`rateLimitMaxAttempts` (10 per window) answers later requests
+with 429 and fails the API tests. Raise the limit on the test instance the way
+the provisioned runner does, for example in
+``config/system/additional.php``:
+
+..  code-block:: php
+
+    $GLOBALS['TYPO3_CONF_VARS']['EXTENSIONS']['nr_passkeys_be']
+        ['rateLimitMaxAttempts'] = '500';
 
 ..  code-block:: bash
     :caption: Run Playwright against the prepared instance
