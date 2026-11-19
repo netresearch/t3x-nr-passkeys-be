@@ -33,9 +33,7 @@ name: Release (TYPO3 extension)
 # "Re-run failed jobs" in the UI). For a release left as a draft, re-run all
 # jobs (`gh run rerun <run-id>`): the dist artifact is kept for one day, so a
 # later failed-jobs re-run has nothing to upload. GitHub allows re-runs for 30
-# days after the run. A caller whose release workflow also declares
-# `workflow_dispatch` can start a fresh run on the tag instead
-# (`gh workflow run release.yml --ref vX.Y.Z`). Either way a published release
+# days after the run. This repository's caller runs on tag pushes. A published release
 # is left as it is — no asset is uploaded again — the targets run again, and
 # the status section is rewritten. A release left as a draft by a failed asset
 # upload loses its partial assets and gets the full set of the current build,
@@ -132,13 +130,19 @@ on:
 # startup-fail here unless these scopes are granted explicitly.
 #
 #   jobs:
-#     build-and-sign:
-#       uses: netresearch/typo3-ci-workflows/.github/workflows/release-typo3-extension.yml@main
+#     release:
+#       uses: ./.github/workflows/release-typo3-extension-pinned.yml
 #       permissions:
-#         actions: read
-#         attestations: write
 #         contents: write
+#         actions: read
 #         id-token: write
+#         attestations: write
+#       with:
+#         archive-prefix: 'nr-passkeys-be'
+#         package-name: 'netresearch/nr-passkeys-be'
+#         extension-key: 'nr_passkeys_be'
+#       secrets:
+#         TYPO3_TER_ACCESS_TOKEN: ${{ secrets.TYPO3_TER_ACCESS_TOKEN }}
 permissions: {}
 
 jobs:
@@ -176,7 +180,7 @@ jobs:
             exit 1
           fi
           # GitHub normalizes special characters in uploaded asset names.
-          if [[ ! "$ARCHIVE_PREFIX" =~ ^[a-zA-Z0-9_-][a-zA-Z0-9._-]*$ || "$ARCHIVE_PREFIX" == *..* ]]; then
+          if [[ ! "$ARCHIVE_PREFIX" =~ ^[a-zA-Z0-9_][a-zA-Z0-9._-]*$ || "$ARCHIVE_PREFIX" == *..* ]]; then
             echo "::error::Invalid archive-prefix: $ARCHIVE_PREFIX"
             exit 1
           fi
@@ -625,8 +629,21 @@ jobs:
           # empty "nothing is missing" answer and publish an incomplete
           # release -- the exact fail-open this step exists to prevent.
           [[ -d dist ]] || { echo "::error::dist/ is missing; nothing to upload."; exit 1; }
+          export LC_ALL=C
           find dist -maxdepth 1 -type f -printf '%f\n' | sort > expected.txt
           [[ -s expected.txt ]] || { echo "::error::dist/ holds no files."; exit 1; }
+
+          release_id="$(gh release view "$TAG" --repo "$REPO" --json databaseId --jq '.databaseId')"
+          [[ "$release_id" =~ ^[1-9][0-9]*$ ]] || { echo "::error::Missing release ID for ${TAG}."; exit 1; }
+
+          # Use one paginated snapshot for both lists. A starter asset has a
+          # name but cannot satisfy the check for a complete upload.
+          read_assets() {
+            gh api --paginate "repos/${REPO}/releases/${release_id}/assets?per_page=100" \
+              --jq '.[] | [.state, .name] | @tsv' > asset-states.tsv
+            cut -f2 asset-states.tsv | sort > all-assets.txt
+            awk -F '\t' '$1 == "uploaded" { print $2 }' asset-states.tsv | sort > uploaded.txt
+          }
 
           # A draft found at the start of this job was left by an earlier run
           # whose build may differ from this one: the SBOMs carry a creation
@@ -638,8 +655,8 @@ jobs:
           # This runs after the dist/ checks, so a missing build never empties
           # the draft.
           if [[ "$STATE" == "draft" ]]; then
-            gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets[].name' | sort -u > stale.txt
-            comm -23 stale.txt expected.txt > unexpected.txt
+            read_assets
+            comm -23 all-assets.txt expected.txt > unexpected.txt
             if [[ -s unexpected.txt ]]; then
               echo "::error::The draft contains assets outside this build. Inspect the draft before retrying."
               exit 1
@@ -648,26 +665,12 @@ jobs:
               [[ -n "$name" ]] || continue
               gh release delete-asset "$TAG" "$name" --repo "$REPO" --yes
               echo "  removed ${name} from the draft"
-            done < stale.txt
+            done < all-assets.txt
           fi
 
-          # Only assets the API reports as `uploaded` count as present. A
-          # failed upload can leave the name behind in `starter` state -- an
-          # empty asset that a name-only listing cannot tell from a real one,
-          # and that would let this step publish a release carrying a file
-          # nobody can use. `--clobber` replaces such a leftover.
-          read_present() {
-            if ! gh release view "$TAG" --repo "$REPO" --json assets \
-                --jq '.assets[] | select(.state == "uploaded") | .name' > present.raw 2> present.err; then
-              echo "::error::No release for ${TAG} to complete: $(cat present.err)"
-              exit 1
-            fi
-            sort present.raw > present.txt
-          }
-
           for attempt in $(seq 1 "$ATTEMPTS"); do
-            read_present
-            comm -23 expected.txt present.txt > missing.txt
+            read_assets
+            comm -23 expected.txt uploaded.txt > missing.txt
             [[ -s missing.txt ]] || break
 
             echo "Attempt ${attempt}/${ATTEMPTS}: $(wc -l < missing.txt) asset(s) missing:"
@@ -692,33 +695,31 @@ jobs:
             fi
           done
 
-          # Verified after the last round, not before it: deciding inside the
-          # loop would spend one iteration on the verdict instead of on an
-          # upload, so ATTEMPTS would buy ATTEMPTS-1 tries.
-          read_present
-          comm -23 expected.txt present.txt > missing.txt
-          if [[ -s missing.txt ]]; then
-            echo "::error::Still missing after ${ATTEMPTS} attempts: $(paste -sd' ' missing.txt). The release stays an unpublished draft."
+          draft="$(gh release view "$TAG" --repo "$REPO" --json databaseId,isDraft \
+            --jq "select(.databaseId == ${release_id}) | .isDraft")"
+          case "$draft" in
+            true)
+              current_object="$(gh api "repos/${REPO}/git/ref/tags/${TAG}" --jq '.object.sha')"
+              if [[ -z "$EXPECTED_TAG_OBJECT" || "$current_object" != "$EXPECTED_TAG_OBJECT" ]]; then
+                echo "::error::Tag ${TAG} changed after build verification. The draft stays unpublished."
+                exit 1
+              fi
+              ;;
+            false) ;;
+            *) echo "::error::Release ${release_id} for ${TAG} changed or has an unknown draft state."; exit 1 ;;
+          esac
+
+          # An operator can attach a file during the upload loop. Compare all
+          # names and states together immediately before publication.
+          read_assets
+          if ! cmp -s expected.txt all-assets.txt || ! cmp -s expected.txt uploaded.txt; then
+            echo "::error::Final assets for ${TAG} differ from this build. Inspect missing, unfinished or unexpected attachments before retrying."
+            comm -23 expected.txt uploaded.txt
+            comm -13 expected.txt all-assets.txt
             exit 1
           fi
-          echo "All $(wc -l < expected.txt) assets are on the release."
-
-          DRAFT="$(gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft')"
-          if [[ "$DRAFT" == "true" ]]; then
-            echo "Publishing the completed release."
-            # --latest carries the decision of "Decide whether this release
-            # becomes Latest": without it this path would not pass it on, and a
-            # backport release could take the Latest badge from the top major
-            # line.
-            CURRENT_OBJECT="$(gh api "repos/${REPO}/git/ref/tags/${TAG}" --jq '.object.sha')"
-            if [[ -z "$EXPECTED_TAG_OBJECT" || "$CURRENT_OBJECT" != "$EXPECTED_TAG_OBJECT" ]]; then
-              echo "::error::Tag ${TAG} changed after build verification. The draft stays unpublished."
-              exit 1
-            fi
+          if [[ "$draft" == true ]]; then
             gh release edit "$TAG" --repo "$REPO" --draft=false --latest="$MAKE_LATEST"
-          elif [[ "$DRAFT" != "false" ]]; then
-            echo "::error::GitHub returned an unexpected draft state for ${TAG}."
-            exit 1
           fi
 
   publish-to-ter:
@@ -855,7 +856,7 @@ jobs:
               echo "- TER: skipped"
             elif [[ "$TER_COMMENT_REFUSED" == "true" ]]; then
               # A re-run sends the same comment from the same tag (#273).
-              echo "- TER: ${TER_RESULT} — TER refused the upload comment; a re-run of this workflow sends the same comment. The error in [the release run](${RUN_URL}) says how to correct it"
+              echo "- TER: ${TER_RESULT} — TER refused the upload comment. If the tagged CHANGELOG.md supplies the refused comment, publish a new patch version with a reworded entry. Otherwise edit the GitHub release notes and run Republish for this tag with target ter. [Release log](${RUN_URL})."
             else
               echo "- TER: ${TER_RESULT} — see [the release run](${RUN_URL}); re-run the release workflow on the tag to retry"
             fi
@@ -920,6 +921,13 @@ jobs:
               sys.exit(1)
           open(dst, "w", encoding="utf-8").write(new)
           PY
+          # The Releases API has no conditional update for the body. Detect
+          # edits during composition before making the separate write.
+          gh release view "$TAG" --repo "$REPO" --json body --jq '.body' > current-body.md
+          if ! cmp -s body.md current-body.md; then
+            echo "::error::Release notes changed during status generation. Re-run this job to preserve the latest notes."
+            exit 1
+          fi
           gh release edit "$TAG" --repo "$REPO" --notes-file new-body.md
           # Read back and compare with what was sent: this step is the one
           # place the status reaches the reader. Trailing newlines are
