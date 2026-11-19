@@ -9,8 +9,11 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Service;
 
+use Doctrine\DBAL\Exception as DatabaseException;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Symfony\Contracts\Service\Attribute\Required;
+use Throwable;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
@@ -21,14 +24,24 @@ use function is_numeric;
 /**
  * Per-endpoint rate limiting and per-account lockout using TYPO3 caching with atomic locking.
  */
-final readonly class RateLimiterService
+final class RateLimiterService
 {
+    private FrontendInterface|DatabaseRateLimitStore $store;
+
     public function __construct(
-        private FrontendInterface $rateLimitCache,
-        private ExtensionConfigurationService $configService,
-        private LockFactory $lockFactory,
-        private LoggerInterface $logger,
-    ) {}
+        private readonly FrontendInterface $rateLimitCache,
+        private readonly ExtensionConfigurationService $configService,
+        private readonly LockFactory $lockFactory,
+        private readonly LoggerInterface $logger,
+    ) {
+        $this->store = $rateLimitCache;
+    }
+
+    #[Required]
+    public function injectDatabaseStore(DatabaseRateLimitStore $databaseStore): void
+    {
+        $this->store = $databaseStore;
+    }
 
     /**
      * Atomically check the rate limit AND record the attempt under a single lock.
@@ -38,7 +51,8 @@ final readonly class RateLimiterService
      * increments — the overshoot a separate check/record pair allows. This is the
      * rate-limit gate the request path should call.
      *
-     * @throws RuntimeException if the rate limit is exceeded or the lock cannot be acquired
+     * @throws DatabaseException if the shared counter store cannot be read or updated
+     * @throws RuntimeException  if the rate limit is exceeded or the lock cannot be acquired
      */
     public function consumeRateLimit(string $endpoint, string $identifier): void
     {
@@ -46,7 +60,32 @@ final readonly class RateLimiterService
         $key           = $this->buildKey($endpoint, $identifier);
         $maxAttempts   = $config->getRateLimitMaxAttempts();
         $windowSeconds = $config->getRateLimitWindowSeconds();
-        $locker        = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
+
+        if ($this->store instanceof DatabaseRateLimitStore) {
+            if (random_int(1, 128) === 1) {
+                try {
+                    $this->store->prune();
+                } catch (DatabaseException $error) {
+                    $this->logger->warning(
+                        'Expired rate-limit counters could not be removed',
+                        ['exception' => $error::class],
+                    );
+                }
+            }
+
+            if (!$this->store->increment($this->databaseKey($key), '', $windowSeconds, $maxAttempts)) {
+                $this->logger->warning(
+                    'Rate limit exceeded',
+                    ['endpoint' => $endpoint, 'identifier' => hash('sha256', $identifier)],
+                );
+
+                throw new RuntimeException('Rate limit exceeded', 1700000010);
+            }
+
+            return;
+        }
+
+        $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
             $this->logger->error(
@@ -81,7 +120,8 @@ final readonly class RateLimiterService
      * Checks both the per-IP+username counter and the per-username counter.
      * Either exceeding its threshold will block the attempt.
      *
-     * @throws RuntimeException if user is locked out or lock cannot be acquired
+     * @throws DatabaseException if the shared counter store cannot be read or updated
+     * @throws RuntimeException  if user is locked out or lock cannot be acquired
      */
     public function checkLockout(string $username, string $ip): void
     {
@@ -168,6 +208,16 @@ final readonly class RateLimiterService
      */
     public function resetLockout(string $username, string $ip = ''): void
     {
+        if ($this->store instanceof DatabaseRateLimitStore) {
+            if ($ip === '') {
+                $this->store->forgetGroup($this->databaseKey('lockout_' . $this->sanitize($username)));
+            } else {
+                $this->store->forget($this->databaseKey($this->buildLockoutKey($username, $ip)));
+            }
+
+            return;
+        }
+
         if ($ip !== '') {
             $key = $this->buildLockoutKey($username, $ip);
             $this->rateLimitCache->remove($key);
@@ -183,10 +233,25 @@ final readonly class RateLimiterService
      */
     public function recordSuccess(string $username, string $ip): void
     {
-        $ipKey = $this->buildLockoutKey($username, $ip);
-        $this->rateLimitCache->remove($ipKey);
+        $ipKey   = $this->buildLockoutKey($username, $ip);
         $userKey = $this->buildUserLockoutKey($username);
-        $this->rateLimitCache->remove($userKey);
+
+        try {
+            if ($this->store instanceof DatabaseRateLimitStore) {
+                $this->store->forgetPair($this->databaseKey($ipKey), $this->databaseKey($userKey));
+            } else {
+                $this->rateLimitCache->remove($ipKey);
+                $this->rateLimitCache->remove($userKey);
+            }
+        } catch (Throwable $error) {
+            $this->logger->error(
+                'Could not reset lockout counters after successful authentication',
+                ['exception' => $error::class],
+            );
+
+            return;
+        }
+
         $this->logger->debug(
             'Lockout counters reset after successful authentication',
             ['usernameHash' => hash('sha256', $username)],
@@ -200,6 +265,14 @@ final readonly class RateLimiterService
      */
     private function atomicCheck(string $key, int $threshold, string $message, int $code): void
     {
+        if ($this->store instanceof DatabaseRateLimitStore) {
+            if ($this->store->count($this->databaseKey($key)) >= $threshold) {
+                throw new RuntimeException($message, $code);
+            }
+
+            return;
+        }
+
         $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
@@ -228,6 +301,17 @@ final readonly class RateLimiterService
      */
     private function atomicIncrement(string $key, array $tags, int $ttlSeconds): void
     {
+        if ($this->store instanceof DatabaseRateLimitStore) {
+            $this->store->increment(
+                $this->databaseKey($key),
+                $this->databaseKey($tags[0] ?? ''),
+                $ttlSeconds,
+                PHP_INT_MAX,
+            );
+
+            return;
+        }
+
         $locker = $this->lockFactory->createLocker('ratelimit_' . $key, LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE);
 
         if (!$locker->acquire(LockingStrategyInterface::LOCK_CAPABILITY_EXCLUSIVE)) {
@@ -253,6 +337,11 @@ final readonly class RateLimiterService
         }
 
         return is_numeric($value) ? (int) $value : 0;
+    }
+
+    private function databaseKey(string $key): string
+    {
+        return hash('sha256', $this->rateLimitCache->getIdentifier() . ':' . $key);
     }
 
     private function buildKey(string $endpoint, string $identifier): string

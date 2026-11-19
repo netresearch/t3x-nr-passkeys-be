@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
 
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
+use Netresearch\NrPasskeysBe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
@@ -21,6 +22,7 @@ use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Locking\LockFactory;
 use TYPO3\CMS\Core\Locking\LockingStrategyInterface;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 use function base64_decode;
 use function base64_encode;
@@ -49,6 +51,11 @@ final class ChallengeServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $store = $this->createStub(ConsumedTokenStore::class);
+        $store
+            ->method('claim')
+            ->willReturn(true);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
         $GLOBALS['TYPO3_CONF_VARS']['SYS']['encryptionKey'] = 'test-encryption-key-that-is-long-enough-for-hmac';
         $this->nonceCacheMock                               = $this->createMock(FrontendInterface::class);
         $this->lockFactoryMock                              = $this->createMock(LockFactory::class);
@@ -71,6 +78,7 @@ final class ChallengeServiceTest extends TestCase
 
     protected function tearDown(): void
     {
+        GeneralUtility::purgeInstances();
         unset($GLOBALS['TYPO3_CONF_VARS']);
         parent::tearDown();
     }
@@ -391,6 +399,7 @@ final class ChallengeServiceTest extends TestCase
     #[Test]
     public function createChallengeTokenThrowsWhenGlobalsNotArray(): void
     {
+        GeneralUtility::purgeInstances();
         unset($GLOBALS['TYPO3_CONF_VARS']);
         $challenge = random_bytes(32);
         $this->expectException(RuntimeException::class);
@@ -408,5 +417,26 @@ final class ChallengeServiceTest extends TestCase
 
         // Tokens should differ because nonces are random
         self::assertNotSame($token1, $token2);
+    }
+
+    #[Test]
+    public function verifyChallengeTokenRejectsARefusedDatabaseClaim(): void
+    {
+        GeneralUtility::purgeInstances();
+        $store = $this->createMock(ConsumedTokenStore::class);
+        $store
+            ->expects(self::once())
+            ->method('claim')
+            ->willReturn(false);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
+        $this->nonceCacheMock
+            ->method('get')
+            ->willReturn('valid');
+        $token = $this->subject->createChallengeToken($this->subject->generateChallenge());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1700000005);
+        $this->expectExceptionMessage('Challenge already consumed or expired');
+        $this->subject->verifyChallengeToken($token);
     }
 }

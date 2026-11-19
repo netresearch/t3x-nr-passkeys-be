@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Middleware;
 
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
+use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Utility\TranslationTrait;
 use Psr\Http\Message\ResponseInterface;
@@ -17,6 +18,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 use TYPO3\CMS\Backend\Routing\Route;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -129,10 +131,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         $sessionData  = $backendUser->getSessionData(self::SESSION_KEY);
         $sessionArray = is_array($sessionData) ? $sessionData : [];
 
-        // Users who authenticated via passkey should never see the interstitial
-        if (($sessionArray['passkey_authenticated'] ?? false) === true) {
-            return $handler->handle($request);
-        }
+        $passkeyAuthenticated = ($sessionArray['passkey_authenticated'] ?? false) === true;
 
         // Never interstitial a switch-user (impersonation) session: passkey
         // registration is refused in that mode (ManagementController), so the prompt
@@ -148,7 +147,7 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
         }
 
         // Handle skip POST with CSRF nonce validation
-        if ($request->getMethod() === 'POST') {
+        if (!$passkeyAuthenticated && $request->getMethod() === 'POST') {
             $parsedBody = $request->getParsedBody();
 
             if (is_array($parsedBody) && ($parsedBody['passkey_setup_skip'] ?? '') === '1') {
@@ -184,9 +183,27 @@ final readonly class PasskeySetupInterstitial implements MiddlewareInterface
             return $handler->handle($request);
         }
 
-        $status = $this->enforcementService->getStatus($userRow);
+        try {
+            // A temporary recovery suspension does not extend the underlying grace deadline.
+            $status = $this->enforcementService->getStatus($userRow, applySuspensions: !$passkeyAuthenticated);
 
-        if (!$status->requiresInterstitial()) {
+            if ($status->hasPasskeys && $status->level === EnforcementLevel::Required && $status->gracePeriodStart === 0) {
+                $this->enforcementService->startGracePeriod($uid);
+            }
+        } catch (Throwable $error) {
+            if (!$passkeyAuthenticated) {
+                throw $error;
+            }
+
+            $this->logger->error(
+                'Could not record enrollment policy for a passkey session.',
+                ['exception' => $error::class],
+            );
+
+            return $handler->handle($request);
+        }
+
+        if ($passkeyAuthenticated || !$status->requiresInterstitial()) {
             // Cache the clear decision so subsequent requests skip the queries.
             $sessionArray['enforcement_ok_at'] = $now;
             $backendUser->setAndSaveSessionData(self::SESSION_KEY, $sessionArray);

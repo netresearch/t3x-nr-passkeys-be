@@ -57,6 +57,19 @@ final class ExtensionConfigurationServiceTest extends TestCase
 
     // --- getConfiguration() tests ---
     #[Test]
+    public function nonPositiveRateLimitSettingsUseTheDocumentedDefaults(): void
+    {
+        $config = $this
+            ->createService(
+                ['rateLimitMaxAttempts' => -1, 'rateLimitWindowSeconds' => '0', 'lockoutDurationSeconds' => 0],
+            )
+            ->getConfiguration();
+        self::assertSame(10, $config->getRateLimitMaxAttempts());
+        self::assertSame(300, $config->getRateLimitWindowSeconds());
+        self::assertSame(900, $config->getLockoutDurationSeconds());
+    }
+
+    #[Test]
     public function getConfigurationReturnsDefaultValuesWithEmptySettings(): void
     {
         $service = $this->createService([]);
@@ -121,12 +134,8 @@ final class ExtensionConfigurationServiceTest extends TestCase
     #[Test]
     public function getConfigurationHandlesNonArrayReturnFromExtensionConfig(): void
     {
-        $service = $this->createService(null);
-        $config  = $service->getConfiguration();
-
-        // Should fall back to all defaults
-        self::assertSame('', $config->getRpId());
-        self::assertSame('TYPO3 Backend', $config->getRpName());
+        $this->expectException(RuntimeException::class);
+        $this->createService(null);
     }
 
     // --- getEffectiveRpId() tests ---

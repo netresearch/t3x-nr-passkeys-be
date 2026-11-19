@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
 
+use Netresearch\NrPasskeysBe\Service\DatabaseRateLimitStore;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -258,6 +259,26 @@ final class RateLimiterServiceTest extends TestCase
                 900,
             );
         $this->subject->recordFailure('admin', '192.168.1.1');
+    }
+
+    #[Test]
+    public function aFailedCounterResetIsLoggedAfterSuccessfulAuthentication(): void
+    {
+        $store = $this->createMock(DatabaseRateLimitStore::class);
+        $store
+            ->expects(self::once())
+            ->method('forgetPair')
+            ->willThrowException(
+                new RuntimeException('storage unavailable'),
+            );
+        $this->loggerMock
+            ->expects(self::once())
+            ->method('error');
+        $this->loggerMock
+            ->expects(self::never())
+            ->method('debug');
+        $this->subject->injectDatabaseStore($store);
+        $this->subject->recordSuccess('admin', '192.0.2.1');
     }
 
     #[Test]

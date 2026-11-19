@@ -16,6 +16,7 @@ use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
 use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
+use Netresearch\NrPasskeysBe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
@@ -34,6 +35,7 @@ use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Expression\ExpressionBuilder;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
+use TYPO3\CMS\Core\Session\UserSession;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use Webauthn\CredentialRecord;
 
@@ -96,6 +98,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
 
         // Set pObj (parent auth object) for session data access in passkey auth success path
         $this->pObj = $this->createMock(BackendUserAuthentication::class);
+        $this->pObj
+            ->method('getSession')
+            ->willReturn(
+                UserSession::createFromRecord('test-session', ['ses_userid' => 42]),
+            );
         $this->pObj
             ->method('getSessionData')
             ->willReturn(null);
@@ -167,10 +174,79 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     #[Test]
     public function authUserAcceptsValidLoginToken(): void
     {
+        $store = $this->createStub(ConsumedTokenStore::class);
+        $store
+            ->method('claim')
+            ->willReturn(true);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
         $this->stubTokenCache('tok123', $this->buildTokenValue(42));
         $this->subject->login = ['uname' => '', 'uident' => $this->buildTokenUident('tok123')];
         $result               = $this->subject->authUser(['uid' => 42, 'username' => 'admin']);
         self::assertSame(200, $result);
+    }
+
+    #[Test]
+    public function anUnavailableMfaPolicyLeavesTheVerifiedTicketForRetry(): void
+    {
+        GeneralUtility::purgeInstances();
+        $config = $this->createStub(ExtensionConfigurationService::class);
+        $config
+            ->method('getConfiguration')
+            ->willThrowException(new RuntimeException('configuration unavailable'));
+        GeneralUtility::addInstance(ExtensionConfigurationService::class, $config);
+        $store = $this->createMock(ConsumedTokenStore::class);
+        $store
+            ->expects(self::never())
+            ->method('claim');
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
+        $cache = $this->stubTokenCache(
+            'retry',
+            json_encode(['uid' => 42, 'expiresAt' => time() + 120, 'userVerified' => true], JSON_THROW_ON_ERROR),
+        );
+        $cache
+            ->expects(self::never())
+            ->method('remove');
+        $this->subject->login = ['uname' => '', 'uident' => $this->buildTokenUident('retry')];
+        self::assertSame(0, $this->subject->authUser(['uid' => 42]));
+    }
+
+    #[Test]
+    public function unavailableTicketStorageDeniesLoginAndRecordsTheFailure(): void
+    {
+        $store = $this->createStub(ConsumedTokenStore::class);
+        $store
+            ->method('claim')
+            ->willThrowException(new RuntimeException('storage unavailable'));
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
+        $this->logger
+            ->expects(self::once())
+            ->method('error')
+            ->with(
+                'Passkey token consumption unavailable',
+                ['exception' => RuntimeException::class],
+            );
+        $this->assertTicketIsDenied();
+    }
+
+    #[Test]
+    public function anAlreadyClaimedTicketCannotCompleteLogin(): void
+    {
+        $store = $this->createStub(ConsumedTokenStore::class);
+        $store
+            ->method('claim')
+            ->willReturn(false);
+        GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
+        $this->assertTicketIsDenied();
+    }
+
+    private function assertTicketIsDenied(): void
+    {
+        $cache = $this->stubTokenCache('already-issued', $this->buildTokenValue(42));
+        $cache
+            ->expects(self::never())
+            ->method('remove');
+        $this->subject->login = ['uname' => '', 'uident' => $this->buildTokenUident('already-issued')];
+        self::assertSame(0, $this->subject->authUser(['uid' => 42]));
     }
 
     /**
@@ -250,7 +326,13 @@ final class PasskeyAuthenticationServiceTest extends TestCase
                 challengeToken: 'challenge-token-123',
                 beUserUid: 42,
             )
-            ->willReturn(new VerifiedAssertion(credential: $credential, source: $this->createMock(CredentialRecord::class)));
+            ->willReturn(
+                new VerifiedAssertion(
+                    credential: $credential,
+                    source: $this->createMock(CredentialRecord::class),
+                    userVerified: true,
+                ),
+            );
         $this->rateLimiterService
             ->expects(self::once())
             ->method('recordSuccess')
@@ -275,6 +357,27 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
+    public function aDifferentSessionOwnerCannotReceiveTheMfaCredit(): void
+    {
+        $session = UserSession::createFromRecord('other', ['ses_userid' => 99]);
+        $parent  = $this->createMock(BackendUserAuthentication::class);
+        $parent
+            ->method('getSession')
+            ->willReturn($session);
+        $parent
+            ->expects(self::never())
+            ->method('setAndSaveSessionData');
+        $this->subject->pObj  = $parent;
+        $this->subject->login = ['uname' => 'admin', 'uident' => $this->buildPasskeyUident(['valid' => 'assertion'])];
+        $this->webAuthnService
+            ->method('verifyAssertionResponse')
+            ->willReturn(
+                new VerifiedAssertion(new Credential(uid: 10, beUser: 42), $this->createMock(CredentialRecord::class), true),
+            );
+        self::assertSame(0, $this->subject->authUser(['uid' => 42, 'username' => 'admin']));
+    }
+
+    #[Test]
     public function authUserSkipsMfaSessionFlagWhenSkipMfaOnPasskeyAuthIsDisabled(): void
     {
         GeneralUtility::purgeInstances();
@@ -295,6 +398,9 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $subject = new PasskeyAuthenticationService();
         $this->injectLogger($subject, $this->logger);
         $pObj = $this->createMock(BackendUserAuthentication::class);
+        $pObj
+            ->method('getSession')
+            ->willReturn(UserSession::createFromRecord('test-session', ['ses_userid' => 42]));
 
         // Only the tx_nrpasskeysbe marker — never the 'mfa' key.
         $pObj
@@ -343,10 +449,8 @@ final class PasskeyAuthenticationServiceTest extends TestCase
     }
 
     #[Test]
-    public function authUserFailsOpenWhenEnforcementCheckThrows(): void
+    public function authUserRejectsPasswordWhenEnforcementCheckThrows(): void
     {
-        // OPS-2: a database/enforcement failure must NOT lock every backend user out
-        // of password login. On error the service logs and falls through (returns 100).
         GeneralUtility::purgeInstances();
         $configService = $this->createMock(ExtensionConfigurationService::class);
         $configService
@@ -362,11 +466,11 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $this->injectLogger($subject, $this->logger);
         $subject->pObj = $this->pObj;
 
-        // No passkey payload -> password path -> enforcement check throws -> fail open.
+        // No passkey payload -> password path -> enforcement check fails.
         $subject->login = ['uname' => 'admin', 'uident' => 'regularPassword123'];
 
         $result = $subject->authUser(['uid' => 42, 'username' => 'admin']);
-        self::assertSame(100, $result, 'Enforcement-check failure must fail open (allow password auth)');
+        self::assertSame(0, $result, 'Password login requires a known enforcement policy');
     }
 
     #[Test]

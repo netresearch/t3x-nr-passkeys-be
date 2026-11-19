@@ -90,29 +90,8 @@ Configure TYPO3 to trust your reverse proxy:
 Multi-server cache backends
 ===========================
 
-The extension uses two TYPO3 caches:
-
--  ``nr_passkeys_be_nonce`` -- Stores single-use nonces for
-   challenge replay protection and single-use login tokens
-   (default backend: ``FileBackend``).
--  ``nr_passkeys_be_ratelimit`` -- Stores rate-limit counters
-   and lockout flags (default backend: ``FileBackend``).
-
-File-based cache backends store data on the local filesystem.
-In a **multi-server deployment** (multiple TYPO3 instances
-behind a load balancer), each server maintains its own
-independent cache. This has two consequences:
-
-1. **Nonce replay across servers** -- A challenge token
-   consumed on server A still exists in server B's cache,
-   allowing a replayed token to pass verification on
-   server B.
-2. **Rate-limit bypass** -- An attacker can distribute
-   requests across servers, with each server tracking only
-   a fraction of the total attempts.
-
-For multi-server deployments, configure a shared cache
-backend:
+Use one shared nonce cache for all nodes so that login tickets remain available
+across requests. The database primary arbitrates single-use claims and rate limits.
 
 ..  code-block:: php
     :caption: config/system/additional.php
@@ -132,24 +111,25 @@ backend:
             // 'password' => '',
         ];
 
-    // Use Redis for rate-limit cache
-    $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']
-        ['cacheConfigurations']['nr_passkeys_be_ratelimit']
-        ['backend']
-        = \TYPO3\CMS\Core\Cache\Backend\RedisBackend::class;
-    $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']
-        ['cacheConfigurations']['nr_passkeys_be_ratelimit']
-        ['options'] = [
-            'database' => 4,
-            'defaultLifetime' => 600,
-            // 'hostname' => '127.0.0.1',
-            // 'port' => 6379,
-            // 'password' => '',
-        ];
+Cluster deployment and upgrades
+------------------------------
 
-..  note::
+Apply the database schema before sending requests to the new workers. Route
+consumed-token and rate-limit tables to one writable database primary across
+all nodes. Use the same encryption key, a shared nonce cache and synchronized
+clocks on all workers. Local caches make a challenge issued by one node
+unavailable on the next. The database arbitrates claims and request budgets.
 
-    Single-server deployments (including DDEV and most
-    small-to-medium installations) work correctly with the
-    default file-based backends. This only applies when
-    multiple application servers share the same domain.
+Drain every old worker before opening traffic on the new version. Finish
+or invalidate pending short-lived challenges and login tickets, then verify
+a fresh registration and login across different nodes. The changes to MFA
+and replay handling apply only after all old workers have left the pool.
+
+The move from cached counters to database counters starts a new throttling
+window. A recovery suspension limits when a password session may start.
+Review and terminate sessions created during the exception after recovery.
+
+On a fresh browser session, TYPO3 may request its configured second factor
+after the passkey login. The extension credits user verification only when
+the Core session lifecycle can preserve the verified result for the same
+account. Log out before switching backend accounts.

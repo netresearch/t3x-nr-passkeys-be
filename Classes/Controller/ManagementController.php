@@ -9,9 +9,13 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
+use Doctrine\DBAL\Exception as DatabaseException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Domain\Dto\CredentialInfo;
 use Netresearch\NrPasskeysBe\Domain\Enum\CredentialDiscoverability;
+use Netresearch\NrPasskeysBe\Domain\Enum\CredentialRemovalResult;
+use Netresearch\NrPasskeysBe\Domain\Enum\EnforcementLevel;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\EnforcementService;
@@ -166,6 +170,16 @@ final readonly class ManagementController
             );
 
             return new JsonResponse(['status' => 'ok', 'credential' => $credential->toCredentialInfo()]);
+        } catch (UniqueConstraintViolationException) {
+            return new JsonResponse(['error' => 'Credential already registered'], 409);
+        } catch (DatabaseException $e) {
+            $this->logger->error('Passkey registration storage unavailable', ['exception' => $e::class]);
+
+            return new JsonResponse(
+                ['error' => 'Registration temporarily unavailable. Start registration again.'],
+                503,
+                ['Retry-After' => '60'],
+            );
         } catch (RuntimeException $e) {
             $this->logger->error(
                 'Passkey registration failed',
@@ -324,16 +338,36 @@ final readonly class ManagementController
             return new JsonResponse(['error' => 'Credential not found'], 404);
         }
 
-        // Block removal of last passkey when enforcement is enabled
-        $count = $this->credentialRepository->countByBeUser($user->uid);
+        $backend = $GLOBALS['BE_USER'] ?? null;
 
-        if ($count <= 1 && $this->configService
-            ->getConfiguration()
-            ->isDisablePasswordLogin()) {
-            return new JsonResponse(['error' => 'Cannot remove your last passkey when password login is disabled'], 409);
+        if (!$backend instanceof BackendUserAuthentication || !is_array($backend->user)) {
+            return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
-        $this->credentialRepository->delete($credentialUid);
+        $protect = $this->configService
+            ->getConfiguration()
+            ->isDisablePasswordLogin();
+
+        if (!$protect && !empty($backend->user['usergroup'])) {
+            /** @var array<string, mixed> $record */
+            $record  = $backend->user;
+            $level   = $this->enforcementService->getStatus($record, false)->level;
+            $protect = in_array($level, [EnforcementLevel::Required, EnforcementLevel::Enforced], true);
+        }
+
+        $removal = $this->credentialRepository->removeOwnedWithResult($credentialUid, $user->uid, $protect);
+
+        if ($removal === CredentialRemovalResult::NotFound) {
+            return new JsonResponse(['error' => 'Credential not found'], 404);
+        }
+
+        if ($removal === CredentialRemovalResult::LastKey) {
+            return new JsonResponse(
+                ['error' => 'Cannot remove your last passkey under the current policy. Add a replacement first.'],
+                409,
+            );
+        }
+
         $this->logger->info('Passkey removed', ['be_user_uid' => $user->uid, 'credential_uid' => $credentialUid]);
 
         return new JsonResponse(['status' => 'ok']);
