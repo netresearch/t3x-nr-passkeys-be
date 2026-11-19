@@ -15,6 +15,7 @@ use Netresearch\NrPasskeysBe\Form\Element\PasskeyInfoElement;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
@@ -103,17 +104,16 @@ final class PasskeyInfoElementTest extends TestCase
     }
 
     #[Test]
-    public function renderShowsEnabledBadgeWithActiveCredentials(): void
-    {
+    #[TestWith([BackupEligibility::Eligible, 'Backup eligible'])]
+    #[TestWith([BackupEligibility::DeviceBound, 'Device-bound'])]
+    #[TestWith([BackupEligibility::Unknown, 'Backup eligibility unknown'])]
+    public function renderShowsEnabledBadgeWithActiveCredentials(
+        BackupEligibility $eligibility,
+        string $expectedLabel,
+    ): void {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-        $cred = new Credential(
-            uid: 10,
-            beUser: 42,
-            label: 'My Key',
-            createdAt: 1700000000,
-            backupEligibility: BackupEligibility::Eligible,
-        );
+        $cred = new Credential(uid: 10, beUser: 42, label: 'My Key', createdAt: 1700000000, backupEligibility: $eligibility);
         $this->credentialRepository
             ->expects(self::once())
             ->method('findAllByBeUser')
@@ -131,7 +131,7 @@ final class PasskeyInfoElementTest extends TestCase
         self::assertStringContainsString('badge-success', $html);
         self::assertStringContainsString('1 Enabled', $html);
         self::assertStringContainsString('My Key', $html);
-        self::assertStringContainsString('Backup eligible', $html);
+        self::assertStringContainsString($expectedLabel, $html);
         self::assertStringContainsString('Active', $html);
     }
 
@@ -468,6 +468,8 @@ final class PasskeyInfoElementTest extends TestCase
                     $map = [
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.enabled'                 => 'Enabled',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.backup.eligible'         => 'Backup eligible',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.backup.unknown'          => 'Backup eligibility unknown',
+                        'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.backup.deviceBound'      => 'Device-bound',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.disabled'                => 'No passkeys',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revoke'                  => 'Revoke',
                         'LLL:EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf:admin.passkeys.revokeAll'               => 'Revoke all passkeys',
