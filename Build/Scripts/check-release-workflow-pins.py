@@ -14,14 +14,14 @@ RAW = "https://raw.githubusercontent.com/netresearch"
 # SHA-256 of the reviewed zero-context unified diff after the publishing pins
 # are applied. The diff includes hunk locations, so it cannot authorize the
 # same change at another call site.
-DRAFT_CHANGE_SHA256 = "a60fdf24e19462b9e8a67292c4b15ecea22aead7bd93944ff9a1ba5a89f886b5"
+RELEASE_CHANGE_SHA256 = "69295ffa45fd8f0aeab7144de18944cd56962b4f8176b2dd003414b66e73e4e5"
 
 
 def upstream(path):
     # Never execute fetched content. An unexpected redirect is a failed check.
     return subprocess.check_output(
         ["curl", "--fail", "--silent", "--show-error", "--proto", "=https",
-         "--max-time", "30", "--retry", "2", f"{RAW}/{path}"]
+         "--location", "--max-redirs", "0", "--max-time", "30", "--retry", "2", f"{RAW}/{path}"]
     )
 
 
@@ -33,8 +33,10 @@ def release_notes(workflow, field):
     return bodies[0]
 
 
-def check_draft_creation(upstream_workflow, local_workflow):
-    if release_notes(upstream_workflow, b"body") != release_notes(local_workflow, b"RELEASE_BODY"):
+def check_release_changes(upstream_workflow, local_workflow):
+    sections = [release_notes(local_workflow, field).rstrip(b"\n") for field in
+                (b"RELEASE_BODY", b"SIGNING_NOTES", b"CHECKSUM_NOTES", b"SBOM_NOTES")]
+    if release_notes(upstream_workflow, b"body").rstrip(b"\n") != b"\n\n".join(sections):
         raise SystemExit("The draft must use the complete upstream release notes.")
 
     changes = difflib.diff_bytes(
@@ -43,8 +45,8 @@ def check_draft_creation(upstream_workflow, local_workflow):
         local_workflow.splitlines(keepends=True),
         n=0,
     )
-    if hashlib.sha256(b"".join(changes)).hexdigest() != DRAFT_CHANGE_SHA256:
-        raise SystemExit("The workflow differs from upstream beyond the reviewed native draft changes.")
+    if hashlib.sha256(b"".join(changes)).hexdigest() != RELEASE_CHANGE_SHA256:
+        raise SystemExit("The workflow differs from upstream beyond the reviewed release changes.")
 
 
 def check_release(caller, name):
@@ -56,7 +58,7 @@ def check_release(caller, name):
         raise SystemExit(f"{caller}: the entry point must invoke the verified local workflow.")
     local = (WORKFLOWS / f"{name}-pinned.yml").read_bytes()
     verification = (
-        b"# CI verifies the upstream workflow, the three publishing pins and native draft creation.\n"
+        b"# CI verifies the upstream workflow, publishing pins and reviewed release handling.\n"
         if name == "release-typo3-extension"
         else b"# The CI repository check verifies the upstream file and the three publishing pins.\n"
     )
@@ -80,7 +82,7 @@ def check_release(caller, name):
         if not re.fullmatch(rb"[^@]+@[a-f0-9]{40}", ref):
             raise SystemExit(f"{name}: every external action and workflow requires a commit SHA.")
     if name == "release-typo3-extension":
-        check_draft_creation(expected, body)
+        check_release_changes(expected, body)
     elif expected != body:
         raise SystemExit(f"{name}: upstream orchestration differs beyond the three pinned references.")
 

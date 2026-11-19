@@ -12,6 +12,7 @@ jobs:
     uses: ./.github/workflows/release-typo3-extension-pinned.yml
     permissions:
       contents: write
+      actions: read
       id-token: write
       attestations: write
     with:

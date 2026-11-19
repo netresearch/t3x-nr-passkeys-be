@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
 # Upstream: netresearch/typo3-ci-workflows@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
-# CI verifies the upstream workflow, the three publishing pins and native draft creation.
+# CI verifies the upstream workflow, publishing pins and reviewed release handling.
 name: Release (TYPO3 extension)
 
 # Orchestrator for the full TYPO3-extension release pipeline.
@@ -135,6 +135,7 @@ on:
 #     build-and-sign:
 #       uses: netresearch/typo3-ci-workflows/.github/workflows/release-typo3-extension.yml@main
 #       permissions:
+#         actions: read
 #         attestations: write
 #         contents: write
 #         id-token: write
@@ -174,7 +175,7 @@ jobs:
             echo "::error::Invalid version derived from tag: $GITHUB_REF_NAME"
             exit 1
           fi
-          if [[ "$ARCHIVE_PREFIX" == *..* ]] || [[ "$ARCHIVE_PREFIX" == /* ]]; then
+          if [[ "$ARCHIVE_PREFIX" == *..* || "$ARCHIVE_PREFIX" == /* || "$ARCHIVE_PREFIX" == *'#'* ]]; then
             echo "::error::Invalid archive-prefix: $ARCHIVE_PREFIX"
             exit 1
           fi
@@ -381,6 +382,7 @@ jobs:
         with:
           name: release-dist
           path: dist/
+          overwrite: true
           retention-days: 1
           if-no-files-found: error
 
@@ -393,11 +395,11 @@ jobs:
     # marked section of the body.
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # A manual retry started while the tag-push run is still going must not
-    # read "absent" at the same time and create the release twice.
+    # Serialize the Latest decision and publication across tags. Keep waiting
+    # releases queued when another tag or a manual retry arrives.
     concurrency:
-      group: release-create-${{ github.repository }}-${{ github.ref_name }}
-      cancel-in-progress: false
+      group: release-create-${{ github.repository }}
+      queue: max
     permissions:
       contents: write
     steps:
@@ -422,20 +424,18 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          if gh release view "$TAG" --repo "$REPO" --json isDraft --jq '.isDraft' > draft.txt 2> view.err; then
-            if [[ "$(cat draft.txt)" == "true" ]]; then
-              STATE=draft
-            else
-              STATE=published
-            fi
-          elif grep -qi 'release not found' view.err; then
-            STATE=absent
-          else
-            # Any other failure (rate limit, network, permissions) must not
-            # read as "absent": that would try to create a second release.
-            echo "::error::Could not read the release for ${TAG}: $(cat view.err)"
-            exit 1
-          fi
+          # A successful authenticated listing includes drafts. A transport,
+          # pagination or parsing error stops the job before it creates anything.
+          STATE="$(gh api --paginate --slurp "repos/${REPO}/releases?per_page=100" |
+            jq -er --arg tag "$TAG" '
+              if type != "array" or length == 0 or any(.[]; type != "array") then
+                error("Invalid release listing")
+              else [ .[][] | select(.tag_name == $tag) ] end |
+              if length == 0 then "absent"
+              elif length != 1 then error("Ambiguous release tag")
+              elif .[0].draft == true then "draft"
+              elif .[0].draft == false then "published"
+              else error("Missing release state") end')"
           echo "Release ${TAG}: ${STATE}"
           echo "state=$STATE" >> "$GITHUB_OUTPUT"
 
@@ -495,6 +495,7 @@ jobs:
       # commit. A tag moved since then would attach this release, and every
       # target that follows it, to a commit nobody built or checked.
       - name: Check the tag still points at the built commit
+        id: tag
         if: steps.state.outputs.state != 'published'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -506,6 +507,7 @@ jobs:
           OBJECT="$(gh api "repos/${REPO}/git/ref/tags/${TAG}" --jq '.object.type + " " + .object.sha')"
           TYPE="${OBJECT%% *}"
           SHA="${OBJECT#* }"
+          TAG_OBJECT="$SHA"
           if [[ "$TYPE" == "tag" ]]; then
             SHA="$(gh api "repos/${REPO}/git/tags/${SHA}" --jq '.object.sha')"
           fi
@@ -513,6 +515,7 @@ jobs:
             echo "::error::Tag ${TAG} now points at ${SHA}, but this run built ${BUILT}. Move the tag back or push a new one; nothing was published."
             exit 1
           fi
+          echo "object=$TAG_OBJECT" >> "$GITHUB_OUTPUT"
           echo "Tag ${TAG} points at the built commit ${BUILT}."
 
       - name: Download dist artifact
@@ -528,6 +531,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
+          SIGN_ARTIFACTS: ${{ inputs.sign-artifacts }}
+          INCLUDE_SBOM: ${{ inputs.include-sbom }}
           RELEASE_BODY: |
             ## Changes
             ${{ needs.build-and-sign.outputs.release-notes }}
@@ -546,6 +551,7 @@ jobs:
 
             ## Security
 
+          SIGNING_NOTES: |
             All release artifacts are signed with [Sigstore](https://www.sigstore.dev/) keyless signing.
 
             ### Verify signatures
@@ -558,12 +564,14 @@ jobs:
               ${{ inputs.archive-prefix }}-${{ needs.build-and-sign.outputs.version }}.zip
             ```
 
+          CHECKSUM_NOTES: |
             ### Verify checksums
 
             ```bash
             sha256sum -c checksums.txt
             ```
 
+          SBOM_NOTES: |
             ## Software Bill of Materials (SBOM)
 
             SBOMs are provided in both SPDX and CycloneDX formats for supply chain transparency.
@@ -571,8 +579,23 @@ jobs:
         run: |
           set -euo pipefail
           notes="$RUNNER_TEMP/release-notes.md"
-          printf '%s' "$RELEASE_BODY" > "$notes"
-          gh release create "$TAG" --repo "$REPO" --verify-tag --draft --title "$TAG" --notes-file "$notes"
+          {
+            printf '%s' "$RELEASE_BODY"
+            if [[ "$SIGN_ARTIFACTS" == true ]]; then
+              printf '\n%s' "$SIGNING_NOTES"
+            fi
+            printf '\n%s' "$CHECKSUM_NOTES"
+            if [[ "$INCLUDE_SBOM" == true ]]; then
+              printf '\n%s' "$SBOM_NOTES"
+            fi
+          } > "$notes"
+          if ! gh release create "$TAG" --repo "$REPO" --verify-tag --draft --title "$TAG" --notes-file "$notes"; then
+            # The API can store a draft before its response is lost. Continue
+            # only if a fresh read confirms this tag, state and exact body.
+            gh release view "$TAG" --repo "$REPO" --json tagName,isDraft,body,assets |
+              jq -e --arg tag "$TAG" --rawfile notes "$notes" \
+                '.tagName == $tag and .isDraft == true and .body == $notes and .assets == []' > /dev/null
+          fi
 
       # Upload assets one at a time and retry missing files. Publish only after
       # GitHub confirms that every asset from this build has been uploaded.
@@ -589,6 +612,7 @@ jobs:
           ATTEMPTS: '4'
           STATE: ${{ steps.state.outputs.state }}
           MAKE_LATEST: ${{ steps.latest.outputs.latest }}
+          EXPECTED_TAG_OBJECT: ${{ steps.tag.outputs.object }}
         run: |
           set -euo pipefail
 
@@ -678,6 +702,11 @@ jobs:
             # becomes Latest": without it this path would not pass it on, and a
             # backport release could take the Latest badge from the top major
             # line.
+            CURRENT_OBJECT="$(gh api "repos/${REPO}/git/ref/tags/${TAG}" --jq '.object.sha')"
+            if [[ -z "$EXPECTED_TAG_OBJECT" || "$CURRENT_OBJECT" != "$EXPECTED_TAG_OBJECT" ]]; then
+              echo "::error::Tag ${TAG} changed after build verification. The draft stays unpublished."
+              exit 1
+            fi
             gh release edit "$TAG" --repo "$REPO" --draft=false --latest="$MAKE_LATEST"
           elif [[ "$DRAFT" != "false" ]]; then
             echo "::error::GitHub returned an unexpected draft state for ${TAG}."
@@ -727,9 +756,36 @@ jobs:
       package-name: ${{ inputs.package-name }}
       version: ${{ needs.build-and-sign.outputs.version }}
 
+  docs-window:
+    name: Read documentation observation window
+    if: ${{ !inputs.skip-docs }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    outputs:
+      since: ${{ steps.window.outputs.since }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Read the original workflow run time for the documentation check
+        id: window
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if since="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" --jq '.created_at')" && [[ -n "$since" ]]; then
+            echo "since=$since" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Original run time unavailable. The documentation check will use its default window."
+          fi
+
   verify-docs:
     name: Verify docs.typo3.org
-    needs: [build-and-sign, create-release]
+    needs: [build-and-sign, create-release, docs-window]
     # docs.typo3.org renders via the Intercept webhook subscribed to GitHub
     # push events — independent of TER. Runs in parallel with the TER and
     # Packagist jobs, no `needs:` coupling between the three.
@@ -739,6 +795,7 @@ jobs:
     uses: netresearch/typo3-ci-workflows/.github/workflows/publish-to-docs.yml@e2dadf39e1adc5b886ee08745fe51c64cf2e175e
     with:
       package-name: ${{ inputs.package-name }}
+      since: ${{ needs.docs-window.outputs.since }}
 
   publication-status:
     name: Record publication status
@@ -810,14 +867,11 @@ jobs:
             # knows the job was dispatched and nothing about its outcome.
             # Saying "render verified" would overclaim.
             if [[ "$DOCS_DISPATCHED" == "true" ]]; then
-              echo "- Documentation: [docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/](https://docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/) — render accepted by Intercept"
+              echo "- Documentation: [docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/](https://docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/) — a render for this package was observed (tag unconfirmed)"
             elif [[ "$DOCS_RESULT" == "skipped" ]]; then
               echo "- Documentation: skipped"
             else
-              # Render not yet confirmed (Intercept webhook down/slow at tag
-              # time). The release is published regardless; the render catches
-              # up on the next Intercept delivery.
-              echo "- Documentation: render pending — will appear at [docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/](https://docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/)"
+              echo "- Documentation: render for this tag unconfirmed (check: ${DOCS_RESULT}) — [documentation](https://docs.typo3.org/p/${PACKAGE}/${DOCS_BRANCH}/en-us/)"
             fi
             echo "<!-- publication-status:end -->"
             echo "$DELIMITER"
