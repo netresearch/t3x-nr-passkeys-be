@@ -112,7 +112,7 @@ Checks that run on every pull request in this repository:
   and the aggregate `All security checks` job, which fails unless every
   one of these jobs succeeded or was skipped.
 - `.github/workflows/ci.yml`: PHP lint, code style, PHPStan level 10,
-  Rector, unit tests and functional tests on MySQL for PHP 8.2 to 8.5
+  Rector, unit tests and functional tests on MySQL for PHP 8.2 to 8.6
   against TYPO3 12.4, 13.4 and 14.3, and the documentation rendering; and
   the aggregate `All CI checks` job, which fails unless every CI job
   succeeded or was skipped.

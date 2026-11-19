@@ -108,7 +108,7 @@
   "test_most_justification": "The test suite covers unit, fuzz, functional, and mutation testing across all major code paths. Mutation testing (Infection) enforces MSI >= 80% and covered MSI >= 80%, ensuring most branches are tested. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/Build/infection.json5",
 
   "test_continuous_integration_status": "Met",
-  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. The CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional and fuzz jobs; mutation testing is not part of CI and runs locally (`composer ci:mutation`). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. The CI matrix tests across PHP 8.2-8.6 and TYPO3 12/13/14 with lint, PHPStan, unit, functional and fuzz jobs; mutation testing is not part of CI and runs locally (`composer ci:mutation`). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
 
   "test_policy_status": "Met",
   "test_policy_justification": "CONTRIBUTING.md states: 'New features must include unit tests' and 'Bug fixes should include a regression test'. PR template includes checkbox 'I have added tests covering my changes'. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/CONTRIBUTING.md#writing-tests",
