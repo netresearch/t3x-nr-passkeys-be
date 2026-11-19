@@ -6,6 +6,9 @@
 TYPO3 extension for passwordless backend authentication via WebAuthn/FIDO2 Passkeys.
 
 ## Key context
+
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 - Extension key: `nr_passkeys_be`, Namespace: `Netresearch\NrPasskeysBe`
 - PHP ^8.2, TYPO3 ^12.4 || ^13.4 || ^14.3, `web-auth/webauthn-lib` ^5.3
 - Passkeys are **primary credentials** (NOT MFA), auth priority 80
