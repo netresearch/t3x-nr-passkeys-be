@@ -120,7 +120,11 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
         $this
             ->getConnectionPool()
             ->getConnectionForTable('be_users')
-            ->update('be_users', ['lang' => 'de'], ['uid' => 1]);
+            ->update(
+                'be_users',
+                ['lang' => 'de'],
+                ['uid' => 1],
+            );
         $this->enroll();
         $message = stream_get_contents($this->mailbox);
         self::assertIsString($message);
@@ -134,7 +138,11 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
             $this
                 ->getConnectionPool()
                 ->getConnectionForTable('tx_nrpasskeysbe_credential')
-                ->count('*', 'tx_nrpasskeysbe_credential', ['be_user' => 1]),
+                ->count(
+                    '*',
+                    'tx_nrpasskeysbe_credential',
+                    ['be_user' => 1],
+                ),
         );
     }
 
