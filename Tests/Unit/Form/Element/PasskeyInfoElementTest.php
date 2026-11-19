@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Form\Element;
 
+use Netresearch\NrPasskeysBe\Domain\Enum\BackupEligibility;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Form\Element\PasskeyInfoElement;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
@@ -106,7 +107,13 @@ final class PasskeyInfoElementTest extends TestCase
     {
         $this->setUpAdminUser(1);
         $this->setUpLanguageService();
-        $cred = new Credential(uid: 10, beUser: 42, label: 'My Key', createdAt: 1700000000, backupEligible: true);
+        $cred = new Credential(
+            uid: 10,
+            beUser: 42,
+            label: 'My Key',
+            createdAt: 1700000000,
+            backupEligibility: BackupEligibility::Eligible,
+        );
         $this->credentialRepository
             ->expects(self::once())
             ->method('findAllByBeUser')

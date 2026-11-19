@@ -19,6 +19,7 @@ use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Domain\Dto\AssertionOptions;
 use Netresearch\NrPasskeysBe\Domain\Dto\RegistrationOptions;
 use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
+use Netresearch\NrPasskeysBe\Domain\Enum\BackupEligibility;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\AssertionService;
 use Netresearch\NrPasskeysBe\Service\AttestationService;
@@ -1700,7 +1701,7 @@ final class WebAuthnServiceTest extends TestCase
             aaguid: $fixedAaguid,
             transports: '[]',
             label: 'Known Authenticator',
-            backupEligible: false,
+            backupEligibility: BackupEligibility::DeviceBound,
         );
         $reflection = new ReflectionMethod($this->assertionService, 'credentialToSource');
 

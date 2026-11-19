@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Domain\Dto;
 
 use JsonSerializable;
+use Netresearch\NrPasskeysBe\Domain\Enum\BackupEligibility;
 
 /**
  * Read-only projection of a credential for admin API responses.
@@ -26,7 +27,7 @@ final readonly class AdminCredentialInfo implements JsonSerializable
         public bool $isRevoked,
         public int $revokedAt,
         public int $revokedBy,
-        public ?bool $backupEligible = null,
+        public BackupEligibility $backupEligibility = BackupEligibility::Unknown,
     ) {}
 
     /** @return array{uid: int, label: string, createdAt: int, lastUsedAt: int, isRevoked: bool, revokedAt: int, revokedBy: int, backupEligible: ?bool} */
@@ -40,7 +41,7 @@ final readonly class AdminCredentialInfo implements JsonSerializable
             'isRevoked'      => $this->isRevoked,
             'revokedAt'      => $this->revokedAt,
             'revokedBy'      => $this->revokedBy,
-            'backupEligible' => $this->backupEligible,
+            'backupEligible' => $this->backupEligibility->toFlag(),
         ];
     }
 }

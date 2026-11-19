@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Repository;
 
+use Netresearch\NrPasskeysBe\Domain\Enum\BackupEligibility;
 use Netresearch\NrPasskeysBe\Domain\Enum\CredentialRemovalResult;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
@@ -432,7 +433,12 @@ final class CredentialRepositoryTest extends FunctionalTestCase
     {
         foreach ([true, false, null] as $i => $eligible) {
             $id         = 'eligibility-' . $i;
-            $credential = new Credential(beUser: 1, credentialId: $id, publicKeyCose: 'test-key', backupEligible: $eligible);
+            $credential = new Credential(
+                beUser: 1,
+                credentialId: $id,
+                publicKeyCose: 'test-key',
+                backupEligibility: BackupEligibility::fromValue($eligible),
+            );
             $this->repository->save($credential);
             $stored = $this->repository->findByCredentialId($id);
             self::assertInstanceOf(Credential::class, $stored);
