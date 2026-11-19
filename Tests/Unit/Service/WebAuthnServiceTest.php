@@ -25,6 +25,7 @@ use Netresearch\NrPasskeysBe\Service\AssertionService;
 use Netresearch\NrPasskeysBe\Service\AttestationService;
 use Netresearch\NrPasskeysBe\Service\ChallengeService;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
+use Netresearch\NrPasskeysBe\Service\EnrollmentNotification;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnCeremonyFactory;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
@@ -100,12 +101,14 @@ final class WebAuthnServiceTest extends TestCase
         $this->credentialRepositoryMock = $this->createMock(CredentialRepository::class);
         $this->loggerMock               = $this->createMock(LoggerInterface::class);
         $this->ceremonyFactory          = new WebAuthnCeremonyFactory($this->configServiceMock, $this->loggerMock);
+        $this->enrollmentNotification   = $this->createMock(EnrollmentNotification::class);
         $this->attestationService       = new AttestationService(
             $this->configServiceMock,
             $this->challengeServiceMock,
             $this->credentialRepositoryMock,
             $this->loggerMock,
             $this->ceremonyFactory,
+            $this->enrollmentNotification,
         );
         $this->assertionService = new AssertionService(
             $this->configServiceMock,
@@ -313,6 +316,10 @@ final class WebAuthnServiceTest extends TestCase
                 ),
             )
             ->willReturn($expectedUid);
+        $this->enrollmentNotification
+            ->expects(self::once())
+            ->method('notify')
+            ->with($beUserUid);
         $result = $this->subject->storeCredential($source, $beUserUid, $label);
         self::assertInstanceOf(Credential::class, $result);
         self::assertSame($expectedUid, $result->getUid());
@@ -835,6 +842,7 @@ final class WebAuthnServiceTest extends TestCase
                 $this->credentialRepositoryMock,
                 $this->loggerMock,
                 $ceremonyFactory,
+                $this->enrollmentNotification,
             ),
             new AssertionService(
                 $configServiceMock,
@@ -1742,4 +1750,6 @@ final class WebAuthnServiceTest extends TestCase
         $this->expectExceptionMessage('Expected attestation response');
         $this->subject->verifyRegistrationResponse($assertionJson, $challengeToken, $beUserUid, 'user', 'User');
     }
+
+    private EnrollmentNotification&MockObject $enrollmentNotification;
 }

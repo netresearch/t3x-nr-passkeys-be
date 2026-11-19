@@ -51,6 +51,7 @@ final readonly class AttestationService
         private CredentialRepository $credentialRepository,
         private LoggerInterface $logger,
         private WebAuthnCeremonyFactory $ceremonyFactory,
+        private EnrollmentNotification $enrollmentNotification,
     ) {}
 
     /**
@@ -207,6 +208,7 @@ final readonly class AttestationService
         );
         $uid = $this->credentialRepository->save($credential);
         $credential->setUid($uid);
+        $this->enrollmentNotification->notify($beUserUid);
 
         return $credential;
     }

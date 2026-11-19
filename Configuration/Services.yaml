@@ -101,3 +101,7 @@ services:
 
   Netresearch\NrPasskeysBe\Service\ConsumedTokenStore:
     public: true
+
+  Netresearch\NrPasskeysBe\Service\EnrollmentNotification:
+    arguments:
+      $mailer: !service_closure '@TYPO3\CMS\Core\Mail\MailerInterface'

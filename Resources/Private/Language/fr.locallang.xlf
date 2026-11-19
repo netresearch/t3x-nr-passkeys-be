@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<!--
+ - Copyright (c) 2025-2026 Netresearch DTT GmbH
+ - SPDX-License-Identifier: GPL-2.0-or-later
+-->
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" target-language="fr" datatype="plaintext" original="EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf">
+        <body>
+            <trans-unit id="enrollment.email.subject" resname="enrollment.email.subject">
+                <source>A passkey was added to your account</source>
+                <target>Une clé d’accès a été ajoutée à votre compte</target>
+            </trans-unit>
+            <trans-unit id="enrollment.email.body" resname="enrollment.email.body">
+                <source>A new passkey was registered for your backend account on %s. If you added it, no action is needed. If you did not add it, contact your administrator immediately to revoke the passkey and review your account.</source>
+                <target>Une nouvelle clé d’accès a été enregistrée pour votre compte d’administration sur %s. Si vous l’avez ajoutée, vous n’avez rien à faire. Dans le cas contraire, contactez immédiatement votre administrateur pour révoquer la clé et vérifier votre compte.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>
