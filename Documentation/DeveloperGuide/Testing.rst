@@ -50,9 +50,6 @@ Running tests
     # ... the same against TYPO3 14
     E2E_TYPO3_VERSION=14 Build/Scripts/runTests.sh -s e2e
 
-    # ... or against a TYPO3 that is already running
-    TYPO3_BASE_URL=https://your-typo3.local Build/Scripts/runTests.sh -s e2e
-
 The E2E environment
 ===================
 
@@ -69,5 +66,42 @@ answer 200 — ``e2e_provision_typoscript()`` in
 ``Build/Scripts/runTests.conf`` gives the root page just enough
 TypoScript for that.
 
-Docker is required. Nothing is installed on the host, and DDEV is not
-involved.
+The provisioned run uses Docker for the services and Playwright.
+
+Using an existing test instance
+-------------------------------
+
+Install the extension and apply its database schema on the test instance.
+Use a dedicated backend administrator for browser login. The dashboard tests
+change group enforcement and open user management. Use a disposable test
+database with the fixture names below reserved for this suite.
+
+From the extension checkout, import the same fixture the runner uses.
+Replace ``passkeys_e2e`` with the test database name and use a MariaDB client
+configured for that database. Import it once per database.
+
+..  code-block:: bash
+
+    mariadb passkeys_e2e < Tests/Fixtures/e2e-admin.sql
+
+The fixture creates the group ``E2E passkey enforcement``, its member
+``e2e_passkey_reminder`` with an active reminder, and ``e2e_passkey_management``
+with one display-only credential. For a later run on the same database,
+renew the one-day reminder before running the dashboard tests.
+
+..  code-block:: sql
+
+    UPDATE be_users SET passkey_nudge_until = UNIX_TIMESTAMP() + 86400
+    WHERE username = 'e2e_passkey_reminder';
+
+Export ``TYPO3_ADMIN_USER`` and ``TYPO3_ADMIN_PASS`` in the shell with the test
+administrator's credentials. The browser and TYPO3 must agree on the
+WebAuthn origin and relying party ID. The provisioned suite allows 500
+attempts per rate-limit window to accommodate its shared client address.
+
+..  code-block:: bash
+    :caption: Run Playwright against the prepared instance
+
+    npm ci
+    npx playwright install chromium
+    TYPO3_BASE_URL=https://typo3.example.test npm run test:e2e
