@@ -734,15 +734,14 @@ jobs:
           draft="$(read_draft)"
           verify_tag
           verify_assets
-          if [[ "$draft" == true ]]; then
-            if ! gh api --method PATCH "$release_path" -F draft=false -f make_latest="$MAKE_LATEST" --silent; then
-              # GitHub may have published the release before the response was lost.
-              # Continue only when we can confirm the result against this same ID.
-              published_state="$(read_draft)"
-              [[ "$published_state" == false ]] || { echo "::error::Could not confirm publication of release ${release_id}."; exit 1; }
-              verify_tag
-              verify_assets
-            fi
+          if [[ "$draft" == true ]] && ! gh api --method PATCH "$release_path" \
+              -F draft=false -f make_latest="$MAKE_LATEST" --silent; then
+            # GitHub may have published the release before the response was lost.
+            # Continue only when we can confirm the result against this same ID.
+            published_state="$(read_draft)"
+            [[ "$published_state" == false ]] || { echo "::error::Could not confirm publication of release ${release_id}."; exit 1; }
+            verify_tag
+            verify_assets
           fi
 
   publish-to-ter:
