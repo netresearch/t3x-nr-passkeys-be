@@ -13,7 +13,13 @@ use Netresearch\NrPasskeysBe\Service\EnrollmentNotification;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Uid\Uuid;
+use TYPO3\CMS\Core\Console\CommandRegistry;
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Mail\FileSpool;
+use TYPO3\CMS\Core\Mail\MailerInterface;
+use TYPO3\CMS\Core\Mail\MboxTransport;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 use Webauthn\CredentialRecord;
 use Webauthn\TrustPath\EmptyTrustPath;
@@ -78,17 +84,7 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
         $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport'] = 'no-such-transport';
         $this->enroll();
         self::assertSame('', stream_get_contents($this->mailbox));
-        self::assertSame(
-            1,
-            $this
-                ->getConnectionPool()
-                ->getConnectionForTable('tx_nrpasskeysbe_credential')
-                ->count(
-                    '*',
-                    'tx_nrpasskeysbe_credential',
-                    ['be_user' => 1],
-                ),
-        );
+        $this->assertCredentialPersisted();
     }
 
     private function enroll(): void
@@ -124,14 +120,54 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
         $this
             ->getConnectionPool()
             ->getConnectionForTable('be_users')
-            ->update(
-                'be_users',
-                ['lang' => 'de'],
-                ['uid' => 1],
-            );
+            ->update('be_users', ['lang' => 'de'], ['uid' => 1]);
         $this->enroll();
         $message = stream_get_contents($this->mailbox);
         self::assertIsString($message);
         self::assertStringContainsString('Backend-Konto auf Example backend', quoted_printable_decode($message));
+    }
+
+    private function assertCredentialPersisted(): void
+    {
+        self::assertSame(
+            1,
+            $this
+                ->getConnectionPool()
+                ->getConnectionForTable('tx_nrpasskeysbe_credential')
+                ->count('*', 'tx_nrpasskeysbe_credential', ['be_user' => 1]),
+        );
+    }
+
+    #[Test]
+    public function sendingFailureLeavesTheCredentialStored(): void
+    {
+        // An existing file cannot be the parent directory of another mailbox.
+        $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_mbox_file'] = stream_get_meta_data($this->mailbox)['uri'] . '/unwritable.mbox';
+        self::assertInstanceOf(MboxTransport::class, $this
+            ->get(MailerInterface::class)
+            ->getTransport());
+        $this->enroll();
+        $this->assertCredentialPersisted();
+        self::assertSame('', stream_get_contents($this->mailbox));
+    }
+
+    #[Test]
+    public function fileSpoolDeliversOnlyAfterEnrollmentReturns(): void
+    {
+        $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_spool_type']     = 'file';
+        $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_spool_filepath'] = Environment::getVarPath() . '/transient/passkey-mail-' . bin2hex(random_bytes(8));
+        $this->enroll();
+        $this->assertCredentialPersisted();
+        self::assertSame('', stream_get_contents($this->mailbox));
+        $mailer = $this->get(MailerInterface::class);
+        $spool  = $mailer->getTransport();
+        self::assertInstanceOf(FileSpool::class, $spool);
+        $worker = new CommandTester($this
+            ->get(CommandRegistry::class)
+            ->get('mailer:spool:send'));
+        self::assertSame(0, $worker->execute(['--message-limit' => 1]));
+        $message = stream_get_contents($this->mailbox);
+        self::assertIsString($message);
+        self::assertStringContainsString('To: owner@example.test', $message);
     }
 }
