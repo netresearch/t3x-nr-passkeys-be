@@ -13,10 +13,16 @@ use Netresearch\NrPasskeysBe\Service\EnrollmentNotification;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use Psr\Log\LogLevel;
+use RuntimeException;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Uid\Uuid;
 use TYPO3\CMS\Core\Console\CommandRegistry;
 use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Log\Logger;
+use TYPO3\CMS\Core\Log\LogManager;
+use TYPO3\CMS\Core\Log\LogRecord;
+use TYPO3\CMS\Core\Log\Writer\WriterInterface;
 use TYPO3\CMS\Core\Mail\FileSpool;
 use TYPO3\CMS\Core\Mail\MailerInterface;
 use TYPO3\CMS\Core\Mail\MboxTransport;
@@ -151,6 +157,24 @@ final class EnrollmentNotificationTest extends FunctionalTestCase
     {
         // An existing file cannot be the parent directory of another mailbox.
         $GLOBALS['TYPO3_CONF_VARS']['MAIL']['transport_mbox_file'] = stream_get_meta_data($this->mailbox)['uri'] . '/unwritable.mbox';
+        $logger                                                    = $this
+            ->get(LogManager::class)
+            ->getLogger(EnrollmentNotification::class);
+        self::assertInstanceOf(Logger::class, $logger);
+        $writer = $this->createMock(WriterInterface::class);
+        $writer
+            ->expects(self::once())
+            ->method('writeLog')
+            ->willReturnCallback(
+                static function (LogRecord $record) use ($writer): WriterInterface {
+                    self::assertSame(LogLevel::WARNING, $record->getLevel());
+                    self::assertSame('Passkey enrollment notification could not be sent', $record->getMessage());
+                    self::assertSame(['be_user_uid' => 1, 'exceptionType' => RuntimeException::class], $record->getData());
+
+                    return $writer;
+                },
+            );
+        $logger->addWriter(LogLevel::WARNING, $writer);
         self::assertInstanceOf(MboxTransport::class, $this
             ->get(MailerInterface::class)
             ->getTransport());
