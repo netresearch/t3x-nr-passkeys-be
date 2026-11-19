@@ -57,7 +57,8 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 ## Release gotchas
 - Always bump `ext_emconf.php` version BEFORE creating the tag; the orchestrator rejects mismatches. `guides.xml` version should match too.
 - Tag must be `v`-prefixed (e.g. `v0.8.0`); the extension version in `ext_emconf.php` is without the `v`.
-- For transient publication errors, re-run the original Release workflow. For a refused TER upload comment, check its source in the release log. If the tagged CHANGELOG.md supplies the refused comment, publish a new patch version with a reworded entry. Otherwise edit the GitHub release notes and run Republish for this tag with target ter.
+- For transient publication errors, re-run the original Release workflow. For a refused TER upload comment, check its source in the release log. If the tagged CHANGELOG.md supplies the refused comment, publish a new patch version with a reworded entry. Without a matching changelog section, Republish (target ter) reads the GitHub release body itself. Edit the refused text there before retrying.
+- A draft with unexpected attachments needs manual inspection. Save any files to keep and remove those attachments from the draft before rerunning.
 - GitHub publishes the draft after its assets have uploaded and the tag has been verified. TER, Packagist and documentation run afterwards. The status job records their results in the release body.
 
 ## When stuck

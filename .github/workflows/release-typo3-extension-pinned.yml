@@ -36,8 +36,9 @@ name: Release (TYPO3 extension)
 # days after the run. This repository's caller runs on tag pushes. A published release
 # is left as it is — no asset is uploaded again — the targets run again, and
 # the status section is rewritten. A release left as a draft by a failed asset
-# upload loses its partial assets and gets the full set of the current build,
-# then is published.
+# upload can be rebuilt. If it also contains unexpected attachments, inspect
+# them, save any files you want to keep, and remove them from the draft
+# before rerunning. The job leaves those attachments intact for inspection.
 
 on:
   workflow_call:
@@ -340,6 +341,7 @@ jobs:
           # "Create GitHub Release" job (contents: write) attaches all assets.
           # sbom-action defaults to upload-release-assets: true, which fails
           # here with "Resource not accessible by integration".
+          upload-artifact: false
           upload-release-assets: false
 
       - name: Generate SBOM (CycloneDX)
@@ -350,6 +352,7 @@ jobs:
           format: cyclonedx-json
           output-file: dist/${{ inputs.archive-prefix }}-${{ steps.version.outputs.version }}.sbom.cdx.json
           # See SPDX step above: contents: read job must not attach release assets.
+          upload-artifact: false
           upload-release-assets: false
 
       - name: Generate checksums
@@ -633,16 +636,49 @@ jobs:
           find dist -maxdepth 1 -type f -printf '%f\n' | sort > expected.txt
           [[ -s expected.txt ]] || { echo "::error::dist/ holds no files."; exit 1; }
 
+          # Hash all deliverables, including the checksum file and signature bundles.
+          while IFS= read -r name; do
+            sum="$(sha256sum < "dist/${name}")"
+            printf '%s\tsha256:%s\n' "$name" "${sum%% *}"
+          done < expected.txt > expected-digests.tsv
+
           release_id="$(gh release view "$TAG" --repo "$REPO" --json databaseId --jq '.databaseId')"
           [[ "$release_id" =~ ^[1-9][0-9]*$ ]] || { echo "::error::Missing release ID for ${TAG}."; exit 1; }
+
+          release_path="repos/${REPO}/releases/${release_id}"
+
+          read_draft() {
+            gh api "$release_path" | jq -er --arg tag "$TAG" --argjson id "$release_id" '
+              select(.id == $id and .tag_name == $tag and (.draft | type == "boolean")) | .draft | tostring'
+          }
+
+          verify_tag() {
+            local current_object
+            current_object="$(gh api "repos/${REPO}/git/ref/tags/${TAG}" --jq '.object.sha')"
+            if [[ -z "$EXPECTED_TAG_OBJECT" || "$current_object" != "$EXPECTED_TAG_OBJECT" ]]; then
+              echo "::error::Tag ${TAG} changed after build verification."
+              exit 1
+            fi
+          }
 
           # Use one paginated snapshot for both lists. A starter asset has a
           # name but cannot satisfy the check for a complete upload.
           read_assets() {
-            gh api --paginate "repos/${REPO}/releases/${release_id}/assets?per_page=100" \
-              --jq '.[] | [.state, .name] | @tsv' > asset-states.tsv
+            gh api --paginate "${release_path}/assets?per_page=100" \
+              --jq '.[] | [.state, .name, (.digest // "")] | @tsv' > asset-states.tsv
             cut -f2 asset-states.tsv | sort > all-assets.txt
-            awk -F '\t' '$1 == "uploaded" { print $2 }' asset-states.tsv | sort > uploaded.txt
+            awk -F '\t' '$1 == "uploaded" { print $2 "\t" $3 }' asset-states.tsv | sort > uploaded-digests.tsv
+            cut -f1 uploaded-digests.tsv > uploaded.txt
+          }
+
+          verify_assets() {
+            read_assets
+            if ! cmp -s expected.txt all-assets.txt || ! cmp -s expected-digests.tsv uploaded-digests.tsv; then
+              echo "::error::Release ${release_id} has missing, unexpected, unfinished or changed assets."
+              comm -23 expected-digests.tsv uploaded-digests.tsv | cut -f1
+              comm -13 expected.txt all-assets.txt
+              exit 1
+            fi
           }
 
           # A draft found at the start of this job was left by an earlier run
@@ -695,31 +731,18 @@ jobs:
             fi
           done
 
-          draft="$(gh release view "$TAG" --repo "$REPO" --json databaseId,isDraft \
-            --jq "select(.databaseId == ${release_id}) | .isDraft")"
-          case "$draft" in
-            true)
-              current_object="$(gh api "repos/${REPO}/git/ref/tags/${TAG}" --jq '.object.sha')"
-              if [[ -z "$EXPECTED_TAG_OBJECT" || "$current_object" != "$EXPECTED_TAG_OBJECT" ]]; then
-                echo "::error::Tag ${TAG} changed after build verification. The draft stays unpublished."
-                exit 1
-              fi
-              ;;
-            false) ;;
-            *) echo "::error::Release ${release_id} for ${TAG} changed or has an unknown draft state."; exit 1 ;;
-          esac
-
-          # An operator can attach a file during the upload loop. Compare all
-          # names and states together immediately before publication.
-          read_assets
-          if ! cmp -s expected.txt all-assets.txt || ! cmp -s expected.txt uploaded.txt; then
-            echo "::error::Final assets for ${TAG} differ from this build. Inspect missing, unfinished or unexpected attachments before retrying."
-            comm -23 expected.txt uploaded.txt
-            comm -13 expected.txt all-assets.txt
-            exit 1
-          fi
+          draft="$(read_draft)"
+          verify_tag
+          verify_assets
           if [[ "$draft" == true ]]; then
-            gh release edit "$TAG" --repo "$REPO" --draft=false --latest="$MAKE_LATEST"
+            if ! gh api --method PATCH "$release_path" -F draft=false -f make_latest="$MAKE_LATEST" --silent; then
+              # GitHub may have published the release before the response was lost.
+              # Continue only when we can confirm the result against this same ID.
+              published_state="$(read_draft)"
+              [[ "$published_state" == false ]] || { echo "::error::Could not confirm publication of release ${release_id}."; exit 1; }
+              verify_tag
+              verify_assets
+            fi
           fi
 
   publish-to-ter:
@@ -856,7 +879,7 @@ jobs:
               echo "- TER: skipped"
             elif [[ "$TER_COMMENT_REFUSED" == "true" ]]; then
               # A re-run sends the same comment from the same tag (#273).
-              echo "- TER: ${TER_RESULT} — TER refused the upload comment. If the tagged CHANGELOG.md supplies the refused comment, publish a new patch version with a reworded entry. Otherwise edit the GitHub release notes and run Republish for this tag with target ter. [Release log](${RUN_URL})."
+              echo "- TER: ${TER_RESULT} — TER refused the upload comment. If the tagged CHANGELOG.md supplies the refused comment, publish a new patch version with a reworded entry. Without a matching changelog section, Republish (target ter) reads the GitHub release body itself. Edit the refused text there before retrying. [Release log](${RUN_URL})."
             else
               echo "- TER: ${TER_RESULT} — see [the release run](${RUN_URL}); re-run the release workflow on the tag to retry"
             fi
