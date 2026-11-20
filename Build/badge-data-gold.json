@@ -24,7 +24,7 @@
   "test_invocation_justification": "Tests are invoked via standard Composer scripts: 'composer ci:test:php:unit', 'composer ci:test:php:functional', 'composer ci:test:php:fuzz'. JavaScript tests: 'npm run test:js'. See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/composer.json",
 
   "test_continuous_integration_status": "Met",
-  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. CI matrix tests across PHP 8.2-8.5 and TYPO3 12/13/14 with lint, PHPStan, unit, functional and fuzz jobs; mutation testing is not part of CI and runs locally (`composer ci:mutation`). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
+  "test_continuous_integration_justification": "GitHub Actions CI runs on every push to main and every PR. CI matrix tests across PHP 8.2-8.6 and TYPO3 12/13/14 with lint, PHPStan, unit, functional and fuzz jobs; mutation testing is not part of CI and runs locally (`composer ci:mutation`). See https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",
 
   "test_statement_coverage90_status": "Met",
   "test_statement_coverage90_justification": "93.14% statement coverage measured by Codecov, exceeding the 90% threshold. Coverage tracked on every PR. See https://app.codecov.io/gh/netresearch/t3x-nr-passkeys-be and https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/.github/workflows/ci.yml",

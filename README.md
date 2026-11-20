@@ -30,7 +30,7 @@
 <p align="center">
   <a href="https://phpstan.org/"><img src="https://img.shields.io/badge/PHPStan-Level%2010-brightgreen.svg" alt="PHPStan"></a>
   <a href="https://infection.github.io/"><img src="https://img.shields.io/badge/Infection%20MSI-%E2%89%A580%25-brightgreen" alt="Mutation"></a>
-  <a href="https://www.php.net/"><img src="https://img.shields.io/badge/PHP-8.2--8.5-blue.svg?logo=php" alt="PHP"></a>
+  <a href="https://www.php.net/"><img src="https://img.shields.io/badge/PHP-8.2--8.6-blue.svg?logo=php" alt="PHP"></a>
   <a href="https://typo3.org/"><img src="https://img.shields.io/badge/TYPO3-12%20LTS%20%7C%2013%20LTS%20%7C%2014-orange.svg?logo=typo3" alt="TYPO3"></a>
   <a href="https://github.com/netresearch/t3x-nr-passkeys-be/blob/main/LICENSE"><img src="https://img.shields.io/github/license/netresearch/t3x-nr-passkeys-be" alt="License"></a>
   <a href="https://github.com/netresearch/t3x-nr-passkeys-be/releases"><img src="https://img.shields.io/github/v/release/netresearch/t3x-nr-passkeys-be" alt="Latest Release"></a>
@@ -47,7 +47,7 @@
 | **Extension key**  | `nr_passkeys_be`                         |
 | **Package**        | `netresearch/nr-passkeys-be`             |
 | **TYPO3**          | 12.4 LTS, 13.4 LTS, 14.3 LTS            |
-| **PHP**            | 8.2, 8.3, 8.4, 8.5                      |
+| **PHP**            | 8.2, 8.3, 8.4, 8.5, 8.6                 |
 | **License**        | GPL-2.0-or-later                         |
 
 ## Features
