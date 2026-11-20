@@ -13,5 +13,3 @@ template: typo3-extension
 intentional-drift:
   - .github/workflows/ci.yml
   - .github/workflows/release.yml
-  # The companion check compares every byte except the immutable workflow ref.
-  - .github/workflows/auto-merge-deps.yml

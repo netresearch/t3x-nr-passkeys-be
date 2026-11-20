@@ -5,6 +5,9 @@
 # AGENTS.md -- Classes
 
 ## Overview
+
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 TYPO3 extension source code. Namespace: `Netresearch\NrPasskeysBe`. Follows PER-CS3.0 and PHPStan level 10.
 
 ## Key Files

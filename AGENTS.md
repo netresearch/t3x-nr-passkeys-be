@@ -10,6 +10,8 @@
 
 ## Project Overview
 
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 **nr_passkeys_be** -- TYPO3 extension for passwordless backend login via WebAuthn/FIDO2 Passkeys (TouchID, FaceID, YubiKey, Windows Hello).
 Per-group enforcement with gradual rollout (Off → Encourage → Required → Enforced), admin dashboard with adoption stats, onboarding UX (banner, interstitial, reminders).
 

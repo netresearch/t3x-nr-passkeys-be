@@ -5,6 +5,9 @@
 # AGENTS.md -- Resources
 
 ## Overview
+
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 Fluid templates, XLIFF translations, JavaScript, and icons for the passkeys backend extension.
 
 ## Key Files

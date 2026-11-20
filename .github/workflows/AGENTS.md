@@ -5,6 +5,9 @@
 # AGENTS.md -- .github/workflows
 
 ## Overview
+
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workflows` and `netresearch/.github`. Local files are thin callers: `ci.yml` carries the extension-specific test matrix (intentional drift), `checks.yml` is the byte-identical, drift-enforced security/quality gate shared by every typo3-extension repo.
 
 ## Workflow files

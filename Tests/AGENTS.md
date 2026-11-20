@@ -5,6 +5,9 @@
 # AGENTS.md -- Tests
 
 ## Overview
+
+Call every Netresearch-owned reusable GitHub Actions workflow at `@main`. Never pin it to a commit SHA or version tag, vendor a frozen copy, or add a check that enforces a pin. This applies to nested calls as well.
+
 Six test suites: PHP Unit, Fuzz, Functional (PHPUnit ^11.5||^12.1||^13.0 + TYPO3 testing-framework ^8.2||^9.0), JavaScript (Vitest), E2E (Playwright), and Architecture (PHPat, runs inside PHPStan).
 
 ## Test Structure
