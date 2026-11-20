@@ -6,7 +6,8 @@ import { defineConfig, devices } from '@playwright/test';
  * Tests run against a TYPO3 instance, and do not start one:
  *   - `./Build/Scripts/runTests.sh -s e2e` installs one in containers and
  *     passes its address in TYPO3_BASE_URL
- *   - set TYPO3_BASE_URL yourself to use an instance that already runs
+ *   - prepare an existing instance as in Documentation/DeveloperGuide/Testing.rst
+ *     and set TYPO3_BASE_URL to its address
  * Without either, `npm run test:e2e` targets http://localhost:8080.
  * CI runs the suite from .github/workflows/e2e.yml against TYPO3 13 and 14,
  * through Build/Scripts/ci-e2e.sh, which calls `runTests.sh -s e2e`.
@@ -48,7 +49,6 @@ const useSecureAlias = !!SECURE_ALIAS_HOST && !isTrustedOrigin;
 
 export default defineConfig({
     testDir: './Tests/E2E',
-    globalSetup: './Tests/E2E/global-setup.ts',
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,

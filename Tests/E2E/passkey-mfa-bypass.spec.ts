@@ -1,5 +1,5 @@
 import { Page, CDPSession } from '@playwright/test';
-import { test, expect } from './fixtures';
+import { test, expect, loginAsAdmin, ADMIN_PASS, ADMIN_USER } from './fixtures';
 
 /**
  * E2E coverage for the skipMfaOnPasskeyAuth feature.
@@ -20,23 +20,6 @@ import { test, expect } from './fixtures';
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
-
-const ADMIN_USER = process.env.TYPO3_ADMIN_USER || 'admin';
-const ADMIN_PASS = process.env.TYPO3_ADMIN_PASS || 'Joh316!!';
-
-async function loginAsAdmin(page: Page): Promise<boolean> {
-    await page.goto('/typo3/login');
-    await page.waitForLoadState('networkidle');
-    const usernameInput = page.locator('input[name="username"]');
-    if (!await usernameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-        return false;
-    }
-    await usernameInput.fill(ADMIN_USER);
-    await page.locator('input[name="p_field"]').fill(ADMIN_PASS);
-    await page.locator('#t3-login-submit').click();
-    await page.waitForLoadState('networkidle');
-    return !page.url().includes('/login');
-}
 
 async function setupVirtualAuthenticator(
     page: Page,
@@ -218,8 +201,7 @@ test.describe('Passkey login — MFA bypass', () => {
     // suites cover the session-key contract for skipMfaOnPasskeyAuth; this one
     // covers the redirect a user would actually see.
     test('passkey login never redirects through /auth/mfa', async ({ page }) => {
-        const loggedIn = await loginAsAdmin(page);
-        test.skip(!loggedIn, 'Password login failed');
+        await loginAsAdmin(page);
 
         const { cdp, authenticatorId } = await setupVirtualAuthenticator(page);
 
