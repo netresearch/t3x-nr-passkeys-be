@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
 
-use Doctrine\DBAL\Exception as DatabaseException;
+use Doctrine\DBAL\Exception\InvalidArgumentException as DatabaseInvalidArgumentException;
 use Netresearch\NrPasskeysBe\Service\DatabaseRateLimitStore;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
@@ -295,16 +295,22 @@ final class RateLimiterServiceTest extends TestCase
             ->expects(self::exactly(4000))
             ->method('increment')
             ->willReturn(true);
+
+        // InvalidArgumentException is a Doctrine\DBAL\Exception in DBAL 3, where
+        // that is a class, and in DBAL 4, where it is an interface.
         $store
             ->expects(self::atLeastOnce())
             ->method('prune')
             ->willThrowException(
-                new class ('counter store unavailable') extends RuntimeException implements DatabaseException {},
+                new DatabaseInvalidArgumentException('counter store unavailable'),
             );
         $this->loggerMock
             ->expects(self::atLeastOnce())
             ->method('warning')
-            ->with('Expired rate-limit counters could not be removed', self::anything());
+            ->with(
+                'Expired rate-limit counters could not be removed',
+                self::anything(),
+            );
         $this->subject->injectDatabaseStore($store);
 
         for ($i = 0; $i < 4000; ++$i) {
