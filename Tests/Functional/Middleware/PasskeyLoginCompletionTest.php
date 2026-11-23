@@ -375,9 +375,12 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
         $this->stubPasskeyServices(skipMfa: true, userVerified: true);
         $ok = new Response();
 
-        self::assertSame($ok, $this
-            ->middleware()
-            ->process($this->loginRequest($this->assertionUident()), $this->coreThenRespond($ok)));
+        self::assertSame(
+            $ok,
+            $this
+                ->middleware()
+                ->process($this->loginRequest($this->assertionUident()), $this->coreThenRespond($ok)),
+        );
         self::assertTrue($this->storedSessionData($this->currentUser(), 'mfa'));
 
         $this->stubPasskeyServices(skipMfa: true, userVerified: true);
@@ -387,7 +390,10 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             $redirectWithoutLocation,
             $this
                 ->middleware()
-                ->process($this->loginRequest($this->assertionUident()), $this->coreThenRespond($redirectWithoutLocation)),
+                ->process(
+                    $this->loginRequest($this->assertionUident()),
+                    $this->coreThenRespond($redirectWithoutLocation),
+                ),
         );
     }
 
@@ -397,9 +403,12 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
         unset($GLOBALS['BE_USER']);
         $response = new Response();
 
-        self::assertSame($response, $this
-            ->middleware()
-            ->process($this->loginRequest($this->assertionUident()), $this->finalHandler($response)));
+        self::assertSame(
+            $response,
+            $this
+                ->middleware()
+                ->process($this->loginRequest($this->assertionUident()), $this->finalHandler($response)),
+        );
     }
 
     #[Test]
