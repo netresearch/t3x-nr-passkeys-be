@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Tests\Unit\Service;
 
+use Doctrine\DBAL\Exception as DatabaseException;
 use Netresearch\NrPasskeysBe\Service\DatabaseRateLimitStore;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
@@ -259,6 +260,56 @@ final class RateLimiterServiceTest extends TestCase
                 900,
             );
         $this->subject->recordFailure('admin', '192.168.1.1');
+    }
+
+    /**
+     * consumeRateLimit() prunes expired counters on one call in 128 at random.
+     * 4000 calls leave a chance of about 2e-14 that none of them prunes, so
+     * the cleanup branch is covered on every run, not by luck.
+     */
+    #[Test]
+    public function consumeRateLimitOccasionallyPrunesExpiredCounters(): void
+    {
+        $store = $this->createMock(DatabaseRateLimitStore::class);
+        $store
+            ->method('increment')
+            ->willReturn(true);
+        $store
+            ->expects(self::atLeastOnce())
+            ->method('prune');
+        $this->loggerMock
+            ->expects(self::never())
+            ->method('warning');
+        $this->subject->injectDatabaseStore($store);
+
+        for ($i = 0; $i < 4000; ++$i) {
+            $this->subject->consumeRateLimit('login_verify', '192.0.2.1');
+        }
+    }
+
+    #[Test]
+    public function aFailedPruneIsLoggedAndTheAttemptStillCounts(): void
+    {
+        $store = $this->createMock(DatabaseRateLimitStore::class);
+        $store
+            ->expects(self::exactly(4000))
+            ->method('increment')
+            ->willReturn(true);
+        $store
+            ->expects(self::atLeastOnce())
+            ->method('prune')
+            ->willThrowException(
+                new class ('counter store unavailable') extends RuntimeException implements DatabaseException {},
+            );
+        $this->loggerMock
+            ->expects(self::atLeastOnce())
+            ->method('warning')
+            ->with('Expired rate-limit counters could not be removed', self::anything());
+        $this->subject->injectDatabaseStore($store);
+
+        for ($i = 0; $i < 4000; ++$i) {
+            $this->subject->consumeRateLimit('login_verify', '192.0.2.1');
+        }
     }
 
     #[Test]
