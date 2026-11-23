@@ -73,16 +73,29 @@ final readonly class PasskeyLoginCompletion implements MiddlewareInterface
             $proof = $user instanceof BackendUserAuthentication ? $this->proofs->take($user) : null;
         }
 
-        if (!$user instanceof BackendUserAuthentication || $proof === null || !$this->sessionBelongsTo($user, $proof['uid'])) {
-            return $response;
+        if ($user instanceof BackendUserAuthentication && $proof !== null && $this->sessionBelongsTo($user, $proof['uid'])) {
+            $response = $this->complete($request, $response, $user, $proof['creditMfa']);
         }
 
+        return $response;
+    }
+
+    /**
+     * Write the passkey marker and, where allowed, the MFA credit into the
+     * session the core created, and send the user past an MFA redirect.
+     */
+    private function complete(
+        ServerRequestInterface $request,
+        ResponseInterface $response,
+        BackendUserAuthentication $user,
+        bool $creditMfa,
+    ): ResponseInterface {
         $stored                        = $user->getSessionData('tx_nrpasskeysbe');
         $data                          = is_array($stored) ? $stored : [];
         $data['passkey_authenticated'] = true;
         $user->setAndSaveSessionData('tx_nrpasskeysbe', $data);
 
-        if (!$this->mayCreditMfa($request, $user, $proof['creditMfa'])) {
+        if (!$this->mayCreditMfa($request, $user, $creditMfa)) {
             return $response;
         }
 

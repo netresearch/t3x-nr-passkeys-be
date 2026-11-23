@@ -10,23 +10,25 @@ use Netresearch\NrPasskeysBe\Middleware\PasskeyLoginCompletion;
 use Netresearch\NrPasskeysBe\Middleware\PasskeySetupInterstitial;
 use Netresearch\NrPasskeysBe\Middleware\PublicRouteResolver;
 
+$coreAuthentication = 'typo3/cms-backend/authentication';
+
 return [
     'backend' => [
         'netresearch/nr-passkeys-be/public-route-resolver' => [
             'target' => PublicRouteResolver::class,
             'after'  => ['typo3/cms-backend/backend-routing'],
-            'before' => ['typo3/cms-backend/authentication'],
+            'before' => [$coreAuthentication],
         ],
         // Wraps the core authentication: writes the markers of a passkey login
         // into the session the core creates for a fresh browser session.
         'netresearch/nr-passkeys-be/passkey-login-completion' => [
             'target' => PasskeyLoginCompletion::class,
             'after'  => ['typo3/cms-backend/backend-routing', 'netresearch/nr-passkeys-be/public-route-resolver'],
-            'before' => ['typo3/cms-backend/authentication'],
+            'before' => [$coreAuthentication],
         ],
         'netresearch/nr-passkeys-be/passkey-setup-interstitial' => [
             'target' => PasskeySetupInterstitial::class,
-            'after'  => ['typo3/cms-backend/authentication'],
+            'after'  => [$coreAuthentication],
             'before' => ['typo3/cms-backend/site-resolver'],
         ],
     ],

@@ -70,6 +70,9 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
 {
     private const USER_UID = 5;
 
+    /** Where the core LoginController sends the browser after a login. */
+    private const BACKEND_MAIN = '/typo3/main';
+
     protected array $coreExtensionsToLoad = ['setup'];
 
     protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
@@ -141,7 +144,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->middleware()
             ->process(
                 $this->loginRequest($this->assertionUident()),
-                $this->coreStack(new RedirectResponse('/typo3/main')),
+                $this->coreStack(new RedirectResponse(self::BACKEND_MAIN)),
             );
 
         self::assertSame($this->routePath('login'), parse_url($response->getHeaderLine('Location'), PHP_URL_PATH));
@@ -156,7 +159,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->middleware()
             ->process(
                 $this->loginRequest($this->assertionUident()),
-                $this->coreStack(new RedirectResponse('/typo3/main')),
+                $this->coreStack(new RedirectResponse(self::BACKEND_MAIN)),
             );
 
         self::assertSame($this->routePath('setup_mfa'), parse_url($response->getHeaderLine('Location'), PHP_URL_PATH));
@@ -196,7 +199,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->authenticator()
             ->process(
                 $this->loginRequest($this->assertionUident()),
-                $this->finalHandler(new RedirectResponse('/typo3/main')),
+                $this->finalHandler(new RedirectResponse(self::BACKEND_MAIN)),
             );
         $user = $this->currentUser();
 
@@ -251,7 +254,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->middleware()
             ->process(
                 $this->loginRequest($this->assertionUident()),
-                $this->coreStack(new RedirectResponse('/typo3/main')),
+                $this->coreStack(new RedirectResponse(self::BACKEND_MAIN)),
             );
         $user = $this->currentUser();
 
@@ -305,7 +308,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->withCookieParams(['be_typo_user' => $anonymous->getJwt()]);
         $this
             ->middleware()
-            ->process($request, $this->coreStack(new RedirectResponse('/typo3/main')));
+            ->process($request, $this->coreStack(new RedirectResponse(self::BACKEND_MAIN)));
         $user = $this->currentUser();
 
         self::assertSame(self::USER_UID, $user
@@ -444,7 +447,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
         $this->activateTotp();
         $this->stubPasskeyServices(skipMfa: true, userVerified: true);
         $store = $this->get(PasskeyLoginProofStore::class);
-        $inner = $this->coreStack(new RedirectResponse('/typo3/main'));
+        $inner = $this->coreStack(new RedirectResponse(self::BACKEND_MAIN));
 
         $handler = new class ($inner, $store) implements RequestHandlerInterface {
             public function __construct(
@@ -477,7 +480,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     {
         $this->activateTotp();
         $this->stubPasskeyServices(skipMfa: true, userVerified: true);
-        $inner   = $this->coreStack(new RedirectResponse('/typo3/main'));
+        $inner   = $this->coreStack(new RedirectResponse(self::BACKEND_MAIN));
         $handler = new class ($inner) implements RequestHandlerInterface {
             public function __construct(private readonly RequestHandlerInterface $inner) {}
 
@@ -485,7 +488,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             {
                 $this->inner->handle($request);
 
-                throw new RuntimeException('inner failure', 1795500001);
+                throw new class ('inner failure', 1795500001) extends RuntimeException {};
             }
         };
 
@@ -513,7 +516,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->middleware()
             ->process(
                 $this->loginRequest($uident),
-                $this->coreStack(new RedirectResponse('/typo3/main')),
+                $this->coreStack(new RedirectResponse(self::BACKEND_MAIN)),
             );
         $user = $this->currentUser();
         self::assertSame(self::USER_UID, $user
