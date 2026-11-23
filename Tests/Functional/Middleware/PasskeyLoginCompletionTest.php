@@ -75,9 +75,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
 
     protected array $configurationToUseInTestInstance = [
-        'BE' => [
-            'requireMfa' => 1,
-        ],
+        'BE'  => ['requireMfa' => 1],
         'SYS' => [
             'caching' => [
                 'cacheConfigurations' => [
@@ -174,7 +172,10 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->getCache('nr_passkeys_be_nonce')
             ->set(
                 'passkey_login_functional-token',
-                json_encode(['uid' => self::USER_UID, 'expiresAt' => time() + 60, 'userVerified' => true], JSON_THROW_ON_ERROR),
+                json_encode(
+                    ['uid' => self::USER_UID, 'expiresAt' => time() + 60, 'userVerified' => true],
+                    JSON_THROW_ON_ERROR,
+                ),
             );
 
         $user = $this->login(json_encode(['_type' => 'passkey_token', 'token' => 'functional-token'], JSON_THROW_ON_ERROR));
@@ -193,7 +194,10 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
 
         $this
             ->authenticator()
-            ->process($this->loginRequest($this->assertionUident()), $this->finalHandler(new RedirectResponse('/typo3/main')));
+            ->process(
+                $this->loginRequest($this->assertionUident()),
+                $this->finalHandler(new RedirectResponse('/typo3/main')),
+            );
         $user = $this->currentUser();
 
         self::assertNull($this->storedSessionData($user, 'mfa'));
@@ -327,8 +331,10 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     {
         $this->activateTotp();
         $this->stubPasskeyServices(skipMfa: true, userVerified: true);
-        $challenge = (new RedirectResponse($this->routePath('auth_mfa'), 303))
-            ->withAddedHeader('Set-Cookie', 'be_typo_user=functional; path=/typo3/');
+        $challenge = (new RedirectResponse($this->routePath('auth_mfa'), 303))->withAddedHeader(
+            'Set-Cookie',
+            'be_typo_user=functional; path=/typo3/',
+        );
 
         $response = $this
             ->middleware()
@@ -340,7 +346,60 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
         self::assertSame(303, $response->getStatusCode());
         self::assertSame(['be_typo_user=functional; path=/typo3/'], $response->getHeader('Set-Cookie'));
         self::assertSame($this->routePath('login'), parse_url($response->getHeaderLine('Location'), PHP_URL_PATH));
-        self::assertStringContainsString('redirect=web_layout', (string) parse_url($response->getHeaderLine('Location'), PHP_URL_QUERY));
+        self::assertStringContainsString(
+            'redirect=web_layout',
+            (string) parse_url($response->getHeaderLine('Location'), PHP_URL_QUERY),
+        );
+    }
+
+    #[Test]
+    public function redirectToTheMfaChallengeWithoutRedirectParameterTargetsTheLogin(): void
+    {
+        $this->activateTotp();
+        $this->stubPasskeyServices(skipMfa: true, userVerified: true);
+
+        $response = $this
+            ->middleware()
+            ->process(
+                $this->loginRequest($this->assertionUident()),
+                $this->coreThenRespond(new RedirectResponse($this->routePath('auth_mfa'))),
+            );
+
+        self::assertSame($this->routePath('login'), parse_url($response->getHeaderLine('Location'), PHP_URL_PATH));
+    }
+
+    #[Test]
+    public function responsesWithoutRedirectTargetAreLeftUntouched(): void
+    {
+        $this->activateTotp();
+        $this->stubPasskeyServices(skipMfa: true, userVerified: true);
+        $ok = new Response();
+
+        self::assertSame($ok, $this
+            ->middleware()
+            ->process($this->loginRequest($this->assertionUident()), $this->coreThenRespond($ok)));
+        self::assertTrue($this->storedSessionData($this->currentUser(), 'mfa'));
+
+        $this->stubPasskeyServices(skipMfa: true, userVerified: true);
+        $redirectWithoutLocation = new Response('php://temp', 302);
+
+        self::assertSame(
+            $redirectWithoutLocation,
+            $this
+                ->middleware()
+                ->process($this->loginRequest($this->assertionUident()), $this->coreThenRespond($redirectWithoutLocation)),
+        );
+    }
+
+    #[Test]
+    public function requestWithoutBackendUserIsLeftUntouched(): void
+    {
+        unset($GLOBALS['BE_USER']);
+        $response = new Response();
+
+        self::assertSame($response, $this
+            ->middleware()
+            ->process($this->loginRequest($this->assertionUident()), $this->finalHandler($response)));
     }
 
     #[Test]
@@ -379,7 +438,10 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
         $inner = $this->coreStack(new RedirectResponse('/typo3/main'));
 
         $handler = new class ($inner, $store) implements RequestHandlerInterface {
-            public function __construct(private readonly RequestHandlerInterface $inner, private readonly PasskeyLoginProofStore $store) {}
+            public function __construct(
+                private readonly RequestHandlerInterface $inner,
+                private readonly PasskeyLoginProofStore $store,
+            ) {}
 
             public function handle(ServerRequestInterface $request): ResponseInterface
             {
@@ -433,7 +495,6 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     }
 
     // ── Helpers ──────────────────────────────────────────────
-
     /**
      * The login POST through PasskeyLoginCompletion and the core authenticator.
      */
@@ -441,7 +502,10 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     {
         $this
             ->middleware()
-            ->process($this->loginRequest($uident), $this->coreStack(new RedirectResponse('/typo3/main')));
+            ->process(
+                $this->loginRequest($uident),
+                $this->coreStack(new RedirectResponse('/typo3/main')),
+            );
         $user = $this->currentUser();
         self::assertSame(self::USER_UID, $user
             ->getSession()
@@ -455,10 +519,11 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
      */
     private function nextRequest(BackendUserAuthentication $previous): ResponseInterface
     {
-        $request = (new ServerRequest('https://example.test/typo3/main', 'GET'))
-            ->withCookieParams(['be_typo_user' => $previous
+        $request = (new ServerRequest('https://example.test/typo3/main', 'GET'))->withCookieParams(
+            ['be_typo_user' => $previous
                 ->getSession()
-                ->getJwt()]);
+                ->getJwt()],
+        );
         $request = $this->backendRequest($request, '/main');
         SecurityAspect::provideIn($this->get(Context::class))->setReceivedRequestToken(null);
 
@@ -487,7 +552,10 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     private function coreStack(ResponseInterface $response): RequestHandlerInterface
     {
         return new class ($this->authenticator(), $this->finalHandler($response)) implements RequestHandlerInterface {
-            public function __construct(private readonly MiddlewareInterface $authenticator, private readonly RequestHandlerInterface $next) {}
+            public function __construct(
+                private readonly MiddlewareInterface $authenticator,
+                private readonly RequestHandlerInterface $next,
+            ) {}
 
             public function handle(ServerRequestInterface $request): ResponseInterface
             {
@@ -503,7 +571,10 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     private function coreThenRespond(ResponseInterface $response): RequestHandlerInterface
     {
         return new class ($this->coreStack(new Response()), $response) implements RequestHandlerInterface {
-            public function __construct(private readonly RequestHandlerInterface $core, private readonly ResponseInterface $response) {}
+            public function __construct(
+                private readonly RequestHandlerInterface $core,
+                private readonly ResponseInterface $response,
+            ) {}
 
             public function handle(ServerRequestInterface $request): ResponseInterface
             {
@@ -533,7 +604,9 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     {
         $request = (new ServerRequest('https://example.test/typo3' . $path, 'POST'))
             ->withQueryParams($query)
-            ->withParsedBody(['login_status' => 'login', 'username' => 'adminuser', 'userident' => $uident]);
+            ->withParsedBody(
+                ['login_status' => 'login', 'username' => 'adminuser', 'userident' => $uident],
+            );
         $request = $this->backendRequest($request, $path);
         SecurityAspect::provideIn($this->get(Context::class))->setReceivedRequestToken(
             RequestToken::create('core/user-auth/be'),
@@ -546,9 +619,12 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     {
         $request = $request
             ->withAttribute('applicationType', SystemEnvironmentBuilder::REQUESTTYPE_BE)
-            ->withAttribute('route', $this
-                ->get(Router::class)
-                ->match($path));
+            ->withAttribute(
+                'route',
+                $this
+                    ->get(Router::class)
+                    ->match($path),
+            );
         $request                  = $request->withAttribute('normalizedParams', NormalizedParams::createFromRequest($request));
         $GLOBALS['TYPO3_REQUEST'] = $request;
 
@@ -588,7 +664,11 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     private function assertionUident(): string
     {
         return json_encode(
-            ['_type' => 'passkey', 'assertion' => ['functional' => 'test-assertion'], 'challengeToken' => 'functional-test-token'],
+            [
+                '_type'          => 'passkey',
+                'assertion'      => ['functional' => 'test-assertion'],
+                'challengeToken' => 'functional-test-token',
+            ],
             JSON_THROW_ON_ERROR,
         );
     }
@@ -600,7 +680,12 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->getConnectionForTable('be_users')
             ->update(
                 'be_users',
-                ['mfa' => json_encode(['totp' => ['active' => true, 'secret' => 'test-fixture-only', 'attempts' => $attempts]], JSON_THROW_ON_ERROR)],
+                [
+                    'mfa' => json_encode(
+                        ['totp' => ['active' => true, 'secret' => 'test-fixture-only', 'attempts' => $attempts]],
+                        JSON_THROW_ON_ERROR,
+                    ),
+                ],
                 ['uid' => self::USER_UID],
             );
     }
@@ -612,22 +697,29 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->method('get')
             ->with('nr_passkeys_be')
             ->willReturn(['skipMfaOnPasskeyAuth' => $skipMfa ? 1 : 0]);
-        GeneralUtility::addInstance(ExtensionConfigurationService::class, new ExtensionConfigurationService($typo3ExtConfig));
+        GeneralUtility::addInstance(
+            ExtensionConfigurationService::class,
+            new ExtensionConfigurationService($typo3ExtConfig),
+        );
 
         $webAuthnService = $this->createMock(WebAuthnService::class);
 
         if ($verificationFails) {
             $webAuthnService
                 ->method('verifyAssertionResponse')
-                ->willThrowException(new RuntimeException('invalid assertion', 1795500002));
+                ->willThrowException(
+                    new RuntimeException('invalid assertion', 1795500002),
+                );
         } else {
             $webAuthnService
                 ->method('verifyAssertionResponse')
-                ->willReturn(new VerifiedAssertion(
-                    credential: new Credential(uid: 10, beUser: self::USER_UID, label: 'Functional Test Key'),
-                    source: $this->createStub(CredentialRecord::class),
-                    userVerified: $userVerified,
-                ));
+                ->willReturn(
+                    new VerifiedAssertion(
+                        credential: new Credential(uid: 10, beUser: self::USER_UID, label: 'Functional Test Key'),
+                        source: $this->createStub(CredentialRecord::class),
+                        userVerified: $userVerified,
+                    ),
+                );
         }
 
         GeneralUtility::addInstance(WebAuthnService::class, $webAuthnService);

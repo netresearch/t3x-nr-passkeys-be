@@ -139,9 +139,12 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         // which the PasskeyLoginCompletion middleware checks.
         self::assertNull($backendUser->getSessionData('mfa'));
         self::assertSame(['passkey_authenticated' => true], $backendUser->getSessionData('tx_nrpasskeysbe'));
-        self::assertSame(['uid' => 5, 'creditMfa' => true], $this
-            ->get(PasskeyLoginProofStore::class)
-            ->take($backendUser));
+        self::assertSame(
+            ['uid' => 5, 'creditMfa' => true],
+            $this
+                ->get(PasskeyLoginProofStore::class)
+                ->take($backendUser),
+        );
     }
 
     #[Test]

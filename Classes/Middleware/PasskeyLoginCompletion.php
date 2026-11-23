@@ -94,7 +94,10 @@ final readonly class PasskeyLoginCompletion implements MiddlewareInterface
 
         // Only the target changes: status and the session cookie the core
         // authentication attached to the response stay as they are.
-        return $response->withHeader('Location', (string) $this->uriBuilder->buildUriWithRedirect('login', [], $this->routeRedirect($request)));
+        return $response->withHeader(
+            'Location',
+            (string) $this->uriBuilder->buildUriWithRedirect('login', [], $this->routeRedirect($request)),
+        );
     }
 
     /**
@@ -109,16 +112,18 @@ final readonly class PasskeyLoginCompletion implements MiddlewareInterface
      * - not an AJAX route: the core answers those with a bare 401, the session
      *   cookie never reaches the browser.
      */
-    private function mayCreditMfa(ServerRequestInterface $request, BackendUserAuthentication $user, bool $creditMfa): bool
-    {
+    private function mayCreditMfa(
+        ServerRequestInterface $request,
+        BackendUserAuthentication $user,
+        bool $creditMfa,
+    ): bool {
         $route = $request->getAttribute('route');
 
-        if (!$creditMfa || ($route instanceof Route && (bool) ($route->getOption('ajax') ?? false))) {
+        if (!$creditMfa || $route instanceof Route && (bool) ($route->getOption('ajax') ?? false)) {
             return false;
         }
 
-        return $this->mfaProviderRegistry->hasActiveProviders($user)
-            && !$this->mfaProviderRegistry->hasLockedProviders($user);
+        return $this->mfaProviderRegistry->hasActiveProviders($user) && !$this->mfaProviderRegistry->hasLockedProviders($user);
     }
 
     private function sessionBelongsTo(BackendUserAuthentication $user, int $uid): bool
