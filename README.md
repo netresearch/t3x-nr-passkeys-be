@@ -107,6 +107,8 @@ Passkeys are **inherently multi-factor**: they combine *something you have* (you
 
 **For most TYPO3 backends, passkeys alone are more secure than password + TOTP.** The FIDO Alliance and W3C consider passkeys a stronger replacement for password + OTP. Adding TYPO3's MFA on top is optional defence-in-depth, not a requirement.
 
+With `skipMfaOnPasskeyAuth` (default on), a user-verified passkey login skips the TOTP prompt for users who already have an active MFA provider. If TYPO3's `requireMfa` is on, users without a provider still set one up once, so their password login keeps a second factor.
+
 Consider keeping MFA enabled alongside passkeys only if:
 - Your security policy explicitly mandates independent factors (e.g., PCI-DSS)
 - Your threat model includes authenticator device compromise

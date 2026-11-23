@@ -98,11 +98,13 @@ page:
 
     A passkey is itself multi-factor (device possession plus a biometric or
     PIN), so by default the extension **skips** TYPO3's additional MFA challenge
-    after a successful passkey login. This is controlled by the
-    ``skipMfaOnPasskeyAuth`` setting, which is enabled by default. If an
-    administrator disables it, you will also complete TYPO3's MFA verification
-    after passkey authentication. Password logins are unaffected and always
-    follow TYPO3's MFA configuration.
+    after a successful passkey login, provided you have already set up an MFA
+    method such as TOTP. If your administrator requires MFA and you have not
+    set one up yet, TYPO3 asks you to do so once, also after a passkey login.
+    This is controlled by the ``skipMfaOnPasskeyAuth`` setting, which is
+    enabled by default. If an administrator disables it, you will also complete
+    TYPO3's MFA verification after passkey authentication. Password logins are
+    unaffected and follow TYPO3's MFA configuration.
 
 Managing your passkeys
 ======================

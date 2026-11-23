@@ -307,8 +307,11 @@ passkey enforcement feature works alongside MFA:
   The MFA redirect takes precedence during login, and the passkey interstitial
   appears on subsequent requests.
 - Keep Core MFA enabled where the policy requires it. A passkey assertion
-  satisfies that step only if the authenticator confirmed user verification
-  and the passkey MFA setting permits it. Touch alone confirms presence.
+  satisfies that step only if the authenticator confirmed user verification,
+  the passkey MFA setting permits it and the user already has an active,
+  unlocked MFA provider. Touch alone confirms presence. With ``requireMfa``,
+  users without a provider are sent to the MFA setup once, also after a
+  passkey login.
 
 ..  note::
 

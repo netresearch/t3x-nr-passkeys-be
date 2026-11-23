@@ -129,17 +129,34 @@ Password login control
    (PIN or biometric). For presence-only assertions and for password
    logins, TYPO3 continues to apply its configured MFA policy.
 
-   On a fresh browser session, TYPO3 creates the account session after
-   passkey verification. It can still prompt for the configured second
-   factor. Include a signed-out browser in recovery drills and keep the
-   configured MFA method available to administrators.
+   The passkey stands in for an MFA provider the user has already set up;
+   it never replaces setting one up. The credit therefore applies only to
+   users with an active MFA provider such as TOTP:
+
+   -  A user with an active MFA provider who logs in with a verified
+      passkey is not asked for the second factor, also on a fresh browser
+      session. A provider locked after failed attempts keeps blocking the
+      account until an administrator unlocks it.
+   -  A user without an active MFA provider is still sent to the MFA setup
+      when ``requireMfa`` is enabled, even after a passkey login. Once the
+      setup is done, passkey logins skip the second factor. This way the
+      password login of every account keeps a second factor of its own,
+      and enabling ``requireMfa`` later applies to passkey users as well.
+
+   TYPO3 creates the session of a new login only after the passkey has been
+   verified and checks MFA right away. The
+   ``netresearch/nr-passkeys-be/passkey-login-completion`` backend
+   middleware therefore writes the result into the session once the Core
+   has created it. Logins through AJAX routes, such as the re-login dialog
+   for an expired backend session (``/ajax/login``), get no MFA credit and
+   keep the Core MFA behaviour.
 
    Recommended production combination (see :ref:`enforcement` for details):
 
    1. Keep TYPO3's ``$GLOBALS['TYPO3_CONF_VARS']['BE']['requireMfa']``
       enabled so password-based logins still require a second factor.
-   2. Enable ``skipMfaOnPasskeyAuth`` to credit user verification when
-      TYPO3 preserves the session data during login.
+   2. Enable ``skipMfaOnPasskeyAuth`` so a verified passkey login of a user
+      with an active MFA provider skips the second factor.
    3. Use per-group enforcement to move users onto passkeys.
    4. Once adoption is high enough, enable :confval:`disablePasswordLogin`
       to close the password fallback.
