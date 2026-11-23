@@ -778,7 +778,7 @@
                 <source>This extension provides two settings that let you enforce "passkey = MFA satisfied, password = still requires MFA" and prevent the regression:</source>
             </trans-unit>
             <trans-unit id="help.mfa.closingSkipMfa" resname="help.mfa.closingSkipMfa">
-                <source>&lt;code&gt;skipMfaOnPasskeyAuth&lt;/code&gt; (default: &lt;strong&gt;enabled&lt;/strong&gt;) — after a successful passkey login, the TYPO3 MFA challenge is skipped for that session. The passkey has already proven multi-factor. Password logins still go through MFA normally.</source>
+                <source>&lt;code&gt;skipMfaOnPasskeyAuth&lt;/code&gt; (default: &lt;strong&gt;enabled&lt;/strong&gt;) — after a successful, user-verified passkey login, the TYPO3 MFA challenge is skipped for users who already have an active, unlocked MFA provider. The passkey has already proven multi-factor. Users without a provider are sent to the MFA setup once when &lt;code&gt;requireMfa&lt;/code&gt; is on. Password logins follow the TYPO3 MFA configuration.</source>
             </trans-unit>
             <trans-unit id="help.mfa.closingDisablePassword" resname="help.mfa.closingDisablePassword">
                 <source>&lt;code&gt;disablePasswordLogin&lt;/code&gt; (default: disabled) — blocks password-based login for users who have a registered passkey, preventing fallback.</source>
@@ -793,7 +793,7 @@
                 <source>Keep TYPO3's &lt;code&gt;requireMfa&lt;/code&gt; policy &lt;strong&gt;enabled&lt;/strong&gt; (protects password users).</source>
             </trans-unit>
             <trans-unit id="help.mfa.recommendedStep2" resname="help.mfa.recommendedStep2">
-                <source>Keep &lt;code&gt;skipMfaOnPasskeyAuth&lt;/code&gt; &lt;strong&gt;enabled&lt;/strong&gt; (passkey users skip the redundant TOTP prompt).</source>
+                <source>Keep &lt;code&gt;skipMfaOnPasskeyAuth&lt;/code&gt; &lt;strong&gt;enabled&lt;/strong&gt; (passkey users with an MFA provider skip the redundant TOTP prompt).</source>
             </trans-unit>
             <trans-unit id="help.mfa.recommendedStep3" resname="help.mfa.recommendedStep3">
                 <source>Roll out per-group passkey enforcement up to &lt;em&gt;Required&lt;/em&gt; (users in critical groups must register a passkey).</source>
@@ -826,7 +826,7 @@
                 <source>&lt;strong&gt;Authentication&lt;/strong&gt; — passkey (priority 80) or, if no passkey payload is present, password.</source>
             </trans-unit>
             <trans-unit id="help.mfa.pipelineStep2" resname="help.mfa.pipelineStep2">
-                <source>&lt;strong&gt;MFA challenge&lt;/strong&gt; — skipped for passkey logins; prompted for password logins if a provider is configured and the TYPO3 policy requires it.</source>
+                <source>&lt;strong&gt;MFA challenge&lt;/strong&gt; — skipped for user-verified passkey logins of users with an active, unlocked MFA provider; users without a provider are sent to the MFA setup once if the TYPO3 policy requires it; password logins follow the TYPO3 MFA configuration.</source>
             </trans-unit>
             <trans-unit id="help.mfa.pipelineStep3" resname="help.mfa.pipelineStep3">
                 <source>&lt;strong&gt;Passkey interstitial&lt;/strong&gt; — only for password-authenticated users whose group requires a passkey.</source>

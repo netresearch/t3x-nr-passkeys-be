@@ -22,7 +22,7 @@ discoverableLoginEnabled = 1
 # cat=security/200/130; type=boolean; label=Disable Password Login:When enabled, password login is blocked for users who have registered passkeys. Users without passkeys can still log in with a password.
 disablePasswordLogin = 0
 
-# cat=security/200/140; type=boolean; label=Skip MFA after Passkey Login:When enabled, TYPO3 credits a passkey login towards MFA only when the signed assertion confirms user verification (PIN or biometric). A fresh browser session may still require the configured second factor.
+# cat=security/200/140; type=boolean; label=Skip MFA after Passkey Login:When enabled, a passkey login skips the TYPO3 MFA challenge if the signed assertion confirms user verification (PIN or biometric) and the user already has an active, unlocked MFA provider. Users without a provider are still sent to the MFA setup when requireMfa is on. Password logins follow the TYPO3 MFA configuration.
 skipMfaOnPasskeyAuth = 1
 
 # cat=ratelimit/300/100; type=int+; label=Rate Limit Max Attempts:Maximum requests per window per IP+user.

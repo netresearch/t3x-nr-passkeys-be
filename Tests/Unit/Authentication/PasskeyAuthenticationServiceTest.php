@@ -11,6 +11,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit\Authentication;
 
 use Doctrine\DBAL\Result;
 use Netresearch\NrPasskeysBe\Authentication\PasskeyAuthenticationService;
+use Netresearch\NrPasskeysBe\Authentication\PasskeyLoginProofStore;
 use Netresearch\NrPasskeysBe\Configuration\ExtensionConfiguration;
 use Netresearch\NrPasskeysBe\Domain\Dto\EnforcementStatus;
 use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
@@ -338,11 +339,14 @@ final class PasskeyAuthenticationServiceTest extends TestCase
             ->method('recordSuccess')
             ->with('admin', self::anything());
 
-        // Default config has skipMfaOnPasskeyAuth=true, so both the passkey-auth
-        // marker and the TYPO3 MFA-skip flag are written.
+        // Default config has skipMfaOnPasskeyAuth=true. The service writes only
+        // the passkey marker; the MFA credit goes to the proof store, and the
+        // PasskeyLoginCompletion middleware decides on the 'mfa' key.
+        $proofs = new PasskeyLoginProofStore();
+        GeneralUtility::addInstance(PasskeyLoginProofStore::class, $proofs);
         $sessionCalls = [];
         $this->pObj
-            ->expects(self::exactly(2))
+            ->expects(self::once())
             ->method('setAndSaveSessionData')
             ->willReturnCallback(
                 static function (string $key, $value) use (&$sessionCalls): void {
@@ -352,8 +356,8 @@ final class PasskeyAuthenticationServiceTest extends TestCase
         $user   = ['uid' => 42, 'username' => 'admin'];
         $result = $this->subject->authUser($user);
         self::assertSame(200, $result);
-        self::assertSame(['passkey_authenticated' => true], $sessionCalls['tx_nrpasskeysbe'] ?? null);
-        self::assertTrue($sessionCalls['mfa'] ?? null);
+        self::assertSame(['tx_nrpasskeysbe' => ['passkey_authenticated' => true]], $sessionCalls);
+        self::assertSame(['uid' => 42, 'creditMfa' => true], $proofs->take($this->pObj));
     }
 
     #[Test]
