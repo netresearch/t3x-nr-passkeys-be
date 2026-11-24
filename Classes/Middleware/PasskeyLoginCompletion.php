@@ -150,18 +150,11 @@ final readonly class PasskeyLoginCompletion implements MiddlewareInterface
 
     /**
      * The same target the core BackendUserAuthenticator hands to the MFA
-     * endpoint: the redirect parameter of the request, else the route itself.
+     * endpoint: the redirect parameter of the request, if any.
      */
     private function routeRedirect(ServerRequestInterface $request): ?RouteRedirect
     {
-        $redirect = RouteRedirect::createFromRequest($request);
-        $route    = $request->getAttribute('route');
-
-        if (!$redirect instanceof RouteRedirect && $route instanceof Route) {
-            $redirect = RouteRedirect::createFromRoute($route, $request->getQueryParams());
-        }
-
-        return $redirect;
+        return RouteRedirect::createFromRequest($request);
     }
 
     private function redirectsToMfa(ResponseInterface $response): bool
