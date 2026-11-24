@@ -21,8 +21,9 @@ that section conflict as soon as one of them merges; two fragment files do not.
   | `security`   | `### Security`                                    |
 
 - Content: one or more top-level bullets (`-` and a space), written as they will appear in
-  `CHANGELOG.md`. No heading; the file name selects it. A change that belongs
-  under two headings gets two files.
+  `CHANGELOG.md`. No heading; the file name selects it. Links are written inline,
+  not as a `[name]: URL` definition. A change that belongs under two headings
+  gets two files.
 
 `composer ci:test:changelog` checks the names and contents.
 

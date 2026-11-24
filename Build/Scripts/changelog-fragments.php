@@ -110,6 +110,13 @@ function readFragments(string $dir, array &$problems): array
             continue;
         }
 
+        // Such a line ends the [Unreleased] section for collect().
+        if (preg_match('/^\[[^\]]+\]: \S/m', $text) === 1) {
+            $problems[] = sprintf('  %s  must not contain a link definition; write the link inline', $name);
+
+            continue;
+        }
+
         $fragments[] = ['file' => $path, 'type' => $m[1], 'text' => $text];
     }
 

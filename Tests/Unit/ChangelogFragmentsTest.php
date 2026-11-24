@@ -73,14 +73,14 @@ final class ChangelogFragmentsTest extends TestCase
     #[Test]
     public function collectKeepsTheModeOfTheChangelog(): void
     {
-        chmod($this->repo . '/CHANGELOG.md', 0o644);
+        chmod($this->repo . '/CHANGELOG.md', 0o640);
         $this->fragment('feat-x.fixed.md', "- A new fix.\n");
 
         [$exit] = $this->runScript('collect');
 
         clearstatcache();
         self::assertSame(0, $exit);
-        self::assertSame(0o644, fileperms($this->repo . '/CHANGELOG.md') & 0o777);
+        self::assertSame(0o640, fileperms($this->repo . '/CHANGELOG.md') & 0o777);
     }
 
     #[Test]
@@ -173,8 +173,9 @@ final class ChangelogFragmentsTest extends TestCase
         $this->fragment('z-last.added.md', "- Second.\n");
         $this->fragment('a-first.added.md', "- First.\n");
 
-        $this->runScript('collect');
+        [$exit, , $stderr] = $this->runScript('collect');
 
+        self::assertSame(0, $exit, $stderr);
         self::assertStringContainsString("- An added line.\n\n- First.\n\n- Second.\n\n### Fixed", $this->changelog());
     }
 
@@ -183,8 +184,9 @@ final class ChangelogFragmentsTest extends TestCase
     {
         $this->fragment('a.upgrading.md', "- Run the wizard.\n");
 
-        $this->runScript('collect');
+        [$exit, , $stderr] = $this->runScript('collect');
 
+        self::assertSame(0, $exit, $stderr);
         self::assertStringContainsString(
             "## [Unreleased]\n\n### Upgrading from 1.2\n\n- Run the wizard.\n\n### Added",
             $this->changelog(),
@@ -200,8 +202,9 @@ final class ChangelogFragmentsTest extends TestCase
         );
         $this->fragment('a.upgrading.md', "- New note.\n");
 
-        $this->runScript('collect');
+        [$exit, , $stderr] = $this->runScript('collect');
 
+        self::assertSame(0, $exit, $stderr);
         self::assertStringContainsString(
             "### Upgrading from 1.1\n\n- Old note.\n\n- New note.\n\n### Added",
             $this->changelog(),
@@ -280,6 +283,18 @@ final class ChangelogFragmentsTest extends TestCase
 
         self::assertSame(1, $exit);
         self::assertStringContainsString('must not contain a heading', $stderr);
+    }
+
+    #[Test]
+    public function checkRefusesAFragmentWithALinkDefinition(): void
+    {
+        // collect() takes a line like this for the end of [Unreleased].
+        $this->fragment('a.fixed.md', "- See [guide].\n\n[guide]: https://example.org\n");
+
+        [$exit, , $stderr] = $this->runScript('check');
+
+        self::assertSame(1, $exit);
+        self::assertStringContainsString('must not contain a link definition', $stderr);
     }
 
     #[Test]
@@ -447,16 +462,20 @@ final class ChangelogFragmentsTest extends TestCase
     }
 
     /**
-     * The environment without git's own variables.
+     * The environment without git's own variables and without the git
+     * configuration of the machine.
      *
      * A hook of a linked worktree runs with GIT_DIR and GIT_INDEX_FILE set, and
-     * both override `git -C`: the test would then write into that repository.
+     * both override `git -C`: the test would then write into that repository. A
+     * hook from the global configuration would run in the throwaway repository.
      *
      * @return array<string, string>
      */
     private function environment(): array
     {
-        return array_filter(getenv(), static fn (string $name): bool => !str_starts_with($name, 'GIT_'), ARRAY_FILTER_USE_KEY);
+        $environment = array_filter(getenv(), static fn (string $name): bool => !str_starts_with($name, 'GIT_'), ARRAY_FILTER_USE_KEY);
+
+        return $environment + ['GIT_CONFIG_GLOBAL' => '/dev/null', 'GIT_CONFIG_NOSYSTEM' => '1'];
     }
 
     private function removeTree(string $dir): void
