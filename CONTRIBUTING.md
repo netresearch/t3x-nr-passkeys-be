@@ -58,9 +58,10 @@ composer ci:cgl
 
 1. Ensure all CI checks pass
 2. Update documentation if applicable
-3. Keep commits atomic -- one logical change per commit
-4. Use conventional commit format: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`
-5. Sign your commits with GPG/SSH (`git commit -S`)
+3. Add a changelog fragment for a change a user or integrator can notice (see [`changelog.d/README.md`](changelog.d/README.md))
+4. Keep commits atomic -- one logical change per commit
+5. Use conventional commit format: `feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`
+6. Sign your commits with GPG/SSH (`git commit -S`)
 
 ## Reporting Issues
 
@@ -113,8 +114,8 @@ Checks that run on every pull request in this repository:
   one of these jobs succeeded or was skipped.
 - `.github/workflows/ci.yml`: PHP lint, code style, PHPStan level 10,
   Rector, unit tests and functional tests on MySQL for PHP 8.2 to 8.6
-  against TYPO3 12.4, 13.4 and 14.3 (PHP 8.6 not with 12.4), and the
-  documentation rendering; and
+  against TYPO3 12.4, 13.4 and 14.3 (PHP 8.6 not with 12.4), the changelog
+  fragment check, and the documentation rendering; and
   the aggregate `All CI checks` job, which fails unless every CI job
   succeeded or was skipped.
 - `.github/workflows/check-template-drift.yml`: Template drift compares

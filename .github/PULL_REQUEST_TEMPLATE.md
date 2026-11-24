@@ -31,5 +31,6 @@ Fixes #(issue number)
 - [ ] My code follows the project's coding standards (PER-CS3.0)
 - [ ] I have added tests covering my changes
 - [ ] I have updated documentation as needed
+- [ ] I have added a changelog fragment under `changelog.d/` (not an edit of `CHANGELOG.md`)
 - [ ] My commits follow the conventional commit format
 - [ ] I have rebased on the latest main branch

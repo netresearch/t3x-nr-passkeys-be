@@ -13,7 +13,7 @@ All CI is delegated to central reusable workflows in `netresearch/typo3-ci-workf
 ## Workflow files
 | File | Purpose |
 |------|---------|
-| `ci.yml` | Test matrix (PHP 8.2-8.6 x TYPO3 ^12.4/^13.4/^14.3; PHP 8.6 not with ^12.4). Thin caller of `typo3-ci-workflows/ci.yml@main`: lint, cgl, phpstan (+ unpinned advisory), rector, unit, functional (MySQL), docs render, gate `ci / All CI checks` |
+| `ci.yml` | Test matrix (PHP 8.2-8.6 x TYPO3 ^12.4/^13.4/^14.3; PHP 8.6 not with ^12.4). Thin caller of `typo3-ci-workflows/ci.yml@main`: lint, cgl, phpstan (+ unpinned advisory), rector, repo checks (`composer ci:test:repo`), unit, functional (MySQL), docs render, gate `ci / All CI checks` |
 | `checks.yml` | Security/quality gate. Calls security (composer-audit + opengrep), betterleaks, zizmor, fuzz (fuzz tests; `run-mutation-tests` is not set, so no mutation testing), license-check, codeql, scorecard, dependency-review, pr-quality; gate `All security checks` |
 | `harness-verify.yml` | Agent-harness consistency check via `Build/Scripts/verify-harness.sh` (thin caller of `netresearch/.github` script-check) |
 | `release.yml` | Release orchestrator -- tag push triggers build + TER publish + Packagist verify + docs verify + atomic GitHub release. Thin caller of `typo3-ci-workflows/release-typo3-extension.yml@main` |

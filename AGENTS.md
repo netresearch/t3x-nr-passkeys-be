@@ -52,6 +52,7 @@ Per-group enforcement with gradual rollout (Off → Encourage → Required → E
 | Full PHP suite (cgl+stan+rector+unit+fuzz+functional) | `composer ci:test:php:all` | 60s |
 | JS tests | `npm run test:js` | 2s |
 | E2E tests | `Build/Scripts/runTests.sh -s e2e` | 4m |
+| Changelog fragments | `composer ci:test:changelog` | 1s |
 | Mutation testing | `composer ci:mutation` | 60s |
 | Local CI (no DB) | `make ci` | 25s |
 | Local dev setup | `make up` | 5m |
@@ -70,6 +71,7 @@ Resources/Private/   -> Fluid templates (AdminModule, Interstitial, UserSettings
 Resources/Public/    -> JS modules (Login, Management, Banner, Dashboard, AdminInfo), CSS, Icons
 Tests/               -> Unit, Functional (MySQL), Fuzz, JavaScript (Vitest),
                         E2E (Playwright), Architecture (PHPat); see Tests/AGENTS.md
+changelog.d/         -> One changelog fragment per change; collected by the release PR
 docs/                -> ARCHITECTURE.md (component map + glossary), adr/, exec-plans/
 Makefile             -> Local dev + CI targets (see `make help`)
 .github/workflows/   -> Thin callers of central reusables; see .github/workflows/AGENTS.md
@@ -129,8 +131,9 @@ Golden samples per area live in the scoped AGENTS.md files (Classes, Tests).
 
 ## Changelog
 
-- There is no `CHANGELOG.md`. Changes are recorded in [`Documentation/Changelog/Index.rst`](Documentation/Changelog/Index.rst), newest first: the version as a title underlined with `=`, then `Bugfixes`, `Other` and similar subsections underlined with `-`.
-- The release PR `chore(release): vX.Y.Z` writes the version's section; feature and fix PRs leave the page alone.
+- A change a user or integrator can notice gets a fragment `changelog.d/<branch-slug>.<section>.md`; [`changelog.d/README.md`](changelog.d/README.md) has the format and `composer ci:test:changelog` checks it. Feature and fix PRs edit neither `CHANGELOG.md` nor `Documentation/Changelog/Index.rst`.
+- The release PR `chore(release): vX.Y.Z` runs `composer changelog:collect`, renames `## [Unreleased]` in `CHANGELOG.md` to the version below a new empty `## [Unreleased]`, updates the links at the end of the file, and writes the same section into [`Documentation/Changelog/Index.rst`](Documentation/Changelog/Index.rst), which docs.typo3.org renders: the version as a title underlined with `=`, then subsections underlined with `-`.
+- `Documentation/Changelog/Index.rst` alone holds the entries up to 1.1.0.
 
 ## Index of Scoped AGENTS.md
 - `./Classes/AGENTS.md` -- PHP source code patterns, traits, and TYPO3 conventions
