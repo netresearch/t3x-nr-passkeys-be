@@ -15,7 +15,8 @@
 # Environment the workflow provides: E2E_TYPO3_VERSION, E2E_VARIANT,
 # E2E_TYPO3_PACKAGES and COMPOSER_RETRY. E2E_TYPO3_VERSION is read by the shared
 # provisioner, E2E_VARIANT by Build/Scripts/runTests.conf; COMPOSER_RETRY is
-# passed into the provisioning container by the provisioner, so this script only has to keep them exported.
+# passed into the provisioning container by the provisioner, so this script only
+# has to keep them exported.
 #
 # Local invocation calls the runner directly and needs no wrapper:
 #   E2E_TYPO3_VERSION=14 ./Build/Scripts/runTests.sh -s e2e

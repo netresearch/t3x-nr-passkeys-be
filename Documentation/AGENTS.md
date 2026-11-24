@@ -62,7 +62,7 @@ docker run --rm --user $(id -u):$(id -g) -v $(pwd):/project ghcr.io/typo3-docume
   --no-progress --config=Documentation --output=Documentation-GENERATED-temp
 ```
 
-Without `--config=Documentation` the renderer takes `README.md` only.
+Do not pass the input as `/project/Documentation`: the renderer then takes `README.md` only.
 
 Output goes to `Documentation-GENERATED-temp/` (gitignored).
 
