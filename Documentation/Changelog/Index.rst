@@ -9,6 +9,66 @@
 Changelog
 =========
 
+1.1.0
+=====
+
+Apply the database schema before the first request reaches the new version:
+``vendor/bin/typo3 extension:setup``. Without the new tables and columns,
+passkey logins fail and password logins can be refused.
+
+Upgrade notes
+-------------
+
+- New tables ``tx_nrpasskeysbe_consumed_token`` and
+  ``tx_nrpasskeysbe_rate_limit``, new columns ``backup_eligible`` and
+  ``passkey_suspended_until``. In a cluster, drain the old workers before
+  the new version takes traffic; see :ref:`security-deployment`.
+- Rate-limit and lockout counters move from the cache to the database. All
+  counters start at zero after the upgrade.
+- Password login is refused if the enforcement policy cannot be evaluated,
+  for example during a database error. Before, it was allowed.
+- ``passkeys:recovery --disable-group`` and ``--disable-all`` suspend
+  enforcement for 15 minutes; they no longer switch it off.
+  ``--disable-all`` also needs ``--confirm-all``.
+- With ``requireMfa``, a passkey user without an MFA provider is sent to the
+  MFA setup once.
+- A locked MFA provider keeps blocking the account after a passkey login
+  until an administrator unlocks it.
+- A passkey counts towards MFA only if the authenticator confirmed user
+  verification (PIN or biometric).
+
+Features
+--------
+
+- The account owner receives an email after a passkey was registered.
+- Administrators see whether a credential is backup eligible, device-bound
+  or of unknown eligibility. Credentials registered before the upgrade stay
+  unknown.
+- PHP 8.6 is part of the tested matrix (TYPO3 13.4 and 14.3).
+
+Bugfixes
+--------
+
+- With ``skipMfaOnPasskeyAuth``, a verified passkey login of a user with an
+  active, unlocked MFA provider skips the MFA challenge on a fresh browser
+  session too. The credit is written to the log.
+- A passkey login on a fresh browser session no longer ends in an HTTP 500
+  with Redis sessions.
+- Challenges and login tickets are claimed once in the database, also when
+  several workers redeem them at the same time.
+- The last passkey cannot be removed while a group requires passkeys. Before,
+  only the global password login setting protected it.
+- The login endpoints answer 503 with ``Retry-After`` if the rate-limit
+  counters are unavailable.
+- Registering a credential that exists already answers 409, unavailable
+  storage 503.
+- The enforcement grace period also starts for passkey logins.
+- Non-positive values for ``rateLimitMaxAttempts``,
+  ``rateLimitWindowSeconds`` and ``lockoutDurationSeconds`` fall back to
+  the defaults.
+- ``symfony/serializer`` 8.0 is excluded, its advisories have no fixed 8.0
+  release.
+
 1.0.3
 =====
 

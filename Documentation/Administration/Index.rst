@@ -193,6 +193,8 @@ not verified).
 Enrollment notification
 -----------------------
 
+..  versionadded:: 1.1.0
+
 After a passkey is saved, the extension sends a security notice to the email
 address on the account using the site's configured TYPO3 mail transport.
 The notice uses the backend user's language preference.

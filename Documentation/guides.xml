@@ -20,8 +20,8 @@
                edit-on-github-directory="Documentation"/>
 
     <project title="Passkeys Backend Authentication"
-             version="1.0"
-             release="1.0.3"
+             version="1.1"
+             release="1.1.0"
              copyright="since 2025 by Netresearch DTT GmbH"/>
 
     <inventory id="t3coreapi" url="https://docs.typo3.org/m/typo3/reference-coreapi/main/en-us/"/>
