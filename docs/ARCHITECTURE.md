@@ -13,11 +13,12 @@ The extension adds passwordless WebAuthn/FIDO2 backend login to TYPO3 (^12.4 || 
 
 | Component | Path | Role |
 |-----------|------|------|
-| Authentication service | `Classes/Authentication/PasskeyAuthenticationService.php` | TYPO3 auth-chain service (priority 80); uses `GeneralUtility::makeInstance()` (no DI in the auth chain) |
+| Authentication service | `Classes/Authentication/PasskeyAuthenticationService.php` | TYPO3 auth-chain service (priority 80); uses `GeneralUtility::makeInstance()` (no DI in the auth chain); records a verified passkey login in `PasskeyLoginProofStore` |
+| Login proof store | `Classes/Authentication/PasskeyLoginProofStore.php` | public, shared service; request-scoped `WeakMap` keyed by the user authentication object, hands the passkey login from the auth service to `PasskeyLoginCompletion` |
 | Controllers | `Classes/Controller/` | `LoginController` (public endpoints), `ManagementController` (own passkeys), `AdminController` (admin JSON API), `AdminModuleController` (backend module); shared `JsonBodyTrait`, `BackendUserTrait` |
 | Services | `Classes/Service/` | `WebAuthnService`, `AttestationService` (registration), `AssertionService` (login), `WebAuthnCeremonyFactory`, `ChallengeService` (HMAC tokens), `CredentialRepository` (QueryBuilder CRUD), `RateLimiterService`, `EnforcementService`, `AdoptionStatsService`, `ExtensionConfigurationService` |
 | Domain | `Classes/Domain/` | `Model/Credential` (plain PHP entity), typed DTOs in `Dto/`, enums `EnforcementLevel` and `CredentialDiscoverability` in `Enum/` |
-| Middleware | `Classes/Middleware/` | `PasskeySetupInterstitial` (blocks navigation under Required), `PublicRouteResolver` (dispatches unauthenticated routes) |
+| Middleware | `Classes/Middleware/` | `PasskeySetupInterstitial` (blocks navigation under Required), `PublicRouteResolver` (dispatches unauthenticated routes), `PasskeyLoginCompletion` (wraps `typo3/cms-backend/authentication`, writes the passkey marker and the MFA credit into the session the Core created) |
 | Event listeners | `Classes/EventListener/` | `InjectPasskeyLoginFields`, `InjectPasskeyBanner` (PSR-14, inject login/banner UI config) |
 | UI components | `Classes/Form/Element/PasskeyInfoElement.php`, `Classes/UserSettings/PasskeySettingsPanel.php` | FormEngine element, user-settings panel (`callUserFunction`, no DI) |
 | Dashboard widgets | `Classes/Widgets/` | Adoption widgets + data providers; registered on TYPO3 v14.3+ only via guarded `Configuration/Services.Dashboard.php` |
@@ -40,12 +41,12 @@ Enforced by phpat via `Tests/Architecture/ArchitectureTest.php` (runs inside `co
 ## Data flow
 
 1. **Registration (attestation):** `PasskeyManagement.js` → AJAX route → `ManagementController` → `ChallengeService` (HMAC-signed, single-use challenge) → `AttestationService`/`WebAuthnService` → `CredentialRepository` persists the credential.
-2. **Login (assertion):** `PasskeyLogin.js` → public route (`PublicRouteResolver`) → `LoginController` → `RateLimiterService` gate → `AssertionService`/`WebAuthnService` verify → `PasskeyAuthenticationService` completes TYPO3 backend auth at priority 80.
+2. **Login (assertion):** `PasskeyLogin.js` → public route (`PublicRouteResolver`) → `LoginController` → `RateLimiterService` gate → `AssertionService`/`WebAuthnService` verify → `PasskeyAuthenticationService` completes TYPO3 backend auth at priority 80 and records the proof in `PasskeyLoginProofStore` → the Core creates the session → `PasskeyLoginCompletion` takes the proof, writes the passkey marker and, for a user-verified assertion of a user with an active, unlocked MFA provider on a non-AJAX route, the `mfa` key; a Core redirect to `auth_mfa`/`setup_mfa` is then replaced by the login target (see ADR 0003).
 3. **Enforcement:** `EnforcementService` evaluates group level + grace period; `PasskeySetupInterstitial` middleware blocks navigation (Required), `InjectPasskeyBanner` nudges (Encourage), `AdminModuleController`/`AdoptionStatsService` report adoption.
 
 ## Key decisions
 
-- ADRs live in `docs/adr/`: [0001 per-user password enforcement](adr/0001-per-user-password-enforcement.md), [0002 no rpId-aware enforcement](adr/0002-no-rpid-aware-enforcement.md).
+- ADRs live in `docs/adr/`: [0001 per-user password enforcement](adr/0001-per-user-password-enforcement.md), [0002 no rpId-aware enforcement](adr/0002-no-rpid-aware-enforcement.md), [0003 passkey MFA credit after session creation](adr/0003-passkey-mfa-credit-after-session-creation.md).
 - Security model and deployment requirements: `Documentation/Security/` (rendered docs are the authority for operators).
 - Extension-level conventions and boundaries: root `AGENTS.md` and scoped `AGENTS.md` files.
 

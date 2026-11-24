@@ -53,6 +53,12 @@ services:
   Netresearch\NrPasskeysBe\Service\WebAuthnService:
     public: true
 
+  # Public and shared: the authentication service (created by makeInstance,
+  # outside DI) and the PasskeyLoginCompletion middleware need the same instance.
+  Netresearch\NrPasskeysBe\Authentication\PasskeyLoginProofStore:
+    public: true
+    shared: true
+
   Netresearch\NrPasskeysBe\Service\CredentialRepository:
     public: true
 

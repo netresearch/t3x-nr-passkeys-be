@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Netresearch\NrPasskeysBe\Tests\Functional\Authentication;
 
 use Netresearch\NrPasskeysBe\Authentication\PasskeyAuthenticationService;
+use Netresearch\NrPasskeysBe\Authentication\PasskeyLoginProofStore;
 use Netresearch\NrPasskeysBe\Domain\Dto\VerifiedAssertion;
 use Netresearch\NrPasskeysBe\Domain\Model\Credential;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
@@ -73,6 +74,11 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
         parent::tearDown();
     }
 
+    /**
+     * Core level only: BackendUserAuthentication::start() still challenges a
+     * fresh session. The PasskeyLoginCompletion middleware completes the login
+     * afterwards, see Tests/Functional/Middleware/PasskeyLoginCompletionTest.
+     */
     #[Test]
     public function freshLoginThroughCoreChallengesTheConfiguredMfaProvider(): void
     {
@@ -115,7 +121,7 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function successfulPasskeyAuthSetsMfaSessionKeyWhenSkipMfaOnPasskeyAuthEnabled(): void
+    public function successfulPasskeyAuthRecordsTheMfaCreditWhenSkipMfaOnPasskeyAuthEnabled(): void
     {
         $backendUser = $this->setUpBackendUser(5);
         $this->stubExtensionConfigServiceWithSkipMfaFlag(true);
@@ -127,9 +133,17 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
 
         $result = $service->authUser($backendUser->user ?? []);
         self::assertSame(200, $result);
-        self::assertTrue(
-            $backendUser->getSessionData('mfa'),
-            "The 'mfa' session key must be set to true after a successful " . 'passkey authentication when skipMfaOnPasskeyAuth is enabled. ' . "TYPO3's AbstractUserAuthentication::evaluateMfaRequirements() " . 'uses this key to short-circuit the MFA challenge.',
+
+        // The service never writes 'mfa' itself: whether the passkey stands in
+        // for the second factor depends on the user's active MFA providers,
+        // which the PasskeyLoginCompletion middleware checks.
+        self::assertNull($backendUser->getSessionData('mfa'));
+        self::assertSame(['passkey_authenticated' => true], $backendUser->getSessionData('tx_nrpasskeysbe'));
+        self::assertSame(
+            ['uid' => 5, 'creditMfa' => true],
+            $this
+                ->get(PasskeyLoginProofStore::class)
+                ->take($backendUser),
         );
     }
 
@@ -180,6 +194,9 @@ final class PasskeyAuthenticationServiceMfaBypassTest extends FunctionalTestCase
 
         // No passkey payload → auth passes through to the next service.
         self::assertSame(100, $result);
+        self::assertNull($this
+            ->get(PasskeyLoginProofStore::class)
+            ->take($backendUser));
         self::assertNull(
             $backendUser->getSessionData('mfa'),
             'Password logins must never trigger the MFA bypass. The bypass is only valid when the primary authentication factor is a passkey.',

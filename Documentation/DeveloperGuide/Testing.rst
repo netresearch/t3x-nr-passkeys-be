@@ -86,7 +86,10 @@ configured for that database. Import it once per database.
 
 The fixture creates the group ``E2E passkey enforcement``, its member
 ``e2e_passkey_reminder`` with an active reminder, and ``e2e_passkey_management``
-with one display-only credential. For a later run on the same database,
+with one display-only credential. It also creates ``e2e_passkey_totp``, an
+administrator with an active TOTP provider. Its password is copied from the
+user named ``admin``, so that user must exist and its password must be the one
+in ``TYPO3_ADMIN_PASS``. For a later run on the same database,
 renew the one-day reminder before running the dashboard tests.
 
 ..  code-block:: sql

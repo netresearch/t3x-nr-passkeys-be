@@ -405,9 +405,14 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
 
     /**
      * Mark the session as passkey-authenticated so the setup interstitial is
-     * skipped, and satisfy the TYPO3 MFA requirement (a passkey is already
-     * multi-factor: possession + biometric/PIN) when configured. Shared by the
-     * raw-assertion and token login paths.
+     * skipped, and record the login for the PasskeyLoginCompletion middleware.
+     * Shared by the raw-assertion and token login paths.
+     *
+     * The MFA credit is never written here. Whether a passkey may stand in for
+     * the TYPO3 MFA depends on the user's active MFA providers, which are known
+     * only once the core has loaded the user, and on a fresh browser session the
+     * session itself does not exist yet. The middleware decides both after the
+     * core authentication has run.
      *
      * @param array<string, mixed> $user
      */
@@ -424,21 +429,17 @@ class PasskeyAuthenticationService extends AbstractAuthenticationService
         $stored                        = $this->pObj->getSessionData('tx_nrpasskeysbe');
         $data                          = is_array($stored) ? $stored : [];
         $data['passkey_authenticated'] = true;
-        $markers                       = ['tx_nrpasskeysbe' => $data];
 
-        if ($creditMfa) {
-            $markers['mfa'] = true;
+        if ($owner === 0) {
+            // Core carries the in-memory data of an existing anonymous session
+            // into the new login. A fresh session starts empty; the middleware
+            // writes the marker there once the core has created it.
+            $session->set('tx_nrpasskeysbe', $data);
+        } else {
+            $this->pObj->setAndSaveSessionData('tx_nrpasskeysbe', $data);
         }
 
-        foreach ($markers as $key => $value) {
-            if ($owner === 0) {
-                // Core carries the in-memory data of an existing anonymous session
-                // into the new login. A fresh session uses Core's normal MFA path.
-                $session->set($key, $value);
-            } else {
-                $this->pObj->setAndSaveSessionData($key, $value);
-            }
-        }
+        GeneralUtility::makeInstance(PasskeyLoginProofStore::class)->record($this->pObj, $uid, $creditMfa);
 
         return true;
     }

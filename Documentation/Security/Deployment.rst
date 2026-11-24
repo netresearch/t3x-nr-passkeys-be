@@ -129,7 +129,9 @@ The move from cached counters to database counters starts a new throttling
 window. A recovery suspension limits when a password session may start.
 Review and terminate sessions created during the exception after recovery.
 
-On a fresh browser session, TYPO3 may request its configured second factor
-after the passkey login. The extension credits user verification only when
-the Core session lifecycle can preserve the verified result for the same
-account. Log out before switching backend accounts.
+A verified passkey login skips the second factor only for users who have
+an active MFA provider, also on a fresh browser session. With
+``requireMfa``, users without a provider are still sent to the MFA setup.
+The extension keeps the verified result in memory for the request and
+writes it into the session only when the Core has created that session
+for the same account. Log out before switching backend accounts.

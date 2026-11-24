@@ -23,7 +23,7 @@ The extension consists of these core components:
       Domain/Model/       Credential entity
       EventListener/      PSR-14 listeners (login form, banner)
       Form/Element/       PasskeyInfoElement (FormEngine)
-      Middleware/          PSR-15 middleware (routes, interstitial)
+      Middleware/          PSR-15 middleware (routes, login completion, interstitial)
       Service/            Business logic services
       UserSettings/       PasskeySettingsPanel (User Settings)
 

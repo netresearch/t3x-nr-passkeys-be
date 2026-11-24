@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { Page, CDPSession } from '@playwright/test';
 import { test, expect, loginAsAdmin, ADMIN_PASS, ADMIN_USER } from './fixtures';
 
@@ -10,16 +11,43 @@ import { test, expect, loginAsAdmin, ADMIN_PASS, ADMIN_USER } from './fixtures';
  * MFA challenge. These tests verify that a passkey-authenticated user is
  * never redirected through /auth/mfa during the login flow.
  *
- * Scope note: configuring an active TOTP provider on the test user would
- * exercise the bypass more directly, but requires seeding be_users.mfa via
- * DB fixture or admin API — infrastructure that does not exist in this
- * suite yet. The assertions below catch the regression scenarios that do
- * not depend on a pre-existing MFA provider: (a) the login never lands on
- * /auth/mfa and (b) post-login the user reaches a normal backend module.
+ * The first test uses the admin, who has no MFA provider: the login never
+ * lands on /auth/mfa and reaches a normal backend module. The second uses
+ * e2e_passkey_totp (Tests/Fixtures/e2e-admin.sql), who has an active TOTP
+ * provider: a passkey login on a fresh browser session must skip the TOTP
+ * challenge, a password login must still ask for it.
  *
  * Copyright (c) 2025-2026 Netresearch DTT GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
+
+const TOTP_USER = 'e2e_passkey_totp';
+// Synthetic secret seeded in Tests/Fixtures/e2e-admin.sql.
+const TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
+
+/** RFC 6238 code (SHA-1, 30 s, 6 digits), the parameters TYPO3's TOTP provider uses. */
+function totp(secret: string, now = Date.now()): string {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = '';
+    for (const char of secret.replace(/=+$/, '').toUpperCase()) {
+        bits += alphabet.indexOf(char).toString(2).padStart(5, '0');
+    }
+    const key = Buffer.from((bits.match(/.{8}/g) ?? []).map((byte) => parseInt(byte, 2)));
+    const counter = Buffer.alloc(8);
+    counter.writeBigUInt64BE(BigInt(Math.floor(now / 30000)));
+    const hmac = createHmac('sha1', key).update(counter).digest();
+    const offset = hmac[hmac.length - 1] & 0xf;
+    const code = (hmac.readUInt32BE(offset) & 0x7fffffff) % 1000000;
+    return code.toString().padStart(6, '0');
+}
+
+async function passwordLogin(page: Page, username: string): Promise<void> {
+    await page.goto('/typo3/login');
+    await page.locator('input[name="username"]').fill(username);
+    await page.locator('input[name="p_field"]').fill(ADMIN_PASS);
+    await page.locator('#t3-login-submit').click();
+    await page.waitForLoadState('networkidle');
+}
 
 async function setupVirtualAuthenticator(
     page: Page,
@@ -250,6 +278,64 @@ test.describe('Passkey login — MFA bypass', () => {
         expect(mfaHits, `Unexpected /auth/mfa navigation(s): ${JSON.stringify(mfaHits)}`).toHaveLength(0);
 
         await cleanupTestCredentials(page);
+        await removeVirtualAuthenticator(cdp, authenticatorId);
+    });
+
+    // The user has an active TOTP provider and starts without a session, as a
+    // real login does. TYPO3 creates that session only after the passkey has
+    // been verified; the passkey-login-completion middleware must still let the
+    // user skip the TOTP challenge.
+    test('passkey login on a fresh session skips an active TOTP provider', async ({ page }) => {
+        const { cdp, authenticatorId } = await setupVirtualAuthenticator(page);
+        // No passkey exists yet, so the conditional ceremony has nothing to offer.
+        await setAutomaticPresence(cdp, authenticatorId, false);
+
+        await passwordLogin(page, TOTP_USER);
+        await expect(page).toHaveURL(/\/typo3\/auth\/mfa/);
+        // A code computed just before the 30 s window ends can arrive late.
+        const leftInWindow = 30000 - (Date.now() % 30000);
+        if (leftInWindow < 3000) {
+            await page.waitForTimeout(leftInWindow + 500);
+        }
+        await page.locator('input[name="totp"]').fill(totp(TOTP_SECRET));
+        await page.locator('button[type="submit"]').first().click();
+        await expect(page.locator('#typo3-contentIframe')).toBeAttached();
+
+        await page.goto('/typo3/module/user/setup');
+        await page.waitForLoadState('networkidle');
+        await setAutomaticPresence(cdp, authenticatorId, true);
+        const registered = await registerPasskey(page);
+        expect(registered.success, `Registration failed: ${registered.error}`).toBe(true);
+
+        const visitedUrls: string[] = [];
+        page.on('framenavigated', (frame) => {
+            if (frame === page.mainFrame()) {
+                visitedUrls.push(frame.url());
+            }
+        });
+
+        await setAutomaticPresence(cdp, authenticatorId, false);
+        await page.context().clearCookies();
+        await page.goto('/typo3/login');
+        await page.waitForLoadState('networkidle');
+        await expect(page.locator('#passkey-login-container')).toBeVisible({ timeout: 5000 });
+        await page.locator('#t3-username').fill(TOTP_USER);
+        await setAutomaticPresence(cdp, authenticatorId, true);
+        await page.locator('#passkey-login-btn').click();
+
+        await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 15000 });
+        await expect(page.locator('#typo3-contentIframe')).toBeAttached();
+        const mfaHits = visitedUrls.filter((u) => u.includes('/mfa'));
+        expect(mfaHits, `Unexpected MFA navigation(s): ${JSON.stringify(mfaHits)}`).toHaveLength(0);
+
+        await cleanupTestCredentials(page);
+
+        // A password login still goes through the TOTP challenge.
+        await setAutomaticPresence(cdp, authenticatorId, false);
+        await page.context().clearCookies();
+        await passwordLogin(page, TOTP_USER);
+        await expect(page).toHaveURL(/\/typo3\/auth\/mfa/);
+
         await removeVirtualAuthenticator(cdp, authenticatorId);
     });
 });
