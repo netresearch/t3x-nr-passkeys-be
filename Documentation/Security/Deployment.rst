@@ -112,7 +112,7 @@ across requests. The database primary arbitrates single-use claims and rate limi
         ];
 
 Cluster deployment and upgrades
-------------------------------
+-------------------------------
 
 Apply the database schema before sending requests to the new workers. Route
 consumed-token and rate-limit tables to one writable database primary across

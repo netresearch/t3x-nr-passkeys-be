@@ -58,9 +58,11 @@ Documentation/
 ddev docs
 
 # Or directly via Docker
-docker run --rm -v $(pwd):/project ghcr.io/typo3-documentation/render-guides:latest \
-  --no-progress --output=/project/Documentation-GENERATED-temp /project/Documentation
+docker run --rm --user $(id -u):$(id -g) -v $(pwd):/project ghcr.io/typo3-documentation/render-guides:latest \
+  --no-progress --config=Documentation --output=Documentation-GENERATED-temp
 ```
+
+Without `--config=Documentation` the renderer takes `README.md` only.
 
 Output goes to `Documentation-GENERATED-temp/` (gitignored).
 
