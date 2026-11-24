@@ -367,6 +367,28 @@ final class ChangelogFragmentsTest extends TestCase
         self::assertSame(0, $exit);
     }
 
+    #[Test]
+    public function theGitEnvironmentOfAHookIsNotUsed(): void
+    {
+        $outer = getenv('GIT_DIR');
+        putenv('GIT_DIR=' . $this->repo . '/.git/outer');
+
+        try {
+            $this->git('tag', 'v1.3.0');
+            file_put_contents(
+                $this->repo . '/CHANGELOG.md',
+                str_replace('## [Unreleased]', "## [Unreleased]\n\n## [1.3.0] - 2026-02-01", self::CHANGELOG),
+            );
+            $this->fragment('fix-thing.fixed.md', "- A fix.\n");
+
+            [$exit, , $stderr] = $this->runScript('check');
+        } finally {
+            putenv($outer === false ? 'GIT_DIR' : 'GIT_DIR=' . $outer);
+        }
+
+        self::assertSame(0, $exit, $stderr);
+    }
+
     private function fragment(string $name, string $text): void
     {
         file_put_contents($this->repo . '/changelog.d/' . $name, $text);
@@ -387,7 +409,13 @@ final class ChangelogFragmentsTest extends TestCase
         $script = dirname(__DIR__, 2) . '/Build/Scripts/changelog-fragments.php';
 
         // nosemgrep: netresearch.php.lang.security.exec-use.exec-use - argv array, no shell; runs PHP or git on a throwaway test repository
-        $proc = proc_open([PHP_BINARY, $script, $mode, $this->repo], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $proc = proc_open(
+            [PHP_BINARY, $script, $mode, $this->repo],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+            null,
+            $this->environment(),
+        );
 
         self::assertIsResource($proc, 'cannot start the script');
 
@@ -404,7 +432,7 @@ final class ChangelogFragmentsTest extends TestCase
         $command = array_values(['git', '-C', $this->repo, ...$args]);
 
         // nosemgrep: netresearch.php.lang.security.exec-use.exec-use - argv array, no shell; runs PHP or git on a throwaway test repository
-        $proc = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $proc = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null, $this->environment());
 
         self::assertIsResource($proc, 'cannot start git');
 
@@ -416,6 +444,19 @@ final class ChangelogFragmentsTest extends TestCase
         self::assertSame(0, proc_close($proc), implode(' ', $command) . ' failed: ' . $stderr);
 
         return $stdout;
+    }
+
+    /**
+     * The environment without git's own variables.
+     *
+     * A hook of a linked worktree runs with GIT_DIR and GIT_INDEX_FILE set, and
+     * both override `git -C`: the test would then write into that repository.
+     *
+     * @return array<string, string>
+     */
+    private function environment(): array
+    {
+        return array_filter(getenv(), static fn (string $name): bool => !str_starts_with($name, 'GIT_'), ARRAY_FILTER_USE_KEY);
     }
 
     private function removeTree(string $dir): void
