@@ -23,7 +23,8 @@ user got the MFA challenge after all. On v1.0.3 with the Redis session
 backend the early write additionally failed with
 `SessionNotUpdatedException` (#1484389971), an HTTP 500.
 
-PR #195 documented the behaviour and left two questions to a maintainer:
+PR #195 documented the behaviour and left its review to a maintainer. Two
+questions had to be decided:
 
 1. How to bring the passkey result into the session the Core creates.
 2. Whether a passkey may replace the MFA setup that `BE.requireMfa`
@@ -73,13 +74,16 @@ TYPO3 MFA configuration unchanged.
 2. **A locked provider stays locked.** A provider locked after failed
    attempts signals an attack on the account. The passkey login must not
    unlock it silently; an administrator has to.
-3. **AJAX routes cannot carry the result.** The Core answers MFA on AJAX
-   routes, such as the re-login dialog (`/ajax/login`), with a bare 401;
-   the session cookie never reaches the browser. Crediting MFA there would
-   change nothing for the user and only widen the code path.
-4. **No early session writes.** The extension writes to the session only
-   after the Core created it, which removes the Redis 500 and works the same
-   with every session backend.
+3. **AJAX logins keep the Core behaviour.** With `requireMfa` the Core
+   answers a login on `/ajax/login` (the re-login dialog) with a bare 401
+   without a session cookie, so a credit would not reach the browser.
+   Without `requireMfa` the login succeeds and the next request asks for the
+   second factor. Not crediting there keeps both cases as the Core has them.
+4. **No early persisted write on a fresh session.** Before the Core creates
+   the session, the service sets the passkey marker only in memory. It saves
+   early only into an existing session of the same user. The middleware
+   saves the marker and `mfa` once the Core created the session, so the
+   write that caused the Redis 500 is gone.
 
 ## Consequences
 

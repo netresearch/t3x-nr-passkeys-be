@@ -122,8 +122,9 @@ final readonly class PasskeyLoginCompletion implements MiddlewareInterface
      *   one up, so requireMfa still sends users without a provider to the setup;
      * - no provider is locked: a provider locked after failed attempts keeps the
      *   account blocked until an administrator unlocks it;
-     * - not an AJAX route: the core answers those with a bare 401, the session
-     *   cookie never reaches the browser.
+     * - not an AJAX route: a login there keeps the core behaviour. With
+     *   requireMfa the core answers a bare 401 without a session cookie;
+     *   without it the next request asks for the second factor.
      */
     private function mayCreditMfa(
         ServerRequestInterface $request,
