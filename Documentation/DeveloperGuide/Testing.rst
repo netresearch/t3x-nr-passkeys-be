@@ -50,6 +50,9 @@ Running tests
     # ... the same against TYPO3 14
     E2E_TYPO3_VERSION=14 Build/Scripts/runTests.sh -s e2e
 
+    # ... with backend sessions in Valkey
+    E2E_VARIANT=redis Build/Scripts/runTests.sh -s e2e
+
 The E2E environment
 ===================
 
@@ -59,6 +62,11 @@ PHP-FPM and Apache, plus the Playwright container that drives them. The
 instance lives in ``.Build/e2e-typo3`` and is thrown away when the suite
 passes; a failed run keeps it, so the backend can be inspected
 afterwards.
+
+With ``E2E_VARIANT=redis`` the instance stores backend sessions in Valkey
+through the Core's Redis session backend. That backend throws when a session
+record to update does not exist, so a write before the Core has created the
+session fails there and passes on the database. CI runs both variants.
 
 The specs only ever open ``/typo3``. The frontend exists because
 provisioning refuses to hand over an instance whose frontend does not
