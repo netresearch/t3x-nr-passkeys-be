@@ -15,7 +15,6 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use RuntimeException;
 use SplFileInfo;
 
 /**
@@ -335,8 +334,7 @@ final class ChangelogFragmentsTest extends TestCase
         [$exit, , $stderr] = $this->runScript('check');
 
         self::assertSame(0, $exit, $stderr);
-        $this->expectException(RuntimeException::class);
-        $this->git('rev-parse', '--quiet', '--verify', 'refs/tags/v1.3.0');
+        self::assertSame('', $this->git('tag', '--list', 'v1.3.0'));
     }
 
     #[Test]
@@ -391,9 +389,7 @@ final class ChangelogFragmentsTest extends TestCase
         // nosemgrep: netresearch.php.lang.security.exec-use.exec-use - argv array, no shell; runs PHP or git on a throwaway test repository
         $proc = proc_open([PHP_BINARY, $script, $mode, $this->repo], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
 
-        if (!is_resource($proc)) {
-            throw new RuntimeException('cannot start the script', 1790260001);
-        }
+        self::assertIsResource($proc, 'cannot start the script');
 
         $stdout = (string) stream_get_contents($pipes[1]);
         $stderr = (string) stream_get_contents($pipes[2]);
@@ -403,25 +399,23 @@ final class ChangelogFragmentsTest extends TestCase
         return [proc_close($proc), $stdout, $stderr];
     }
 
-    private function git(string ...$args): void
+    private function git(string ...$args): string
     {
         $command = array_values(['git', '-C', $this->repo, ...$args]);
 
         // nosemgrep: netresearch.php.lang.security.exec-use.exec-use - argv array, no shell; runs PHP or git on a throwaway test repository
         $proc = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
 
-        if (!is_resource($proc)) {
-            throw new RuntimeException('cannot start git', 1790260002);
-        }
+        self::assertIsResource($proc, 'cannot start git');
 
-        stream_get_contents($pipes[1]);
+        $stdout = (string) stream_get_contents($pipes[1]);
         $stderr = (string) stream_get_contents($pipes[2]);
         fclose($pipes[1]);
         fclose($pipes[2]);
 
-        if (proc_close($proc) !== 0) {
-            throw new RuntimeException(implode(' ', $command) . ' failed: ' . $stderr, 1790260003);
-        }
+        self::assertSame(0, proc_close($proc), implode(' ', $command) . ' failed: ' . $stderr);
+
+        return $stdout;
     }
 
     private function removeTree(string $dir): void

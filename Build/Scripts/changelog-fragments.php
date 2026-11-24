@@ -13,10 +13,9 @@ declare(strict_types=1);
  *
  * A pull request writes its CHANGELOG entry into its own file
  * `changelog.d/<branch-slug>.<section>.md` instead of editing the shared
- * `## [Unreleased]` section. Every PR that edited that section conflicted with
- * every other open PR as soon as one of them merged; in October 2026, 56 of 64
- * conflicting PRs conflicted in CHANGELOG.md and nowhere else, and the merge
- * queue could take them only one at a time.
+ * `## [Unreleased]` section, because two pull requests that both edit that
+ * section conflict as soon as one of them merges. The script comes from
+ * netresearch/t3x-nr-llm.
  *
  *   check    Refuse a malformed fragment, and refuse fragments while the
  *            topmost released section has no tag yet: either the release
@@ -29,8 +28,7 @@ declare(strict_types=1);
  *
  * The file names follow towncrier's `<name>.<type>.md` scheme. towncrier
  * renders a complete versioned section at a marker; it has no documented mode
- * that appends to a hand-maintained `[Unreleased]` section, which this
- * repository keeps for Renovate and for PRs that predate the fragments.
+ * that appends to an existing `[Unreleased]` section.
  *
  * Usage: changelog-fragments.php check|collect [repository root]
  */
@@ -185,11 +183,69 @@ function run(array $command, string &$stdout = ''): bool
 }
 
 /**
+ * The upgrading heading of the section: the one that is there, or the one that
+ * names the last released minor version.
+ *
+ * @param list<string> $heads
+ */
+function upgradingHeading(array $heads, ?string $released): string
+{
+    $upgrading = UPGRADING;
+
+    foreach ($heads as $head) {
+        if (str_starts_with($head, UPGRADING)) {
+            $upgrading = $head;
+        }
+    }
+
+    if ($upgrading === UPGRADING && $released !== null && preg_match('/^(\d+\.\d+)/', $released, $v) === 1) {
+        $upgrading = '### Upgrading from ' . $v[1];
+    }
+
+    return $upgrading;
+}
+
+/**
+ * The position of a heading in SECTIONS order, or null for any other heading.
+ */
+function headingRank(string $head): ?int
+{
+    if (str_starts_with($head, UPGRADING)) {
+        return 0;
+    }
+
+    $rank = array_search($head, array_values(SECTIONS), true);
+
+    return $rank === false ? null : $rank;
+}
+
+/**
+ * The block index at which a missing heading is inserted: before the first
+ * heading that follows it in SECTIONS order, otherwise at the end.
+ *
+ * @param list<string> $heads
+ */
+function insertionIndex(array $heads, string $heading): int
+{
+    $want = (int) headingRank($heading);
+
+    foreach ($heads as $i => $head) {
+        $have = headingRank($head);
+
+        if ($i > 0 && $have !== null && $have > $want) {
+            return $i;
+        }
+    }
+
+    return count($heads);
+}
+
+/**
  * Append the fragments to the `[Unreleased]` section of $changelog.
  *
  * The section is split into blocks at its `### ` headings; a fragment is
  * appended to the end of the block with its heading, and a missing heading is
- * inserted before the first heading that follows it in SECTIONS order.
+ * inserted in SECTIONS order.
  *
  * @param list<array{file: string, type: string, text: string}> $fragments
  */
@@ -211,51 +267,14 @@ function collect(string $changelog, array $fragments): ?string
     // Trimmed, so a CRLF checkout or a trailing space still matches its heading.
     $heads = array_map(static fn (string $b): string => rtrim(strtok($b, "\n") ?: ''), $blocks);
 
-    $released  = topmostReleased($changelog);
-    $upgrading = UPGRADING;
-
-    foreach ($heads as $head) {
-        if (str_starts_with($head, UPGRADING)) {
-            $upgrading = $head;
-        }
-    }
-
-    if ($upgrading === UPGRADING && $released !== null && preg_match('/^(\d+\.\d+)/', $released, $v) === 1) {
-        $upgrading = '### Upgrading from ' . $v[1];
-    }
-
-    $headingOf = static fn (string $type): string => SECTIONS[$type] ?? $upgrading;
-    $rank      = static function (string $head) use ($headingOf): ?int {
-        $i = 0;
-
-        foreach (array_keys(SECTIONS) as $type) {
-            if ($head === $headingOf($type) || $type === 'upgrading' && str_starts_with($head, UPGRADING)) {
-                return $i;
-            }
-
-            ++$i;
-        }
-
-        return null;
-    };
+    $upgrading = upgradingHeading($heads, topmostReleased($changelog));
 
     foreach ($fragments as $fragment) {
-        $heading = $headingOf($fragment['type']);
+        $heading = SECTIONS[$fragment['type']] ?? $upgrading;
         $index   = array_search($heading, $heads, true);
 
         if ($index === false) {
-            $want  = (int) $rank($heading);
-            $index = count($blocks);
-
-            foreach ($heads as $i => $head) {
-                $have = $rank($head);
-
-                if ($i > 0 && $have !== null && $have > $want) {
-                    $index = $i;
-
-                    break;
-                }
-            }
+            $index = insertionIndex($heads, $heading);
 
             $blocks[$index - 1] = rtrim($blocks[$index - 1], "\r\n") . "\n\n";
             array_splice($blocks, $index, 0, [$heading . "\n"]);
