@@ -22,7 +22,9 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\AbstractLogger;
 use RuntimeException;
+use Stringable;
 use TYPO3\CMS\Backend\Middleware\BackendUserAuthenticator;
 use TYPO3\CMS\Backend\Routing\Router;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
@@ -73,6 +75,9 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     /** Where the core LoginController sends the browser after a login. */
     private const BACKEND_MAIN = '/typo3/main';
 
+    /** @var AbstractLogger&object{records: list<array{mixed, string, array<mixed>}>} */
+    private AbstractLogger $logger;
+
     protected array $coreExtensionsToLoad = ['setup'];
 
     protected array $testExtensionsToLoad = ['netresearch/nr-passkeys-be'];
@@ -92,6 +97,15 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->logger = new class extends AbstractLogger {
+            /** @var list<array{mixed, string, array<mixed>}> */
+            public array $records = [];
+
+            public function log($level, string|Stringable $message, array $context = []): void
+            {
+                $this->records[] = [$level, (string) $message, $context];
+            }
+        };
         $this->importCSVDataSet(__DIR__ . '/../../Fixtures/be_users.csv');
     }
 
@@ -130,6 +144,10 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
         self::assertSame(200, $this
             ->nextRequest($user)
             ->getStatusCode());
+        self::assertSame(
+            [['info', 'Passkey login credited towards MFA', ['be_user_uid' => self::USER_UID]]],
+            $this->logger->records,
+        );
     }
 
     #[Test]
@@ -217,6 +235,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
         self::assertNull($this->storedSessionData($user, 'mfa'));
         self::assertSame(['passkey_authenticated' => true], $this->storedSessionData($user, 'tx_nrpasskeysbe'));
         $this->assertRedirectsTo('setup_mfa', $this->nextRequest($user));
+        self::assertSame([], $this->logger->records);
     }
 
     #[Test]
@@ -230,6 +249,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
         self::assertNull($this->storedSessionData($user, 'mfa'));
         self::assertSame(['passkey_authenticated' => true], $this->storedSessionData($user, 'tx_nrpasskeysbe'));
         $this->assertRedirectsTo('auth_mfa', $this->nextRequest($user));
+        self::assertSame([], $this->logger->records);
     }
 
     #[Test]
@@ -242,6 +262,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
 
         self::assertNull($this->storedSessionData($user, 'mfa'));
         $this->assertRedirectsTo('auth_mfa', $this->nextRequest($user));
+        self::assertSame([], $this->logger->records);
     }
 
     #[Test]
@@ -261,6 +282,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
         self::assertTrue($user
             ->getSession()
             ->isAnonymous());
+        self::assertSame([], $this->logger->records);
     }
 
     #[Test]
@@ -273,6 +295,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
 
         self::assertNull($this->storedSessionData($user, 'mfa'));
         $this->assertRedirectsTo('auth_mfa', $this->nextRequest($user));
+        self::assertSame([], $this->logger->records);
     }
 
     #[Test]
@@ -293,6 +316,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             ->getSession()
             ->getUserId());
         self::assertNull($this->storedSessionData($user, 'mfa'));
+        self::assertSame([], $this->logger->records);
     }
 
     #[Test]
@@ -473,6 +497,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
 
         self::assertNull($this->storedSessionData($user, 'mfa'));
         $this->assertRedirectsTo('auth_mfa', $this->nextRequest($user));
+        self::assertSame([], $this->logger->records);
     }
 
     #[Test]
@@ -550,6 +575,7 @@ final class PasskeyLoginCompletionTest extends FunctionalTestCase
             $this->get(PasskeyLoginProofStore::class),
             GeneralUtility::makeInstance(UriBuilder::class),
             $this->get(MfaProviderRegistry::class),
+            $this->logger,
         );
     }
 

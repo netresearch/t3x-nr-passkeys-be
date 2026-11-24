@@ -14,6 +14,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 use TYPO3\CMS\Backend\Routing\Route;
 use TYPO3\CMS\Backend\Routing\RouteRedirect;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
@@ -57,6 +58,7 @@ final readonly class PasskeyLoginCompletion implements MiddlewareInterface
         private PasskeyLoginProofStore $proofs,
         private UriBuilder $uriBuilder,
         private MfaProviderRegistry $mfaProviderRegistry,
+        private LoggerInterface $logger,
     ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -100,6 +102,7 @@ final readonly class PasskeyLoginCompletion implements MiddlewareInterface
         }
 
         $user->setAndSaveSessionData('mfa', true);
+        $this->logger->info('Passkey login credited towards MFA', ['be_user_uid' => $user->getUserId()]);
 
         if (!$this->redirectsToMfa($response)) {
             return $response;
