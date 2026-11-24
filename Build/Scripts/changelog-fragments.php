@@ -197,19 +197,17 @@ function run(array $command, string &$stdout = ''): bool
  */
 function upgradingHeading(array $heads, ?string $released): string
 {
-    $upgrading = UPGRADING;
-
     foreach ($heads as $head) {
         if (str_starts_with($head, UPGRADING)) {
-            $upgrading = $head;
+            return $head;
         }
     }
 
-    if ($upgrading === UPGRADING && $released !== null && preg_match('/^(\d+\.\d+)/', $released, $v) === 1) {
-        $upgrading = '### Upgrading from ' . $v[1];
+    if ($released !== null && preg_match('/^(\d+\.\d+)/', $released, $v) === 1) {
+        return '### Upgrading from ' . $v[1];
     }
 
-    return $upgrading;
+    return UPGRADING;
 }
 
 /**

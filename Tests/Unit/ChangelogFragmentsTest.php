@@ -12,6 +12,7 @@ namespace Netresearch\NrPasskeysBe\Tests\Unit;
 use FilesystemIterator;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -194,21 +195,20 @@ final class ChangelogFragmentsTest extends TestCase
     }
 
     #[Test]
-    public function anUpgradingFragmentJoinsAnExistingUpgradingHeading(): void
+    #[TestWith(['### Upgrading from 1.1'])]
+    #[TestWith(['### Upgrading'])]
+    public function anUpgradingFragmentJoinsAnExistingUpgradingHeading(string $heading): void
     {
         file_put_contents(
             $this->repo . '/CHANGELOG.md',
-            str_replace("### Added\n", "### Upgrading from 1.1\n\n- Old note.\n\n### Added\n", self::CHANGELOG),
+            str_replace("### Added\n", $heading . "\n\n- Old note.\n\n### Added\n", self::CHANGELOG),
         );
         $this->fragment('a.upgrading.md', "- New note.\n");
 
         [$exit, , $stderr] = $this->runScript('collect');
 
         self::assertSame(0, $exit, $stderr);
-        self::assertStringContainsString(
-            "### Upgrading from 1.1\n\n- Old note.\n\n- New note.\n\n### Added",
-            $this->changelog(),
-        );
+        self::assertStringContainsString($heading . "\n\n- Old note.\n\n- New note.\n\n### Added", $this->changelog());
         self::assertSame(1, substr_count($this->changelog(), '### Upgrading'));
     }
 
