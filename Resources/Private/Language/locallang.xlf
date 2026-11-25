@@ -453,6 +453,18 @@
             <trans-unit id="js.enforcement.confirm.ok" resname="js.enforcement.confirm.ok">
                 <source>Yes, change enforcement</source>
             </trans-unit>
+            <trans-unit id="js.sudo.button" resname="js.sudo.button">
+                <source>Confirm with passkey</source>
+            </trans-unit>
+            <trans-unit id="js.sudo.or" resname="js.sudo.or">
+                <source>or confirm with your password</source>
+            </trans-unit>
+            <trans-unit id="js.sudo.error.notAllowed" resname="js.sudo.error.notAllowed">
+                <source>The passkey prompt was cancelled or no matching passkey was found.</source>
+            </trans-unit>
+            <trans-unit id="js.sudo.error.generic" resname="js.sudo.error.generic">
+                <source>Confirmation with the passkey failed. You can use your password instead.</source>
+            </trans-unit>
             <trans-unit id="js.button.cancel" resname="js.button.cancel">
                 <source>Cancel</source>
             </trans-unit>

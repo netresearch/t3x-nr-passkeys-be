@@ -30,6 +30,15 @@ use function is_array;
 final class AjaxRoutesTest extends TestCase
 {
     /**
+     * The routes that confirm TYPO3's sudo-mode dialog with a passkey. They
+     * cannot be gated by sudo mode themselves: they are how a user gets past it.
+     */
+    private const SUDO_MODE_CONFIRMATION_ROUTES = [
+        'passkeys_sudo_mode_options',
+        'passkeys_sudo_mode_verify',
+    ];
+
+    /**
      * Route configuration, loaded once per process.
      *
      * The file returns a value, and require_once yields `true` rather than that value
@@ -104,6 +113,10 @@ final class AjaxRoutesTest extends TestCase
             }
 
             if (!in_array('POST', (array) ($route['methods'] ?? []), true)) {
+                continue;
+            }
+
+            if (in_array($identifier, self::SUDO_MODE_CONFIRMATION_ROUTES, true)) {
                 continue;
             }
 

@@ -8,6 +8,7 @@
 declare(strict_types=1);
 use Netresearch\NrPasskeysBe\Controller\AdminController;
 use Netresearch\NrPasskeysBe\Controller\ManagementController;
+use Netresearch\NrPasskeysBe\Controller\SudoModeController;
 use TYPO3\CMS\Backend\Security\SudoMode\Access\AccessLifetime;
 
 /**
@@ -49,6 +50,18 @@ return [
     ],
     // Management read
     'passkeys_manage_list' => ['path' => '/passkeys/manage/list', 'target' => ManagementController::class . '::listAction', 'methods' => ['GET']],
+    // Confirming TYPO3's sudo-mode dialog with a passkey. These two must not
+    // carry a 'sudoMode' option themselves: they are how the user gets past it.
+    'passkeys_sudo_mode_options' => [
+        'path'    => '/passkeys/sudo-mode/options',
+        'target'  => SudoModeController::class . '::optionsAction',
+        'methods' => ['POST'],
+    ],
+    'passkeys_sudo_mode_verify' => [
+        'path'    => '/passkeys/sudo-mode/verify',
+        'target'  => SudoModeController::class . '::verifyAction',
+        'methods' => ['POST'],
+    ],
     // Admin write operations (admin-level authentication checked in controller)
     'passkeys_admin_remove' => [
         'path'     => '/passkeys/admin/remove',

@@ -62,6 +62,16 @@ operations). All paths below are relative to ``/typo3/``.
         -  ``POST /ajax/passkeys/admin/send-reminder`` \*
         -  ``POST /ajax/passkeys/admin/clear-nudge`` \*
 
+    ..  card:: SudoModeController (AJAX)
+
+        Confirms TYPO3's Sudo Mode dialog with a passkey
+        (via :file:`AjaxRoutes.php`). These two routes are
+        not protected by Sudo Mode themselves: they are how
+        the user gets past it.
+
+        -  ``POST /ajax/passkeys/sudo-mode/options``
+        -  ``POST /ajax/passkeys/sudo-mode/verify``
+
     ..  card:: AdminModuleController (Backend module)
 
         Renders the Admin Tools > Passkey Management
@@ -113,6 +123,13 @@ Service classes
         after configurable failed attempts. Uses TYPO3
         caching framework.
 
+    ..  card:: SudoModeTokenService
+
+        Issues and verifies the single-use token that
+        confirms the Sudo Mode dialog after a passkey
+        assertion. The token is bound to the user, the
+        backend session and the Sudo Mode claim.
+
     ..  card:: ExtensionConfigurationService
 
         Reads extension configuration and computes effective
@@ -144,3 +161,5 @@ JavaScript modules
    controls
 -  :file:`PasskeyAdminInfo.js` -- Admin passkey info in user
    records
+-  :file:`SudoModePasskey.js` -- "Confirm with passkey" button
+   in TYPO3's Sudo Mode dialog
