@@ -32,6 +32,10 @@ jobs:
       # The v12 support this extension ships is covered by the unit and
       # functional matrices in ci.yml.
       typo3-versions: '["^13.4", "^14.3"]'
+      # "redis" runs the same suite with backend sessions in Valkey; the empty
+      # variant keeps the database. See e2e_start_session_store() in
+      # Build/Scripts/runTests.conf.
+      setup-variants: '["", "redis"]'
       # setup-script mode: the script owns installation, provisioning and the
       # test run, because the environment comes from the e2e_provision_* hooks
       # in Build/Scripts/runTests.conf rather than from the workflow's default

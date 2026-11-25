@@ -13,9 +13,10 @@
 # up MariaDB, PHP-FPM and Apache, and drives Playwright against them.
 #
 # Environment the workflow provides: E2E_TYPO3_VERSION, E2E_VARIANT,
-# E2E_TYPO3_PACKAGES and COMPOSER_RETRY. The first two are read by the shared
-# provisioner, COMPOSER_RETRY is passed into the provisioning container by it,
-# so this script only has to keep them exported.
+# E2E_TYPO3_PACKAGES and COMPOSER_RETRY. E2E_TYPO3_VERSION is read by the shared
+# provisioner, E2E_VARIANT by Build/Scripts/runTests.conf; COMPOSER_RETRY is
+# passed into the provisioning container by the provisioner, so this script only
+# has to keep them exported.
 #
 # Local invocation calls the runner directly and needs no wrapper:
 #   E2E_TYPO3_VERSION=14 ./Build/Scripts/runTests.sh -s e2e
@@ -44,6 +45,15 @@ case "${E2E_TYPO3_VERSION}" in
         ;;
 esac
 
+# An unknown variant would silently run the database suite under another name.
+case "${E2E_VARIANT:-}" in
+    ""|"redis") ;;
+    *)
+        echo "::error::ci-e2e.sh: unsupported E2E_VARIANT '${E2E_VARIANT}'." >&2
+        exit 1
+        ;;
+esac
+
 # PHP 8.5 is the e2e runtime. Pinned here so a matrix cell cannot resolve to
 # another version: the suite asserts backend markup, not PHP behaviour, and the
 # PHP matrix is covered by the unit and functional jobs in ci.yml.
@@ -53,5 +63,5 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "ci-e2e.sh: TYPO3 ${E2E_TYPO3_VERSION}, PHP ${PHP_VERSION}, variant=${E2E_VARIANT:-<none>}"
 
-export E2E_TYPO3_VERSION
+export E2E_TYPO3_VERSION E2E_VARIANT
 exec "${SCRIPT_DIR}/runTests.sh" -s e2e -p "${PHP_VERSION}"
