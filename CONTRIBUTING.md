@@ -34,7 +34,9 @@ All contributions must pass the following quality gates:
 | Check | Command | Requirement |
 |-------|---------|-------------|
 | Code style | `composer ci:test:php:cgl` | PER-CS3.0 compliance |
-| Static analysis | `composer ci:test:php:phpstan` | PHPStan level 10 |
+| Static analysis | `composer ci:test:php:phpstan` | PHPStan level 10; CI runs it against TYPO3 12.4, 13.4 and 14.3, a local run covers only the TYPO3 version installed |
+| Rector | `composer ci:test:php:rector` | No changes proposed |
+| Canonical formatting | see [Code Style](#code-style) | The tree is unchanged after the canonical printer and `composer ci:cgl` |
 | Unit tests | `composer ci:test:php:unit` | All tests pass |
 | Mutation tests | `composer ci:mutation` | MSI >= 80%, covered MSI >= 80% (run locally; no CI workflow runs it) |
 
@@ -52,6 +54,24 @@ This project uses PHP-CS-Fixer with PER-CS3.0 coding standard. Fix style issues 
 
 ```bash
 composer ci:cgl
+```
+
+The `Canonical formatting` CI job also runs the canonical printer from
+[`netresearch/php-ast-edit-skill`](https://github.com/netresearch/php-ast-edit-skill)
+before PHP-CS-Fixer and fails when the tree changes. To run the same check
+locally, check out the printer at the `PRINTER_REF` that
+`.github/workflows/canonical-formatting.yml` sets, outside this repository.
+Commit or stash your changes first: the commands rewrite files in place, and
+the final `git diff` then shows only what the printer and PHP-CS-Fixer changed.
+
+```bash
+REF=$(sed -n 's/^ *PRINTER_REF: *//p' .github/workflows/canonical-formatting.yml) &&
+PRINTER=$(mktemp -d) &&
+git clone --depth 1 --branch "$REF" https://github.com/netresearch/php-ast-edit-skill.git "$PRINTER" &&
+composer install --no-dev --working-dir="$PRINTER" &&
+php "$PRINTER/bin/php-ast-edit" format --path . &&
+composer ci:cgl &&
+git diff --exit-code
 ```
 
 ## Pull Request Process

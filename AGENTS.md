@@ -45,6 +45,7 @@ Per-group enforcement with gradual rollout (Off → Encourage → Required → E
 | CGL check / fix | `composer ci:test:php:cgl` / `composer ci:cgl` | 5s |
 | Static analysis | `composer ci:test:php:phpstan` | 10s |
 | Rector (dry-run) | `composer ci:test:php:rector` | 10s |
+| Canonical formatting (CI job of that name) | printer from `netresearch/php-ast-edit-skill` at the workflow's `PRINTER_REF`, then `composer ci:cgl`, then `git diff --exit-code`; commands in `CONTRIBUTING.md` § Code Style | 10s |
 | Unit tests | `composer ci:test:php:unit` | 5s |
 | Fuzz tests | `composer ci:test:php:fuzz` | 5s |
 | Functional tests | `composer ci:test:php:functional` | 30s |
