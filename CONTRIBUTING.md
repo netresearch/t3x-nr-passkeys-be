@@ -65,12 +65,12 @@ Commit or stash your changes first: the commands rewrite files in place, and
 the final `git diff` then shows only what the printer and PHP-CS-Fixer changed.
 
 ```bash
-REF=$(sed -n 's/^ *PRINTER_REF: *//p' .github/workflows/canonical-formatting.yml)
-rm -rf ../php-ast-edit
-git clone --depth 1 --branch "$REF" https://github.com/netresearch/php-ast-edit-skill.git ../php-ast-edit
-composer install --no-dev --working-dir=../php-ast-edit
-php ../php-ast-edit/bin/php-ast-edit format --path .
-composer ci:cgl
+REF=$(sed -n 's/^ *PRINTER_REF: *//p' .github/workflows/canonical-formatting.yml) &&
+PRINTER=$(mktemp -d) &&
+git clone --depth 1 --branch "$REF" https://github.com/netresearch/php-ast-edit-skill.git "$PRINTER" &&
+composer install --no-dev --working-dir="$PRINTER" &&
+php "$PRINTER/bin/php-ast-edit" format --path . &&
+composer ci:cgl &&
 git diff --exit-code
 ```
 
