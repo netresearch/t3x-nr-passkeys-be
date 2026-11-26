@@ -60,10 +60,14 @@ The `Canonical formatting` CI job also runs the canonical printer from
 [`netresearch/php-ast-edit-skill`](https://github.com/netresearch/php-ast-edit-skill)
 before PHP-CS-Fixer and fails when the tree changes. To run the same check
 locally, check out the printer at the `PRINTER_REF` that
-`.github/workflows/canonical-formatting.yml` sets, outside this repository:
+`.github/workflows/canonical-formatting.yml` sets, outside this repository.
+Commit or stash your changes first: the commands rewrite files in place, and
+the final `git diff` then shows only what the printer and PHP-CS-Fixer changed.
 
 ```bash
-git clone --depth 1 --branch v0.5.0 https://github.com/netresearch/php-ast-edit-skill.git ../php-ast-edit
+REF=$(sed -n 's/^ *PRINTER_REF: *//p' .github/workflows/canonical-formatting.yml)
+rm -rf ../php-ast-edit
+git clone --depth 1 --branch "$REF" https://github.com/netresearch/php-ast-edit-skill.git ../php-ast-edit
 composer install --no-dev --working-dir=../php-ast-edit
 php ../php-ast-edit/bin/php-ast-edit format --path .
 composer ci:cgl
