@@ -36,8 +36,6 @@ jobs:
       typo3-packages: '["typo3/cms-core", "typo3/cms-backend", "typo3/cms-setup"]'
       php-extensions: 'intl, mbstring, xml, openssl, pdo_mysql'
       run-rector: true
-      # composer ci:test:repo: the changelog fragments.
-      run-repo-checks: true
       run-functional-tests: true
       functional-test-db: 'mysql'
       upload-coverage: true
