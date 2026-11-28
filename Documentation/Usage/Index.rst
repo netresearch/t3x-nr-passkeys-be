@@ -167,3 +167,24 @@ and you must register a passkey before you can access the TYPO3 backend.
 If your group's enforcement level is set to **Enforced**, there is no grace
 period at all. The setup prompt appears immediately after login and cannot be
 skipped.
+
+..  _usage-sudo-mode:
+
+Confirming sensitive operations with a passkey
+==============================================
+
+Before a sensitive operation -- changing a password, creating an
+administrator, editing group permissions, setting up MFA -- TYPO3 asks you to
+confirm your identity again. If you have a passkey, the dialog shows
+:guilabel:`Confirm with passkey` above the password field. One touch or glance
+confirms the operation; you do not need to type your password.
+
+The password field stays available, for example when your passkey is not at
+hand. The install tool password mode for system maintainers is not affected.
+
+..  note::
+
+    The passkey confirmation always requires user verification (PIN,
+    fingerprint or face), whatever the ``userVerification`` setting for
+    login is. It is bound to your current session and to the one
+    operation the dialog asked for; it cannot be reused.

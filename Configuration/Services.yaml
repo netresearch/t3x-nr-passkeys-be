@@ -30,6 +30,18 @@ services:
         identifier: 'nr-passkeys-be/inject-passkey-banner'
         event: TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent
 
+  Netresearch\NrPasskeysBe\EventListener\InjectSudoModePasskey:
+    tags:
+      - name: event.listener
+        identifier: 'nr-passkeys-be/inject-sudo-mode-passkey'
+        event: TYPO3\CMS\Backend\Controller\Event\AfterBackendPageRenderEvent
+
+  Netresearch\NrPasskeysBe\EventListener\VerifySudoModeWithPasskey:
+    tags:
+      - name: event.listener
+        identifier: 'nr-passkeys-be/verify-sudo-mode-with-passkey'
+        event: TYPO3\CMS\Backend\Security\SudoMode\Event\SudoModeVerifyEvent
+
   cache.nr_passkeys_be_nonce:
     class: TYPO3\CMS\Core\Cache\Frontend\FrontendInterface
     factory: ['@TYPO3\CMS\Core\Cache\CacheManager', 'getCache']
@@ -91,6 +103,9 @@ services:
     public: true
 
   Netresearch\NrPasskeysBe\Controller\AdminController:
+    public: true
+
+  Netresearch\NrPasskeysBe\Controller\SudoModeController:
     public: true
 
   Netresearch\NrPasskeysBe\Controller\AdminModuleController:
