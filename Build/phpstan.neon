@@ -47,6 +47,14 @@ parameters:
             reportUnmatched: false
         -
             identifier: attribute.notFound
+            path: %currentWorkingDirectory%/Classes/EventListener/InjectSudoModePasskey.php
+            reportUnmatched: false
+        -
+            identifier: attribute.notFound
+            path: %currentWorkingDirectory%/Classes/EventListener/VerifySudoModeWithPasskey.php
+            reportUnmatched: false
+        -
+            identifier: attribute.notFound
             path: %currentWorkingDirectory%/Classes/EventListener/InjectPasskeyBanner.php
             reportUnmatched: false
         # phpstan-strict-rules (from typo3-ci-workflows shared config)

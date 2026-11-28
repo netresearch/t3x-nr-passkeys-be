@@ -33,10 +33,7 @@ final class AjaxRoutesTest extends TestCase
      * The routes that confirm TYPO3's sudo-mode dialog with a passkey. They
      * cannot be gated by sudo mode themselves: they are how a user gets past it.
      */
-    private const SUDO_MODE_CONFIRMATION_ROUTES = [
-        'passkeys_sudo_mode_options',
-        'passkeys_sudo_mode_verify',
-    ];
+    private const SUDO_MODE_CONFIRMATION_ROUTES = ['passkeys_sudo_mode_options', 'passkeys_sudo_mode_verify'];
 
     /**
      * Route configuration, loaded once per process.

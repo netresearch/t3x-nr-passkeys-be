@@ -39,16 +39,11 @@ final readonly class SudoModeTokenService
 {
     public const PREFIX = 'nrpk-sudo:';
 
-    public function __construct(
-        private ChallengeService $challengeService,
-        private LoggerInterface $logger,
-    ) {}
+    public function __construct(private ChallengeService $challengeService, private LoggerInterface $logger) {}
 
     public function issue(int $beUserUid, string $sessionIdentifier, string $claimId): string
     {
-        return self::PREFIX . $this->challengeService->createChallengeToken(
-            self::contextDigest($beUserUid, $sessionIdentifier, $claimId),
-        );
+        return self::PREFIX . $this->challengeService->createChallengeToken($this->contextDigest($beUserUid, $sessionIdentifier, $claimId));
     }
 
     /**
@@ -72,18 +67,19 @@ final readonly class SudoModeTokenService
         try {
             $challenge = $this->challengeService->verifyChallengeToken(substr($token, strlen(self::PREFIX)));
         } catch (RuntimeException $e) {
-            $this->logger->warning('Sudo mode passkey token rejected', [
-                'be_user_uid' => $beUserUid,
-                'error'       => $e->getMessage(),
-            ]);
+            $this->logger->warning(
+                'Sudo mode passkey token rejected',
+                ['be_user_uid' => $beUserUid, 'error' => $e->getMessage()],
+            );
 
             return false;
         }
 
-        if (!hash_equals(self::contextDigest($beUserUid, $sessionIdentifier, $claimId), $challenge)) {
-            $this->logger->warning('Sudo mode passkey token does not match user, session or claim', [
-                'be_user_uid' => $beUserUid,
-            ]);
+        if (!hash_equals($this->contextDigest($beUserUid, $sessionIdentifier, $claimId), $challenge)) {
+            $this->logger->warning(
+                'Sudo mode passkey token does not match user, session or claim',
+                ['be_user_uid' => $beUserUid],
+            );
 
             return false;
         }
@@ -91,7 +87,7 @@ final readonly class SudoModeTokenService
         return true;
     }
 
-    private static function contextDigest(int $beUserUid, string $sessionIdentifier, string $claimId): string
+    private function contextDigest(int $beUserUid, string $sessionIdentifier, string $claimId): string
     {
         return hash(
             'sha256',

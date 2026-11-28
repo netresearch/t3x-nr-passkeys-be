@@ -23,9 +23,7 @@ use TYPO3\CMS\Core\Page\PageRenderer;
 #[AsEventListener(identifier: 'nr-passkeys-be/inject-sudo-mode-passkey')]
 final readonly class InjectSudoModePasskey
 {
-    public function __construct(
-        private PageRenderer $pageRenderer,
-    ) {}
+    public function __construct(private PageRenderer $pageRenderer) {}
 
     public function __invoke(AfterBackendPageRenderEvent $event): void
     {

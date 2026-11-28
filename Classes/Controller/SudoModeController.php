@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace Netresearch\NrPasskeysBe\Controller;
 
+use Netresearch\NrPasskeysBe\Domain\Dto\AuthenticatedUser;
 use Netresearch\NrPasskeysBe\Service\CredentialRepository;
 use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\SudoModeTokenService;
@@ -43,7 +44,7 @@ use function strtr;
  *    through the core's own sudo-mode form; VerifySudoModeWithPasskey accepts
  *    it there. Nothing here grants access by itself.
  */
-final class SudoModeController
+final readonly class SudoModeController
 {
     use BackendUserTrait;
     use JsonBodyTrait;
@@ -52,11 +53,11 @@ final class SudoModeController
     private const CLAIM_ID_PATTERN = '/^[A-Za-z0-9_.-]{1,128}$/';
 
     public function __construct(
-        private readonly WebAuthnService $webAuthnService,
-        private readonly CredentialRepository $credentialRepository,
-        private readonly RateLimiterService $rateLimiterService,
-        private readonly SudoModeTokenService $tokenService,
-        private readonly LoggerInterface $logger,
+        private WebAuthnService $webAuthnService,
+        private CredentialRepository $credentialRepository,
+        private RateLimiterService $rateLimiterService,
+        private SudoModeTokenService $tokenService,
+        private LoggerInterface $logger,
     ) {}
 
     /**
@@ -69,7 +70,7 @@ final class SudoModeController
     {
         $user = $this->getAuthenticatedUser();
 
-        if ($user === null || $this->getSessionIdentifier() === '') {
+        if (!$user instanceof AuthenticatedUser || $this->getSessionIdentifier() === '') {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
@@ -98,16 +99,12 @@ final class SudoModeController
                 $options['userVerification'] = 'required';
             }
 
-            return new JsonResponse([
-                'available'      => true,
-                'options'        => $options,
-                'challengeToken' => $result->challengeToken,
-            ]);
+            return new JsonResponse(['available' => true, 'options' => $options, 'challengeToken' => $result->challengeToken]);
         } catch (Throwable $e) {
-            $this->logger->error('Failed to generate sudo mode assertion options', [
-                'be_user_uid' => $user->uid,
-                'error'       => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                'Failed to generate sudo mode assertion options',
+                ['be_user_uid' => $user->uid, 'error' => $e->getMessage()],
+            );
 
             return new JsonResponse(['error' => 'Failed to generate options'], 500);
         }
@@ -122,7 +119,7 @@ final class SudoModeController
         $user              = $this->getAuthenticatedUser();
         $sessionIdentifier = $this->getSessionIdentifier();
 
-        if ($user === null || $sessionIdentifier === '') {
+        if (!$user instanceof AuthenticatedUser || $sessionIdentifier === '') {
             return new JsonResponse(['error' => 'Not authenticated'], 401);
         }
 
@@ -150,25 +147,21 @@ final class SudoModeController
 
             // The signature covers the authenticator data, so after a
             // successful check the flags can be trusted.
-            if (!self::userWasVerified($credential)) {
+            if (!$this->userWasVerified($credential)) {
                 throw new RuntimeException('The authenticator did not verify the user', 1795600001);
             }
         } catch (Throwable $e) {
-            $this->logger->warning('Sudo mode passkey verification failed', [
-                'be_user_uid' => $user->uid,
-                'error'       => $e->getMessage(),
-            ]);
+            $this->logger->warning(
+                'Sudo mode passkey verification failed',
+                ['be_user_uid' => $user->uid, 'error' => $e->getMessage()],
+            );
 
             return new JsonResponse(['error' => 'Verification failed'], 403);
         }
 
-        $this->logger->info('Sudo mode confirmed with passkey', [
-            'be_user_uid' => $user->uid,
-        ]);
+        $this->logger->info('Sudo mode confirmed with passkey', ['be_user_uid' => $user->uid]);
 
-        return new JsonResponse([
-            'token' => $this->tokenService->issue($user->uid, $sessionIdentifier, $claimId),
-        ]);
+        return new JsonResponse(['token' => $this->tokenService->issue($user->uid, $sessionIdentifier, $claimId)]);
     }
 
     /**
@@ -177,10 +170,10 @@ final class SudoModeController
      *
      * @param array<mixed> $credential
      */
-    private static function userWasVerified(array $credential): bool
+    private function userWasVerified(array $credential): bool
     {
         $response = $credential['response'] ?? null;
-        $encoded  = is_array($response) ? ($response['authenticatorData'] ?? null) : null;
+        $encoded  = is_array($response) ? $response['authenticatorData'] ?? null : null;
 
         if (!is_string($encoded) || $encoded === '') {
             return false;
@@ -192,7 +185,7 @@ final class SudoModeController
             return false;
         }
 
-        return (ord($data[32]) & 0x04) === 0x04;
+        return (ord($data[32]) & 0x4) === 0x4;
     }
 
     private function getSessionIdentifier(): string

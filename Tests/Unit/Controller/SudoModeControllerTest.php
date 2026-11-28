@@ -16,6 +16,7 @@ use Netresearch\NrPasskeysBe\Service\RateLimiterService;
 use Netresearch\NrPasskeysBe\Service\SudoModeTokenService;
 use Netresearch\NrPasskeysBe\Service\WebAuthnService;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -109,7 +110,7 @@ final class SudoModeControllerTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private static function json(JsonResponse $response): array
+    private function json(JsonResponse $response): array
     {
         /** @var array<string, mixed> */
         return json_decode((string) $response->getBody(), true, 512, JSON_THROW_ON_ERROR);
@@ -130,7 +131,7 @@ final class SudoModeControllerTest extends TestCase
         $response = $this->subject->optionsAction($this->request([]));
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertSame(['available' => false], self::json($response));
+        self::assertSame(['available' => false], $this->json($response));
     }
 
     #[Test]
@@ -144,12 +145,14 @@ final class SudoModeControllerTest extends TestCase
             ->expects(self::once())
             ->method('createAssertionOptions')
             ->with('editor', 7)
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct'));
+            ->willReturn(
+                new AssertionOptions(options: $options, challengeToken: 'ct'),
+            );
         $this->webAuthnService
             ->method('serializeRequestOptions')
             ->willReturn('{"challenge":"abc"}');
 
-        $data = self::json($this->subject->optionsAction($this->request(['username' => 'admin'])));
+        $data = $this->json($this->subject->optionsAction($this->request(['username' => 'admin'])));
 
         self::assertTrue($data['available']);
         self::assertSame('ct', $data['challengeToken']);
@@ -171,10 +174,10 @@ final class SudoModeControllerTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private static function credential(bool $userVerified): array
+    private function credential(bool $userVerified): array
     {
-        $flags             = $userVerified ? 0x05 : 0x01;
-        $authenticatorData = str_repeat("\0", 32) . chr($flags) . "\0\0\0\1";
+        $flags             = $userVerified ? 0x5 : 0x1;
+        $authenticatorData = str_repeat("\x00", 32) . chr($flags) . "\x00\x00\x00\x01";
 
         return [
             'id'       => 'x',
@@ -191,12 +194,16 @@ final class SudoModeControllerTest extends TestCase
         $options = PublicKeyCredentialRequestOptions::create(challenge: random_bytes(32), rpId: 'example.com');
         $this->webAuthnService
             ->method('createAssertionOptions')
-            ->willReturn(new AssertionOptions(options: $options, challengeToken: 'ct'));
+            ->willReturn(
+                new AssertionOptions(options: $options, challengeToken: 'ct'),
+            );
         $this->webAuthnService
             ->method('serializeRequestOptions')
-            ->willReturn('{"challenge":"abc","userVerification":"preferred"}');
+            ->willReturn(
+                '{"challenge":"abc","userVerification":"preferred"}',
+            );
 
-        $data = self::json($this->subject->optionsAction($this->request([])));
+        $data = $this->json($this->subject->optionsAction($this->request([])));
 
         self::assertIsArray($data['options']);
         self::assertSame('required', $data['options']['userVerification']);
@@ -210,11 +217,9 @@ final class SudoModeControllerTest extends TestCase
             ->expects(self::never())
             ->method('issue');
 
-        $response = $this->subject->verifyAction($this->request([
-            'claim'          => 'claim-1',
-            'challengeToken' => 'ct',
-            'credential'     => self::credential(false),
-        ]));
+        $response = $this->subject->verifyAction(
+            $this->request(['claim' => 'claim-1', 'challengeToken' => 'ct', 'credential' => $this->credential(false)]),
+        );
 
         self::assertSame(403, $response->getStatusCode());
     }
@@ -225,21 +230,25 @@ final class SudoModeControllerTest extends TestCase
         $this->webAuthnService
             ->expects(self::once())
             ->method('verifyAssertionResponse')
-            ->with(self::isString(), 'ct', 7);
+            ->with(
+                self::isString(),
+                'ct',
+                7,
+            );
         $this->tokenService
             ->expects(self::once())
             ->method('issue')
             ->with(7, 'session-a', 'claim-1')
-            ->willReturn('nrpk-sudo:token');
+            ->willReturn(
+                'nrpk-sudo:token',
+            );
 
-        $response = $this->subject->verifyAction($this->request([
-            'claim'          => 'claim-1',
-            'challengeToken' => 'ct',
-            'credential'     => self::credential(true),
-        ]));
+        $response = $this->subject->verifyAction(
+            $this->request(['claim' => 'claim-1', 'challengeToken' => 'ct', 'credential' => $this->credential(true)]),
+        );
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertSame(['token' => 'nrpk-sudo:token'], self::json($response));
+        self::assertSame(['token' => 'nrpk-sudo:token'], $this->json($response));
     }
 
     #[Test]
@@ -252,11 +261,9 @@ final class SudoModeControllerTest extends TestCase
             ->expects(self::never())
             ->method('issue');
 
-        $response = $this->subject->verifyAction($this->request([
-            'claim'          => 'claim-1',
-            'challengeToken' => 'ct',
-            'credential'     => ['id' => 'x'],
-        ]));
+        $response = $this->subject->verifyAction(
+            $this->request(['claim' => 'claim-1', 'challengeToken' => 'ct', 'credential' => ['id' => 'x']]),
+        );
 
         self::assertSame(403, $response->getStatusCode());
     }
@@ -279,7 +286,7 @@ final class SudoModeControllerTest extends TestCase
      * @param array<string, mixed> $body
      */
     #[Test]
-    #[\PHPUnit\Framework\Attributes\DataProvider('incompleteBodies')]
+    #[DataProvider('incompleteBodies')]
     public function anIncompleteRequestIsRejected(array $body): void
     {
         $this->webAuthnService
@@ -301,11 +308,9 @@ final class SudoModeControllerTest extends TestCase
             ->expects(self::never())
             ->method('verifyAssertionResponse');
 
-        $response = $this->subject->verifyAction($this->request([
-            'claim'          => 'claim-1',
-            'challengeToken' => 'ct',
-            'credential'     => ['id' => 'x'],
-        ]));
+        $response = $this->subject->verifyAction(
+            $this->request(['claim' => 'claim-1', 'challengeToken' => 'ct', 'credential' => ['id' => 'x']]),
+        );
 
         self::assertSame(429, $response->getStatusCode());
     }

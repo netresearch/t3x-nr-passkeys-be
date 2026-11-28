@@ -44,7 +44,8 @@ final class VerifySudoModeWithPasskeyTest extends TestCase
 
         $backendUser       = $this->createMock(BackendUserAuthentication::class);
         $backendUser->user = ['uid' => 7, 'username' => 'editor'];
-        $session           = $this->createMock(UserSession::class);
+
+        $session = $this->createMock(UserSession::class);
         $session
             ->method('getIdentifier')
             ->willReturn('session-a');
@@ -73,7 +74,12 @@ final class VerifySudoModeWithPasskeyTest extends TestCase
         $this->tokenService
             ->expects(self::once())
             ->method('verify')
-            ->with(SudoModeTokenService::PREFIX . 'x', 7, 'session-a', 'claim-1')
+            ->with(
+                SudoModeTokenService::PREFIX . 'x',
+                7,
+                'session-a',
+                'claim-1',
+            )
             ->willReturn(true);
 
         $event = $this->event(SudoModeTokenService::PREFIX . 'x');

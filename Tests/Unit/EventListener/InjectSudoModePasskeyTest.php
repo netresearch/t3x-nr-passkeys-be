@@ -27,14 +27,19 @@ final class InjectSudoModePasskeyTest extends TestCase
         $pageRenderer
             ->expects(self::once())
             ->method('loadJavaScriptModule')
-            ->with('@netresearch/nr-passkeys-be/SudoModePasskey.js');
+            ->with(
+                '@netresearch/nr-passkeys-be/SudoModePasskey.js',
+            );
         $pageRenderer
             ->expects(self::once())
             ->method('addInlineLanguageLabelFile')
-            ->with('EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf', 'js.');
+            ->with(
+                'EXT:nr_passkeys_be/Resources/Private/Language/locallang.xlf',
+                'js.',
+            );
 
         (new InjectSudoModePasskey($pageRenderer))(
-            new AfterBackendPageRenderEvent('<html></html>', $this->createMock(ViewInterface::class)),
+            new AfterBackendPageRenderEvent('<html></html>', $this->createMock(ViewInterface::class))
         );
     }
 }

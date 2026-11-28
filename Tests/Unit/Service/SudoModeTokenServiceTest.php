@@ -14,6 +14,7 @@ use Netresearch\NrPasskeysBe\Service\ConsumedTokenStore;
 use Netresearch\NrPasskeysBe\Service\ExtensionConfigurationService;
 use Netresearch\NrPasskeysBe\Service\SudoModeTokenService;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -44,19 +45,23 @@ final class SudoModeTokenServiceTest extends TestCase
         $nonceCache = $this->createMock(FrontendInterface::class);
         $nonceCache
             ->method('set')
-            ->willReturnCallback(function (string $key, mixed $value): void {
-                $this->cache[$key] = $value;
-            });
+            ->willReturnCallback(
+                function (string $key, mixed $value): void {
+                    $this->cache[$key] = $value;
+                },
+            );
         $nonceCache
             ->method('get')
             ->willReturnCallback(fn (string $key): mixed => $this->cache[$key] ?? false);
         $nonceCache
             ->method('remove')
-            ->willReturnCallback(function (string $key): bool {
-                unset($this->cache[$key]);
+            ->willReturnCallback(
+                function (string $key): bool {
+                    unset($this->cache[$key]);
 
-                return true;
-            });
+                    return true;
+                },
+            );
 
         $locker = $this->createMock(LockingStrategyInterface::class);
         $locker
@@ -79,15 +84,17 @@ final class SudoModeTokenServiceTest extends TestCase
         $store   = $this->createStub(ConsumedTokenStore::class);
         $store
             ->method('claim')
-            ->willReturnCallback(function (string $key) use (&$claimed): bool {
-                if (isset($claimed[$key])) {
-                    return false;
-                }
+            ->willReturnCallback(
+                function (string $key) use (&$claimed): bool {
+                    if (isset($claimed[$key])) {
+                        return false;
+                    }
 
-                $claimed[$key] = true;
+                    $claimed[$key] = true;
 
-                return true;
-            });
+                    return true;
+                },
+            );
 
         for ($i = 0; $i < 10; ++$i) {
             GeneralUtility::addInstance(ConsumedTokenStore::class, $store);
@@ -140,7 +147,7 @@ final class SudoModeTokenServiceTest extends TestCase
     }
 
     #[Test]
-    #[\PHPUnit\Framework\Attributes\DataProvider('otherContexts')]
+    #[DataProvider('otherContexts')]
     public function aTokenIsWorthlessInAnyOtherContext(int $uid, string $session, string $claim): void
     {
         $token = $this->subject->issue(7, 'session-a', 'claim-1');
@@ -152,8 +159,7 @@ final class SudoModeTokenServiceTest extends TestCase
     public function aLoginChallengeTokenIsNoSudoToken(): void
     {
         // Same signer, same format: only the context digest tells them apart.
-        $loginToken = SudoModeTokenService::PREFIX
-            . $this->challengeService->createChallengeToken($this->challengeService->generateChallenge());
+        $loginToken = SudoModeTokenService::PREFIX . $this->challengeService->createChallengeToken($this->challengeService->generateChallenge());
 
         self::assertFalse($this->subject->verify($loginToken, 7, 'session-a', 'claim-1'));
     }

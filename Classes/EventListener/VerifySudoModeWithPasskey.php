@@ -28,9 +28,7 @@ use function is_numeric;
 #[AsEventListener(identifier: 'nr-passkeys-be/verify-sudo-mode-with-passkey')]
 final readonly class VerifySudoModeWithPasskey
 {
-    public function __construct(
-        private SudoModeTokenService $tokenService,
-    ) {}
+    public function __construct(private SudoModeTokenService $tokenService) {}
 
     public function __invoke(SudoModeVerifyEvent $event): void
     {
